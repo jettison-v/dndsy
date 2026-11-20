@@ -425,7 +425,9 @@ class CharacterSnapshot(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), unique=True)
     fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # when the good copy was fetched
-    raw: Mapped[dict | None] = mapped_column(JSONB)
+    # The whole sheet (about half a megabyte) loads only when it's read: most pages need the summary alone, and on Railway
+    # every sheet loaded is sent across its network (Nov 20: the party page took 2 s loading twelve of them).
+    raw: Mapped[dict | None] = mapped_column(JSONB, deferred=True)
     summary: Mapped[dict | None] = mapped_column(JSONB)  # ddb.parse_character(raw)
     status: Mapped[str] = mapped_column(String(20), default="ok", server_default="ok")  # result of the latest attempt
     error: Mapped[str] = mapped_column(Text, default="", server_default="")

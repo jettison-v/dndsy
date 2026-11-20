@@ -147,7 +147,7 @@ def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x
     database connection meanwhile (each read commits), then lets the change settle (rules.SETTLE) before reading."""
     import time
 
-    from app import realtime
+    from app import realtime, timing
 
     actor = keys.require(db, x_fft_key, "read")
 
@@ -161,7 +161,9 @@ def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x
 
     items, until = peek(), time.monotonic() + max(1, min(seconds, WAIT_MAX))
     while not items and (left := until - time.monotonic()) > 0:
-        if realtime.heard(realtime.EVERYONE, left):
+        with timing.step(timing.HELD):  # (held open by design: never a slow request)
+            woke = realtime.heard(realtime.EVERYONE, left)
+        if woke:
             time.sleep(rules.SETTLE.total_seconds() + 0.5)  # (read only once it has settled)
             items = peek()
     return _ok({"items": items, "listening": True})

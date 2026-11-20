@@ -138,12 +138,13 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         revs = _matching(db, q, lambda r, c: c is None)
     days: dict[str, list] = defaultdict(list)
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
+    known = history.targets(db, revs)
     for r in revs:
         days[r.created_at.strftime("%b %-d, %Y")].append({  # (dates one way, "Nov 5, 2026": the UI review)
             "r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
             **_present(db, r, people),
             "long": r.field in ("summary", "description", "data", "note", "deleted"),
-            "restorable": may_restore(db, user, r) and history.can_restore(db, r)})
+            "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)})
     shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign
                      else {k: FILTERS[k][0] for k in ("", "people", "characters")})
     return templates.TemplateResponse(request, "admin_history.html", {

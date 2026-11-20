@@ -250,7 +250,7 @@ def test_more_entries_dont_mean_more_queries(player, db):
     db.flush()
     page = player.get("/c/main/campaign").text
     assert "enemy 9 the 9th" in page  # the name and its other name, in what the search box matches
-    assert _alias_queries(db, player, "/c/main/campaign") == before
+    assert _alias_queries(db, player, "/c/main/campaign") <= before  # (never more; Nov 20 the linker loads them in one read too)
 
 
 def test_an_entry_without_a_picture_asks_whoever_can_add_one(admin, player, db, monkeypatch):

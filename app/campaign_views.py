@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app import entities, pictures
 from app.extraction import timeline
-from app.models import Entity, EntityKind, EntityRelation, EventEntity, Status, StoryEvent
+from app.models import Entity, EntityKind, EntityRelation, EventEntity, Fact, Status, StoryEvent
 from app.relations import TYPES
 
 Visible = Callable[[Entity], bool]
@@ -25,11 +25,12 @@ def _relations(db: Session, campaign_id: int, visible: Visible, types=None) -> l
     return [r for r in db.scalars(q.order_by(EntityRelation.id)) if r.type in TYPES and visible(r.from_entity) and visible(r.to_entity)]
 
 
-def _co_mentioned(db: Session, entity_id: int, visible: Visible) -> list[int]:
+def _co_mentioned(db: Session, entity_id: int, visible: Visible, events: list[StoryEvent] | None = None) -> list[int]:
     """Entries mentioned in the same key moments as this one that this person may read (entities.shown), in story order
-    of first mention."""
-    events = db.scalars(select(StoryEvent).join(EventEntity, EventEntity.event_id == StoryEvent.id).where(
-        EventEntity.entity_id == entity_id, StoryEvent.status == Status.PUBLISHED).order_by(StoryEvent.id))
+    of first mention. `events`: its published key moments by id, when already read."""
+    if events is None:
+        events = db.scalars(select(StoryEvent).join(EventEntity, EventEntity.event_id == StoryEvent.id).where(
+            EventEntity.entity_id == entity_id, StoryEvent.status == Status.PUBLISHED).order_by(StoryEvent.id))
     seen: list[int] = []
     for ev in events:
         if entities.shown(ev, visible):
@@ -40,19 +41,38 @@ def _co_mentioned(db: Session, entity_id: int, visible: Visible) -> list[int]:
 # --- Quests ------------------------------------------------------------------------
 
 
-def givers(db: Session, quest: Entity, visible: Visible) -> list[Entity]:
-    """Who gave the quest (the "gave" relationship)."""
-    rels = db.scalars(select(EntityRelation).where(EntityRelation.type == "gave", EntityRelation.to_entity_id == quest.id))
-    return [r.from_entity for r in rels if visible(r.from_entity)]
+@dataclass
+class _Read:
+    """What the quest board reads once for every quest (Nov 20: each quest read its own, ~100 reads a Campaign page)."""
+
+    events: dict[int, list[StoryEvent]] = field(default_factory=dict)  # each quest's published key moments, by id
+    gave: dict[int, list[EntityRelation]] = field(default_factory=dict)
+    facts: dict[int, list[Fact]] = field(default_factory=dict)
 
 
-def quest_card(db: Session, quest: Entity, visible: Visible, order: dict[int, int], latest_index: int | None) -> dict:
+def _read_quests(db: Session, ids: list[int]) -> _Read:
+    got = _Read()
+    if not ids:
+        return got
+    for eid, ev in db.execute(select(EventEntity.entity_id, StoryEvent).join(StoryEvent, StoryEvent.id == EventEntity.event_id)
+                              .where(EventEntity.entity_id.in_(ids), StoryEvent.status == Status.PUBLISHED).order_by(StoryEvent.id)):
+        got.events.setdefault(eid, []).append(ev)
+    for r in db.scalars(select(EntityRelation).where(EntityRelation.type == "gave", EntityRelation.to_entity_id.in_(ids)).order_by(EntityRelation.id)):
+        got.gave.setdefault(r.to_entity_id, []).append(r)
+    for f in db.scalars(select(Fact).where(Fact.entity_id.in_(ids), Fact.status == "merged").order_by(Fact.id)):
+        got.facts.setdefault(f.entity_id, []).append(f)
+    return got
+
+
+def quest_card(db: Session, quest: Entity, visible: Visible, order: dict[int, int], latest_index: int | None, read: _Read | None = None) -> dict:
     """One quest in the quest log: who gave it, its key moments (oldest first), who and where it involves, the
-    table's facts, and whether it has gone quiet."""
-    moments = entities.moments(db, quest, visible)
-    gave = givers(db, quest, visible)
+    table's facts, and whether it has gone quiet. `read`: what the board read for all its quests at once."""
+    read = read or _read_quests(db, [quest.id])
+    events = read.events.get(quest.id, [])
+    moments = entities.moments(db, quest, visible, events=events, order=order)
+    gave = [r.from_entity for r in read.gave.get(quest.id, []) if visible(r.from_entity)]
     who = list(gave)
-    for eid in _co_mentioned(db, quest.id, visible):
+    for eid in _co_mentioned(db, quest.id, visible, events):
         e = db.get(Entity, eid)
         if e is not None and visible(e) and e not in who:
             who.append(e)
@@ -61,12 +81,14 @@ def quest_card(db: Session, quest: Entity, visible: Visible, order: dict[int, in
         last = moments[-1]["e"].session_id
         if latest_index - order.get(last, latest_index) >= QUIET_AFTER:
             quiet = moments[-1]["label"]
-    return {"q": quest, "givers": gave, "moments": moments, "who": who, "facts": entities.merged_facts(db, quest.id), "quiet": quiet}
+    return {"q": quest, "givers": gave, "moments": moments, "who": who, "facts": read.facts.get(quest.id, []), "quiet": quiet}
 
 
 def quest_board(db: Session, campaign_id: int, quests: list[Entity], visible: Visible, latest: int | None) -> list[dict]:
-    order = {s.id: i for i, s in enumerate(timeline(db, campaign_id))}
-    return [quest_card(db, q, visible, order, order.get(latest) if latest else None) for q in quests]
+    sessions = timeline(db, campaign_id)  # (kept while the cards are made: each key moment's session comes from it)
+    order = {s.id: i for i, s in enumerate(sessions)}
+    read = _read_quests(db, [q.id for q in quests])
+    return [quest_card(db, q, visible, order, order.get(latest) if latest else None, read) for q in quests]
 
 
 def part_of(db: Session, entity: Entity, visible: Visible) -> list[Entity]:

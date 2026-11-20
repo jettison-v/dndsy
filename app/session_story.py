@@ -212,10 +212,14 @@ def window_says(session: GameSession) -> str:
     return "that evening (no recording start time, so noon to 6 am)"
 
 
-def _rolls(db: Session, session: GameSession) -> list[TableRoll]:
+def _rolls(db: Session, session: GameSession, table_rolls: list[TableRoll] | None = None) -> list[TableRoll]:
+    """The rolls the whole table saw that night. `table_rolls`: the campaign's, already read (Trophies: one read for
+    every session, Nov 20)."""
     window = night(session)
     if window is None:
         return []
+    if table_rolls is not None:
+        return [r for r in table_rolls if window[0] <= r.created_at < window[1]]
     return list(db.scalars(select(TableRoll).where(TableRoll.campaign_id == session.campaign_id, TableRoll.visibility == "table",
                                                     TableRoll.created_at >= window[0], TableRoll.created_at < window[1])))
 
@@ -268,12 +272,12 @@ def casts(rolls: list[TableRoll], chars: dict[int, Character]) -> dict:
     return {"count": sum(x["n"] for x in rows), "by": rows}
 
 
-def dice(db: Session, session: GameSession) -> dict:
+def dice(db: Session, session: GameSession, table_rolls: list[TableRoll] | None = None) -> dict:
     """{"rolls", "twenties", "ones", "hardest_luck", "damage_king", "damage", "biggest", "healing", "spells"} from the
     rolls the whole table saw that night (a DM-only or private roll never counts). The two awards: {character, why} or
     None. The night's numbers (Brett chose all four, Nov 9, docs/mockups/full-tale/): damage rolled by each character,
-    the biggest single damage roll, healing rolled by each, and spells cast (`casts`)."""
-    rolls = _rolls(db, session)
+    the biggest single damage roll, healing rolled by each, and spells cast (`casts`). `table_rolls`: as `_rolls`."""
+    rolls = _rolls(db, session, table_rolls)
     d20 = [r for r in rolls if r.kept is not None]
     out = {"rolls": sum(1 for r in rolls if r.parent_id is None), "twenties": sum(1 for r in d20 if r.kept == 20),
            "ones": sum(1 for r in d20 if r.kept == 1), "hardest_luck": None, "damage_king": None,
@@ -335,13 +339,21 @@ def night_numbers(db: Session, rolled: dict) -> dict:
 # ---------------------------------------------------------------- awards
 
 
-def awards(db: Session, session: GameSession, recap: Recap | None, rolled: dict | None = None) -> list[dict]:
-    """Claude's awards on this version, then the dice's, each with the character's entry (for its picture and link)."""
-    by_name = {}
-    for ch in campaign_characters(db, session.campaign_id):
+def names(db: Session, campaign_id: int) -> dict[str, Character]:
+    """The campaign's characters by every name the table knows them by (their entry's, its aliases), casefolded."""
+    by_name: dict[str, Character] = {}
+    for ch in campaign_characters(db, campaign_id):
         if ch.entity is not None:
             for n in [ch.name, ch.entity.name] + [a.alias for a in ch.entity.aliases if not a.misspelling]:
                 by_name.setdefault(n.casefold(), ch)
+    return by_name
+
+
+def awards(db: Session, session: GameSession, recap: Recap | None, rolled: dict | None = None,
+           by_name: dict[str, Character] | None = None) -> list[dict]:
+    """Claude's awards on this version, then the dice's, each with the character's entry (for its picture and link).
+    `rolled` (`dice`) and `by_name` (`names`) when a page already has them for many sessions (Trophies)."""
+    by_name = names(db, session.campaign_id) if by_name is None else by_name
     def shown(award: str, n: dict) -> dict:
         dm = award == DM_AWARD or n["character"].casefold().strip() in ("the dm", "dm")
         ch = None if dm else by_name.get(n["character"].casefold())

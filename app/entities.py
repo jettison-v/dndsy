@@ -111,16 +111,17 @@ def shown(event: StoryEvent, visible=None) -> bool:
     return event.status == Status.PUBLISHED and all(see(x) for x in event.entities)
 
 
-def moments(db: Session, entity: Entity, visible=None) -> list[dict]:
-    """Every key moment that mentions the entity and that this person may read (`shown`), in story order."""
-    events = [e for e in db.scalars(
-        select(StoryEvent)
-        .join(EventEntity, EventEntity.event_id == StoryEvent.id)
-        .where(EventEntity.entity_id == entity.id, StoryEvent.status == Status.PUBLISHED)
-    ) if shown(e, visible)]
+def moments(db: Session, entity: Entity, visible=None, events: list[StoryEvent] | None = None, order: dict[int, int] | None = None) -> list[dict]:
+    """Every key moment that mentions the entity and that this person may read (`shown`), in story order. `events` (its
+    published ones) and `order` (the timeline's) when a page already read them for many entries at once."""
+    if events is None:
+        events = list(db.scalars(select(StoryEvent).join(EventEntity, EventEntity.event_id == StoryEvent.id)
+                                 .where(EventEntity.entity_id == entity.id, StoryEvent.status == Status.PUBLISHED)))
+    events = [e for e in events if shown(e, visible)]
     if not events:
         return []
-    order = {s.id: i for i, s in enumerate(timeline(db, entity.campaign_id))}
+    sessions = None if order is not None else timeline(db, entity.campaign_id)  # (kept: each moment's session comes from it)
+    order = order if order is not None else {s.id: i for i, s in enumerate(sessions)}
     events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))
     short = lambda s: f"Session {s.number}" if s.number is not None else session_label(s)
     return [{"e": e, "label": session_label(e.session), "short": short(e.session), "when": moment_when(e.session)} for e in events]

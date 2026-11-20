@@ -112,9 +112,10 @@ def copy_candidates(db: Session, campaign_id: int) -> list[tuple[Character, bool
 def ddb_campaigns(db: Session) -> dict[str, str]:
     """{D&D Beyond campaign id: its name} for the campaigns the characters' D&D Beyond copies say they're in."""
     out = {}
-    for ch in db.scalars(select(Character).where(Character.ddb_campaign_id.is_not(None))):
-        raw = (ch.snapshot.raw or {}) if ch.snapshot else {}
-        out.setdefault(ch.ddb_campaign_id, ((raw.get("campaign") or {}).get("name") or "").strip())
+    name = CharacterSnapshot.raw["campaign"]["name"].astext  # (the name alone: never the whole half-megabyte sheet, Nov 20)
+    for cid, got in db.execute(select(Character.ddb_campaign_id, name).outerjoin(CharacterSnapshot, CharacterSnapshot.character_id == Character.id)
+                               .where(Character.ddb_campaign_id.is_not(None)).order_by(Character.id)):
+        out.setdefault(cid, (got or "").strip())
     return out
 
 

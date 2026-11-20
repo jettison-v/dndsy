@@ -16,7 +16,7 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import entities, review, session_story, web
 from app.auth import can_edit_settings, current_user
@@ -43,7 +43,8 @@ def set_mode(campaign: Campaign, value: str) -> None:
 def _sessions(db: Session, campaign: Campaign) -> list[tuple[GameSession, object]]:
     """The published sessions with their published recap, oldest first."""
     out = []
-    for s in db.scalars(select(GameSession).where(GameSession.campaign_id == campaign.id).order_by(GameSession.played_on, GameSession.id)):
+    for s in db.scalars(select(GameSession).where(GameSession.campaign_id == campaign.id).order_by(GameSession.played_on, GameSession.id)
+                        .options(selectinload(GameSession.recaps), selectinload(GameSession.events))):  # (all at once, Nov 20)
         recap = review.published_recap(s)
         if recap is not None:
             out.append((s, recap))
@@ -67,8 +68,8 @@ def gather(db: Session, campaign: Campaign) -> dict:
     def session_at(at: datetime) -> int | None:
         return next((sid for sid, (a, b) in windows if a <= at < b), None)
 
-    rolls = [r for r in db.scalars(select(TableRoll).where(TableRoll.campaign_id == campaign.id, TableRoll.visibility == "table"))
-             if counting == "all" or session_at(r.created_at) is not None]
+    table_rolls = list(db.scalars(select(TableRoll).where(TableRoll.campaign_id == campaign.id, TableRoll.visibility == "table")))
+    rolls = [r for r in table_rolls if counting == "all" or session_at(r.created_at) is not None]
     chars = campaign_characters(db, campaign.id)
     rows = {f"c{c.id}": {"name": c.name, "character": c, "dm": False, "entity_id": c.entity.id if c.entity else None} for c in chars}
     rows["dm"] = {"name": "The DM", "character": None, "dm": True, "entity_id": None}
@@ -106,9 +107,10 @@ def gather(db: Session, campaign: Campaign) -> dict:
     # Awards (the picked nominee, and the dice's) and key moments naming a character's entry, from each published recap
     by_entity = {c.entity.id: f"c{c.id}" for c in chars if c.entity}
     by_name = {r["name"].casefold(): k for k, r in rows.items()}
+    known = session_story.names(db, campaign.id)
     for s, recap in sessions:
         label = session_label(s)
-        for a in session_story.awards(db, s, recap):
+        for a in session_story.awards(db, s, recap, session_story.dice(db, s, table_rolls), known):
             key = "dm" if a["dm"] else by_entity.get(a.get("entity_id")) or by_name.get((a.get("who") or "").casefold())
             if key is None:
                 continue

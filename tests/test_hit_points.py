@@ -253,4 +253,4 @@ def test_healing_someone_at_full_says_so(player, db, sheet):
     assert hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 0}], [], set()).get("empty")
     assert not hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 0}], [], set()).get("nothing")
     assert "nothing" not in hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 3}], [], set())
-    assert hit_points._hp_now(cole) == {"hp": f"{hp['current']}/{hp['max']}", "full": hp["current"] >= hp["max"]}
+    assert hit_points._hp_now(hit_points.hit_points_of(db, [cole.id])[cole.id]) == {"hp": f"{hp['current']}/{hp['max']}", "full": hp["current"] >= hp["max"]}

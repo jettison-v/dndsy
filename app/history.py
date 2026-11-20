@@ -214,15 +214,33 @@ def _value(model, field: str, v):
     return v
 
 
-def target(db: Session, rev: Revision):
+def target(db: Session, rev: Revision, known: dict | None = None):
+    if known is not None and (rev.table, rev.row_id) in known:
+        return known[(rev.table, rev.row_id)]
     model = MODELS.get(rev.table)
     return db.get(model, rev.row_id) if model else None
 
 
-def can_restore(db: Session, rev: Revision) -> bool:
+def targets(db: Session, revs: list[Revision]) -> dict:
+    """The rows a page of changes is about, one read per table (Nov 20: History looked each one up on its own, ~400
+    reads a page): {(table, row id): the row, or None where it's gone}."""
+    want: dict[str, set[int]] = {}
+    for r in revs:
+        if r.table in MODELS:
+            want.setdefault(r.table, set()).add(r.row_id)
+    out: dict = {}
+    for table, ids in want.items():
+        model = MODELS[table]
+        found = {o.id: o for o in db.scalars(select(model).where(model.id.in_(ids)))}
+        out |= {(table, i): found.get(i) for i in ids}
+    return out
+
+
+def can_restore(db: Session, rev: Revision, known: dict | None = None) -> bool:
+    """`known`: `targets` of the page it's on, so a page asks once per table, not once per change."""
     if rev.field == "deleted":
-        return rev.table in BRING_BACK and target(db, rev) is None
-    obj = target(db, rev)
+        return rev.table in BRING_BACK and target(db, rev, known) is None
+    obj = target(db, rev, known)
     return obj is not None and rev.field in TRACKED.get(type(obj), ())
 
 

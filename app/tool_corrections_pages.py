@@ -25,9 +25,10 @@ def page(request: Request, db: Session = Depends(get_db)):
         return denied
     overrides = list(db.scalars(select(ToolCorrection).order_by(ToolCorrection.updated_at.desc())))
     labels = {f: dict(c) for f, c in {**views.OVERRIDE_CHOICES, **views.TERM_CHOICES}.items()}
+    sheets = _sheets(db)  # (every character's, read once for both: Nov 20)
     return templates.TemplateResponse(request, "tool_corrections.html", {
-        "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS, "names": _names(db, overrides),
-        **_split(db, overrides),
+        "overrides": overrides, "labels": labels, "field_labels": views.FIELD_LABELS, "names": _names(db, overrides, sheets),
+        **_split(db, overrides, sheets),
         "toast": request.session.pop("toast", None),
     })
 
@@ -71,10 +72,14 @@ def automatic(sheets: list[dict], ref: str, field: str, seen: dict | None = None
     return None
 
 
-def _status(db: Session, overrides: list[ToolCorrection]) -> dict[int, str]:
+def _sheets(db: Session) -> list[dict]:
+    return [sh for sh in (chars.character_summary(c) for c in db.scalars(select(Character))) if sh]
+
+
+def _status(db: Session, overrides: list[ToolCorrection], sheets: list[dict] | None = None) -> dict[int, str]:
     """Each correction: "open" (askdnd still gets it wrong), "built_in" (askdnd now chooses the same on its own,
     so the correction can go) or "unseen" (no character has the thing now)."""
-    sheets = [sh for sh in (chars.character_summary(c) for c in db.scalars(select(Character))) if sh]
+    sheets = _sheets(db) if sheets is None else sheets
     out, seen = {}, {}
     for o in overrides:
         auto = automatic(sheets, o.ref, o.field, seen)
@@ -82,8 +87,8 @@ def _status(db: Session, overrides: list[ToolCorrection]) -> dict[int, str]:
     return out
 
 
-def _split(db: Session, overrides: list[ToolCorrection]) -> dict:
-    status = _status(db, overrides)
+def _split(db: Session, overrides: list[ToolCorrection], sheets: list[dict] | None = None) -> dict:
+    status = _status(db, overrides, sheets)
     return {"open": [o for o in overrides if status[o.id] != "built_in"], "built": [o for o in overrides if status[o.id] == "built_in"],
             "unseen": {o.id for o in overrides if status[o.id] == "unseen"}}
 
@@ -110,10 +115,10 @@ def open_count(db: Session) -> int:
     return _OPEN[key]
 
 
-def _names(db: Session, overrides: list[ToolCorrection]) -> dict[str, dict]:
+def _names(db: Session, overrides: list[ToolCorrection], sheets: list[dict] | None = None) -> dict[str, dict]:
     """What each correction is about, by name: an item's ref is its D&D Beyond number ("item:992695540"), so look it up
     on the characters' sheets (Brett, 2026-10-23: the bare number meant nothing)."""
-    sheets = [sh for sh in (chars.character_summary(c) for c in db.scalars(select(Character))) if sh]
+    sheets = _sheets(db) if sheets is None else sheets
     out = {}
     for o in overrides:
         kind, _, rest = o.ref.partition(":") if ":" in o.ref else ("", "", o.ref)

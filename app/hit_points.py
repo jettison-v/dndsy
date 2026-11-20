@@ -38,7 +38,7 @@ from app import wild_shape as ws
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
 from app.ddb_sheet import DAMAGE_TYPES
-from app.models import Character, TableRoll
+from app.models import Character, CharacterSnapshot, TableRoll
 from app.templating import templates
 
 router = APIRouter()
@@ -221,9 +221,18 @@ def can_apply(db: Session, user: dict | None, character: Character) -> bool:
     return picks.can_edit(db, user, character) or is_dm(user, character.campaign_id) or is_admin(user)
 
 
-def _hp_now(c: Character) -> dict:
+def hit_points_of(db: Session, ids: list[int]) -> dict[int, dict]:
+    """Each character's Hit Points from its sheet, alone, in one read (Nov 20: a sheet's summary is ~170 KB, and the
+    pages that show these ask again after every change)."""
+    if not ids:
+        return {}
+    return {i: hp or {} for i, hp in db.execute(select(CharacterSnapshot.character_id, CharacterSnapshot.summary["hit_points"])
+                                                 .where(CharacterSnapshot.character_id.in_(ids)))}
+
+
+def _hp_now(hp: dict | None) -> dict:
     """Where a character's Hit Points stand, for Apply to's list (feedback 62: who's hurt, before choosing)."""
-    hp = (chars.character_summary(c) or {}).get("hit_points") or {}
+    hp = hp or {}
     if not hp.get("max"):
         return {}
     return {"hp": f"{hp.get('current', 0)}/{hp['max']}", "full": hp.get("current", 0) >= hp["max"]}
@@ -336,7 +345,9 @@ def hp_now(request: Request, ids: str = "", db: Session = Depends(get_db)):
     if campaign is None:
         return JSONResponse({})
     wanted = {int(x) for x in ids.split(",") if x.strip().isdigit()}
-    return JSONResponse({str(c.id): _hp_now(c) for c in targets(db, user, campaign.id) if c.id in wanted})
+    ids_ = [c.id for c in targets(db, user, campaign.id) if c.id in wanted]
+    hp = hit_points_of(db, ids_)
+    return JSONResponse({str(i): _hp_now(hp.get(i)) for i in ids_})
 
 
 @router.get("/characters/{character_id:int}/hp")
@@ -431,6 +442,7 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
     for k in kids:
         by_root.setdefault(k.parent_id, []).append(k)
     mine: dict[int, list[Character]] = {}
+    hps: dict[int, dict] = {}
     out = {}
     for r in roots:
         kinds = {k.kind for k in by_root.get(r.id, [])}
@@ -442,6 +454,7 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
             continue
         if r.campaign_id not in mine:
             mine[r.campaign_id] = targets(db, user, r.campaign_id)
+            hps.update(hit_points_of(db, [c.id for c in mine[r.campaign_id]]))
         done = {k.character_id: k for k in by_root.get(r.id, []) if k.kind == "applied"}
         conc = []
         for cid, k in done.items():
@@ -452,7 +465,7 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
         given = heals.for_of(r)  # (healing given to someone: theirs to apply, app/heals.py)
         only = r.character_id if (r.detail or {}).get("self") else given  # (Second Wind, a Hit Point Die: the roller's own)
         undone = bool(given) and not r.total  # (a heal its giver took back: nothing to apply)
-        out[r.id] = {"to": [] if undone else [{"id": c.id, "name": c.name, **_hp_now(c)} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
+        out[r.id] = {"to": [] if undone else [{"id": c.id, "name": c.name, **_hp_now(hps.get(c.id))} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
                      "done": [k.label for k in done.values()], "conc": conc, "dm": is_dm(user, r.campaign_id),
                      **({"waiting": (db.get(Character, given) or Character(name="them")).name} if given and given not in done and r.total else {})}
     return out
