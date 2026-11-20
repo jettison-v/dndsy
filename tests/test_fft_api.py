@@ -388,3 +388,33 @@ def test_claude_asks_for_a_local_try_only_while_brett_is_available(api, db):
     got = api.get("/api/fft/available", headers=_as(CLAUDE)).json()
     assert got["on"] and got["tries"][0]["id"] == made.json()["id"] and got["tries"][0]["answer"] == ""
     assert api.get("/api/fft/available").status_code in (401, 403, 404)  # (no key: no one)
+
+
+def test_the_inbox_held_open_answers_when_something_changes(api, db, monkeypatch):
+    """Brett, Nov 20 ("is your communication back and forth ... very efficient?"): `feedback.py wait` asks askdnd to
+    hold the ask open, and it answers within moments of a change instead of on the next 30-second ask."""
+    import threading
+    import time
+    from datetime import timedelta
+
+    from app import realtime
+
+    monkeypatch.setattr(rules, "SETTLE", timedelta(0))
+    _settle(db)
+    api.get("/api/fft/inbox", headers=_as(CLAUDE))  # (read everything so far)
+    t = time.monotonic()
+    got = api.get("/api/fft/inbox/wait?seconds=1", headers=_as(CLAUDE)).json()
+    assert got["items"] == [] and 0.9 < time.monotonic() - t < 4  # (nothing new: empty once its time is up)
+
+    def later():
+        time.sleep(0.4)
+        rules.new_issue(db, "user:1", "Something Brett found")
+        db.flush()
+        _settle(db)
+        realtime.deliver(realtime.EVERYONE, '{"type": "fft"}')
+
+    threading.Thread(target=later).start()
+    t = time.monotonic()
+    got = api.get("/api/fft/inbox/wait?seconds=20", headers=_as(CLAUDE)).json()
+    assert time.monotonic() - t < 5 and [e["kind"] for e in got["items"]] == ["issue_new"]  # (woken by the change)
+    assert api.get("/api/fft/inbox/wait?seconds=1").status_code == 404  # (no key: no inbox)

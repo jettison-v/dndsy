@@ -78,6 +78,34 @@ def deliver(campaign_id: int, msg: str) -> None:
             pass  # that page's connection has just closed
 
 
+class _Ear:
+    """A listener that isn't a page, waiting on a worker thread (Claude's inbox held open: app/fft/api.py `inbox_wait`):
+    it hears what a page in the campaign would, through the same `deliver`."""
+
+    def __init__(self) -> None:
+        self.loop = self  # (deliver hands a page's message to its loop: here, straight to this ear)
+        self.said = threading.Event()
+
+    def call_soon_threadsafe(self, fn, msg) -> None:
+        fn(msg)
+
+    def offer(self, msg: str) -> None:
+        self.said.set()
+
+
+def heard(campaign_id: int, seconds: float) -> bool:
+    """Wait (on a worker thread, never the event loop) until something is said to this campaign's pages (EVERYONE:
+    any), or `seconds` pass; True if it was."""
+    ear = _Ear()
+    with _lock:
+        _pages.setdefault(campaign_id, set()).add(ear)
+    try:
+        return ear.said.wait(timeout=seconds)
+    finally:
+        with _lock:
+            _pages.get(campaign_id, set()).discard(ear)
+
+
 def connected(campaign_id: int) -> int:
     with _lock:
         return len(_pages.get(campaign_id, ()))
