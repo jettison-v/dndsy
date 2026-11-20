@@ -107,6 +107,16 @@
 {% if n %} <span class="count" data-count="{{ n }}">{{ n }}{{ " " ~ words if words }}</span>{% endif %}
 {%- endmacro %}
 
+{# Done leaves the list (Brett, Nov 20: "If it is done, it is off the list ... auditing and reviewing should be possible,
+   but not highlighted"): under a list, one quiet History link; on the history itself, what it shows and the way back. #}
+{% macro history_link(href, label="History") -%}
+<p class="dt-history"><a href="{{ href }}" data-history>{{ label }}</a></p>
+{%- endmacro %}
+
+{% macro history_head(what, back) -%}
+<p class="dt-history-head" data-history-head><b>History: {{ what }}</b> <a href="{{ back }}" data-history-back>Back to what's open</a></p>
+{%- endmacro %}
+
 {% macro empty_state(what) -%}
 <div class="empty-state" data-empty><span>{{ what }}</span>{% if caller is defined %} {{ caller() }}{% endif %}</div>
 {%- endmacro %}
@@ -118,7 +128,7 @@
 <ol class="st-track" aria-label="{{ label }}">{% for s in steps %}<li class="st-{{ s.state }}">{{ s.label }}</li>{% endfor %}</ol>
 {%- endmacro %}
 
-{# A drag handle (a row that's dragged into order: the fight's turn order, Work's plans) #}
+{# A drag handle (a row that's dragged into order: the fight's turn order, Development's plans) #}
 {% macro grip() -%}
 <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 18" width="10" height="15" fill="currentColor"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg></span>
 {%- endmacro %}

@@ -29,7 +29,9 @@ from app.templating import templates
 
 router = APIRouter()
 WORK = "/manage/work"
-TABS = (("queue", "Queue"), ("done", "Done"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
+TABS = (("queue", "Queue"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
+# (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
+# `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
 # (the Work Flow Map's stages, worked out from what's true: words and state_word's tone)
 STAGES = {"blocker": ("Blocker: Claude's now", "failed"), "held": ("Held", "quiet"), "frozen": ("Held for game night", "quiet"), "round": ("In your round", "ask"),
@@ -158,20 +160,21 @@ def check_rows(db: Session, area: FftArea | None = None) -> tuple[list[dict], li
         used |= set(devs)
         tied = [i.id for i in rules.check_issues(db, c)]
         a = db.get(FftArea, c.area_id) if c.area_id else None
-        rows.append({"key": f"c{c.id}", "c": c, "area": a, "devices": devs, "issues": tied, "word": views.check_word(st)})
+        rows.append({"key": f"c{c.id}", "c": c, "area": a, "devices": devs, "issues": tied, "word": views.check_word(st), "state": st["state"]})
     return rows, [d for d in DEVICES if d in used]
 
 
 def listed_keys(db: Session, frm: str) -> list[str]:
     """The item window's ↑ ↓ on Work's Checks (`checks`) or a plan's Test round (`round:<id>`)."""
-    if frm == "checks":
-        return [r["key"] for r in check_rows(db)[0]]
-    if frm.startswith("round:") and frm[6:].isdigit() and (a := db.get(FftArea, int(frm[6:]))):
+    if frm in ("checks", "checks:passed"):  # (open checks; or History's, the passed ones)
+        return [r["key"] for r in check_rows(db)[0] if (r["state"] == "passed") == (frm == "checks:passed")]
+    kind, _, rest = frm.partition(":")
+    num, _, past = rest.partition(":")  # (`round:<id>` its open work's checks, `round:<id>:passed` its History; same for plan)
+    if kind == "round" and num.isdigit() and (a := db.get(FftArea, int(num))):
         ids = plan_row(db, a, rules.Pick(None, ""), False)["check_ids"]
-        rows = check_rows(db, a)[0]
-        return [r["key"] for r in rows if r["c"].id in ids] + [r["key"] for r in rows if r["c"].id not in ids]
-    if frm.startswith("plan:") and frm[5:].isdigit():
-        return [f"i{i.id}" for i in _plan_issues(db, int(frm[5:]))]
+        return [r["key"] for r in check_rows(db, a)[0] if (r["c"].id in ids) != bool(past)]
+    if kind == "plan" and num.isdigit():
+        return [f"i{i.id}" for i in _plan_issues(db, int(num)) if (i.state == "closed") == bool(past)]
     return []
 
 
@@ -242,25 +245,26 @@ def _who(db: Session, actor: str, said: dict | None = None) -> str:
 
 
 @router.get("/manage/work")
-def page(request: Request, tab: str = "queue", open: str = "", db: Session = Depends(get_db)):
+def page(request: Request, tab: str = "queue", open: str = "", history: int = 0, db: Session = Depends(get_db)):
     user, denied = testing_page._admin(request)
     if denied:
         return denied
-    tab = tab if tab in dict(TABS) else "queue"
+    tab = tab if tab in dict(TABS) or tab == "done" else "queue"
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
     ctx = {"tab": tab, "tabs": TABS, "q": q, "status": testing_page.status(db), "missed": views.missed(db), "lanes": rules.LANES,
-           "lane_said": rules.LANE_SAID, "stages": STAGES, "device_name": DEVICE_NAME, "n_done": 0,
+           "lane_said": rules.LANE_SAID, "stages": STAGES, "device_name": DEVICE_NAME, "history": bool(history),
            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
            "pick": testing_page._key(open), "toast": request.session.pop("toast", None)}
-    d = done(db)
-    ctx["n_done"] = len(d)
     if tab == "done":
-        ctx["done"] = d
-    elif tab == "checks":
-        ctx["checks"], ctx["devices"] = check_rows(db)
+        ctx["done"] = done(db)
+    elif tab == "checks":  # (open checks; History, the passed ones)
+        rows, ctx["devices"] = check_rows(db)
+        if ctx["pick"] and any(r["key"] == ctx["pick"] and r["state"] == "passed" for r in rows):
+            ctx["history"] = history = 1  # (an old link to a check that has passed: it's in History now)
+        ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
     elif tab == "scheduled":
         ctx["jobs"] = jobs(db)
     elif tab == "how":
@@ -285,7 +289,7 @@ def _plan_issues(db: Session, area_id: int) -> list[FftIssue]:
 
 
 @router.get("/manage/work/{area_id:int}")
-def plan(request: Request, area_id: int, tab: str = "overview", db: Session = Depends(get_db)):
+def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0, db: Session = Depends(get_db)):
     """A plan's page: Overview, Issues, Test round, Timeline (a link to a group goes to its page; one item opens in the
     item window)."""
     user, denied = testing_page._admin(request)
@@ -299,8 +303,9 @@ def plan(request: Request, area_id: int, tab: str = "overview", db: Session = De
     row = plan_row(db, a, pick, rules.freeze_state(db)["on"])
     issues = _plan_issues(db, a.id)
     checks, devices = check_rows(db, a)
-    now_ = [r for r in checks if r["c"].id in row["check_ids"]]  # (this plan's checks now; those that passed before it, under)
-    checks = now_ + [r for r in checks if r["c"].id not in row["check_ids"]]
+    now_ = [r for r in checks if r["c"].id in row["check_ids"]]  # (this plan's checks now; those that passed before, its History)
+    shown_checks = [r for r in checks if r["c"].id not in row["check_ids"]] if history else now_
+    shown_issues = [i for i in issues if (i.state == "closed") == bool(history)]
     events = list(db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200)))
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
                                                           FftQuestion.about_id.in_([i.id for i in issues] or [0]))))
@@ -309,8 +314,8 @@ def plan(request: Request, area_id: int, tab: str = "overview", db: Session = De
     at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
-        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "tab": tab, "tabs": PLAN_TABS, "issues": issues,
-        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
+        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "history": bool(history),
+        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": shown_checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
         "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events], "questions": questions,
         "issue_word": views.ISSUE_WORD, "closed_word": views.CLOSED_WORD, "lane_said": rules.LANE_SAID, "lanes": rules.LANES,
         "at": at, "of": len(order), "paths": {i.id: taxonomy.path(i.feature) for i in issues},

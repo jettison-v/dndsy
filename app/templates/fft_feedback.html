@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word %}
-{% from "_lists.html" import empty_state, count_pill %}
+{% from "_lists.html" import empty_state, count_pill, history_link, history_head %}
 {% block title %}Feedback · Backstage · askdnd{% endblock %}
 {% block content %}
 {# Backstage › Global › Feedback (app/fft/feedback_page.py; screens 10–14 of docs/mockups/found-fixed-tried/): the record
@@ -17,8 +17,9 @@
     <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues">Issues{{ count_pill(counts["open"]) }}</a>
     <a href="?tab=ideas" class="{{ 'on' if tab == 'ideas' }}" data-tab="ideas">Ideas{{ count_pill(counts["ideas"]) }}</a>
   </nav>
-  {% if issues_on %}<div class="fb-kind-chips fft-views" role="group" aria-label="Show issues" data-views>
-    {% for key, label in (("open", "Open"), ("ready", "Ready to try"), ("closed", "Closed")) %}<a href="?tab={{ key }}" class="chip{{ ' on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="true"{% endif %}>{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
+  {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}
+  {% elif issues_on %}<div class="fb-kind-chips fft-views" role="group" aria-label="Show issues" data-views>
+    {% for key, label in (("open", "Open"), ("ready", "Ready to try")) %}<a href="?tab={{ key }}" class="chip{{ ' on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="true"{% endif %}>{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
   </div>{% endif %}
   {% set g = grouped %}
   {% macro here_with(chip_=chip, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
@@ -64,5 +65,6 @@
   </table>
   </div>
   {% endif %}
+  {% if tab in ("open", "ready") %}{{ history_link("?tab=closed") }}{% endif %}
 </main>
 {% endblock %}

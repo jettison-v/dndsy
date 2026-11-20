@@ -314,7 +314,7 @@ def event_words(ev) -> str:
         said = rules.LANE_SAID
         return f"Lane: {said.get(d.get('from') or '', d.get('from')) or 'none'} → {said.get(d.get('to') or '', d.get('to'))}"
     if ev.kind in ("area_held", "area_let_go"):
-        return "Held below Work's line" if ev.kind == "area_held" else "Let go: back above Work's line"
+        return "Held below Development's line" if ev.kind == "area_held" else "Let go: back above Development's line"
     if ev.kind == "check_moved":
         return f"Check {ev.thing_id} followed issue {d.get('issue')} into this plan"
     if "to" in d:
@@ -332,7 +332,7 @@ def gaps(db: Session) -> list[dict]:
     not miss something?"): a fix with no check to try it; a check Claude hasn't tried itself (R18); something said on an
     open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue with no Feature; a
     question sent to Claude and not yet answered; a fix in a pull request whose plan has no lane (Nov 19).
-    `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Work
+    `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Development
     shows them as Claude missed. Nothing waiting on Brett is a gap."""
     from app.fft.models import FftTry, FftTryIssue
 

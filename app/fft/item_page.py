@@ -1,6 +1,6 @@
 """The one item window (Brett, Nov 20: issue 44 and The Work Pages, docs/mockups/work-pages/): any single item (a check,
 a question or decision, a change to try on your Mac, a note, an issue, an idea, a Roadmap step) opens in a panel at the
-page's right, from any of For you, Feedback and Work, read and acted on there. ↑ ↓ walk the list it was opened from
+page's right, from any of For you, Feedback and Development, read and acted on there. ↑ ↓ walk the list it was opened from
 (`?from=`); after a press it moves on to the next one, or stays for a conversation (app.js "the item window"). A link
 to a group (a plan, a Product Area) goes to its page instead. Admins only, as the pages it opens from."""
 
@@ -40,7 +40,7 @@ def _home(picked: dict, frm: str) -> tuple[str, str]:
     if k == "check" and frm.startswith("round:"):
         return "its plan", f"/manage/work/{frm[6:]}?tab=round"
     if k == "check" and frm == "checks":
-        return "Work", f"/manage/work?tab=checks&open={picked['key']}"
+        return "Development", f"/manage/work?tab=checks&open={picked['key']}"
     return "For you", f"/manage/for-you?open={picked['key']}"
 
 
