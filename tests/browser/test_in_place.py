@@ -76,3 +76,27 @@ def test_a_refused_press_says_why_and_redraws_nothing(people, server, browser_db
     page.locator("#bad").click()
     page.locator("#cards > .card.k-warn").first.wait_for()
     assert page.evaluate("window.__stayed === true") and page.locator("#bad").is_enabled()  # (the button is back for another try)
+
+
+def test_a_press_in_a_side_panel_redraws_in_place(people, server, browser_db):
+    """Batch 3: a side panel's press (Feedback's Close it: why?) goes the same way: the page under it redraws in place
+    and the panel closes, as the old reload closed it; nothing reloads."""
+    from tests.browser.test_fft_feedback import _waiting_note
+    nid = _waiting_note(browser_db[0], "The rest button does nothing.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
+    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
+    page.locator('[data-fft-issue] [data-do="close"]').wait_for()
+    page.evaluate("window.__stayed = true")
+    page.locator('[data-fft-issue] [data-do="close"]').click()
+    win = page.locator("#peek")
+    win.locator('[data-reason="withdrawn"] input').check()
+    win.locator('[data-do="close"]').click()
+    page.wait_for_function("() => !document.querySelector('#peek.open')")  # (the panel closed)
+    page.locator("#cards > .card").first.wait_for()
+    assert page.evaluate("window.__stayed === true")
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        state = conn.execute(text("SELECT i.state FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i"), {"i": nid}).scalar()
+    engine.dispose()
+    assert state == "closed"

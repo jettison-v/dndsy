@@ -247,7 +247,7 @@ Each one is on Manage › Design system with its class or macro. Use these; don'
 ## Implementation notes
 
 - Server-rendered Jinja templates; small interactions (Edit/Cancel, answer, accept, undo) use HTMX partial swaps so the page doesn't jump.
-- A press never reloads the page (the Live UI Audit, Nov 19): a plain `<form method="post">` in main redraws in place by itself (MAP.md › Live table connection); write a form as usual and it keeps scroll, tabs and what was open. Mark it `data-reload` only when its change shows outside main (the menu bar, body's settings).
+- A press never reloads the page (the Live UI Audit, Nov 19): a plain `<form method="post">` in main or a side panel redraws in place by itself (MAP.md › Live table connection); write a form as usual and it keeps scroll, tabs and what was open. Mark it `data-reload` only when its change shows outside main (the menu bar, body's settings).
 - One shared stylesheet with the tokens above as CSS variables; pages don't define their own colors or sizes, and `tests/test_design_system.py` checks it.
 - Every interactive element has a visible focus style and an accessible label.
 - A time of day is written with the `clock` filter (`{{ when | clock }}`, `clock(date=True)` with the day): the server keeps UTC and doesn't know the reader's time zone, so the page shows it in the reader's own (app.js "clocks"). Never `strftime` a clock time; how long ago something was is `ago`.
