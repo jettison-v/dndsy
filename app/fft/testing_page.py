@@ -317,7 +317,9 @@ def status(db: Session) -> dict:
     av["ended"] = bool(av["why"] and av["off_at"] and rules.now() - datetime.fromisoformat(av["off_at"]) < timedelta(hours=2))  # (said for a while)
     r = rules.round_open(db)
     area = db.get(FftArea, r.area_id) if r is not None and r.area_id else None
+    after = rules.after_state(db)
     return {"available": av, "listening": views.listening(db), "listener": li, "round": r,
+            "after": after, "flight": rules.in_flight(db),  # (a round waiting for changes to go live; what pausing would hold)
             "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)
             "freeze": rules.freeze_state(db), "mode": rules.mode_of(db)}
 
@@ -333,8 +335,12 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
     mine = for_you(db, device) if show != "foryou" else groups
     round_checks = [r for g in mine for r in g["rows"] if r["kind"] == "check" and r.get("here")]
     me = views.person(db, user)
+    flight = rules.in_flight(db) if show == "foryou" else []  # (the heads-up before ▶ Start round: a lighter round, item 3)
+    whole = rules.round_areas(db)
     db.commit()
     return templates.TemplateResponse(request, "fft_testing.html", {
+        "round_flight": any(g["area_ids"] & whole or None in g["area_ids"] for g in flight),
+        "flight_areas": set().union(*[g["area_ids"] for g in flight]) if flight else set(),
         "show": show, "shows": SHOWS, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
         "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db), "here_path": FOR_YOU if show == "foryou" else BACK,
@@ -625,6 +631,43 @@ def round_start(request: Request, area: int = Form(0), db: Session = Depends(get
     to = _next_page(db, request)
     db.commit()
     return RedirectResponse(to, status_code=303)
+
+
+@router.get("/manage/testing/round/heads-up")
+def round_heads_up(request: Request, area: int = 0, db: Session = Depends(get_db)):
+    """Before ▶ Start round holds a change of Claude's about to go live there (Brett's pick A on
+    docs/mockups/round-heads-up/, Nov 19): what would wait, with Let it go live first, Start now, Cancel."""
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    flight = rules.in_flight(db, rules.round_areas(db, area or None), whole=not area)
+    return templates.TemplateResponse(request, "_round_heads_up.html", {"flight": flight, "area": area})
+
+
+@router.post("/manage/testing/round/after")
+def round_after(request: Request, area: int = Form(0), db: Session = Depends(get_db)):
+    """Let it go live first: the round opens by itself once what it would hold is live."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    try:
+        flight = rules.wait_for_live(db, f"user:{me['id']}", me["id"], area or None)
+    except rules.RuleError as e:
+        raise HTTPException(409, e.words) from e
+    db.commit()
+    request.session["toast"] = web.notice(f"Your round starts when {'it goes' if len(flight) == 1 else 'they go'} live: press ▶ Start round then", "info")
+    return RedirectResponse(FOR_YOU, status_code=303)
+
+
+@router.post("/manage/testing/round/after/cancel")
+def round_after_cancel(request: Request, db: Session = Depends(get_db)):
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    rules.cancel_wait(db, f"user:{views.person(db, user)['id']}")
+    db.commit()
+    return RedirectResponse(FOR_YOU, status_code=303)
 
 
 @router.post("/manage/testing/checks/{check_id:int}/go")

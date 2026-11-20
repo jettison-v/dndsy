@@ -1451,7 +1451,7 @@
  {
   "title": "A lighter round",
   "kind": "plan",
-  "status": "Picked: all three; the narrower hold and a free ▶ Try it built, the heads-up's mockup next",
+  "status": "Picked: all three; built",
   "date": "Nov 19",
   "what": "Brett's ask: a round interrupts Claude and holds deploys. A round would hold only its own Product Area, ▶ Try it on one check would hold nothing, and Start round and Paused would first say what they'd stop.",
   "source": "docs/plans/2026-11-19-lighter-rounds.md",
@@ -1460,7 +1460,7 @@
  {
   "title": "Round Heads-Up",
   "kind": "design",
-  "status": "Waiting on your picks",
+  "status": "Picked: A; built",
   "date": "Nov 19",
   "what": "A lighter round's item 3: before ▶ Start round or Deploys › Paused holds a change of Claude's about to go live, askdnd says so. Three ways: a window first, a line under the button, or a corner card after.",
   "source": "docs/mockups/round-heads-up/index.html",

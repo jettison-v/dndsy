@@ -14,6 +14,7 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>{{ "For you" if show == "foryou" else "Testing" }}</h1>
     {% if round_open %}<form method="post" action="/manage/testing/round/end"><button class="btn title-action" type="submit" data-do="end-round">End round</button></form>
+    {% elif round_n and show == "foryou" and round_flight %}<button class="btn primary title-action" type="button" data-modal-url="/manage/testing/round/heads-up" data-do="start-round">▶ Start round · {{ round_n }} check{{ "s" if round_n != 1 }}</button>{# (it would hold a change about to go live: say so first, Brett's pick A) #}
     {% elif round_n and show == "foryou" %}<form method="post" action="/manage/testing/round"><button class="btn primary title-action" type="submit" data-do="start-round">▶ Start round · {{ round_n }} check{{ "s" if round_n != 1 }}</button></form>{% endif %}</div>
   {% if show == "foryou" %}<p class="subtitle">Everything waiting on you, and nothing else: checks to try, Claude's questions, fixes to look at, and the table's notes and ideas. Only admins can see this page.</p>
   {% else %}<p class="subtitle">Where each area stands in your order, what's with Claude, and what passed. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
@@ -85,7 +86,7 @@
         <h2 class="fft-section" data-section="{{ g.section }}">{{ sections[g.section] }}</h2>{% endif %}
         {% if show != "foryou" or g.section == "try" %}{# (Try's checks by area, with ▶ Just this area; the other sections are one group each, the area on its rows) #}
         <div class="fft-group" data-group="{{ g.key }}"><span class="fft-group-name">{{ g.title }}</span>
-          {% if show == "foryou" and g.checks and g.area_id and not round_open %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area_id }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}</div>{% endif %}
+          {% if show == "foryou" and g.checks and g.area_id and not round_open %}{% if g.area_id in flight_areas %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?area={{ g.area_id }}" data-do="area-round">▶ Just this area</button>{% else %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area_id }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}{% endif %}</div>{% endif %}
         {% for r in g.rows %}{% set w = ("Yours", "ask") if show == "foryou" else ("Claude's", "claude") if r.turn == "claude" else ("Done", "quiet") %}
         <a class="rd-item fb-row{{ ' sel' if r.key == pick }}" href="{{ '?open=' ~ r.key if show == 'foryou' else '?show=' ~ show ~ '&open=' ~ r.key }}" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
           <span class="ts-title">{{ r.title }}</span>{{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}<span class="nt-sum">{{ r.sub }}</span></a>

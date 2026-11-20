@@ -23,7 +23,7 @@ deployments. Can you think of a better workflow? Maybe it warns when I am going 
    first]". Let it go live first starts the round once it's live. askdnd knows what's in flight from the pull requests
    attached to issues (`feedback.py issue <id> pr <url>`) and from auto-merge.
 
-Items 1 and 2 are built (`FftRound.holds`, `rules.holding_round`, `may_merge` by area). Item 3 is a small new screen: an HTML mockup first (docs/mockups/round-heads-up/).
+All three are built: items 1 and 2 (`FftRound.holds`, `rules.holding_round`, `may_merge` by area), and item 3 as Brett's pick A on docs/mockups/round-heads-up/ (a window first, only when something would wait; a line in Paused's reason box).
 
 ## Where it's tracked
 
