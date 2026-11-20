@@ -8,7 +8,6 @@
    one files an issue back here), Timeline (what happened, from the record). One item opens in the item window. #}
 <main class="page manage-page" data-fft-page="plan" data-plan="{{ a.id }}">
   {% include "_manage_head.html" %}
-  {% with fft_here = "work" %}{% include "_fft_tabs.html" %}{% endwith %}
   <div class="title-row"><h1><a href="/manage/work" class="crumb">Work ›</a> {{ a.title }}</h1></div>
   <p class="subtitle wk-facts" data-facts>{{ state_word(row.stage_said[0], row.stage_said[1], ' data-stage-word="' ~ row.stage ~ '"') }}
     <span>{{ lane_said[row.lane] if row.lane else "No lane yet" }}</span>

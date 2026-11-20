@@ -1,7 +1,0 @@
-{# For you · Work · Feedback, the same row at the top of each (Brett's pick on The Work Pages, Nov 20: one workspace,
-   one click across; Testing became Work with slice 4, its checks each plan's Test round). For you's count is the rows it holds. #}
-<nav class="fft-tabs" aria-label="Our work" data-fft-tabs>
-  <a href="/manage/for-you" class="{{ 'on' if fft_here == 'foryou' }}" data-tab="foryou"{% if fft_here == 'foryou' %} aria-current="page"{% endif %}>For you<span class="notes-dot-badge for-you-badge" data-manage-count="for-you" hidden></span></a>
-  <a href="/manage/work" class="{{ 'on' if fft_here == 'work' }}" data-tab="work"{% if fft_here == 'work' %} aria-current="page"{% endif %}>Work</a>
-  <a href="/manage/feedback" class="{{ 'on' if fft_here == 'feedback' }}" data-tab="feedback"{% if fft_here == 'feedback' %} aria-current="page"{% endif %}>Feedback</a>
-</nav>

@@ -9,7 +9,6 @@
    round takes the checks for this device page by page. Where it stands, Claude's and Done are Work's now. #}
 <main class="page manage-page" data-fft-page="for-you">
   {% include "_manage_head.html" %}
-  {% with fft_here = "foryou" %}{% include "_fft_tabs.html" %}{% endwith %}
   <div class="title-row"><h1>For you</h1>
     {% if round_open %}<form method="post" action="/manage/testing/round/end"><button class="btn title-action" type="submit" data-do="end-round">End round</button></form>
     {% endif %}</div>

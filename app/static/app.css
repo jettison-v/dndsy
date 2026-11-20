@@ -1589,11 +1589,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { max-width: 2200px; }  /* the whole window (Backstage mode): lists and tables use the width; centred past 2200px */
 }
-/* For you · Testing · Feedback across the top of each (The Work Pages, Nov 20) */
-.fft-tabs { display: flex; gap: var(--sp-1); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); }
-.fft-tabs a { position: relative; padding: var(--sp-2) var(--sp-4); color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.fft-tabs a.on { color: var(--text-strong); border-bottom-color: var(--red); }
-.fft-tabs .for-you-badge { position: static; margin-left: var(--sp-2); vertical-align: 1px; }
 /* The item window (app/fft/item_page.py, _fft_item.html; Nov 20): the side panel, wider for an item's whole reader */
 .peek:has(> .fft-item-head) { width: min(640px, 100%); }
 .fft-item-body .reader-article { display: grid; gap: var(--sp-3); }

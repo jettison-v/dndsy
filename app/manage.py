@@ -41,7 +41,7 @@ CAMPAIGN, ASKDND = "campaign", "askdnd"
 # the permission structure is robust and flexible", since what an admin may see may need narrowing): changing who sees
 # a page is one line there, and the Table's access chart, the menus and the pages' own checks all follow it.
 AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
-WAITING, GENERAL, PEOPLE, TUNING = "Waiting on you", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20)
+OUR_WORK, GENERAL, PEOPLE, TUNING = "Our work", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20; Our work, Nov 20: For you, Work and Feedback together, the one way between them)
 PAGES = (
     ("needs", "Needs you", "/manage", "What's waiting, and what you're preparing", CAMPAIGN, AFTER, "moderate", ()),
     ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, "moderate", ()),
@@ -56,10 +56,10 @@ PAGES = (
     # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
     # (For you: everything waiting on Brett, its count on Backstage; Brett, Nov 19, the work flow's slice 2)
-    ("for-you", "For you", "/manage/for-you", "Everything waiting on you: checks to try, questions, notes and ideas", ASKDND, WAITING, "admin", ()),
+    ("for-you", "For you", "/manage/for-you", "Everything waiting on you: checks to try, questions, notes and ideas", ASKDND, OUR_WORK, "admin", ()),
+    ("work", "Work", "/manage/work", "The plans in your order, what's being built, and every check", ASKDND, OUR_WORK, "admin", ()),
+    ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, OUR_WORK, "admin", ()),
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, GENERAL, "admin", ()),
-    ("work", "Work", "/manage/work", "The plans in your order, what's being built, and every check", ASKDND, GENERAL, "admin", ()),
-    ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, GENERAL, "admin", ()),
     ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, GENERAL, "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, GENERAL, "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, GENERAL, "admin", ()),
@@ -76,7 +76,7 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
-           "for-you", "overview", "work", "feedback", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+           "for-you", "work", "feedback", "overview", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
 NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
 COUNTED = ("needs", "inbox", "feedback", "for-you")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
