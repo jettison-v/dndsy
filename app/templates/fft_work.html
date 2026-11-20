@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, more_menu %}
-{% from "_lists.html" import empty_state, count_pill, grip %}
-{% block title %}Work · Backstage · askdnd{% endblock %}
+{% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head %}
+{% block title %}Development · Backstage · askdnd{% endblock %}
 {% block head %}{% if tab == "queue" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 {# Backstage › Global › Work (app/fft/work_page.py; The Work Pages, Brett's picks Nov 20, docs/mockups/work-pages/): the
@@ -47,7 +47,7 @@
 {% endmacro %}
 <main class="page manage-page" data-fft-page="work">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Work</h1></div>
+  <div class="title-row"><h1>Development</h1></div>
   <p class="subtitle">The plans in your order and what's being built: Claude takes the ones above the line. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
   {% if missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
@@ -57,8 +57,8 @@
       <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane"}[g.kind] }}</span></li>{% endfor %}</ul>
   </section>{% endif %}
 
-  <nav class="sub-tabs" aria-label="Work">
-    {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "queue" %}{{ count_pill(q.above) }}{% elif key == "done" %}{{ count_pill(n_done) }}{% endif %}</a>{% endfor %}
+  <nav class="sub-tabs" aria-label="Development">
+    {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "queue" %}{{ count_pill(q.above) }}{% endif %}</a>{% endfor %}
   </nav>
 
   {% if tab == "queue" %}
@@ -80,9 +80,11 @@
     </tbody>
   </table>
   </div>
+  {{ history_link("?tab=done") }}
   <div class="wk-forms">{% for x in q.rows %}{% for r in x.plans %}{{ plan_forms(r) }}{% endfor %}{% endfor %}{% for r in q.held %}{{ plan_forms(r) }}{% endfor %}</div>
 
   {% elif tab == "done" %}
+  {{ history_head("finished plans", "?tab=queue") }}
   {% if not done %}{{ empty_state("No plan is done yet.") }}{% else %}
   <div class="table-scroll"><table class="dtable fft-table" data-done>
     <thead><tr><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Last change</th><th class="dt-w5">What it closed</th><th class="dt-w0"></th></tr></thead>
@@ -95,17 +97,19 @@
     {% endfor %}</tbody></table></div>{% endif %}
 
   {% elif tab == "checks" %}
-  <p class="note">Every check, with where it stands on each device. A check is tried in its plan's test round; a row opens it.</p>
-  {% if not checks %}{{ empty_state("No checks yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="checks"{% if pick %} data-open-item="/manage/item/{{ pick }}?from=checks"{% endif %}>
+  {% if history %}{{ history_head("checks that passed", "?tab=checks") }}{% else %}<p class="note">Every check still to pass, with where it stands on each device. A check is tried in its plan's test round; a row opens it.</p>{% endif %}
+  {% if not checks %}{{ empty_state("Nothing passed yet." if history else "Every check has passed.") }}{% else %}
+  {% set ck_from = "checks:passed" if history else "checks" %}
+  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="{{ ck_from }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ ck_from | urlencode }}"{% endif %}>
     <thead><tr><th class="num dt-w1">#</th><th>Check</th><th class="dt-w4">Plan</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}</tr></thead>
     <tbody>{% for r in checks %}
-      <tr data-panel-url="/manage/item/{{ r.key }}?from=checks" tabindex="0" data-row="{{ r.key }}" data-kind="check">
+      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ ck_from | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check">
         <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
         <td class="dt-title">{{ r.c.title }}{% if r.issues %}<span class="dt-why">issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}</span>{% endif %}</td>
         <td>{% if r.area %}<a href="/manage/work/{{ r.area.id }}">{{ r.area.title }}</a>{% else %}<span class="dt-id">In no plan</span>{% endif %}</td>
         {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
       </tr>{% endfor %}</tbody></table></div>{% endif %}
+  {% if not history %}{{ history_link("?tab=checks&history=1") }}{% endif %}
 
   {% elif tab == "scheduled" %}
   <p class="note">Jobs that run on their own. Each reports its run here; one that's late or failed says so.</p>

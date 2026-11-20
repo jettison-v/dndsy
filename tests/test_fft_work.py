@@ -115,12 +115,17 @@ def test_a_plans_page_has_its_issues_test_round_and_timeline(db, admin):
     db.flush()
     page = admin.get(f"/manage/work/{battle.id}").text
     assert 'data-stats' in page and "Battle" in page and 'class="on" data-tab="overview"' in page
-    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text
-    assert issues.index(f'data-row="i{now.id}"') < issues.index(f'data-row="i{old.id}"')  # (open first)
-    assert f'/manage/item/i{now.id}?from=plan:{battle.id}' in issues
+    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (done leaves the list: closed ones are its History)
+    assert f'data-row="i{now.id}"' in issues and f'data-row="i{old.id}"' not in issues and "data-history" in issues
+    assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues
+    closed = admin.get(f"/manage/work/{battle.id}?tab=issues&history=1").text
+    assert f'data-row="i{old.id}"' in closed and f'data-row="i{now.id}"' not in closed and "data-history-head" in closed
     rnd = admin.get(f"/manage/work/{battle.id}?tab=round").text
-    assert rnd.index(f'data-row="c{current.id}"') < rnd.index('data-group="earlier"') < rnd.index(f'data-row="c{passed_before.id}"')
-    assert work_page.listed_keys(db, f"round:{battle.id}") == [f"c{current.id}", f"c{passed_before.id}"]
+    assert f'data-row="c{current.id}"' in rnd and f'data-row="c{passed_before.id}"' not in rnd
+    assert f'data-row="c{passed_before.id}"' in admin.get(f"/manage/work/{battle.id}?tab=round&history=1").text
+    assert work_page.listed_keys(db, f"round:{battle.id}") == [f"c{current.id}"]
+    assert work_page.listed_keys(db, f"round:{battle.id}:passed") == [f"c{passed_before.id}"]
+    assert work_page.listed_keys(db, f"plan:{battle.id}:closed") == [f"i{old.id}"]
     timeline = admin.get(f"/manage/work/{battle.id}?tab=timeline").text
     assert "data-timeline" in timeline and f"Issue {old.id}: To fix → Closed" in timeline
     assert admin.get("/manage/work/999999").status_code == 404
@@ -134,7 +139,7 @@ def test_the_item_window_walks_works_lists(db, admin):
     assert keys.index(f"c{a.id}") < keys.index(f"c{b.id}")
     win = admin.get(f"/manage/item/c{a.id}?from=checks").text
     assert f'data-item-next="/manage/item/c{b.id}?from=checks"' in win or f"/manage/item/c{b.id}" in win
-    assert "Open in Work" in win
+    assert "Open in Development" in win
     issue = rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)
     db.flush()
     win = admin.get(f"/manage/item/i{issue.id}?from=plan:{battle.id}").text
@@ -171,9 +176,12 @@ def test_checks_done_scheduled_and_how_we_work(db, admin, monkeypatch):
     rules.record_try(db, "user:1", c, result="passed")
     rules.close(db, "claude", issue, "works", "It works now.")
     db.flush()
-    checks = admin.get("/manage/work?tab=checks").text
+    checks = admin.get("/manage/work?tab=checks").text  # (a passed check is History's)
+    assert f'data-row="c{c.id}"' not in checks and "data-history" in checks
+    checks = admin.get("/manage/work?tab=checks&history=1").text
     assert f'data-row="c{c.id}"' in checks and 'data-device="laptop"' in checks and "Passed" in checks
-    assert f'data-open-item="/manage/item/c{c.id}?from=checks"' in admin.get(f"/manage/work?tab=checks&open=c{c.id}").text
+    assert f'data-open-item="/manage/item/c{c.id}?from=checks%3Apassed"' in admin.get(f"/manage/work?tab=checks&open=c{c.id}").text  # (passed: opens in History)
+    assert 'data-tab="done"' not in admin.get("/manage/work").text  # (no Done tab: History, a link under the queue)
     done = admin.get("/manage/work?tab=done").text
     assert f'data-area="{party.id}"' in done and f'data-area="{battle.id}"' not in done  # (a batch that never held anything isn't done work)
 
@@ -237,3 +245,16 @@ def test_a_roadmap_item_with_no_plan_isnt_developments_and_keeps_its_place(db, a
     assert f'data-item="{item.id}"' in page and f'data-item="{later.id}"' in page and f'data-item="{idea.id}"' not in page
     admin.post("/manage/testing/order", data={"column": "items", "keys": [str(later.id), str(item.id)]})
     assert (later.place, item.place, idea.place) == (1, 2, 3)  # (the one not listed keeps its place after them)
+
+
+def test_done_leaves_feedbacks_list_for_its_history(db, admin):
+    """Brett, Nov 20 ("If it is done, it is off the list"): Feedback's Issues have no Closed chip beside Open; a quiet
+    History link under the list opens the closed ones, with the way back."""
+    rules.new_issue(db, "claude", "Still open")
+    gone = rules.new_issue(db, "claude", "Already fixed")
+    rules.close(db, "claude", gone, "works", "It works now.")
+    db.flush()
+    page = admin.get("/manage/feedback?tab=open").text
+    assert 'data-tab="closed"' not in page and 'href="?tab=closed" data-history' in page
+    hist = admin.get("/manage/feedback?tab=closed").text
+    assert "data-history-head" in hist and 'data-history-back' in hist and f'data-row="i{gone.id}"' in hist

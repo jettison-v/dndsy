@@ -41,7 +41,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "Global" in half(page, "askdnd")
-    assert half_items(page, "askdnd") == ["for-you", "work", "feedback", "overview", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
+    assert half_items(page, "askdnd") == ["for-you", "feedback", "work", "overview", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
     assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
 
