@@ -317,7 +317,7 @@ body.pt-rows .pt-with-track { display: none; }
 .tbar-pip.k-bonus, .tbar-use.k-bonus i { background: var(--k-bonus); }
 .tbar-pip.k-reaction, .tbar-use.k-reaction i { background: var(--k-reaction); }
 .tbar-pip.used { background: none; box-shadow: inset 0 0 0 1.5px var(--faint); color: var(--faint); }
-.tbar-body { display: flex; align-items: stretch; gap: var(--sp-4); padding: var(--sp-3) var(--sp-4); min-width: 0; }
+.tbar-body { display: flex; align-items: baseline; gap: var(--sp-3) var(--sp-4); padding: var(--sp-3) var(--sp-4); min-width: 0; container: tbar / inline-size; }  /* (its columns on their first lines: Movement, Action, Your scratch pad, End your turn; the Live UI Audit) */
 .tbar-move { display: grid; gap: var(--sp-1); align-content: center; width: 220px; flex: none; }
 .tbar-row { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }
 .tbar-row b { color: var(--text-strong); }
@@ -344,6 +344,16 @@ body.pt-rows .pt-with-track { display: none; }
 .tbar-go { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
 .tbar-end { display: grid; gap: var(--sp-1); align-content: center; justify-items: end; width: 170px; flex: none; text-align: right; }
 .tbar-end .note { font-size: var(--fs-xs); }
+/* Narrower than everything wants (a 13" laptop with Table rolls open: about 900px), the slots, what you use most, take a
+   line of their own under the rest instead of shrinking or scrolling; End stays on the first line, at its end (the Live UI
+   Audit, Nov 19) */
+@media (min-width: 901px) {
+  .tbar-body:has(> .tbar-slots) { flex-wrap: wrap; }
+  @container tbar (max-width: 1500px) {  /* (movement, uses, pad and End take about 870px; three slots about 600) */
+    .tbar-end { order: 1; margin-left: auto; }
+    .tbar-slots { order: 2; flex-basis: 100%; }
+  }
+}
 /* Your scratch pad (Prepare your turn, Brett chose A and B, Nov 13): a short list beside what you've used, each line a
    Battle row with its own Roll; + Add opens upward (the bar sits at the bottom of the page) */
 .tbar-pad { display: grid; gap: var(--sp-1); align-content: start; width: 300px; flex: none; min-width: 0; }
@@ -620,6 +630,7 @@ body.tale-playing { overflow: hidden; }
    page (its chapters, then awards and numbers), the award cards, Who talked's share rows and Fights and story's bar */
 .tale-more-link { display: flex; width: fit-content; margin: var(--sp-5) auto 0; }
 .tale-chapter + .tale-chapter { margin-top: var(--sp-6); }
+.item.tale-chapter .row { align-items: baseline; }  /* (the DM's review: a chapter's time on its title's first line, however long; the Live UI Audit) */
 .tale-chapter-head { display: flex; align-items: baseline; gap: var(--sp-3); margin: 0 0 var(--sp-3); font-family: var(--tale-cap, inherit); font-size: var(--fs-lg); font-weight: 600; color: var(--story-head); text-wrap: balance; }
 .tale-chapter-n { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em; color: var(--story-cap); flex: none; }
 .tale-chapters .tale-chapter > p:first-of-type::first-letter { float: none; font-size: inherit; padding: 0; color: inherit; }
@@ -2507,7 +2518,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .forget-add input { flex: 1; min-width: 0; font: inherit; font-size: var(--fs-sm); background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 10px; }
 
 /* Reminders as compact rows (Battle and Plan) */
-.forget .forget-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 6px; border-top: 1px solid var(--line-soft); border-radius: var(--r-sm); list-style: none; }
+.forget .forget-row { display: flex; align-items: baseline; gap: 10px; padding: 8px 6px; border-top: 1px solid var(--line-soft); border-radius: var(--r-sm); list-style: none; }
 .forget .forget-row[role=button] { cursor: pointer; }
 .forget .forget-row[role=button]:hover, .forget .forget-row:focus-visible { background: var(--row-hover); }
 .forget-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -2820,7 +2831,7 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
   .it-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
   .it-cols > .ls-row > .ls-name { flex: 1 1 0; min-width: 0; }
   .it-cols > .ls-row::after { content: ""; flex-basis: 100%; order: 1; }
-  .it-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
+  .it-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); align-self: baseline; }  /* (the second line on its first words: "1 left" beside the type, not between its two lines; the Live UI Audit) */
 }
 
 /* Sheet › Features (_feature_list.html): feature · from · level · used as · uses · marks */

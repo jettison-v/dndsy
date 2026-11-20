@@ -10,8 +10,8 @@
 // - "cuts its hint": a box's placeholder longer than the box
 // - "unreadable": words drawn in a scaling picture (an SVG's <text>) under 9px
 // - "squeezed": words in a row broke onto a second line although every part of the row would fit on one (Nov 19)
-// - "off baseline", only when asked ({baseline: true}; the Live UI Audit makes it always): two neighbouring parts of a row,
-//   on one line, whose words don't share a baseline (Nov 19)
+// - "off baseline": two neighbouring parts of a row, on one line, whose words don't share a baseline (Nov 19; a rule since
+//   the Live UI Audit)
 // - "repeats an id": two elements with one id, so a script finds the wrong one (Help's FAQ had id="cards", the corner
 //   cards' own: every card on Help landed in a folded answer; Nov 17)
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
@@ -244,10 +244,12 @@ ask => {
   // Words side by side in a row that don't share a line (Brett, Nov 19: "the vertical alignment between Available and
   // until"): two neighbouring parts of a flex row, on the same line, whose text baselines differ by more than 2px.
   // Typically a bold label and a smaller grey note centred as boxes (align-items: center) instead of on their
-  // baselines. A part drawn as a box (a pill, a bordered button) is centred on purpose and left out.
+  // baselines. A part drawn as a box (a pill, a bordered button) or an icon with no words (✕, ?) is centred on purpose and
+  // left out.
   const boxed = el => { const c = getComputedStyle(el); return c.backgroundColor !== 'rgba(0, 0, 0, 0)' && c.backgroundColor !== 'transparent' || parseFloat(c.borderTopWidth) > 0 || el.matches('input, select, textarea, img, svg'); };
   const ctx = document.createElement('canvas').getContext('2d');
   const baseline = part => {  // (where its first words sit: their box's top plus the font's ascent, wherever they are)
+    if (!/[\p{L}\p{N}]/u.test(part.textContent)) return null;  // (an icon, ✕ ? ⋯, is centred on purpose: the Live UI Audit)
     const walk = document.createTreeWalker(part, NodeFilter.SHOW_TEXT);
     for (let n = walk.nextNode(); n; n = walk.nextNode()) {
       if (!n.textContent.trim() || !shown(n.parentElement)) continue;
@@ -261,8 +263,8 @@ ask => {
     }
     return null;
   };
-  // (Asked for, {baseline: true}, until the Live UI Audit has lined up the ~20 places it finds today; then always: Nov 19)
-  if (ask && ask.baseline) for (const row of document.body.querySelectorAll('*')) {
+  // (A rule since the Live UI Audit lined up the places it found, Nov 19; until then it was asked for, {baseline: true})
+  for (const row of document.body.querySelectorAll('*')) {
     const cs = getComputedStyle(row);
     if (!/flex$/.test(cs.display) || !cs.flexDirection.startsWith('row') || !shown(row) || contained(row)) continue;
     const parts = [...row.children].filter(c => shown(c) && !['absolute', 'fixed'].includes(getComputedStyle(c).position));
