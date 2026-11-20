@@ -9,9 +9,7 @@
    round takes the checks for this device page by page. Where it stands, Claude's and Done are Work's now. #}
 <main class="page manage-page" data-fft-page="for-you">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>For you</h1>
-    {% if round_open %}<form method="post" action="/manage/testing/round/end"><button class="btn title-action" type="submit" data-do="end-round">End round</button></form>
-    {% endif %}</div>
+  <div class="title-row"><h1>For you</h1></div>{# (an open round's End round is in the status bar and on its card: issue 51, Nov 20, one place each) #}
   <p class="subtitle">Everything waiting on you, and nothing else: checks to try, Claude's questions, fixes to look at, and the table's notes and ideas. Only admins can see this page.</p>
   {% with bar = status, back = "foryou" %}{% include "_fft_status.html" %}{% endwith %}
   {% if not groups %}{{ empty_state("Nothing is your turn. Claude's working on what's next.") }}
