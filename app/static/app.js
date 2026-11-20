@@ -4819,6 +4819,9 @@ document.addEventListener('click', e => {
   }
   if (document.querySelector('.manage-side')) fill();
   document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"], [data-menu="more-menu"]')) fill(); });
+  // (issue 40, Nov 19: a press redrawn in place drew Manage's side list with its counts empty until they came again)
+  // The new copy gets the last counts in the same moment it goes in, before it's painted, so a count never blinks.
+  document.addEventListener('askdnd:swapped', () => { try { show(JSON.parse(sessionStorage.getItem(KEY) || '{}')); } catch (e) { /* (no storage) */ } });
 })();
 
 // ---------------------------------------------------------------- For you's count on Backstage
@@ -4846,6 +4849,7 @@ document.addEventListener('click', e => {
   if (document.readyState === 'complete') setTimeout(seen, 300); else addEventListener('load', () => setTimeout(seen, 300));
   document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(tick); tick = setTimeout(ask, 400); } });
   document.addEventListener('askdnd:changed', seen);  // (a press redrawn in place: his count may have moved)
+  document.addEventListener('askdnd:swapped', () => { try { const was = sessionStorage.getItem(KEY); if (was !== null) put(Number(was)); } catch (e) { /* (no storage) */ } });  // (the redrawn side list: its count at once, issue 40)
 })();
 
 // ---------------------------------------------------------------- Changing spells and forms
