@@ -1467,9 +1467,36 @@
   "link": "https://claude.ai/artifact/EKyJvsUXt4iqEP19TkpLCK"
  },
  {
-  "title": "Menu Bar Doors",
+  "title": "The Work Pages",
   "kind": "design",
   "status": "Waiting on your picks",
+  "date": "Nov 20",
+  "what": "For you, Work and Feedback rebuilt in Backstage mode from how Linear, Jira, GitHub, TestRail and Productboard organize the same work: an inbox that says why, a queue of plans that own their issues and test rounds, triage, and one window for any item. Four picks.",
+  "source": "docs/mockups/work-pages/index.html",
+  "link": "https://claude.ai/artifact/SVw8N2c3o3saRDpr2WZfna"
+ },
+ {
+  "title": "Backstage Mode",
+  "kind": "design",
+  "status": "Picked: all five as recommended",
+  "date": "Nov 20",
+  "what": "One design system, two modes: Backstage pages dense, neutral and full width (tables with columns, the facts in a line, a reader beside the list), drawn beside today on For you, Feedback, Work, a plan, Usage and Accounts; short issue and check titles. Five picks.",
+  "source": "docs/mockups/backstage-mode/index.html",
+  "link": "https://claude.ai/artifact/3qPD7Gnb9C1675k5fpMtgz"
+ },
+ {
+  "title": "The Work Page",
+  "kind": "design",
+  "status": "Replaced by The Work Pages, Nov 20",
+  "date": "Nov 20",
+  "what": "Slice 4 drawn before it's built: Work as its own page with the cut line, Scheduled work and How we work; how For you, Work and Feedback connect; a link to one item opens it in a window (issue 44); issues 45 and 46 drawn fixed. Four picks.",
+  "source": "docs/mockups/work-page/index.html",
+  "link": "https://claude.ai/artifact/Cti4BWM96jGf9HStrT5Q6E"
+ },
+ {
+  "title": "Menu Bar Doors",
+  "kind": "design",
+  "status": "Built (PR 433)",
   "date": "Nov 20",
   "what": "The menu bar's two picks, A and R, clickable: Manage and the gear as two doors or one (Backstage, Workspace, Manage), seen by the admin, the DM or a player, and whether your picture gets a mark.",
   "source": "docs/mockups/menu-bar-doors/index.html",

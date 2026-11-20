@@ -1,0 +1,464 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Work Pages</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* The Work Pages, rebuilt (Brett, Nov 20: "Please rebuild the work pages and navigation before proceeding as those still
+   do not make sense yet to me. Consider this the most important part of anything we have built yet"). In Backstage mode
+   (his picks: dense, neutral, full width, tables, short titles), with his earlier picks (tabs across the pages, one item
+   in a window, a plan opens its page). Shaped by how Linear, Jira, GitHub, TestRail/Qase and Productboard/Canny organize
+   the same work. Made-up items in askdnd's own areas; people by role. Source: docs/mockups/work-pages/index.html. */
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --soft: #23272c; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0; --sel: rgba(126, 166, 224, .13);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.1rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 98ch; }
+/* the map of the pages */
+.map { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.map > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .88rem; color: var(--muted); display: grid; gap: 6px; align-content: start; }
+.map h3 { margin: 0; font-size: 1rem; color: var(--strong); display: flex; justify-content: space-between; align-items: baseline; }
+.map h3 small { color: var(--faint); font-weight: 500; font-size: .76rem; }
+.map ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; }
+.map .q { color: var(--text); font-style: italic; }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rules div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
+.rules b { display: block; }
+@media (max-width: 900px) { .map, .rules { grid-template-columns: minmax(0, 1fr); } }
+/* switches */
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: rgba(126, 166, 224, .18); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ===== the drawn app, in Backstage mode ===== */
+.app { background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.45; font-variant-numeric: tabular-nums; min-height: 900px; position: relative; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--red); font: 600 14px/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { position: relative; color: #fff; }
+.abar .here::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -19px; height: 3px; border-radius: 3px; background: var(--red); }
+.abar .b { display: inline-block; min-width: 16px; height: 16px; border-radius: 999px; background: var(--amber); color: #111; font: 700 10.5px/16px var(--sans); text-align: center; padding: 0 4px; margin-left: 4px; }
+.abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; display: grid; place-items: center; color: #fff; font-size: 12px; }
+.abody { padding: 14px 24px 32px; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 22px; }
+.band { grid-column: 1 / -1; height: 2px; background: var(--blue); opacity: .7; }
+.aside { display: grid; align-content: start; font-size: 13px; }
+.aside .sec { font-size: 11px; font-weight: 600; color: var(--faint); padding: 12px 8px 4px; }
+.aside a { padding: 5px 8px; border-radius: 6px; color: var(--text); display: flex; justify-content: space-between; cursor: pointer; }
+.aside a.on { background: var(--panel-2); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--blue); }
+.aside .n { font-size: 11px; color: var(--amber); font-weight: 600; }
+.aside .off { color: var(--faint); cursor: default; }
+/* the pages' shared top: tabs across the three, then the page's facts */
+.ptabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); }
+.ptabs a { padding: 8px 14px; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.ptabs a.on { color: #fff; border-color: var(--red); }
+.ptabs a i { font-style: normal; font-size: 11px; color: var(--amber); margin-left: 6px; }
+.ptabs .end { margin-left: auto; display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--muted); font-weight: 500; padding-bottom: 6px; }
+.ptabs .end .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+.ptabs .end .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.head { display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; margin-top: 12px; }
+.head h3 { margin: 0; font-size: 20px; font-weight: 600; color: #fff; }
+.head .crumb { color: var(--faint); cursor: pointer; font-weight: 400; }
+.facts { display: flex; gap: 4px 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.facts b { font-weight: 600; }
+.vtabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 10px; }
+.vtabs span { padding: 6px 11px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-size: 13px; }
+.vtabs span.on { color: #fff; border-color: var(--blue); font-weight: 600; }
+.vtabs i { font-style: normal; font-size: 11px; color: var(--faint); margin-left: 5px; }
+.tool { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 0; }
+.chip { border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; font-size: 12px; color: var(--muted); background: var(--panel); cursor: pointer; }
+.chip.on { color: #fff; border-color: var(--blue); background: rgba(126, 166, 224, .12); }
+.find { flex: 1; max-width: 300px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; color: var(--faint); font-size: 12.5px; background: var(--panel); }
+.btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 3px 10px; font: 500 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.p { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+/* tables */
+table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--faint); padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--panel-2); white-space: nowrap; overflow: hidden; }
+td { padding: 0 8px; height: 32px; border-bottom: 1px solid var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+td.t { color: #fff; white-space: normal; line-height: 1.3; padding-block: 6px; }
+td.num, th.num { text-align: right; }
+td .id { color: var(--faint); }
+td .why { display: block; color: var(--faint); font-size: 12px; }
+tr:last-child td { border-bottom: 0; }
+tbody tr[data-open], tbody tr[data-plan] { cursor: pointer; }
+tbody tr[data-open]:hover td, tbody tr[data-plan]:hover td { background: #20242a; }
+tr.grp td { height: 26px; background: var(--panel-2); color: var(--muted); font-size: 11.5px; font-weight: 600; }
+tr.cut td { height: 22px; background: transparent; color: var(--faint); font-size: 11.5px; text-align: center; border-top: 2px dashed #3b4047; border-bottom: 2px dashed #3b4047; }
+.st { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.st.you { color: var(--amber); background: rgba(232, 179, 75, .12); }
+.st.cl { color: var(--violet); background: rgba(179, 157, 219, .12); }
+.st.ok { color: var(--green); background: rgba(91, 191, 127, .12); }
+.st.bad { color: #f07272; background: rgba(214, 69, 69, .14); }
+.st.q { color: var(--muted); background: #262a30; }
+.lane { font-size: 11.5px; color: var(--blue); } .lane.c { color: #f07272; }
+.prog { display: inline-flex; width: 64px; height: 6px; border-radius: 3px; background: #2c3036; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+.prog i { background: var(--green); }
+.h2 { font-size: 13px; font-weight: 600; color: #fff; margin: 16px 0 6px; display: flex; gap: 10px; align-items: baseline; }
+.h2 span { font-weight: 400; color: var(--faint); font-size: 12px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin-top: 10px; }
+.stats div { padding: 9px 14px; border-left: 1px solid var(--line); }
+.stats div:first-child { border-left: 0; }
+.stats b { display: block; font-size: 17px; font-weight: 600; }
+.stats span { font-size: 12px; color: var(--faint); }
+.prose { max-width: 75ch; color: var(--text); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(620px, 1fr)); gap: 0 16px; }
+/* the one item window: over the page, next and previous through the list it came from */
+.veil { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); z-index: 10; display: flex; justify-content: flex-end; }
+.win { width: 620px; max-width: 92%; height: 100%; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -18px 0 40px rgba(0, 0, 0, .45); display: grid; grid-template-rows: auto 1fr auto; }
+.veil.center { justify-content: center; align-items: flex-start; padding-top: 80px; }
+.veil.center .win { height: auto; max-height: 760px; border: 1px solid var(--line); border-radius: 10px; }
+.w-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--faint); }
+.w-h .tools { display: flex; gap: 6px; align-items: center; }
+.w-b { overflow: auto; padding: 14px 18px; display: grid; gap: 10px; align-content: start; }
+.w-b h4 { margin: 0; font-size: 16px; font-weight: 600; color: #fff; }
+.kv { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 4px 12px; font-size: 12.5px; margin: 0; }
+.kv dt { color: var(--faint); }
+.kv dd { margin: 0; }
+.kv a, .link { color: #9fbbe6; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.sect { font-size: 11.5px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+.quote { border-left: 2px solid var(--line); padding-left: 10px; }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
+.tl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 3px 10px; font-size: 12.5px; }
+.tl span:nth-child(odd) { color: var(--faint); }
+.w-f { border-top: 1px solid var(--line); padding: 10px 14px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.w-f .sp { flex: 1; }
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>The Work Pages</h1>
+    <p class="lede">Rebuilt from the start, in Backstage mode. Three pages, each with one job, and one window for any single item. It's the shape the tools people use for this work share: Linear and GitHub have one inbox of what needs you, and Productboard and Linear sort what comes in before it becomes work. A Linear project owns its issues, and a TestRail run tests one release. Linear and GitHub open any one item in a panel over the list. Testing stops being a page: each plan carries its own test round. Everything below is clickable.</p>
+  </header>
+  <div class="map">
+    <div><h3>For you <small>your inbox · where the day starts</small></h3><span class="q">"What do I need to do?"</span><ul><li>Only what waits on you, grouped by what you do: <b>Try</b>, <b>Decide</b>, <b>Sort</b></li><li>Every row says why it's there</li><li>Done leaves the list; the count on Backstage is the rows here</li></ul></div>
+    <div><h3>Work <small>the queue · what's being built</small></h3><span class="q">"What's happening, and what's next?"</span><ul><li>One row per plan, in your order, with the line Claude works down to</li><li>Each row: stage, issues fixed, checks passed, who it waits on</li><li>Tabs: Queue · Done · Checks · Scheduled · How we work</li></ul></div>
+    <div><h3>A plan <small>opened from Work</small></h3><span class="q">"Where is this piece of work?"</span><ul><li>Owns everything of its batch: Overview · Issues · <b>Test round</b> · Timeline</li><li>The test round is its checks × your devices, made when it goes live</li><li>A failed check files an issue back into the plan</li></ul></div>
+    <div><h3>Feedback <small>what came in</small></h3><span class="q">"What have people found?"</span><ul><li><b>To sort</b>: a note is filed, joined to an issue, or declined with why</li><li><b>Issues</b>: every issue, with views (Open, Ready to try, Not in a plan, From checks, Closed)</li><li><b>Ideas</b>: enhancements, until one joins the Roadmap</li></ul></div>
+  </div>
+  <div class="rules">
+    <div><b>One item, one window</b>An issue, a check, a note or a question opens in the same window over the page, from anywhere. You act in it, and ↑ ↓ move through the list it came from. A plan is a group, so it opens its page.</div>
+    <div><b>Every row says why</b>On For you, the reason it waits on you ("Live since 08:40, your try", "Claude asks"). On Work, who it waits on. Short titles, the part of askdnd first.</div>
+    <div><b>One plan per Product Area</b>Done on askdnd.ai (Nov 20): the two Manage plans and Item Builder are one Manage plan, "Found, Fixed, Tried" and "Working with Claude" joined Feedback and Testing, five finished plans went to Done, and all 28 open issues have short titles.</div>
+  </div>
+  <div class="map" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+    <div><h3>What this is for <small>your goal, Nov 20</small></h3><span>An internal operations tool for building and running software: what people find, the work it becomes, its tests and its release, with Claude as the developer. askdnd is its first user and its test ground; the pages and words stay free of D&amp;D, so it can serve another product or company. So it follows what established tools do (an inbox of what needs you, triage, a plan that owns its tests, an item's history), sized for a small team.</span></div>
+    <div><h3>Against the Work Flow Map <small>what you reviewed, Nov 19</small></h3><ul><li><b>Unchanged:</b> the flow, the names, the three lanes, the stages, the cut line, one plan per Product Area, Testing as each plan's history, Scheduled work and How we work on Work.</li><li><b>Changed, the pages only:</b> Testing is a plan's Test round tab (Work › Checks lists every check); Scheduled work and How we work are Work's tabs, not its foot; For you groups what you do and says why; Feedback's tabs become To sort, Issues (with views) and Ideas; one window for a single item (issue 44); Backstage mode.</li></ul></div>
+  </div>
+
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Page</span><span class="seg" data-ctl="page"><button type="button" data-v="foryou" aria-pressed="true">For you</button><button type="button" data-v="work">Work</button><button type="button" data-v="plan">A plan</button><button type="button" data-v="feedback">Feedback</button></span></span>
+    <span class="ctl"><span class="lbl">The window</span><span class="seg" data-ctl="win"><button type="button" data-v="side" aria-pressed="true">A panel at the right</button><button type="button" data-v="center">A window in the middle</button></span></span>
+    <span class="ctl"><span class="lbl">Window</span><span class="seg" data-ctl="width"><button type="button" data-v="1440" aria-pressed="true">1440 wide</button><button type="button" data-v="1920">1920 wide</button></span></span>
+  </div>
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+  <p class="note-under" id="scale-note"></p>
+
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · The pages</legend>
+        <label class="o"><input type="radio" name="pages" value="three"><span>For you, Work and Feedback; Testing inside each plan <span class="mine">my pick</span></span><small>Three tabs. A plan's test round is where its checks are tried; Work › Checks is every check with its last result.</small></label>
+        <label class="o"><input type="radio" name="pages" value="four"><span>Testing stays a fourth page</span><small>For you, Work, Feedback, Testing: the checks and rounds on their own page.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · The one item window</legend>
+        <label class="o"><input type="radio" name="win" value="side"><span>A panel at the right <span class="mine">my pick</span></span><small>Slides over the right of the page, full height; the list stays readable beside it, ↑ ↓ for the next. As Linear and GitHub do.</small></label>
+        <label class="o"><input type="radio" name="win" value="center"><span>A window in the middle</span><small>Over the page's middle; the list is behind it.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · Sorting notes</legend>
+        <label class="o"><input type="radio" name="sort" value="foryou"><span>In For you, and Feedback › To sort <span class="mine">my pick</span></span><small>Notes waiting on you show in For you with the rest; Feedback › To sort lists the same notes beside the issues they might join.</small></label>
+        <label class="o"><input type="radio" name="sort" value="feedback"><span>Only in Feedback › To sort</span><small>For you keeps checks and decisions; notes wait in Feedback.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · Scheduled jobs</legend>
+        <label class="o"><input type="radio" name="jobs" value="tab"><span>Work › Scheduled <span class="mine">my pick</span></span><small>A tab of Work; a job that fails or doesn't run files an issue, which reaches For you.</small></label>
+        <label class="o"><input type="radio" name="jobs" value="page"><span>Its own page</span><small>A fourth tab, Running.</small></label>
+      </fieldset>
+    </div>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const st = { page: "foryou", win: "side", width: 1440, wtab: "queue", ptab: "overview", ftab: "issues", fview: "open", item: null, list: [] };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const S = (c, w) => `<span class="st ${c}">${esc(w)}</span>`;
+  // ---------------- one set of made-up items, linked the way the real ones are
+  const ISS = {
+    i46: { t: "Round card: a fixed check opens as Failed", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", plan: "fft", from: "n38", checks: [], up: "08:54", said: "Directly after launching a round to retest, the test result is already failed." },
+    i45: { t: "Check buttons: Passed looks already chosen", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", plan: "fft", from: "n37", checks: [], up: "08:53", said: "This test appears to have a result because Passed is highlighted in green even though it has not been executed yet." },
+    i44: { t: "Links to one item: open it in a window", area: "Feedback and Testing", f: "Feedback", state: "To fix", turn: "cl", plan: "fft", from: "", checks: [], up: "08:41", said: "Clicking on a link that references a single item, not a grouping of items, should open in the modal." },
+    i36: { t: "Checks: unclear what's tested and expected", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", plan: "fft", from: "n30", checks: [], up: "Nov 19", said: "Checks don't make clear what is being tested and what the result should be." },
+    i40: { t: "Counts blink after a press", area: "Feedback and Testing", f: "Where it stands", state: "Live: try it", turn: "you", plan: "fft", from: "n33", checks: ["c28"], up: "Today", said: "The For you badge flashed on a lane change." },
+    i8: { t: "Live pill on a phone: asks the impossible", area: "Menu bar", f: "The live connection", state: "Live: try it", turn: "you", plan: "menu", from: "n14", checks: ["c33"], up: "Nov 17", said: "On a phone it should say the sheet needs a computer with the extension." },
+    i20: { t: "Item builder: saves a bonus with no number", area: "Manage", f: "DM Tools and homebrew items", state: "To fix", turn: "cl", plan: "manage", from: "", checks: ["c3"], up: "Nov 18", said: "Found on a check: it saved a +bonus with nothing in it." },
+    i2: { t: "Item bonus: damage reads as to-hit", area: "Manage", f: "DM Tools and homebrew items", state: "Claude asks", turn: "you", plan: "manage", from: "n9", checks: ["c4"], up: "Nov 15", said: "The bonus I gave to damage shows as a bonus to hit." },
+    i6: { t: "Large pills: wrong corner radius", area: "Manage", f: "Overview and Documents", state: "To fix", turn: "cl", plan: "manage", from: "n7", checks: [], up: "Nov 16", said: "The radius on these larger pills is off." },
+    i50: { t: "Mobile sweep: Party's names wrap at 375", area: "Party", f: "Everyone at a glance", state: "To fix", turn: "cl", plan: "", from: "", checks: [], up: "Today", said: "Found by the Monday phone sweep." },
+  };
+  const CHK = {
+    c28: { t: "A press keeps your place, no flash", plan: "fft", issue: "i40", dev: { Laptop: "you:To try" }, steps: ["Scroll until a plan's lane is halfway down.", "Press that lane.", "Choose another lane."], expect: "The page stays where it was; a corner card says the new lane.", hist: [["Nov 19", "Failed on the laptop: filed issue 40"], ["Today 08:40", "Issue 40's fix live: back to try"], ["Today 08:41", "Claude tried it: passed"]] },
+    c33: { t: "Live pill on a phone", plan: "menu", issue: "i8", dev: { iPhone: "you:To try" }, steps: ["Open askdnd on your iPhone.", "Look at the Live pill."], expect: "It says the sheet opens on a computer with the extension.", hist: [["Nov 17", "Live: back to try"]] },
+    c31: { t: "A press in a side panel: no flash", plan: "fft", issue: "i40", dev: { Laptop: "ok:Passed", iPhone: "ok:Passed" }, steps: ["Open a side panel.", "Press a lane in it."], expect: "No flash.", hist: [["Today 16:50", "Passed on both"]] },
+    c29: { t: "Claude missed: only after 30 minutes", plan: "fft", issue: "", dev: { Laptop: "ok:Passed" }, steps: ["Open Where it stands."], expect: "Only what has waited 30 minutes.", hist: [["Nov 19", "Passed"]] },
+    c3: { t: "Item builder: a bonus needs a number", plan: "manage", issue: "i20", dev: { Laptop: "bad:Failed" }, steps: ["Add a bonus with no number.", "Save."], expect: "It asks for the number.", hist: [["Nov 18", "Failed: filed issue 20"]] },
+    c4: { t: "Item bonus to damage shows on damage", plan: "manage", issue: "i2", dev: { Laptop: "q:Waits on its fix" }, steps: ["Give an item +1 damage.", "Roll its attack."], expect: "+1 on the damage, not the hit.", hist: [] },
+  };
+  const NOTES = {
+    n51: { t: "“The concentration pill stays after the spell ends”", who: "Cole's player", area: "Battle", up: "Yesterday", near: "i12" },
+    n52: { t: "“Can the recap say who rolled the crit?”", who: "The DM", area: "Story", up: "Nov 18", near: "" },
+  };
+  const QS = { d1: { t: "The Work Pages: four picks", kind: "Mockup", up: "now" }, q7: { t: "Item bonus: damage or hit when both are set?", kind: "Question", up: "Nov 15", issue: "i2" } };
+  const PLANS = [
+    { id: "fft", t: "Feedback and Testing", kind: "Product Area", lane: "Look", stage: ["cl", "Building"], fixed: [1, 5], checks: [2, 3], wait: "Claude: slice 4", why: "Building since 09:10 · PR 436 open" },
+    { id: "menu", t: "Menu bar", kind: "Product Area", lane: "Look", stage: ["you", "Live: try it"], fixed: [1, 1], checks: [0, 1], wait: "You: 1 check, 1 min", why: "Live since Nov 17" },
+    { id: "manage", t: "Manage", kind: "Product Area", lane: "Look", stage: ["you", "Waiting on you"], fixed: [0, 3], checks: [0, 2], wait: "You: 1 question", why: "Claude asks about issue 2 · Item Builder joined it" },
+    { cut: true },
+    { id: "strings", t: "String Audit", kind: "Roadmap item", lane: "Look", stage: ["q", "Held"], fixed: [0, 0], checks: [0, 0], wait: "After slice 7", why: "Your decisions saved" },
+    { id: "party", t: "Party", kind: "Product Area", lane: "Look", stage: ["q", "Held"], fixed: [0, 1], checks: [0, 0], wait: "—", why: "1 issue from the phone sweep" },
+  ];
+  const DONE = [["Getting around", "Careful", "Today 17:42", "1 issue · 1 check passed"], ["Manage (button)", "Look", "Today 17:41", "1 issue · 1 check passed"], ["Battle and Sheet", "Look", "Nov 16", "6 issues · 9 checks passed"]];
+  const JOBS = [["The phone sweep", "Mondays 09:00", "Nov 17", "ok:Filed issue 50", "Nov 24"], ["The live test (Mac Mini)", "Nightly 04:00", "Today 04:00", "ok:All passed", "Tomorrow"], ["iPhone Safari", "Nightly 04:30", "Yesterday", "bad:Late: didn't run today", "Tomorrow"], ["D&D Beyond drift", "Daily 06:00", "Today 06:00", "ok:No drift", "Tomorrow"], ["New notes", "Daily 06:00", "Today 06:00", "ok:2 sorted", "Tomorrow"]];
+
+  // ---------------- the frame
+  const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Cole</span><span>Party ▾</span><span class="sp">Search</span><span class="here">Backstage ▾<span class="b">6</span></span><span class="pic">A</span></div>`;
+  const aside = () => {
+    const a = (k, w, n) => `<a data-go="${k}" class="${st.page === k || (k === "work" && st.page === "plan") ? "on" : ""}">${w}${n ? `<span class="n">${n}</span>` : ""}</a>`;
+    return `<nav class="aside"><span class="sec">Our work</span>${a("foryou", "For you", 6)}${a("work", "Work")}${a("feedback", "Feedback")}<span class="sec">General</span><a class="off">Overview</a><a class="off">Product areas</a><a class="off">Documents</a><a class="off">Usage</a><a class="off">Backups</a><span class="sec">People</span><a class="off">Accounts</a><a class="off">Campaigns</a><span class="sec">Tuning</span><a class="off">Features</a><a class="off">Design system</a></nav>`;
+  };
+  const ptabs = () => `<div class="ptabs">${[["foryou", "For you", 6], ["work", "Work"], ["feedback", "Feedback"]].map(([k, w, n]) => `<a data-go="${k}" class="${st.page === k || (k === "work" && st.page === "plan") ? "on" : ""}">${w}${n ? `<i>${n}</i>` : ""}</a>`).join("")}<span class="end"><span><span class="dot"></span>Claude is listening · building Feedback and Testing</span><span class="pill">Deploys: <b>When tests pass</b> ▾</span></span></div>`;
+  const vtabs = (key, tabs) => `<div class="vtabs">${tabs.map(([k, w, n]) => `<span data-${key}="${k}" class="${st[key] === k ? "on" : ""}">${w}${n !== undefined ? `<i>${n}</i>` : ""}</span>`).join("")}</div>`;
+  const prog = (a, b) => `<span class="prog"><i style="width:${b ? a / b * 100 : 0}%"></i></span>${a}/${b}`;
+  const planOf = id => PLANS.find(p => p.id === id);
+  const link = (k, w) => `<a class="link" data-open="${k}">${esc(w)}</a>`;
+  const titleOf = k => (ISS[k] || CHK[k] || NOTES[k] || QS[k] || {}).t || k;
+
+  // ---------------- For you: the inbox, grouped by what you do, every row saying why
+  const foryou = () => {
+    const rows = [
+      ["Try · 2 checks · about 3 minutes"],
+      ["c28", "Check", "Feedback and Testing", "Its fix (issue 40) went live at 08:40", "2 min", "▶ Try"],
+      ["c33", "Check", "Menu bar", "Live since Nov 17 · on your iPhone", "1 min", "▶ Try"],
+      ["Decide · 2"],
+      ["d1", "Mockup", "Feedback and Testing", "Claude asks before building slice 4", "5 min", "Open"],
+      ["q7", "Question", "Manage", "Claude asks: holds the Manage plan", "1 min", "Answer"],
+      ["Sort · 2 notes from the table"],
+      ["n51", "Note", "Battle", "From Cole's player, yesterday · may join issue 12", "", "Sort"],
+      ["n52", "Note", "Story", "From the DM, Nov 18", "", "Sort"],
+    ];
+    st.list = rows.filter(r => r.length > 1).map(r => r[0]);
+    const body = rows.map(r => r.length === 1 ? `<tr class="grp"><td colspan="5">${r[0]}</td></tr>` :
+      `<tr data-open="${r[0]}"><td style="width:84px">${S(r[1] === "Check" ? "you" : r[1] === "Note" ? "q" : "cl", r[1])}</td><td class="t">${esc(titleOf(r[0]))}<span class="why">${esc(r[3])}</span></td><td style="width:190px">${esc(r[2])}</td><td class="num" style="width:64px">${r[4]}</td><td style="width:84px"><span class="btn${r[5].startsWith("▶") ? " p" : ""}">${r[5]}</span></td></tr>`).join("");
+    return ptabs() + `<div class="head"><h3>For you</h3><div class="facts"><span><b>2</b> to try · 3 min</span><span><b>2</b> to decide</span><span><b>2</b> to sort</span><span>Last cleared: today 17:42</span></div></div>
+      <div class="tool"><span class="chip on">All 6</span><span class="chip">Try 2</span><span class="chip">Decide 2</span><span class="chip">Sort 2</span><span class="find">Find…</span><span class="btn p">▶ Try both checks · 3 min</span></div>
+      <table><thead><tr><th style="width:84px">Kind</th><th>What, and why it's here</th><th style="width:190px">Area</th><th class="num" style="width:64px">Takes</th><th style="width:84px"></th></tr></thead><tbody>${body}</tbody></table>`;
+  };
+
+  // ---------------- Work: the queue of plans, and its tabs
+  const work = () => {
+    let content = "";
+    if (st.wtab === "queue") {
+      st.list = [];
+      const body = PLANS.map(p => p.cut ? `<tr class="cut"><td colspan="7">Claude takes everything above this line · drag a row to order it, or across the line to hold it</td></tr>` :
+        `<tr data-plan="${p.id}"><td style="width:30px;color:#555b63">⋮⋮</td><td class="t">${esc(p.t)}<span class="why">${esc(p.kind)} · ${esc(p.why)}</span></td><td style="width:64px"><span class="lane${p.lane === "Careful" ? " c" : ""}">${p.lane}</span></td><td style="width:130px">${S(p.stage[0], p.stage[1])}</td><td style="width:130px">${prog(p.fixed[0], p.fixed[1])}</td><td style="width:130px">${prog(p.checks[0], p.checks[1])}</td><td style="width:180px">${esc(p.wait)}</td></tr>`).join("");
+      content = `<table><thead><tr><th style="width:30px"></th><th>Plan</th><th style="width:64px">Lane</th><th style="width:130px">Stage</th><th style="width:130px">Issues fixed</th><th style="width:130px">Checks passed</th><th style="width:180px">Waits on</th></tr></thead><tbody>${body}</tbody></table>`;
+    } else if (st.wtab === "done") {
+      content = `<table><thead><tr><th>Plan</th><th style="width:90px">Lane</th><th style="width:140px">Done</th><th style="width:260px">What it closed</th></tr></thead><tbody>${DONE.map(d => `<tr><td class="t">${d[0]}</td><td><span class="lane${d[1] === "Careful" ? " c" : ""}">${d[1]}</span></td><td>${d[2]}</td><td>${d[3]}</td></tr>`).join("")}</tbody></table>`;
+    } else if (st.wtab === "checks") {
+      st.list = Object.keys(CHK);
+      content = `<p class="prose" style="color:var(--muted);margin:4px 0 8px">Every check, with its last result on each device: the library. A check is tried in its plan's test round.</p><table><thead><tr><th style="width:44px" class="num">#</th><th>Check</th><th style="width:180px">Plan</th><th style="width:130px">Laptop</th><th style="width:130px">iPhone</th></tr></thead><tbody>${Object.entries(CHK).map(([k, c]) => `<tr data-open="${k}"><td class="num"><span class="id">${k.slice(1)}</span></td><td class="t">${esc(c.t)}</td><td>${esc(planOf(c.plan).t)}</td><td>${c.dev.Laptop ? S(...c.dev.Laptop.split(":")) : '<span class="id">—</span>'}</td><td>${c.dev.iPhone ? S(...c.dev.iPhone.split(":")) : '<span class="id">—</span>'}</td></tr>`).join("")}</tbody></table>`;
+    } else if (st.wtab === "how") {
+      content = `<p class="prose" style="color:var(--muted);margin:4px 0 8px">Made from the same settings the tools follow, so it can't drift from what's done.</p><table><thead><tr><th style="width:150px">Lane</th><th>What it needs before it's live</th><th style="width:260px">Who tries it</th></tr></thead><tbody><tr><td><span class="lane">Ship</span></td><td class="t">Nothing a person sees: merges when the tests and the review pass</td><td>Nobody: Claude's checks run</td></tr><tr><td><span class="lane">Look</span></td><td class="t">Something people see: merges when green after Claude tries it</td><td>You, the batch, once it's live</td></tr><tr><td><span class="lane c">Careful</span></td><td class="t">Who sees what, sign-in, spending, the bridge</td><td>You, on your Mac, before it merges</td></tr></tbody></table>
+        <div class="h2">Every plan, the same steps</div><table><tbody>${["Read its area whole: every issue and failed check", "Write the plan", "Build one fix at a time", "Look at it: every person, page and width", "The review at high effort, then one pull request", "Its checks, tried by Claude first, then its test round"].map((x, n) => `<tr><td class="num" style="width:40px"><span class="id">${n + 1}</span></td><td class="t">${x}</td></tr>`).join("")}</tbody></table>`;
+    } else {
+      content = `<p class="prose" style="color:var(--muted);margin:4px 0 8px">Jobs that run on their own. Each reports its run; one that fails or doesn't run files an issue, which reaches For you.</p><table><thead><tr><th>Job</th><th style="width:150px">When</th><th style="width:140px">Last run</th><th style="width:220px">Result</th><th style="width:110px">Next</th></tr></thead><tbody>${JOBS.map(j => `<tr><td class="t">${j[0]}</td><td>${j[1]}</td><td>${j[2]}</td><td>${S(...j[3].split(":"))}</td><td>${j[4]}</td></tr>`).join("")}</tbody></table>`;
+    }
+    return ptabs() + `<div class="head"><h3>Work</h3><div class="facts"><span><b>3</b> above the line</span><span><b>2</b> wait on you</span><span><b>2</b> held</span><span><b>17</b> done</span><span>Claude: <b>Feedback and Testing</b></span></div></div>
+      ${vtabs("wtab", [["queue", "Queue", 6], ["done", "Done", 17], ["checks", "Checks", 6], ["scheduled", "Scheduled", 5], ["how", "How we work"]])}<div style="height:8px"></div>${content}`;
+  };
+
+  // ---------------- a plan: Overview · Issues · Test round · Timeline
+  const plan = () => {
+    const p = planOf("fft"), mine = Object.entries(ISS).filter(([, i]) => i.plan === "fft"), checks = Object.entries(CHK).filter(([, c]) => c.plan === "fft");
+    let content = "";
+    if (st.ptab === "overview") {
+      content = `<div class="stats"><div><b>Building</b><span>stage · Claude since 09:10</span></div><div><b>Look</b><span>lane · merges when green, then you try the batch</span></div><div><b>${p.fixed[0]} / ${p.fixed[1]}</b><span>issues fixed</span></div><div><b>${p.checks[0]} / ${p.checks[1]}</b><span>checks passed</span></div><div><b>PR 436</b><span>open · slice 4</span></div></div>
+        <div class="h2">The plan <span>what this batch does, written before it's built</span></div><div class="prose">Slice 4: Work becomes its own page and Testing moves into each plan; one window for any single item (issue 44); ✓ Passed looks like the other buttons until pressed (issue 45); a check back to try opens fresh (issue 46). Built in Backstage mode.</div>
+        <div class="h2">Next <span>what happens, and who does it</span></div><table><tbody><tr><td style="width:150px">${S("cl", "Claude")}</td><td class="t">Finish the build, the review and the pull request</td><td style="width:120px">today</td></tr><tr><td>${S("you", "You")}</td><td class="t">Try the test round once it's live: 3 checks, about 4 minutes</td><td>after the merge</td></tr></tbody></table>`;
+    } else if (st.ptab === "issues") {
+      st.list = mine.map(([k]) => k);
+      content = `<table><thead><tr><th class="num" style="width:44px">#</th><th>Issue</th><th style="width:140px">Feature</th><th style="width:110px">State</th><th style="width:80px">Turn</th><th style="width:80px">Updated</th></tr></thead><tbody>${mine.map(([k, i]) => `<tr data-open="${k}"><td class="num"><span class="id">${k.slice(1)}</span></td><td class="t">${esc(i.t)}</td><td>${esc(i.f)}</td><td>${S(i.state.startsWith("Live") ? "ok" : "q", i.state)}</td><td>${S(i.turn, i.turn === "you" ? "Yours" : "Claude's")}</td><td>${i.up}</td></tr>`).join("")}</tbody></table>`;
+    } else if (st.ptab === "round") {
+      st.list = checks.map(([k]) => k);
+      content = `<p class="prose" style="color:var(--muted);margin:4px 0 8px">Made when the plan goes live: each of its checks on each device you try it on. A rerun starts every row at To try. A failed row files an issue back into this plan.</p>
+        <div class="tool"><span class="btn p">▶ Start the round · 2 to try · 3 min</span><span class="chip">Laptop</span><span class="chip">iPhone</span></div>
+        <table><thead><tr><th class="num" style="width:44px">#</th><th>Check</th><th style="width:140px">Laptop</th><th style="width:140px">iPhone</th><th style="width:150px">About</th></tr></thead><tbody>${checks.map(([k, c]) => `<tr data-open="${k}"><td class="num"><span class="id">${k.slice(1)}</span></td><td class="t">${esc(c.t)}</td><td>${c.dev.Laptop ? S(...c.dev.Laptop.split(":")) : '<span class="id">—</span>'}</td><td>${c.dev.iPhone ? S(...c.dev.iPhone.split(":")) : '<span class="id">—</span>'}</td><td>${c.issue ? "issue " + c.issue.slice(1) : "—"}</td></tr>`).join("")}</tbody></table>`;
+    } else {
+      content = `<table><thead><tr><th style="width:140px">When</th><th style="width:90px">Who</th><th>What</th></tr></thead><tbody>${[["Today 09:10", "Claude", "Started the plan: slice 4 with issues 44, 45, 46"], ["Today 08:54", "You", "Sent issue 46 from Round 10"], ["Today 08:53", "You", "Sent issue 45 from For you"], ["Today 08:40", "askdnd", "PR 432 live: issue 40 ready to try"], ["Nov 19", "Claude", "PR 431 merged: ▶ Start round on the Try line"]].map(t => `<tr><td>${t[0]}</td><td>${t[1]}</td><td class="t">${esc(t[2])}</td></tr>`).join("")}</tbody></table>`;
+    }
+    return ptabs() + `<div class="head"><h3><span class="crumb" data-go="work">Work ›</span> Feedback and Testing</h3><div class="facts">${S("cl", "Building")}<span><span class="lane">Look</span></span><span>Product Area · plan 1 of 4</span><span>Waits on: <b>Claude</b></span></div></div>
+      ${vtabs("ptab", [["overview", "Overview"], ["issues", "Issues", mine.length], ["round", "Test round", checks.length], ["timeline", "Timeline"]])}<div style="height:8px"></div>${content}`;
+  };
+
+  // ---------------- Feedback: To sort · Issues (views) · Ideas
+  const feedback = () => {
+    let content = "";
+    if (st.ftab === "sort") {
+      st.list = Object.keys(NOTES);
+      content = `<p class="prose" style="color:var(--muted);margin:4px 0 8px">A player's note waits here before Claude reads it. File it as a new issue, join it to one, make it an idea, or decline it with why: its sender is told.</p><table><thead><tr><th>Note</th><th style="width:150px">From</th><th style="width:120px">Area</th><th style="width:200px">Might join</th><th style="width:100px">Sent</th></tr></thead><tbody>${Object.entries(NOTES).map(([k, n]) => `<tr data-open="${k}"><td class="t">${esc(n.t)}</td><td>${esc(n.who)}</td><td>${esc(n.area)}</td><td>${n.near ? "issue 12 · Concentration" : '<span class="id">—</span>'}</td><td>${n.up}</td></tr>`).join("")}</tbody></table>`;
+    } else if (st.ftab === "issues") {
+      const views = { open: k => !ISS[k].state.startsWith("Live"), ready: k => ISS[k].state.startsWith("Live"), noplan: k => !ISS[k].plan, checks: k => !ISS[k].from, closed: () => false };
+      const keys = Object.keys(ISS).filter(views[st.fview]);
+      st.list = keys;
+      content = `<div class="tool">${[["open", "Open", 7], ["ready", "Ready to try", 2], ["noplan", "Not in a plan", 1], ["checks", "From checks", 3], ["closed", "Closed", 48]].map(([k, w, n]) => `<span class="chip${st.fview === k ? " on" : ""}" data-fview="${k}">${w} ${n}</span>`).join("")}<span class="find">Find an issue…</span></div>
+        <table><thead><tr><th class="num" style="width:44px">#</th><th>Issue</th><th style="width:200px">Area › Feature</th><th style="width:170px">Plan</th><th style="width:110px">State</th><th style="width:80px">Turn</th><th style="width:76px">Updated</th></tr></thead><tbody>${keys.map(k => { const i = ISS[k]; return `<tr data-open="${k}"><td class="num"><span class="id">${k.slice(1)}</span></td><td class="t">${esc(i.t)}</td><td>${esc(i.area)} <span class="id">› ${esc(i.f)}</span></td><td>${i.plan ? esc(planOf(i.plan).t) : '<span class="st you">Not in a plan</span>'}</td><td>${S(i.state.startsWith("Live") ? "ok" : i.state === "Claude asks" ? "you" : "q", i.state)}</td><td>${S(i.turn, i.turn === "you" ? "Yours" : "Claude's")}</td><td>${i.up}</td></tr>`; }).join("") || '<tr><td colspan="7" style="color:var(--faint)">48 closed issues, newest first</td></tr>'}</tbody></table>`;
+    } else {
+      content = `<table><thead><tr><th>Idea</th><th style="width:120px">Notes</th><th style="width:180px">State</th></tr></thead><tbody><tr><td class="t">Dice: a sound when the roll lands</td><td>3 players</td><td>${S("q", "New")}</td></tr><tr><td class="t">Story: who rolled the crit in the recap</td><td>1 · the DM</td><td>${S("cl", "On the Roadmap")}</td></tr><tr><td class="t">Party: sort by initiative</td><td>2 players</td><td>${S("q", "New")}</td></tr></tbody></table>`;
+    }
+    return ptabs() + `<div class="head"><h3>Feedback</h3><div class="facts"><span><b>2</b> notes to sort</span><span><b>7</b> open issues</span><span><b>1</b> not in a plan</span><span><b>2</b> ready to try</span><span><b>3</b> ideas</span></div></div>
+      ${vtabs("ftab", [["sort", "To sort", 2], ["issues", "Issues", 7], ["ideas", "Ideas", 3]])}${content}`;
+  };
+
+  // ---------------- the one item window
+  const win = () => {
+    const k = st.item; if (!k) return "";
+    const i = st.list.indexOf(k), prev = st.list[i - 1], next = st.list[i + 1];
+    let kind = "", head = "", body = "", foot = "";
+    if (ISS[k]) {
+      const x = ISS[k], p = x.plan && planOf(x.plan);
+      kind = `Issue ${k.slice(1)}`;
+      head = `<h4>${esc(x.t)}</h4><dl class="kv"><dt>State</dt><dd>${S(x.state.startsWith("Live") ? "ok" : "q", x.state)} ${S(x.turn, x.turn === "you" ? "Yours" : "Claude's")}</dd><dt>Area</dt><dd>${esc(x.area)} › ${esc(x.f)}</dd><dt>Plan</dt><dd>${p ? `<a data-plan="${p.id}">${esc(p.t)}</a> · ${p.stage[1]}` : "Not in a plan yet"}</dd><dt>Checks</dt><dd>${x.checks.length ? x.checks.map(c => link(c, CHK[c].t)).join(", ") : "None yet: they come with the fix"}</dd><dt>Came from</dt><dd>${x.from ? `A note · ${x.up}` : "A check, or Claude"}</dd></dl>`;
+      body = `<div class="sect">What was found</div><p class="quote">${esc(x.said)}</p><div class="sect">Timeline</div><div class="tl"><span>${x.up}</span><span>Filed into ${esc(x.area)}</span><span>${x.up}</span><span>Claude: titled it, put it in ${p ? esc(p.t) : "no plan yet"}</span></div>`;
+      foot = x.turn === "you" && x.state.startsWith("Live") ? `<span class="btn p">▶ Try its check</span><span class="btn">Close with a reason…</span>` : `<span class="btn">Same as…</span><span class="btn">Move…</span><span class="btn">Close with a reason…</span>`;
+    } else if (CHK[k]) {
+      const c = CHK[k], p = planOf(c.plan);
+      kind = `Check ${k.slice(1)}`;
+      head = `<h4>${esc(c.t)}</h4><dl class="kv"><dt>State</dt><dd>${Object.entries(c.dev).map(([d, v]) => `${d} ${S(...v.split(":"))}`).join(" · ")}</dd><dt>Plan</dt><dd><a data-plan="${p.id}">${esc(p.t)}</a></dd><dt>About</dt><dd>${c.issue ? link(c.issue, ISS[c.issue].t) : "—"}</dd></dl>`;
+      body = `<div class="sect">Steps</div><ol class="steps">${c.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol><div class="sect">You should see</div><p class="prose">${esc(c.expect)}</p><div class="sect">History</div><div class="tl">${c.hist.map(h => `<span>${h[0]}</span><span>${esc(h[1])}</span>`).join("") || "<span>—</span><span>Not tried yet</span>"}</div>`;
+      foot = `<span class="btn p">▶ Try it</span><span class="btn">✓ Passed</span><span class="btn">✗ Something's wrong…</span><span class="btn ghost">Can't try…</span>`;
+    } else if (NOTES[k]) {
+      const n = NOTES[k];
+      kind = "A note to sort";
+      head = `<h4>${esc(n.t)}</h4><dl class="kv"><dt>From</dt><dd>${esc(n.who)} · ${n.up}</dd><dt>Page</dt><dd>${esc(n.area)}</dd><dt>Might join</dt><dd>${n.near ? "Issue 12 · Concentration pill stays after the spell" : "Nothing like it yet"}</dd></dl>`;
+      body = `<p class="prose" style="color:var(--muted)">None of it reaches Claude until you sort it. Its sender sees what you choose, in plain words.</p>`;
+      foot = `<span class="btn p">File as an issue</span><span class="btn">Join issue 12</span><span class="btn">Make it an idea</span><span class="btn ghost">Decline…</span>`;
+    } else {
+      const q = QS[k];
+      kind = q.kind;
+      head = `<h4>${esc(q.t)}</h4><dl class="kv"><dt>Asked</dt><dd>${q.up}</dd>${q.issue ? `<dt>About</dt><dd>${link(q.issue, ISS[q.issue].t)}</dd>` : "<dt>Picks</dt><dd>4, Claude's marked</dd>"}</dl>`;
+      body = q.issue ? `<p class="prose">When an item has a bonus to both damage and to hit, should the card show them as one line or two?</p>` : `<p class="prose" style="color:var(--muted)">Opens the mockup in its own window; your picks save as you choose.</p>`;
+      foot = q.issue ? `<span class="btn p">One line</span><span class="btn">Two lines</span><span class="btn ghost">Answer in words…</span>` : `<span class="btn p">Open the mockup</span>`;
+    }
+    return `<div class="veil${st.win === "center" ? " center" : ""}" data-close><div class="win" role="dialog"><div class="w-h"><span>${kind} · over the page you were on</span><span class="tools">${prev ? `<span class="btn ghost" data-open="${prev}">↑ Previous</span>` : ""}${next ? `<span class="btn ghost" data-open="${next}">↓ Next</span>` : ""}<span class="btn" data-close>Close</span></span></div><div class="w-b">${head}${body}</div><div class="w-f">${foot}<span class="sp"></span><span style="color:var(--faint);font-size:12px">${st.list.length ? `${i + 1} of ${st.list.length}` : ""}</span></div></div></div>`;
+  };
+
+  // ---------------- draw, scaled to the column
+  const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note");
+  const draw = () => {
+    const page = { foryou, work, plan, feedback }[st.page]();
+    stage.innerHTML = `<div class="app" style="width:${st.width}px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div class="amain">${page}</div></div>${win()}</div>`;
+    const avail = wrapEl.clientWidth, s = Math.min(1, avail / st.width);
+    stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
+    note.textContent = s < 1 ? `Drawn at ${st.width}px wide, shown at ${Math.round(s * 100)}% to fit this page.` : `Drawn at ${st.width}px wide.`;
+  };
+  addEventListener("resize", draw);
+  const sync = () => document.querySelectorAll('[data-ctl="page"] button').forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === st.page)));
+  stage.addEventListener("click", e => {
+    const t = e.target;
+    const o = t.closest("[data-open]"); if (o) { st.item = o.dataset.open; draw(); return; }
+    const pl = t.closest("[data-plan]"); if (pl) { st.page = "plan"; st.ptab = "overview"; st.item = null; sync(); draw(); return; }
+    if (t.closest("[data-close]") && (t.matches("[data-close]") || t.closest(".btn[data-close]"))) { st.item = null; draw(); return; }
+    if (t.closest(".win")) return;
+    const g = t.closest("[data-go]"); if (g) { st.page = g.dataset.go; st.item = null; sync(); draw(); return; }
+    for (const key of ["wtab", "ptab", "ftab", "fview"]) { const x = t.closest(`[data-${key}]`); if (x) { st[key] = x.dataset[key]; draw(); return; } }
+  });
+  document.addEventListener("keydown", e => {
+    if (!st.item) return;
+    const i = st.list.indexOf(st.item);
+    if (e.key === "Escape") { st.item = null; draw(); }
+    if (e.key === "ArrowDown" && st.list[i + 1]) { st.item = st.list[i + 1]; draw(); }
+    if (e.key === "ArrowUp" && i > 0) { st.item = st.list[i - 1]; draw(); }
+  });
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const k = seg.dataset.ctl; st[k] = k === "width" ? +b.dataset.v : b.dataset.v; if (k === "page") st.item = null; draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["pages", "win", "sort", "jobs"];
+  let db = null, inAskdnd = false, timer = 0;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent + ": " + lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  const store = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); } catch (err) { show("Couldn't save it. Try again."); }
+  };
+  form.addEventListener("input", () => { if (db && !inAskdnd) { show("Saving…"); clearTimeout(timer); timer = setTimeout(store, 1000); } else show("Not saved yet"); });
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Global › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true; await store(); btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet · every pick saves by itself"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · every pick saves by itself", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

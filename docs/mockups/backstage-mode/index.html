@@ -1,0 +1,464 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Backstage Mode</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Backstage Mode (Brett, Nov 20: "The design system is correct for the player and DM, but it is not correct for the admin
+   who needs to consume more information. It is hard to read, the spacing seems off, and it is too playful for a tool
+   that is used by engineering, qa, and product people ... we are unnecessarily limiting the width for backstage pages";
+   "I still struggle with the information density and organization on all of the For You, Feedback, Testing, and Work
+   pages"). One design system, two modes: Table (as today) and Backstage (dense, neutral, full width), on the same pages.
+   Made-up items in askdnd's own areas; people by role. Source: docs/mockups/backstage-mode/index.html. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --amber: #e8b34b; --blue: #7ea6e0; --selected-bg: rgba(126, 166, 224, .18);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.1rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 95ch; }
+.cols3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.cols3 div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.cols3 b { display: block; color: var(--strong); }
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ================= the drawn app ================= */
+.app { --a-bg: #15171a; --a-panel: #1f2226; --a-panel-2: #272b30; --a-line: #34383e; --a-text: #ebe7df; --a-strong: #fff; --a-muted: #a29d93; --a-faint: #7d786f;
+  --a-red: #d64545; --a-amber: #e8b34b; --a-green: #5bbf7f; --a-violet: #b39ddb; --a-blue: #7ea6e0;
+  background: var(--a-bg); color: var(--a-text); font-family: var(--sans); min-height: 860px; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--a-red); font: 600 .92rem/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--a-red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--a-line); border-radius: 8px; color: var(--a-faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { position: relative; color: #fff; }
+.abar .here::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -19px; height: 3px; border-radius: 3px; background: var(--a-red); }
+.abar .b { display: inline-block; min-width: 16px; height: 16px; border-radius: 999px; background: var(--a-amber); color: #111; font: 700 .66rem/16px var(--sans); text-align: center; padding: 0 4px; margin-left: 4px; }
+.abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; display: grid; place-items: center; color: #fff; font-size: .78rem; }
+.aside a { cursor: pointer; }
+
+/* ---------- Table mode (today, drawn from the live pages) ---------- */
+.m-today .abody { max-width: 1348px; margin: 0 auto; padding: 22px 24px 40px 24px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; }
+.m-today .band { grid-column: 1 / -1; height: 3px; border-radius: 3px; background: var(--a-blue); }
+.m-today .aside { display: grid; gap: 2px; align-content: start; font-size: .95rem; }
+.m-today .aside .sec { font: 700 .7rem/1 "Roboto Condensed", var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--a-muted); padding: 12px 10px 6px; }
+.m-today .aside a { padding: 8px 10px; border-radius: 8px; color: var(--a-text); display: flex; justify-content: space-between; }
+.m-today .aside a.on { background: var(--a-panel-2); color: #fff; font-weight: 600; }
+.m-today .aside .n { min-width: 20px; height: 20px; border-radius: 999px; background: var(--a-red); color: #fff; font: 700 .7rem/20px var(--sans); text-align: center; }
+.m-today h3 { margin: 0; font-size: 1.9rem; color: #fff; }
+.m-today .sub { color: var(--a-muted); font-size: 1.02rem; margin: 6px 0 18px; max-width: 75ch; }
+.m-today .tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--a-line); margin-bottom: 16px; }
+.m-today .tabs span { padding-bottom: 10px; color: var(--a-muted); }
+.m-today .tabs span.on { color: #fff; border-bottom: 2px solid var(--a-red); }
+.m-today .status { border: 1px solid var(--a-line); background: var(--a-panel); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; color: #fff; font-weight: 600; }
+.m-today .split { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; align-items: start; }
+.m-today .col { background: var(--a-panel); border-radius: 14px; padding: 14px; display: grid; gap: 4px; }
+.m-today .grp { font: 700 .74rem/1 "Roboto Condensed", var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--a-amber); padding: 12px 8px 8px; }
+.m-today .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px; border-radius: 10px; }
+.m-today .row.on { background: #2a3550; box-shadow: inset 3px 0 0 var(--a-blue); }
+.m-today .row .t { color: #fff; font-size: .98rem; line-height: 1.35; }
+.m-today .row .m { color: var(--a-muted); font-size: .84rem; }
+.m-today .tag { border-radius: 6px; padding: 2px 8px; font-size: .78rem; font-weight: 700; height: fit-content; }
+.m-today .reader { background: var(--a-panel); border-radius: 14px; padding: 22px 26px; display: grid; gap: 14px; }
+.m-today .reader h4 { margin: 0; font-size: 1.25rem; color: #fff; }
+.m-today .reader p { line-height: 1.55; }
+.m-today .card { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+.m-today .card .t { color: #fff; font-weight: 600; font-size: 1.05rem; }
+.m-today .card .m { color: var(--a-muted); font-size: .9rem; margin-top: 2px; }
+.m-today .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.m-today .chips span { border: 1px solid var(--a-line); border-radius: 999px; padding: 3px 10px; font-size: .8rem; color: var(--a-muted); }
+.m-today .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.m-today .stat { background: var(--a-panel); border-radius: 14px; padding: 20px; }
+.m-today .stat b { display: block; font-size: 1.9rem; color: #fff; }
+.m-today .stat span { color: var(--a-muted); }
+.m-today .btn { display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--a-line); background: var(--a-panel-2); color: var(--a-text); font: 500 .9rem/1 var(--sans); }
+.m-today .btn.p { background: var(--a-red); border-color: var(--a-red); color: #fff; }
+.t-you { background: rgba(232, 179, 75, .16); color: var(--a-amber); }
+.t-cl { background: rgba(179, 157, 219, .16); color: var(--a-violet); }
+.t-ok { background: rgba(91, 191, 127, .16); color: var(--a-green); }
+
+/* ---------- Backstage mode: dense, neutral, full width ---------- */
+.m-back { --row: 32px; --pad: 8px; font-size: 13.5px; line-height: 1.45; font-variant-numeric: tabular-nums; --a-bg: #131518; --a-panel: #1a1d21; --a-panel-2: #21252a; --a-line: #2c3036; }
+.m-back.comfy { --row: 40px; --pad: 11px; font-size: 14.5px; }
+.m-back .abody { padding: 16px 24px 32px; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 22px; max-width: 2200px; }
+.m-back .band { grid-column: 1 / -1; height: 2px; background: var(--a-blue); opacity: .7; }
+.m-back .aside { display: grid; gap: 0; align-content: start; font-size: 13px; position: sticky; top: 0; }
+.m-back .aside .sec { font-size: 11px; font-weight: 600; color: var(--a-faint); padding: 12px 8px 4px; }
+.m-back .aside a { padding: 5px 8px; border-radius: 6px; color: var(--a-text); display: flex; justify-content: space-between; align-items: center; }
+.m-back .aside a.on { background: var(--a-panel-2); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--a-blue); }
+.m-back .aside .n { font-size: 11px; color: var(--a-amber); font-weight: 600; }
+.m-back .head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.m-back h3 { margin: 0; font-size: 20px; font-weight: 600; color: #fff; }
+.m-back .facts { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--a-muted); font-size: 13px; }
+.m-back .facts b { color: #fff; font-weight: 600; }
+.m-back .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--a-line); margin: 10px 0 0; }
+.m-back .tabs span { padding: 7px 12px; color: var(--a-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.m-back .tabs span.on { color: #fff; border-color: var(--a-blue); font-weight: 600; }
+.m-back .tabs i { font-style: normal; font-size: 11px; color: var(--a-faint); margin-left: 5px; }
+.m-back .tool { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0; }
+.m-back .chip { border: 1px solid var(--a-line); border-radius: 6px; padding: 3px 9px; font-size: 12px; color: var(--a-muted); background: var(--a-panel); }
+.m-back .chip.on { color: #fff; border-color: var(--a-blue); background: rgba(126, 166, 224, .12); }
+.m-back .find { flex: 1; max-width: 320px; border: 1px solid var(--a-line); border-radius: 6px; padding: 4px 10px; color: var(--a-faint); font-size: 12.5px; background: var(--a-panel); }
+.m-back .status { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--a-line); background: var(--a-panel); border-radius: 8px; padding: 6px 12px; font-size: 13px; margin-top: 10px; }
+.m-back .status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--a-green); margin-right: 7px; }
+.m-back .split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(360px, 30%, 560px); gap: 16px; align-items: start; margin-top: 4px; }
+.m-back table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 8px; overflow: hidden; }
+.m-back th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--a-faint); padding: 6px var(--pad); border-bottom: 1px solid var(--a-line); background: var(--a-panel-2); white-space: nowrap; position: sticky; top: 0; }
+.m-back th.s::after { content: " ↕"; color: #555b63; }
+.m-back td { padding: 0 var(--pad); height: var(--row); border-bottom: 1px solid #23272c; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-back tr:last-child td { border-bottom: 0; }
+.m-back tbody tr { cursor: pointer; }
+.m-back tbody tr:hover td { background: #20242a; }
+.m-back tr.on td { background: rgba(126, 166, 224, .12); }
+.m-back tr.on td:first-child { box-shadow: inset 2px 0 0 var(--a-blue); }
+.m-back tr.grp td { height: 26px; background: var(--a-panel-2); color: var(--a-muted); font-size: 11.5px; font-weight: 600; cursor: default; }
+.m-back tr.cut td { height: 22px; background: transparent; color: var(--a-faint); font-size: 11.5px; text-align: center; border-top: 2px dashed #3b4047; border-bottom: 2px dashed #3b4047; cursor: default; }
+.m-back td.num, .m-back th.num { text-align: right; }
+.m-back td .id { color: var(--a-faint); }
+.m-back td.t { color: #fff; white-space: normal; line-height: 1.3; padding-block: 6px; }  /* (a title is the one thing to read whole: it wraps; every other cell keeps one line) */
+.m-back .st { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 11.5px; font-weight: 600; }
+.m-back .st.you { color: var(--a-amber); background: rgba(232, 179, 75, .12); }
+.m-back .st.cl { color: var(--a-violet); background: rgba(179, 157, 219, .12); }
+.m-back .st.ok { color: var(--a-green); background: rgba(91, 191, 127, .12); }
+.m-back .st.bad { color: #f07272; background: rgba(214, 69, 69, .14); }
+.m-back .st.q { color: var(--a-muted); background: #262a30; }
+.m-back .lane { font-size: 11.5px; color: var(--a-blue); }
+.m-back .lane.c { color: #f07272; }
+.m-back .bar2 { display: inline-flex; width: 70px; height: 6px; border-radius: 3px; background: #2c3036; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+.m-back .bar2 i { background: var(--a-green); }
+.m-back .act { border: 1px solid var(--a-line); background: var(--a-panel-2); color: var(--a-text); border-radius: 5px; padding: 2px 8px; font-size: 12px; }
+.m-back .act.p { background: var(--a-red); border-color: var(--a-red); color: #fff; }
+.m-back .pane { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; position: sticky; top: 0; }
+.m-back .pane .crumb { color: var(--a-faint); font-size: 12px; }
+.m-back .pane h4 { margin: 0; font-size: 15.5px; color: #fff; font-weight: 600; }
+.m-back .pane p, .m-back .pane li { max-width: 75ch; }
+.m-back .kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 3px 10px; font-size: 12.5px; }
+.m-back .kv dt { color: var(--a-faint); }
+.m-back .kv dd { margin: 0; }
+.m-back .sect { font-size: 11.5px; font-weight: 600; color: var(--a-faint); margin-top: 4px; }
+.m-back ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
+.m-back .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.m-back .quote { border-left: 2px solid var(--a-line); padding-left: 10px; color: var(--a-text); }
+.m-back .h2 { font-size: 13px; font-weight: 600; color: #fff; margin: 18px 0 6px; display: flex; gap: 10px; align-items: baseline; }
+.m-back .h2 span { font-weight: 400; color: var(--a-faint); font-size: 12px; }
+.m-back .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(640px, 1fr)); gap: 0 16px; }  /* (side by side once both fit, as at 1920)
+.m-back .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--a-line); border-radius: 8px; background: var(--a-panel); margin-top: 10px; }
+.m-back .stats div { padding: 10px 14px; border-left: 1px solid var(--a-line); }
+.m-back .stats div:first-child { border-left: 0; }
+.m-back .stats b { display: block; font-size: 18px; color: #fff; font-weight: 600; }
+.m-back .stats span { font-size: 12px; color: var(--a-faint); }
+.m-back .sw { display: inline-block; width: 26px; height: 15px; border-radius: 999px; background: #2c3036; position: relative; vertical-align: middle; }
+.m-back .sw.on { background: rgba(91, 191, 127, .5); }
+.m-back .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #ddd; }
+.m-back .sw.on::after { left: 13px; }
+.m-back details.how { border: 1px solid var(--a-line); border-radius: 8px; background: var(--a-panel); padding: 6px 12px; margin-top: 10px; }
+.m-back details.how summary { cursor: pointer; font-weight: 600; color: #fff; font-size: 13px; }
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: #5bbf7f; }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: #d64545; color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Backstage Mode</h1>
+    <p class="lede">One design system, two modes. <b>Table mode</b> is today's, for players and the DM, and doesn't change. <b>Backstage mode</b> is for the people who run askdnd: one plain font, neutral headings, tighter rows, real tables with columns you can sort, the facts in a line at the top, short titles, and the whole window's width (reading text still stops at about 75 characters). Every Backstage page gets it by being built from the design system. Below, the same six pages both ways; switch the page, the mode and the window's width. Rows are clickable.</p>
+  </header>
+  <div class="cols3">
+    <div><b>Why one system, two modes</b>Two separate systems drift and every piece is built twice. Here the pieces are the same; Backstage mode only changes the values (type, spacing, colour, density) and lays lists out as tables.</div>
+    <div><b>What reorganizes</b>Each page opens with its facts in one line, then one table of what it lists (kind, area, state, whose turn, time, as columns), and the selected row's reader to the right, always beside the list.</div>
+    <div><b>What stays</b>The menu bar, the left list, the names, what each page does, who sees it, and every rule (one item opens in a window: The Work Page's pick).</div>
+  </div>
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Page</span><span class="seg" data-ctl="page"><button type="button" data-v="foryou" aria-pressed="true">For you</button><button type="button" data-v="feedback">Feedback</button><button type="button" data-v="work">Work</button><button type="button" data-v="plan">A plan (Testing)</button><button type="button" data-v="usage">Usage</button><button type="button" data-v="accounts">Accounts</button></span></span>
+    <span class="ctl"><span class="lbl">Mode</span><span class="seg" data-ctl="mode"><button type="button" data-v="today">Today</button><button type="button" data-v="back" aria-pressed="true">Backstage mode</button></span></span>
+    <span class="ctl"><span class="lbl">Window</span><span class="seg" data-ctl="width"><button type="button" data-v="1440" aria-pressed="true">1440 wide</button><button type="button" data-v="1920">1920 wide</button></span></span>
+    <span class="ctl"><span class="lbl">Titles</span><span class="seg" data-ctl="titles"><button type="button" data-v="long">Today's sentences</button><button type="button" data-v="short" aria-pressed="true">Short: the thing, then what's wrong</button></span></span>
+    <span class="ctl"><span class="lbl">Rows</span><span class="seg" data-ctl="dense"><button type="button" data-v="compact" aria-pressed="true">Compact</button><button type="button" data-v="comfy">Comfortable</button></span></span>
+  </div>
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+  <p class="note-under" id="scale-note"></p>
+
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · Backstage gets its own mode</legend>
+        <label class="o"><input type="radio" name="mode" value="back"><span>Yes, Backstage mode <span class="mine">my pick</span></span><small>Every Backstage page, admins' and the DM's: plain, dense, full width. Players' and the DM's table pages keep Table mode.</small></label>
+        <label class="o"><input type="radio" name="mode" value="admin"><span>Only Global's pages</span><small>The admin's half; the DM's This campaign half keeps Table mode.</small></label>
+        <label class="o"><input type="radio" name="mode" value="no"><span>No, one look everywhere</span><small>Fix spacing and width only.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · How lists show</legend>
+        <label class="o"><input type="radio" name="lists" value="table"><span>A table with columns <span class="mine">my pick</span></span><small>Kind, area, state, whose turn, time: each a column you can sort; groups as divider rows.</small></label>
+        <label class="o"><input type="radio" name="lists" value="cards"><span>Rows as today, denser</span><small>Two-line rows, less padding, no columns.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · Width</legend>
+        <label class="o"><input type="radio" name="width" value="full"><span>The whole window, reading capped <span class="mine">my pick</span></span><small>Lists and tables use every pixel; a paragraph stops at about 75 characters; beyond 2,200px it centres.</small></label>
+        <label class="o"><input type="radio" name="width" value="1600"><span>Wider, capped at 1,600px</span><small>Centred on bigger screens.</small></label>
+      </fieldset>
+      <fieldset><legend>5 · How Claude titles an issue or a check</legend>
+        <label class="o"><input type="radio" name="titles" value="short"><span>Short: the thing, then what's wrong <span class="mine">my pick</span></span><small>"Check buttons: Passed looks already chosen". About 45 characters at most, the part of askdnd first so a list reads down its left edge; your words stay in full on the issue. Every open issue and check retitled this way.</small></label>
+        <label class="o"><input type="radio" name="titles" value="long"><span>Sentences, as today</span><small>"The ✓ Passed button is green before a check is tried".</small></label>
+      </fieldset>
+      <fieldset><legend>4 · Row height</legend>
+        <label class="o"><input type="radio" name="rows" value="compact"><span>Compact, 32px <span class="mine">my pick</span></span><small>About twice as many rows on screen as today.</small></label>
+        <label class="o"><input type="radio" name="rows" value="comfy"><span>Comfortable, 40px</span><small>A little more air, still a table.</small></label>
+      </fieldset>
+    </div>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const st = { page: "foryou", mode: "back", width: 1440, dense: "compact", titles: "short", sel: {} };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // ---------------- data (made up, askdnd's own areas; people by role)
+  const FY = [
+    { g: "Try · 3 checks · about 13 minutes" },
+    { k: "Check", id: "c35", t: "One Backstage door, and one way to see where you are", s: "Backstage door and where-you-are mark", area: "Getting around", since: "17:05", time: "3 min", act: "▶ Try", dev: "Laptop" },
+    { k: "Check", id: "c28", t: "A press changes the page where you are, without a flash", s: "A press keeps your place, no flash", area: "Feedback and Testing", since: "08:40", time: "2 min", act: "▶ Try", dev: "Laptop", again: true },
+    { k: "Check", id: "c33", t: "On a phone, the Live pill says the sheet opens on a computer", s: "Live pill on a phone", area: "Menu bar", since: "Yesterday", time: "1 min", act: "▶ Try", dev: "iPhone" },
+    { g: "Decide · 2" },
+    { k: "Mockup", id: "d1", t: "The Work Page: four picks", area: "Feedback and Testing", since: "09:30", time: "5 min", act: "Open" },
+    { k: "Mockup", id: "d2", t: "Backstage Mode: four picks", area: "Behind the scenes", since: "now", time: "5 min", act: "Open" },
+    { g: "Approve · 2 notes from the table" },
+    { k: "Note", id: "n41", t: "“The concentration pill stays after the spell ends”", area: "Battle", since: "Yesterday", time: "", act: "Approve", from: "Cole's player" },
+    { k: "Note", id: "n42", t: "“Can the recap say who rolled the crit?”", area: "Story", since: "Nov 18", time: "", act: "Approve", from: "The DM" },
+  ];
+  const ISS = [
+    { id: 46, t: "A check back to try after its fix opens as ✗ Failed", s: "Round card: a fixed check opens as Failed", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", notes: 1, up: "08:54", src: "You" },
+    { id: 45, t: "The ✓ Passed button is green before a check is tried", s: "Check buttons: Passed looks already chosen", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", notes: 1, up: "08:53", src: "You" },
+    { id: 44, t: "A link to one item opens it in a window", s: "One item's link: open it in a window", area: "Feedback and Testing", f: "Feedback", state: "To fix", turn: "cl", notes: 0, up: "08:41", src: "You" },
+    { id: 36, t: "Checks don't make clear what's being tested and what the result should be", s: "Checks: unclear what's tested and expected", area: "Feedback and Testing", f: "Testing", state: "To fix", turn: "cl", notes: 2, up: "Nov 19", src: "You" },
+    { id: 34, t: "Where it stands' rows jump when a lane changes", s: "Where it stands: rows jump on a lane change", area: "Feedback and Testing", f: "Where it stands", state: "Being fixed", turn: "cl", notes: 1, up: "Nov 19", src: "A check" },
+    { id: 20, t: "The item builder takes a value that makes no sense, without an error", s: "Item builder: saves a bonus with no number", area: "Item Builder", f: "Homebrew items", state: "To fix", turn: "cl", notes: 1, up: "Nov 18", src: "A check" },
+    { id: 8, t: "On a phone, the Live pill asks for something a phone can't do", s: "Live pill on a phone: asks the impossible", area: "Menu bar", f: "The live connection", state: "Fixed and live", turn: "you", notes: 1, up: "Nov 17", src: "You" },
+    { id: 6, t: "The radius on the larger pills is off", s: "Large pills: wrong corner radius", area: "Manage", f: "Overview and Documents", state: "To fix", turn: "cl", notes: 1, up: "Nov 16", src: "You" },
+    { id: 5, t: "No filters, so I'm unsure what this note means", s: "Overview notes: no filters to explain them", area: "Manage", f: "Overview and Documents", state: "To fix", turn: "cl", notes: 1, up: "Nov 16", src: "You" },
+    { id: 2, t: "The bonus to damage reads as a bonus to hit", s: "Item bonus: damage reads as to-hit", area: "Item Builder", f: "Homebrew items", state: "Asks you", turn: "you", notes: 2, up: "Nov 15", src: "Cole's player" },
+    { id: 1, t: "A new item's charges don't show on Battle", s: "New item: charges missing on Battle", area: "Item Builder", f: "Homebrew items", state: "To fix", turn: "cl", notes: 1, up: "Nov 15", src: "The DM" },
+  ];
+  const PLANS = [
+    { n: 1, t: "Feedback and Testing", kind: "Product Area", lane: "Look", stage: ["cl", "Building"], fixed: [0, 22], checks: [12, 14], wait: "Claude · slice 4", up: "09:10" },
+    { n: 2, t: "Getting around", kind: "Product Area", lane: "Careful", stage: ["ok", "Done"], fixed: [1, 1], checks: [1, 1], wait: "—", up: "17:42" },
+    { n: 3, t: "Menu bar", kind: "Product Area", lane: "Look", stage: ["you", "Live: try the batch"], fixed: [1, 1], checks: [0, 1], wait: "You · 1 check, 1 min", up: "Nov 17" },
+    { n: 4, t: "Manage", kind: "Product Area", lane: "Look", stage: ["q", "Planning"], fixed: [0, 2], checks: [0, 0], wait: "Claude", up: "Nov 16" },
+    { cut: true },
+    { n: 5, t: "Item Builder", kind: "Product Area", lane: "Look", stage: ["q", "Held"], fixed: [0, 3], checks: [0, 3], wait: "—", up: "Nov 15" },
+    { n: 6, t: "String Audit", kind: "Roadmap item", lane: "Look", stage: ["q", "Held"], fixed: [0, 0], checks: [0, 0], wait: "After slice 7", up: "Nov 20" },
+  ];
+  const JOBS = [["The phone sweep", "Mondays 09:00", "Nov 17", "ok", "PR 428 · 1 check", "Nov 24"], ["The live test (Mac Mini)", "Nightly 04:00", "Today 04:00", "ok", "All passed", "Tomorrow"], ["iPhone Safari", "Nightly 04:30", "Yesterday", "bad", "Late: didn't run today", "Tomorrow"], ["D&D Beyond drift", "Daily 06:00", "Today 06:00", "ok", "No drift", "Tomorrow"], ["New notes", "Daily 06:00", "Today 06:00", "ok", "2 sorted", "Tomorrow"]];
+  const CALLS = [["Today 08:12", "Recap draft", "Opus", "41,200 / 3,900", "$0.94"], ["Today 08:11", "Key moments", "Sonnet", "12,800 / 1,100", "$0.05"], ["Yesterday 21:40", "Entry description", "Sonnet", "3,400 / 420", "$0.02"], ["Yesterday 21:39", "Picture", "OpenAI", "1 image", "$0.04"], ["Nov 18 20:05", "Recap draft", "Opus", "38,900 / 3,700", "$0.89"], ["Nov 18 20:04", "Glossary check", "Haiku", "6,100 / 300", "$0.01"]];
+  const PEOPLE = [["The admin", "Admin", "The Adventure Begins · VTT test", true, true, "Now"], ["The DM", "DM", "The Adventure Begins", false, true, "Today"], ["Cole's player", "Player", "The Adventure Begins", false, true, "Today"], ["Big C's player", "Player", "The Adventure Begins", false, false, "Yesterday"], ["Trah's player", "Player · reviewer", "The Adventure Begins", false, true, "Nov 18"], ["No Name's player", "Player", "The Adventure Begins", false, false, "Nov 14"], ["VTT test DM", "Test account", "VTT test", false, false, "Nov 20"]];
+
+  // ---------------- shared pieces
+  const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Cole</span><span>Party ▾</span><span class="sp">Search</span><span class="here">Backstage ▾<span class="b">5</span></span><span class="pic">A</span></div>`;
+  const aside = () => {
+    const a = (k, w, n) => `<a data-go="${k}" class="${st.page === k || (k === "work" && st.page === "plan") ? "on" : ""}">${w}${n ? `<span class="n">${n}</span>` : ""}</a>`;
+    return `<nav class="aside"><span class="sec">${st.mode === "today" ? "Waiting on you" : "Waiting on you"}</span>${a("foryou", "For you", 5)}<span class="sec">General</span>${a("work", "Work")}${a("feedback", "Feedback")}<a>Overview</a><a>Product areas</a><a>Documents</a>${a("usage", "Usage")}<a>Backups</a><span class="sec">People</span>${a("accounts", "Accounts")}<a>Campaigns</a><span class="sec">Tuning</span><a>Features</a><a>Dice tuning</a><a>D&amp;D Beyond bridge</a><a>Design system</a></nav>`;
+  };
+  const stt = (cls, w) => `<span class="st ${cls}">${esc(w)}</span>`;
+  const tag = (cls, w) => `<span class="tag ${cls}">${esc(w)}</span>`;
+  const sel = (k, d) => st.sel[k] || d;
+  const T_ = r => (st.titles === "short" && r.s) || r.t;  // (the title shown: today's sentence, or the short one)
+
+  // ================= Backstage mode =================
+  const B = {
+    foryou() {
+      const s = sel("fy", "c28"), row = FY.find(r => r.id === s);
+      const rows = FY.map(r => r.g ? `<tr class="grp"><td colspan="6">${esc(r.g)}</td></tr>` : `<tr data-sel="fy:${r.id}" class="${r.id === s ? "on" : ""}"><td style="width:86px">${stt(r.k === "Check" ? "you" : r.k === "Note" ? "q" : "cl", r.k)}</td><td class="t">${esc(T_(r))}${r.again ? ' <span class="id">· again, fix live</span>' : ""}</td><td style="width:190px">${esc(r.area)}</td><td style="width:90px">${esc(r.since)}</td><td class="num" style="width:60px">${esc(r.time)}</td><td style="width:84px"><span class="act${r.act.startsWith("▶") ? " p" : ""}">${esc(r.act)}</span></td></tr>`).join("");
+      return `<div class="head"><h3>For you</h3><div class="facts"><span><b>3</b> to try · 13 min</span><span><b>2</b> to decide</span><span><b>2</b> notes to approve</span><span><b>0</b> to look at</span></div></div>
+        <div class="status"><span><span class="dot"></span><b>Claude is listening</b> · building Feedback and Testing since 09:10</span><span>Deploys: <b>When tests pass</b> ▾</span></div>
+        <div class="tool"><span class="chip on">All 7</span><span class="chip">Try 3</span><span class="chip">Decide 2</span><span class="chip">Approve 2</span><span class="find">Find…</span><span class="act p">▶ Start round · 3 checks</span></div>
+        <div class="split"><table><thead><tr><th>Kind</th><th class="s">What</th><th class="s">Area</th><th class="s">Since</th><th class="num">Time</th><th></th></tr></thead><tbody>${rows}</tbody></table>${B.pane(row)}</div>`;
+    },
+    pane(r) {
+      if (r.k === "Check") return `<div class="pane"><span class="crumb">Check ${r.id.slice(1)} · v1 · ${esc(r.area)}</span><h4>${esc(T_(r))}</h4>
+        <dl class="kv"><dt>State</dt><dd>${stt("you", r.again ? "To try again" : "To try")} ${r.again ? "its fix (issue 40) is live" : "Claude tried it first: passed"}</dd><dt>Device</dt><dd>${r.dev}</dd><dt>Takes</dt><dd>${r.time}</dd></dl>
+        <div class="acts"><span class="act p">▶ Try it</span><span class="act">✓ Passed</span><span class="act">✗ Something's wrong…</span><span class="act">Can't try…</span></div>
+        <div class="sect">Steps</div><ol class="steps"><li>Scroll until a plan's lane is halfway down.</li><li>Press that lane.</li><li>Choose another lane.</li></ol>
+        <div class="sect">You should see</div><p>The page stays where it was, and a corner card says the new lane.</p>
+        <div class="sect">History</div><dl class="kv"><dt>Nov 19</dt><dd>${stt("bad", "Failed")} laptop · sent issue 40</dd><dt>Today 08:40</dt><dd>Issue 40's fix live · back to try</dd><dt>Today 08:41</dt><dd>Claude tried it: ${stt("ok", "passed")}</dd></dl></div>`;
+      if (r.k === "Note") return `<div class="pane"><span class="crumb">A note from ${esc(r.from)} · ${esc(r.area)} · ${esc(r.since)}</span><h4>${esc(T_(r))}</h4><div class="acts"><span class="act p">Approve</span><span class="act">Join an issue…</span><span class="act">Decline…</span></div><p class="quote">It waits for you before Claude reads it. Approving files it into its area's batch.</p></div>`;
+      return `<div class="pane"><span class="crumb">A decision · ${esc(r.area)}</span><h4>${esc(T_(r))}</h4><dl class="kv"><dt>Asks</dt><dd>4 picks, Claude's marked</dd><dt>Since</dt><dd>${esc(r.since)}</dd></dl><div class="acts"><span class="act p">Open the mockup</span></div></div>`;
+    },
+    feedback() {
+      const s = +sel("fb", 45), i = ISS.find(x => x.id === s);
+      const rows = ISS.map(x => `<tr data-sel="fb:${x.id}" class="${x.id === s ? "on" : ""}"><td class="num" style="width:44px"><span class="id">${x.id}</span></td><td class="t">${esc(T_(x))}</td><td style="width:200px">${esc(x.area)} <span class="id">› ${esc(x.f)}</span></td><td style="width:110px">${stt(x.state === "Fixed and live" ? "ok" : x.state === "Asks you" ? "you" : "q", x.state)}</td><td style="width:86px">${stt(x.turn, x.turn === "you" ? "Yours" : "Claude's")}</td><td style="width:76px">${esc(x.up)}</td></tr>`).join("");
+      return `<div class="head"><h3>Feedback</h3><div class="facts"><span><b>2</b> notes to approve</span><span><b>19</b> open</span><span><b>7</b> ready to try</span><span><b>48</b> closed</span></div></div>
+        <div class="tabs"><span>To approve<i>2</i></span><span class="on">Open<i>19</i></span><span>Ready to try<i>7</i></span><span>Closed<i>48</i></span><span>Ideas<i>6</i></span></div>
+        <div class="tool"><span class="chip on">Every area</span><span class="chip">Feedback and Testing 15</span><span class="chip">Item Builder 3</span><span class="chip">Manage 2</span><span class="chip">Menu bar 1</span><span class="chip">From players</span><span class="chip">Found on a check</span><span class="find">Find an issue…</span></div>
+        <div class="split"><table><thead><tr><th class="num s">#</th><th class="s">Issue</th><th class="s">Area › Feature</th><th class="s">State</th><th class="s">Turn</th><th class="s">Updated</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="pane"><span class="crumb">Issue ${i.id} · ${esc(i.area)} › ${esc(i.f)}</span><h4>${esc(T_(i))}</h4><dl class="kv"><dt>State</dt><dd>${stt("q", i.state)} ${stt(i.turn, i.turn === "you" ? "Yours" : "Claude's")}</dd><dt>Plan</dt><dd>Feedback and Testing · slice 4</dd><dt>Check</dt><dd>None yet: it comes with the fix</dd><dt>From</dt><dd>${esc(i.src)} · ${esc(i.up)} · ${i.notes} note${i.notes === 1 ? "" : "s"}</dd></dl>
+        <div class="acts"><span class="act">Same as…</span><span class="act">Move…</span><span class="act">Close with a reason…</span></div>
+        <div class="sect">What was found · 1 note</div><p class="quote">This test appears to have a result because Passed is highlighted in green even though it has not been executed yet.</p>
+        <div class="sect">Conversation</div><dl class="kv"><dt>Claude, 08:55</dt><dd>You're right: ✓ Passed is a button, but it's drawn like a result. It will look like the other two until you press it. In slice 4.</dd></dl></div></div>`;
+    },
+    work() {
+      const rows = PLANS.map(p => p.cut ? `<tr class="cut"><td colspan="9">Claude takes everything above this line · drag a row across it</td></tr>` : `<tr data-go-plan="${p.n}"><td style="width:34px;color:#555b63">⋮⋮</td><td class="num" style="width:30px"><span class="id">${p.n}</span></td><td class="t">${esc(p.t)}</td><td style="width:130px">${esc(p.kind)}</td><td style="width:70px"><span class="lane${p.lane === "Careful" ? " c" : ""}">${p.lane}</span></td><td style="width:150px">${stt(p.stage[0], p.stage[1])}</td><td style="width:150px"><span class="bar2"><i style="width:${p.fixed[1] ? p.fixed[0] / p.fixed[1] * 100 : 0}%"></i></span>${p.fixed[0]}/${p.fixed[1]}</td><td style="width:140px"><span class="bar2"><i style="width:${p.checks[1] ? p.checks[0] / p.checks[1] * 100 : 0}%"></i></span>${p.checks[0]}/${p.checks[1]}</td><td style="width:190px">${esc(p.wait)}</td></tr>`).join("");
+      const jobs = JOBS.map(j => `<tr><td class="t">${esc(j[0])}</td><td>${esc(j[1])}</td><td>${esc(j[2])}</td><td>${stt(j[3], j[4])}</td><td>${esc(j[5])}</td></tr>`).join("");
+      return `<div class="head"><h3>Work</h3><div class="facts"><span><b>4</b> above the line</span><span>Claude: <b>building Feedback and Testing</b></span><span><b>1</b> waiting on you</span><span><b>2</b> held</span><span><b>14</b> done</span></div></div>
+        <div class="status"><span><span class="dot"></span><b>Claude is listening</b> · since 09:10</span><span>Deploys: <b>When tests pass</b> ▾</span></div>
+        <div class="h2">Plans <span>in your order · a row opens its Testing page</span></div>
+        <table><thead><tr><th></th><th class="num">#</th><th>Plan</th><th>Kind</th><th>Lane</th><th>Stage</th><th>Issues fixed</th><th>Checks passed</th><th>Waiting on</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="h2">Scheduled work <span>each job reports its run; one that didn't run shows late</span></div>
+        <table><thead><tr><th>Job</th><th>When</th><th>Last run</th><th>Result</th><th>Next</th></tr></thead><tbody>${jobs}</tbody></table>
+        <details class="how"><summary>How we work: the lanes, every plan's steps, what runs</summary><p style="margin:8px 0;color:var(--a-muted)">Ship merges when green; Look merges when green after Claude tries it, and you try the batch once live; Careful waits for your try first. Every plan: read the area whole, write the plan, one fix at a time, look at it, the review, one pull request, its checks tried by Claude first.</p></details>`;
+    },
+    plan() {
+      const checks = [["35", "One Backstage door, and one way to see where you are", "ok:Passed", "—", "Today 17:42"], ["28", "A press changes the page where you are, without a flash", "you:To try again", "—", "Today 08:40"], ["31", "A press in a side panel: no flash either", "ok:Passed", "ok:Passed", "Today 16:50"], ["29", "Claude missed shows only what has waited 30 minutes", "ok:Passed", "—", "Nov 19"]];
+      const cell = v => v === "—" ? '<span class="id">—</span>' : stt(v.split(":")[0], v.split(":")[1]);
+      const crow = checks.map(c => `<tr data-one><td class="num" style="width:40px"><span class="id">${c[0]}</span></td><td class="t">${esc(c[1])}</td><td style="width:120px">${cell(c[2])}</td><td style="width:120px">${cell(c[3])}</td><td style="width:124px">${esc(c[4])}</td></tr>`).join("");
+      const irow = ISS.filter(x => x.area === "Feedback and Testing").map(x => `<tr data-one><td class="num" style="width:40px"><span class="id">${x.id}</span></td><td class="t">${esc(T_(x))}</td><td style="width:110px">${stt("q", x.state)}</td><td style="width:90px">${esc(x.up)}</td></tr>`).join("");
+      const tl = [["Today 09:10", "Claude", "Started slice 4 with issues 44, 45, 46"], ["Today 08:54", "You", "Sent issue 46 from Round 10"], ["Today 08:53", "You", "Sent issue 45 from For you"], ["Today 08:40", "askdnd", "PR 432 live: issue 40 ready to try"], ["Nov 19", "Claude", "PR 431 merged: ▶ Start round on the Try line"]];
+      return `<div class="head"><h3><span data-go="work" style="color:var(--a-faint);cursor:pointer;font-weight:400">Work ›</span> Feedback and Testing</h3></div>
+        <div class="stats"><div><b>Building</b><span>stage · Claude since 09:10</span></div><div><b>Look</b><span>lane · merges when green</span></div><div><b>0 / 22</b><span>issues fixed in this plan</span></div><div><b>12 / 14</b><span>checks passed</span></div><div><b>PR 436</b><span>open · slice 4</span></div></div>
+        <div class="grid2"><div><div class="h2">Checks <span>one row each; a row opens it in a window</span></div><table><thead><tr><th class="num">#</th><th>Check</th><th>Laptop</th><th>iPhone</th><th>Last</th></tr></thead><tbody>${crow}</tbody></table></div>
+        <div><div class="h2">Issues <span>in this plan</span></div><table><thead><tr><th class="num">#</th><th>Issue</th><th>State</th><th>Updated</th></tr></thead><tbody>${irow}</tbody></table></div></div>
+        <div class="h2">History</div><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${tl.map(t => `<tr><td style="width:130px">${t[0]}</td><td style="width:90px">${t[1]}</td><td class="t">${esc(t[2])}</td></tr>`).join("")}</tbody></table>`;
+    },
+    usage() {
+      return `<div class="head"><h3>Usage</h3><div class="facts"><span>Claude and OpenAI spending, from every call</span></div></div>
+        <div class="stats"><div><b>$14.99</b><span>estimated balance · of $20.00</span></div><div><b>$7.11</b><span>this month · today $0.00</span></div><div><b>$5.01</b><span>Claude, all time · 11 drafts</span></div><div><b>$2.69</b><span>OpenAI this month</span></div><div><b>$25</b><span>monthly limit · 28% used</span></div></div>
+        <div class="h2">Calls <span>newest first</span></div><table><thead><tr><th class="s">When</th><th class="s">What</th><th class="s">Model</th><th class="num">Tokens in / out</th><th class="num s">Cost</th></tr></thead><tbody>${CALLS.map(c => `<tr><td style="width:150px">${c[0]}</td><td class="t">${c[1]}</td><td style="width:100px">${c[2]}</td><td class="num" style="width:160px">${c[3]}</td><td class="num" style="width:80px">${c[4]}</td></tr>`).join("")}</tbody></table>`;
+    },
+    accounts() {
+      return `<div class="head"><h3>Accounts</h3><div class="facts"><span><b>7</b> can sign in</span><span><b>1</b> admin</span><span><b>2</b> campaigns</span></div></div>
+        <div class="tool"><span class="find">Find someone…</span><span class="act p">+ Add someone</span></div>
+        <table><thead><tr><th class="s">Who</th><th class="s">Role</th><th>Campaigns</th><th>Admin</th><th>Sends feedback</th><th class="s">Last seen</th></tr></thead><tbody>${PEOPLE.map(p => `<tr><td class="t" style="width:220px">${p[0]}</td><td style="width:150px">${p[1]}</td><td>${p[2]}</td><td style="width:70px"><span class="sw${p[3] ? " on" : ""}"></span></td><td style="width:120px"><span class="sw${p[4] ? " on" : ""}"></span></td><td style="width:110px">${p[5]}</td></tr>`).join("")}</tbody></table>`;
+    },
+  };
+
+  // ================= Today (Table mode on Backstage pages, as they are now) =================
+  const T = {
+    foryou() {
+      const s = sel("fy", "c28"), r = FY.find(x => x.id === s);
+      const rows = FY.map(x => x.g ? `<span class="grp">${esc(x.g.split(" · ")[0])}</span>` : `<div class="row${x.id === s ? " on" : ""}" data-sel="fy:${x.id}"><span class="t">${esc(T_(x))}</span>${tag("t-you", "Yours")}<span class="m">${x.k === "Check" ? "To try · " + esc(x.time) : esc(x.since)}</span></div>`).join("");
+      return `<h3>For you</h3><p class="sub">Everything waiting on you, and nothing else: checks to try, Claude's questions, fixes to look at, and the table's notes and ideas. Only admins can see this page.</p>
+        <div class="status">● Claude is listening</div><div class="split"><div class="col">${rows}</div><div class="reader"><span style="color:var(--a-muted)">${esc(r.area)} · its page · v1</span><h4>${esc(T_(r))}</h4><div>${tag("t-you", "Yours")} To try: Claude built it and tried it first.</div><div><span class="btn p">▶ Try it</span> <span class="btn">✓ Passed</span></div><p>On the page, the card says…</p><ol><li>Scroll until a plan's lane is halfway down.</li><li>Press that lane.</li><li>Choose another lane.</li></ol></div></div>`;
+    },
+    feedback() {
+      const s = +sel("fb", 45), i = ISS.find(x => x.id === s);
+      const rows = ISS.slice(0, 7).map(x => `<div class="row${x.id === s ? " on" : ""}" data-sel="fb:${x.id}"><span class="t">${esc(T_(x))}</span>${tag("t-cl", "Claude's")}<span class="m">${esc(x.state)} · ${esc(x.f)}</span></div>`).join("");
+      return `<h3>Feedback</h3><p class="sub">Every note and issue, and what became of it: a player's note waits here for you before Claude sees any of it. Only admins can see this page.</p>
+        <div class="tabs"><span>To approve</span><span class="on">Open 19</span><span>Ready to try 7</span><span>Closed</span><span>Ideas</span></div>
+        <div class="split"><div class="col"><span class="grp">Feedback and Testing</span>${rows}</div><div class="reader"><span style="color:var(--a-muted)">${esc(i.area)} › ${esc(i.f)} · from 1 note</span><h4>${esc(T_(i))}</h4><div class="card"><b>WHERE IT STANDS</b><p>${tag("t-cl", "Claude's")} To fix: Claude's in the ${esc(i.area)} area.</p></div><div class="card"><b>WHAT WAS FOUND</b><p>This test appears to have a result because Passed is highlighted in green even though it has not been executed yet.</p></div></div></div>`;
+    },
+    work() {
+      return `<h3>Testing</h3><p class="sub">Where each area stands in your order, what's with Claude, and what passed. What's your turn is in For you. Only admins can see this page.</p>
+        <div class="tabs"><span class="on">Where it stands</span><span>Claude's</span><span>Done</span></div><div class="status">● Claude is listening</div><p style="color:var(--a-muted);margin-bottom:12px">Your work queue: drag to reorder. Claude takes the first area that's its turn.</p>
+        ${PLANS.filter(p => !p.cut).slice(0, 4).map(p => `<div class="card" data-go-plan="1"><div class="t">${esc(p.t)}</div><div class="m">${p.fixed[1]} issues, ${p.checks[1]} checks</div><div class="chips"><span>Testing 9</span><span>Feedback 6</span><span>Sending a note 5</span></div></div>`).join("")}`;
+    },
+    plan() {
+      return `<h3>Feedback and Testing</h3><p class="sub">22 issues, 5 checks to try. Today this lives in Testing's tabs: Where it stands, Claude's and Done.</p>${["A press changes the page where you are, without a flash", "A press in a side panel: no flash either", "Claude missed shows only what has waited 30 minutes"].map(t => `<div class="card"><div class="t">${t}</div><div class="m">Laptop · passed</div></div>`).join("")}`;
+    },
+    usage() {
+      return `<h3>Usage</h3><p class="sub">What askdnd has spent on Claude, from the exact token counts of every call, and on OpenAI (drawn pictures and Listen's voice, at their price). Only admins can see this page.</p><div class="stats"><div class="stat"><span>Estimated balance</span><b>$14.99</b><span>of $20.00 bought</span></div><div class="stat"><span>This month</span><b>$7.11</b><span>today $0.00</span></div><div class="stat"><span>Claude, all time</span><b>$5.01</b><span>11 drafts</span></div></div><div class="card"><div class="t">Monthly limit</div><div class="m">askdnd stops calling Claude once this month's spending reaches it, until the 1st.</div></div>`;
+    },
+    accounts() {
+      return `<h3>Accounts</h3><p class="sub">Who can sign in, who's an admin, and their campaigns. Only admins can see this page.</p>${PEOPLE.slice(0, 4).map(p => `<div class="card"><div class="t">${p[0]}</div><div class="m">${p[1]} · ${p[2]}</div></div>`).join("")}`;
+    },
+  };
+
+  // ---------------- draw, scaled to fit the column
+  const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note");
+  const draw = () => {
+    const page = (st.mode === "back" ? B : T)[st.page]();
+    stage.innerHTML = `<div class="app m-${st.mode}${st.dense === "comfy" ? " comfy" : ""}" style="width:${st.width}px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div class="amain">${page}</div></div></div>`;
+    // (a fixed table takes its columns' widths from its header: each column's width is the one its cells ask for)
+    stage.querySelectorAll("table").forEach(t => { const row = [...t.tBodies[0].rows].find(r => !r.classList.contains("grp") && !r.classList.contains("cut")); if (!row) return;
+      [...t.tHead.rows[0].cells].forEach((th, i) => { const w = row.cells[i] && row.cells[i].style.width; if (w) th.style.width = w; }); });
+    fit();
+  };
+  const fit = () => {
+    const avail = wrapEl.clientWidth, s = Math.min(1, avail / st.width);
+    stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
+    note.textContent = s < 1 ? `Drawn at ${st.width}px wide, shown at ${Math.round(s * 100)}% to fit this page.` : `Drawn at ${st.width}px wide.`;
+  };
+  addEventListener("resize", fit);
+  stage.addEventListener("click", e => {
+    const g = e.target.closest("[data-go]"); if (g) { st.page = g.dataset.go; sync(); draw(); return; }
+    const p = e.target.closest("[data-go-plan]"); if (p) { st.page = "plan"; sync(); draw(); return; }
+    const s = e.target.closest("[data-sel]"); if (s) { const [k, v] = s.dataset.sel.split(":"); st.sel[k] = v; draw(); }
+  });
+  const sync = () => document.querySelectorAll('[data-ctl="page"] button').forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === st.page)));
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const k = seg.dataset.ctl; st[k] = k === "width" ? +b.dataset.v : b.dataset.v; draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["mode", "lists", "width", "rows", "titles"];
+  let db = null, inAskdnd = false, timer = 0;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent + ": " + lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  const store = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); } catch (err) { show("Couldn't save it. Try again."); }
+  };
+  form.addEventListener("input", () => { if (db && !inAskdnd) { show("Saving…"); clearTimeout(timer); timer = setTimeout(store, 1000); } else show("Not saved yet"); });
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Global › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true; await store(); btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet · every pick saves by itself"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · every pick saves by itself", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
