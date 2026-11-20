@@ -3,10 +3,10 @@
 {% from "_lists.html" import empty_state, count_pill, grip %}
 {% from "_check_steps.html" import walkthrough %}
 {% from "_fft_bits.html" import its_checks with context %}
-{% block title %}{{ "For you" if show == "foryou" else "Testing" }} · Manage · askdnd{% endblock %}
+{% block title %}{{ "For you" if show == "foryou" else "Testing" }} · Backstage · askdnd{% endblock %}
 {% block head %}{% if show == "stands" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
-{# Manage › askdnd › For you and Testing (app/fft/testing_page.py; screens 1–8 of docs/mockups/found-fixed-tried/; For
+{# Backstage › askdnd › For you and Testing (app/fft/testing_page.py; screens 1–8 of docs/mockups/found-fixed-tried/; For
    you its own page, Nov 19, the work flow's slice 2): For you is everything that's your turn, grouped by what you do
    with it (Try, Decide, Look at, From the table, From the Roadmap); Testing is Where it stands, Claude's and Done. A
    check reads as the card will show it; a round takes the checks for this device page by page. #}

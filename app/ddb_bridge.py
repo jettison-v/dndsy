@@ -33,10 +33,10 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    it's refused, saying how, and nothing is queued. A change still waiting keeps it awake until its sheet has gone
    quiet for the wait timer (3 minutes); then it's listed to make by hand (`_give_up`), and made by itself on the
    sheet's next read if D&D Beyond still holds what it did, or ticked off if it was made there by hand (`_catch_up`). Admins set the timers on
-   Manage › askdnd › D&D Beyond bridge (TIMERS); the state is in tool_settings (bridge_awake).
+   Backstage › askdnd › D&D Beyond bridge (TIMERS); the state is in tool_settings (bridge_awake).
 7. **Health.** The extension reports in every minute; askdnd reads the test character every hour (no sign-in needed);
    a round trip on the test character (1 hit point and a Candle out and back) runs from the status pill before a game,
-   and Check everything (Manage › askdnd › D&D Beyond bridge) runs every kind of change out and back; every page's
+   and Check everything (Backstage › askdnd › D&D Beyond bridge) runs every kind of change out and back; every page's
    menu bar shows how it stands.
 8. **Everything a player changes in play** (ddb_fields: what each field is, where D&D Beyond keeps it, the request
    that writes it): hit points, death saves, Heroic Inspiration, conditions, Exhaustion, Hit Dice (as a Short Rest),
@@ -103,7 +103,7 @@ EXTENSION_FRESH_SECONDS = 90  # the extension reports every 30 seconds
 READ_CHECK_SECONDS = 3600
 OPEN = ("waiting", "sending", "not_yet")
 AWAKE_KEY = "bridge_awake"
-TIMERS_KEY = "bridge_timers"  # admins change these on Manage › askdnd › D&D Beyond bridge; askdnd's own below
+TIMERS_KEY = "bridge_timers"  # admins change these on Backstage › askdnd › D&D Beyond bridge; askdnd's own below
 # (key, label, what it's for, unit in seconds, unit's name, default, lowest, highest)
 TIMERS = (
     ("idle", "Stays awake after anyone was here", "After someone last opened or used askdnd or a D&D Beyond sheet.", 60, "minutes", 30, 5, 240),
@@ -1022,7 +1022,7 @@ def dismiss(db: Session, intent_id: int) -> None:
 
 def round_trip(db: Session, character: Character, full: bool = False) -> None:
     """The pre-game check on the test character: 1 hit point and one Candle out, then back, each confirmed by
-    read-back. `full` (Manage › askdnd › D&D Beyond bridge, after D&D Beyond changes its sheet): every kind of change
+    read-back. `full` (Backstage › askdnd › D&D Beyond bridge, after D&D Beyond changes its sheet): every kind of change
     the bridge makes that the test character can take, out and back. Queued like any change; the extension delivers it
     from the test character's open sheet. Putting it back depends only on the batch (its `check` and `before`), so a
     restart mid-check still puts Vi back as she was."""
@@ -1859,7 +1859,7 @@ def bridge_page(character_id: int, request: Request, db: Session = Depends(get_d
     return RedirectResponse(f"/characters/{character.id}/battle?live=1", status_code=303)
 
 
-# ------------------------------------------------------------------ Manage › askdnd › D&D Beyond bridge (admins)
+# ------------------------------------------------------------------ Backstage › askdnd › D&D Beyond bridge (admins)
 # What each way of reaching a sheet can change (Brett, 2026-11-04: to cover players' browser mistakes by putting it in the
 # DM's hands), for the page's matrix: (what, the ddb_fields kinds it covers, the live test runs that try it, through the
 # DM: "yes" or "no"). Both ways send the same requests (ddb_fields.WRITES, made in the page by ddb-page.js), and D&D

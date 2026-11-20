@@ -263,7 +263,7 @@ class FftQuestion(_Stamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     about: Mapped[str] = mapped_column(String(10))  # issue, check, area, document
     about_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    doc_path: Mapped[str] = mapped_column(String(300), default="", server_default="")  # a decision's document (Manage › Documents)
+    doc_path: Mapped[str] = mapped_column(String(300), default="", server_default="")  # a decision's document (Backstage › Documents)
     doc_version: Mapped[str] = mapped_column(String(20), default="", server_default="")
     text: Mapped[str] = mapped_column(Text)
     choices: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"label", "detail"}]

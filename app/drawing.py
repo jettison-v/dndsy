@@ -3,7 +3,7 @@ GPT Image draws four, in the campaign's art style (Campaign.art_style: a few wor
 pictures to match), and the person picks one. Claude doesn't draw pictures.
 
 Only the words for that picture, the style's words and its pictures are sent: never a transcript, notes or anything else
-of the campaign. Every drawing is counted on Manage › Usage (an ExtractionRun of source "picture", at an estimated cost)
+of the campaign. Every drawing is counted on Backstage › Usage (an ExtractionRun of source "picture", at an estimated cost)
 and refused once the monthly limit is reached, like every Claude call. Each of the four is resized and kept in file
 storage at once (app/files.py); the ones not chosen are swept like any file nothing uses.
 
@@ -44,7 +44,7 @@ def style(campaign: Campaign | None) -> dict:
 def why_not(db: Session, campaign: Campaign | None) -> str:
     """Why Describe it can't draw now, or ""."""
     if style(campaign)["off"]:
-        return "Describe it is switched off for this campaign (Manage › Settings › Art style)."
+        return "Describe it is switched off for this campaign (Backstage › Settings › Art style)."
     if not key():
         return "Describe it isn't set up yet: askdnd needs an OpenAI key (an admin's step)."
     return spending.reached(db) or ""

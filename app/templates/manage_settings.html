@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Settings · Manage · askdnd{% endblock %}
+{% block title %}Settings · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_settings.html" import switch, set_row, choice %}
 <main class="page manage-page">
@@ -88,7 +88,7 @@
 
   <section class="section" id="test">
     <h2>Test campaign</h2>
-    {% call set_row("This campaign holds test data", "Tagged Test, and it can have test copies of the table's characters (Manage › Table), which never reach their real D&D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign." ~ ("" if can_set_test else " Only admins change this."), "test") %}{{ switch(cbase ~ "/manage/settings/test", campaign.is_test, "Test campaign", name="is_test", disabled=not can_set_test) }}{% endcall %}
+    {% call set_row("This campaign holds test data", "Tagged Test, and it can have test copies of the table's characters (Backstage › Table), which never reach their real D&D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign." ~ ("" if can_set_test else " Only admins change this."), "test") %}{{ switch(cbase ~ "/manage/settings/test", campaign.is_test, "Test campaign", name="is_test", disabled=not can_set_test) }}{% endcall %}
   </section>
 </main>
 {% endblock %}

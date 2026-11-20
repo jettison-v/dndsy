@@ -1,4 +1,4 @@
-"""Manage › askdnd › Documents (Brett, Nov 6): every page made for askdnd (guides, plans, designs, earlier ones) in one
+"""Backstage › askdnd › Documents (Brett, Nov 6): every page made for askdnd (guides, plans, designs, earlier ones) in one
 place, for admins, read from the repo's own copies, so nothing depends on claude.ai to be found or kept.
 
 The list is docs/library.json, the one source: the roadmap's table of documents is written from it too
@@ -137,7 +137,7 @@ def document_file(key: str, rel: str):
     try:
         folder = _signer().loads(key, max_age=KEY_SECONDS)
     except BadSignature:
-        return Response("This link has run out. Open the document again from Manage › askdnd › Documents.", status_code=403)
+        return Response("This link has run out. Open the document again from Backstage › askdnd › Documents.", status_code=403)
     path = inside_docs(rel)
     if path is None or not path.is_file() or not (folder == "" or rel.startswith(folder + "/")) or (folder == "" and "/" in rel):
         return Response("Not found", status_code=404)

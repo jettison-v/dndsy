@@ -1,4 +1,4 @@
-"""Manage › Table (/c/<campaign>/manage/table): who's at the table, in one list (Brett, 2026-10-30,
+"""Backstage › Table (/c/<campaign>/manage/table): who's at the table, in one list (Brett, 2026-10-30,
 docs/mockups/the-table.html). A person and their character are one row; the campaign's DM and admins change it.
 
 - **Add to the table** does a person, a character, or both in one step. Someone with an account can be added by the DM;
@@ -9,7 +9,7 @@ docs/mockups/the-table.html). A person and their character are one row; the camp
   and notes stay, and Left the table has Bring back.
 - What each role can do: the chart from app/access.py.
 
-Who may sign in at all, and who's an admin, is askdnd-wide: Manage › Accounts (app/manage_accounts.py).
+Who may sign in at all, and who's an admin, is askdnd-wide: Backstage › Accounts (app/manage_accounts.py).
 """
 
 
@@ -257,7 +257,7 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
             return _back()
         u = account(db, email, " ".join(name.split())[:200])
         if access.level(email) is None:
-            request.session["toast"] = web.notice(f"{email}'s account was removed. Bring it back on Manage › Accounts first.", "warn")
+            request.session["toast"] = web.notice(f"{email}'s account was removed. Bring it back on Backstage › Accounts first.", "warn")
             return _back()
         set_role(db, u, campaign.id, _role(role) or access.PLAYER)
     note, added = "", (u.name or email) if u else ""
@@ -279,7 +279,7 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
                 note = f" ({e})"
         added = f"{added} with {ch.name}" if added else ch.name
     db.commit()
-    request.session["toast"] = f"Added {added} to {campaign.name}{note}" + (". Add them as a Google test user too (Manage › Accounts says how)." if new else "")
+    request.session["toast"] = f"Added {added} to {campaign.name}{note}" + (". Add them as a Google test user too (Backstage › Accounts says how)." if new else "")
     return _back()
 
 
@@ -366,7 +366,7 @@ def add_test_copies(request: Request, character_ids: list[int] = Form([]), db: S
         return denied
     campaign = web.campaign(db)
     if campaign is None or not campaign.is_test:
-        request.session["toast"] = web.notice("Test copies are only for a test campaign (Manage › Settings › Test campaign).", "warn")
+        request.session["toast"] = web.notice("Test copies are only for a test campaign (Backstage › Settings › Test campaign).", "warn")
         return _back()
     can = {c.id: c for c, copied in chars.copy_candidates(db, campaign.id) if not copied}
     # A copy keeps its player if they're in the test campaign, or are the admin making it (they play their own copy)

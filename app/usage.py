@@ -61,8 +61,8 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/(campaign|admin/suggestions|suggestions|manage/proposals)/", "World and the Inbox"),
     (r"^/questions/", "World and the Inbox"),
     (r"^/manage/sessions/", "Session Story review"),
-    (r"^/manage/table", "Manage › Table"),
-    (r"^/manage/(settings|house-rules)", "Manage › Settings and house rules"),
+    (r"^/manage/table", "Backstage › Table"),
+    (r"^/manage/(settings|house-rules)", "Backstage › Settings and house rules"),
     (r"^/dm/items", "DM Tools: homebrew items"),
     (r"^/manage/", "Admin pages"),
     (r"^/dice$", "Your dice"),
@@ -167,7 +167,7 @@ class Recorder:
             log.warning("A use wasn't counted", exc_info=True)
 
 
-# ------------------------------------------------------------------ reading them (Admin › Features)
+# ------------------------------------------------------------------ reading them (Backstage › Features)
 
 def counted(db, campaign_id: int | None):
     """The uses that count: the table's (not admins', not test accounts', not in a test campaign)."""
@@ -183,7 +183,7 @@ def counted(db, campaign_id: int | None):
     return [e for e in db.scalars(q) if e.user_id not in left_out and e.campaign_id not in tests]
 
 
-ADMIN_ONLY = {"Admin pages", "View as", "Corrections", "Linking a sheet", "Manage › Table", "Manage › Settings and house rules",
+ADMIN_ONLY = {"Admin pages", "View as", "Corrections", "Linking a sheet", "Backstage › Table", "Backstage › Settings and house rules",
               "Session Story review", "World and the Inbox", "Email settings"}  # (the DM's or an admin's: not "never touched" by players)
 
 
@@ -194,7 +194,7 @@ def _family(feature: str) -> str:
 
 
 def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
-    """Admin › Features: everything the page draws, for the last `days` against the `days` before."""
+    """Backstage › Features: everything the page draws, for the last `days` against the `days` before."""
     from collections import Counter, defaultdict
     from datetime import UTC, datetime, timedelta
 
@@ -271,7 +271,7 @@ def _left_out(email: str) -> bool:
     return access.level(email) == access.ADMIN
 
 
-# ------------------------------------------------------------------ Admin › Features
+# ------------------------------------------------------------------ Backstage › Features
 
 def chart(daily: list[int], releases: list[tuple[int, str]], start, w: int = 640, h: int = 190) -> dict:
     """One line of uses by day (the admin blue), the days marked where a deploy first ran; each day a hover target.

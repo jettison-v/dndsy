@@ -6,7 +6,7 @@ it is whenever they change (`POST /bridge/fight/<game>`, app/ddb_bridge.py). It'
 (`Campaign.fight`) and every page there hears it (realtime.CAMPAIGN_SEES), where the **fight band** above the name on
 every character page and on Party shows it (`_fight_band.html`).
 
-- **Which campaign**: the one whose D&D Beyond campaign is that game (Manage › Settings), else the ones whose own
+- **Which campaign**: the one whose D&D Beyond campaign is that game (Backstage › Settings), else the ones whose own
   characters' sheets are in it (never a test copy's: it shares its original's game).
 - **Who sees what**: everyone at the table sees the order, as D&D Beyond's VTT shows it; a token the DM hid is the
   DM's only.

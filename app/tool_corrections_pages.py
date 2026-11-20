@@ -1,4 +1,4 @@
-"""Manage › Tool corrections (admins, /manage/tool-corrections): corrections to how askdnd reads D&D Beyond, made
+"""Backstage › Tool corrections (admins, /manage/tool-corrections): corrections to how askdnd reads D&D Beyond, made
 from character side panels (tool_corrections). They apply to every character in every campaign, so they belong to
 askdnd as a whole. A DM's rulings for one table are House rules instead."""
 

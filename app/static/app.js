@@ -1718,7 +1718,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('scroll', () => { if (termPinned) termPlace(); else if (termTip) termHide(); }, true);
   window.addEventListener('resize', termPlace);
 
-  // A select with data-autosave saves as you pick (Manage › Table)
+  // A select with data-autosave saves as you pick (Backstage › Table)
   document.addEventListener('change', e => { if (e.target.matches('select[data-autosave]')) e.target.form.requestSubmit(); });
   // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
   document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
@@ -2924,7 +2924,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   const lib = () => libP || (libP = import(LIB + 'dice-box-threejs.es.js').then(m => m.default));
   const diceOf = el => { try { return JSON.parse(el.dataset.dice || '{}'); } catch (e) { return {}; } };
   const soundOn = () => store.get('askdnd.diceSound') === 'on';
-  // How the dice move and how long they stay in each place (mine, tray, vtt): Manage › Dice tuning, on every page as
+  // How the dice move and how long they stay in each place (mine, tray, vtt): Backstage › Dice tuning, on every page as
   // body[data-dice-tuning] (app/dice.py); askdnd's own tuning if it's missing
   const TUNE = { drama: { strength: 0.9, gravity: 120, size: 140, shadows: true, light: 0.8, dim: 75, blur: 4, fade_in: 0.4, stay: 4.5, fade_out: 0.5 },
                  mine: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 55, blur: 2, fade_in: 0.2, stay: 3.2, fade_out: 0.3 },
@@ -3191,7 +3191,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   });
 
   // ---------------------------------------------------------------- Dice tuning
-  // Manage › askdnd › Dice tuning (manage_dice.html, app/dice.py): a tab per place dice are thrown, sliders that show
+  // Backstage › askdnd › Dice tuning (manage_dice.html, app/dice.py): a tab per place dice are thrown, sliders that show
   // their value and mark changes against what's saved, and a preview that throws with the sliders as they are now.
   const tuneShow = (v, how) => how === 'toggle' ? (v ? 'on' : 'off') : how === 'x' ? v.toFixed(1) + '×' : how === 'pct' ? Math.round(v * 100) + '%'
     : (how === 's' || how === 'px') ? +v.toFixed(2) + ' ' + how : +v.toFixed(2) + how;
@@ -4681,7 +4681,7 @@ document.addEventListener('click', e => {
 // The bridge (app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
 // read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The bridge's health shows on
-// Manage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
+// Backstage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
 (function () {
 
   // Is the extension in this browser? It answers a ping; on a computer, no answer means the Live pill offers it. (Phones
@@ -4736,7 +4736,7 @@ document.addEventListener('click', e => {
   }
   if (pill) {
     checkHealth();
-    pill.addEventListener('click', async () => {  // run the round trip on the test character (Manage › askdnd › D&D Beyond bridge)
+    pill.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › askdnd › D&D Beyond bridge)
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
       if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }
@@ -4746,7 +4746,7 @@ document.addEventListener('click', e => {
   }
 
   const all = document.querySelector('[data-br-check-all]');
-  if (all) all.addEventListener('click', async () => {  // Manage › askdnd › D&D Beyond bridge: every kind of change, out and back
+  if (all) all.addEventListener('click', async () => {  // Backstage › askdnd › D&D Beyond bridge: every kind of change, out and back
     all.disabled = true;
     const r = await fetch('/bridge/check?full=1', { method: 'POST', headers: { Accept: 'application/json' } });
     if (r.ok) window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin);
@@ -4754,7 +4754,7 @@ document.addEventListener('click', e => {
     setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
   });
 
-  // Manage › Design system: its navigation row lights the section you're in and keeps that chip in view; ↑ Top goes back
+  // Backstage › Design system: its navigation row lights the section you're in and keeps that chip in view; ↑ Top goes back
   // up (Brett, 2026-10-29)
   const dsJump = document.querySelector('[data-ds-jump]');
   if (dsJump && window.IntersectionObserver) {
@@ -4821,13 +4821,13 @@ document.addEventListener('click', e => {
   document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"], [data-menu="more-menu"]')) fill(); });
 })();
 
-// ---------------------------------------------------------------- For you's count on the Admin gear
-// (Brett, Nov 19, the work flow's slice 2: a count on the gear, For you first in its menu) Everything waiting on him,
+// ---------------------------------------------------------------- For you's count on Backstage
+// (Brett, Nov 19, the work flow's slice 2: a count on the gear, For you first in its menu; on Backstage since Nov 20) Everything waiting on him,
 // asked for once the page has shown (no page waits for it) and again when Found, Fixed, Tried changes; hidden at zero
 (function () {
-  const gear = document.querySelector('[data-for-you-count]');
-  if (!gear) return;
-  const btn = gear.closest('button'), said = btn.getAttribute('aria-label');
+  const badge = document.querySelector('[data-for-you-count]');
+  if (!badge) return;
+  const btn = badge.closest('button'), said = btn.getAttribute('aria-label');
   const KEY = 'askdnd-for-you-count';  // (the last count, shown at once so it never blinks between pages: issue 46)
   let tick = null;
   function put(n) {

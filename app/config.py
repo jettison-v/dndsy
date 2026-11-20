@@ -32,7 +32,7 @@ ALLOWED_EMAILS = parse_allowlist(os.getenv("ALLOWED_EMAILS"))
 # Admins can import data and review/publish recaps. Must also be in ALLOWED_EMAILS.
 ADMIN_EMAILS = parse_allowlist(os.getenv("ADMIN_EMAILS"))
 # At least reviewers in every campaign (draft, review and publish recaps), without
-# People, Characters, Usage, Data or the campaign doc. Roles are normally set on Manage › People.
+# People, Characters, Usage, Data or the campaign doc. Roles are normally set on Backstage › People.
 REVIEWER_EMAILS = parse_allowlist(os.getenv("REVIEWER_EMAILS"))
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "")

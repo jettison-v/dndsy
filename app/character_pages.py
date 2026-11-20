@@ -4,7 +4,7 @@
   a fight), Sheet (/characters/{id}: the full sheet in tabs) and Plan (/characters/{id}/plan:
   the player's notes, shortlists and reminders; never the DM). The header is the same in each.
 - /battle and /character open on the signed-in person's own character (set on
-  Manage › People); /party shows everyone.
+  Backstage › People); /party shows everyone.
 - Keeping the copy fresh (Refresh now) lives in the menu bar's Live control
   (app/live.py). A page shows a new copy by fetching itself again and swapping in its main (app.js
   "showInPlace"), whatever brought it.
@@ -830,7 +830,7 @@ def _table() -> str:
 
 
 def _back(request: Request, default: str) -> str:
-    """Where a refresh sends you back to: Manage › Table when it was pressed there, else `default`."""
+    """Where a refresh sends you back to: Backstage › Table when it was pressed there, else `default`."""
     return _table() if request.query_params.get("from") == "table" else default
 
 
@@ -859,7 +859,7 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
 
 @router.post("/characters/{character_id:int}/link")
 def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Session = Depends(get_db)):
-    """Admin (Manage › Table): save the D&D Beyond link, then fetch the character."""
+    """Admin (Backstage › Table): save the D&D Beyond link, then fetch the character."""
     ch = db.get(Character, character_id)
     if not ch or not can_run_table(current_user(request), ch.campaign_id):
         return _forbidden(request, "Only the DM or an admin can change D&D Beyond links.")

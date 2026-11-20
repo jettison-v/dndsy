@@ -551,7 +551,7 @@ KIND_USES = {"attack": "attacks", "save": "saves", "check": "checks", "damage": 
 
 
 def usage_name(kind: str, action: str, via: str) -> str:
-    """A roll's use, as Admin › Features counts it: "Rolls: attacks", "Roll card: damage", "Rolls: rerolls"."""
+    """A roll's use, as Backstage › Features counts it: "Rolls: attacks", "Roll card: damage", "Rolls: rerolls"."""
     what = {"reroll": "rerolls", "bonus": "added dice", "damage": "damage"}.get(action) or KIND_USES.get(kind, "other")
     return f"{'Roll card' if via == 'card' else 'Rolls'}: {what}"
 

@@ -52,7 +52,7 @@ def local_href(url: str) -> str:
 
 
 def doc_of(path: str) -> dict | None:
-    """The mockup a question asks on, as Manage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
+    """The mockup a question asks on, as Backstage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
     if not path:
         return None
     from app.documents import doc_id, find

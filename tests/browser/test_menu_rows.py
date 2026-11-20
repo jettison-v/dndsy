@@ -7,10 +7,11 @@ from tests.browser.pages import open_door
 def test_a_menu_row_opens_its_page_from_its_far_edge(people, server):
     admin = people("admin")
     page = admin.open("/c/main/campaign")
-    for door, item, lands in (("admin", "overview", "/manage/askdnd"), ("manage", "inbox", "/manage/inbox"), ("account", "help", "/help")):
+    for door, item, lands in (("manage", "overview", "/manage/askdnd"), ("manage", "inbox", "/manage/inbox"), ("account", "help", "/help")):
         menu = open_door(page, door)
         row = menu.locator(f'[data-item="{item}"]')
-        box, menu_box = row.bounding_box(), menu.bounding_box()
+        within = row.locator("xpath=ancestor::*[@data-half][1]")  # (Backstage's menu has two halves side by side: a row spans its half)
+        box, menu_box = row.bounding_box(), (within if within.count() else menu).bounding_box()
         assert box["width"] >= menu_box["width"] - 24, f"{door} › {item} isn't as wide as its menu"
         page.mouse.click(box["x"] + box["width"] - 3, box["y"] + box["height"] - 3)  # (its far corner, away from its words)
         page.wait_for_url(f"**{lands}*")

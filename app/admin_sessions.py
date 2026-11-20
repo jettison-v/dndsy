@@ -1,4 +1,4 @@
-"""Manage › Sessions: the campaign's sessions (drafting, review, publishing) and each session's review page.
+"""Backstage › Sessions: the campaign's sessions (drafting, review, publishing) and each session's review page.
 
 Actions on the review page are HTMX requests: each returns the re-rendered
 review body (plus a toast) so the page updates in place. Without HTMX they

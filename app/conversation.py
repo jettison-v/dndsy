@@ -96,7 +96,7 @@ def check(
     db.add(run)
     db.commit()
     try:
-        spending.check(db)  # the monthly limit set on Manage › Usage
+        spending.check(db)  # the monthly limit set on Backstage › Usage
         client = (client_factory or anthropic.Anthropic)()
         with client.beta.messages.stream(
             model=MODEL,

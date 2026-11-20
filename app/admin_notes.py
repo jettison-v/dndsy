@@ -1,5 +1,5 @@
 """Admin: the campaign doc (a Google Doc of session notes that recap drafts come
-from), Manage › Sessions › Campaign doc (/c/<campaign>/manage/sessions/doc), and its Sync button.
+from), Backstage › Sessions › Campaign doc (/c/<campaign>/manage/sessions/doc), and its Sync button.
 
 Players' character docs used to sync here too; structured player notes on the
 Character page replace them (2026-10-18). Old character-doc sources are no longer

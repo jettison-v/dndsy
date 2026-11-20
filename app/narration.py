@@ -3,7 +3,7 @@
 
 The narration is made the first time anyone presses Listen on a published recap (OpenAI's text to speech, a voice told
 to sound like a dark fantasy series' "previously on"), kept in file storage like a picture (`Recap.narration_key`) and
-counted on Manage › Usage (an ExtractionRun of source "narration", at an estimated cost, under the monthly limit). Only
+counted on Backstage › Usage (an ExtractionRun of source "narration", at an estimated cost, under the monthly limit). Only
 the published recap's words are sent, and the campaign's name. A recap published again gets its own narration.
 
 The comic is the recap's paragraphs, each shown for its share of the narration's length (a narrator keeps an even

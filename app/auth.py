@@ -27,7 +27,7 @@ router = APIRouter()
 
 def current_user(request: Request) -> dict | None:
     user = request.session.get("user")
-    # Re-check on every request so removing someone (Manage › Accounts or ALLOWED_EMAILS) locks them out.
+    # Re-check on every request so removing someone (Backstage › Accounts or ALLOWED_EMAILS) locks them out.
     if user and access.level(user.get("email")):
         from app.history import set_actor
 
@@ -37,7 +37,7 @@ def current_user(request: Request) -> dict | None:
 
 
 def _allows(user: dict | None, rule: str, campaign_id: int | None = None) -> bool:
-    """Ask the shared rules in app/access.py (the chart on Manage › Table is drawn from them). Campaign roles are
+    """Ask the shared rules in app/access.py (the chart on Backstage › Table is drawn from them). Campaign roles are
     about one campaign: the first one unless another is given."""
     if not user:
         return False
@@ -75,17 +75,17 @@ def can_set_house_rules(user: dict | None, campaign_id: int | None = None) -> bo
 
 
 def can_run_table(user: dict | None, campaign_id: int | None = None) -> bool:
-    """Manage › Table's changes: the campaign's DM and admins (a brand-new email stays an admin's)."""
+    """Backstage › Table's changes: the campaign's DM and admins (a brand-new email stays an admin's)."""
     return _allows(user, "table", campaign_id)
 
 
 def can_see_table(user: dict | None, campaign_id: int | None = None) -> bool:
-    """Manage › Table (who plays which character): the campaign's DM sees it; admins also change it."""
+    """Backstage › Table (who plays which character): the campaign's DM sees it; admins also change it."""
     return _allows(user, "see_table", campaign_id)
 
 
 def can_edit_settings(user: dict | None, campaign_id: int | None = None) -> bool:
-    """Manage › Settings (the campaign's name, DM's name, D&D Beyond id): the campaign's DM and admins."""
+    """Backstage › Settings (the campaign's name, DM's name, D&D Beyond id): the campaign's DM and admins."""
     return _allows(user, "settings", campaign_id)
 
 
@@ -161,7 +161,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
 
 
 def _record_sign_in(db: Session, email: str, name: str) -> None:
-    """Remember the person's Google name and when they last signed in (Manage › Accounts)."""
+    """Remember the person's Google name and when they last signed in (Backstage › Accounts)."""
     from app.models import User
 
     try:

@@ -17,7 +17,7 @@ router = APIRouter()
 
 # What each row was checked against (its status), most trusted first; `kind` styles its tag
 VERDICTS = {
-    "dm": ("Your DM's ruling", "dm", "A correction for this campaign (Manage › House rules)."),
+    "dm": ("Your DM's ruling", "dm", "A correction for this campaign (Backstage › House rules)."),
     "rules": ("2024 rules", "ok", "askdnd's rules for it, checked against the 2024 books; the sheet gives the numbers."),
     "sheet": ("D&D Beyond", "ok", "D&D Beyond's own numbers for it, added up by askdnd."),  # (was "The sheet": feedback 68, it confused players)
     "unchecked": ("Not checked yet", "warn", "From D&D Beyond's data or read from its words: askdnd hasn't checked it against the 2024 rules."),

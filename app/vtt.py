@@ -1,4 +1,4 @@
-"""What a campaign has switched on: Features and Labs (Manage › Settings; Brett, 2026-11-03).
+"""What a campaign has switched on: Features and Labs (Backstage › Settings; Brett, 2026-11-03).
 
 **Features** are finished: one switch each, per campaign, for its DM or an admin. **Labs** is one switch per campaign
 that shows the features still being tried, each with its own toggle, a plain description of what it does and where it
@@ -61,7 +61,7 @@ FEATURES: list[Feature] = [
     Feature("recap_listen", "Listen to the recap",
             "On Campaign › Previously on… and each session in Sessions, ▶ Listen plays the recap read aloud by a narrator, over the pictures of who and "
             "what each paragraph names, panning slowly, with the words on screen: a \"previously on\" to start the night. "
-            "The first Listen on a recap has OpenAI read it (a few cents, counted on Manage › Usage); after that it's kept.",
+            "The first Listen on a recap has OpenAI read it (a few cents, counted on Backstage › Usage); after that it's kept.",
             "Nice to have, Nov 6 (Brett): tried at the table first.",
             labs=True, state="Ready to try"),
 ]
@@ -85,7 +85,7 @@ def on(campaign: Campaign | dict | None, piece: str) -> bool:
 
 
 def rows(campaign: Campaign) -> dict:
-    """Manage › Settings: the Features with whether each is on here, whether Labs is, and the Labs features."""
+    """Backstage › Settings: the Features with whether each is on here, whether Labs is, and the Labs features."""
     kept = campaign.vtt_pieces or []
     return {"features": [{"f": f, "on": f.key in kept} for f in FEATURES if not f.labs],
             "labs_on": LABS in kept,

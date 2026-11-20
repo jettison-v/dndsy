@@ -327,6 +327,12 @@ def test_claudes_lines_go_to_the_senders_or_only_to_brett_and_questions_are_chec
     for bad in ({"choices": [{"label": "A"}]}, {"choices": [{"label": "A"}, {"label": "B"}], "mine": 5}, {"choices": "A"}):
         r = api.post("/api/fft/questions", headers=_as(CLAUDE), json={"about": "issue", "about_id": issue.id, "text": "Which?", **bad})
         assert r.status_code == 400, bad
+    qid = ok.json()["id"]
+    assert api.post(f"/api/fft/questions/{qid}/withdraw", json={"why": "Replaced"}).status_code == 404  # (Claude's key only: without it, as if it weren't there)
+    assert api.post(f"/api/fft/questions/{qid}/withdraw", headers=_as(CLAUDE), json={}).status_code == 400  # (it says why)
+    assert api.post(f"/api/fft/questions/{qid}/withdraw", headers=_as(CLAUDE), json={"why": "Replaced by a later pick"}).status_code == 200
+    assert not [q for q in api.get("/api/fft/questions?open=1", headers=_as(CLAUDE)).json()["items"] if q["id"] == qid]
+    assert api.post(f"/api/fft/questions/{qid}/withdraw", headers=_as(CLAUDE), json={"why": "Again"}).status_code == 409
 
 
 def test_live_marks_only_fixes_askdnd_runs(monkeypatch):

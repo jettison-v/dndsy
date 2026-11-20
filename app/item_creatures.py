@@ -3,7 +3,7 @@ homebrew item, played like a familiar.
 
 - **Set up once, by the DM** (A): an item's words can't say everything (which beast?), so the campaign's DM (or an admin)
   tells askdnd in the item's side panel, under Correct this: a campaign correction (a house rule of kind "sheet", field
-  "brings", listed on Manage › House rules). askdnd fills in what the words do say (`read`); the DM checks it and picks
+  "brings", listed on Backstage › House rules). askdnd fills in what the words do say (`read`); the DM checks it and picks
   the creature from the campaign's books, its own creations and the SRD (app/rules_data.py).
 - **askdnd's own creature** (A), like Find Steed's (app/summons.py): kept on the character (`Character.companions`,
   "own", with the item's name), its Hit Points in askdnd, shown by Your creatures (Battle's switch by the name, its own
@@ -103,7 +103,7 @@ def until(cfg: dict | None) -> str:
 
 
 def describe(value: str) -> str:
-    """The setup in a few words (Manage › House rules)."""
+    """The setup in a few words (Backstage › House rules)."""
     try:
         cfg = json.loads(value)
     except ValueError:

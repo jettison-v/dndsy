@@ -14,7 +14,7 @@ A house rule is a row that points at what it changes (a spell's recipe, by name)
 the row brings the tool's value back. What a house rule can change is listed in FIELDS.
 
 Rules are read on every character page, so they're cached in memory for a few seconds and reloaded after any
-change on Manage › House rules (like app/access.py). Without a campaign id, the rules of the campaign the person
+change on Backstage › House rules (like app/access.py). Without a campaign id, the rules of the campaign the person
 asking is in apply.
 """
 
@@ -28,7 +28,7 @@ from sqlalchemy import select
 
 from app import roll_recipes as rr
 
-# What a house rule on a spell can change: (field, label on Manage › House rules)
+# What a house rule on a spell can change: (field, label on Backstage › House rules)
 FIELDS = {
     "once": "One roll for all",       # every dart (or other instance) deals the same rolled damage
     "note": "A ruling",               # a short note shown in the roll window
@@ -87,7 +87,7 @@ def can_roll_once(recipe: dict | None) -> bool:
 
 
 def describe(field: str, value: str, recipe: dict | None = None) -> str:
-    """A house rule in a few words, as the roll window and Manage › House rules show it."""
+    """A house rule in a few words, as the roll window and Backstage › House rules show it."""
     if field == "once":
         each = next((e.get("count_label") for e in (recipe or {}).get("events") or [] if (e.get("count") or 1) > 1), "") or "instance"
         return f"One roll for all {each}s: every {each} deals the same damage"

@@ -1,6 +1,6 @@
 """The monthly Claude spending limit (CLAUDE.md: "set and respect a monthly spend limit").
 
-The admin sets it on Manage › Usage (tool_settings "monthly_limit_usd": one limit for
+The admin sets it on Backstage › Usage (tool_settings "monthly_limit_usd": one limit for
 the whole tool, since one Anthropic account pays for every campaign; blank means no limit). Every Claude call (drafting a session, checking a written account,
 rewriting a description) calls check() first, so once this month's spending
 reaches the limit askdnd refuses new calls and says why, instead of spending
@@ -52,7 +52,7 @@ def reached(db: Session, now: datetime | None = None) -> str | None:
     if spent < cap:
         return None
     return (f"This month's spending on Claude and drawn pictures (${spent:.2f}) has reached the ${cap:.2f} monthly limit. "
-            "An admin can raise it on Manage › Usage; it resets on the 1st.")
+            "An admin can raise it on Backstage › Usage; it resets on the 1st.")
 
 
 def check(db: Session) -> None:

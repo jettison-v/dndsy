@@ -9,12 +9,12 @@ Two kinds of role (data organization step 2, docs/plans/2026-10-21-data-organiza
   everything a reviewer does in their campaign and never sees the notes of the
   characters in it (CLAUDE.md).
 
-Admins set tool roles on Manage › Accounts and campaign roles on each campaign's Manage › Table.
+Admins set tool roles on Backstage › Accounts and campaign roles on each campaign's Backstage › Table.
 The Railway variables still act as a floor:
 ALLOWED_EMAILS can sign in, REVIEWER_EMAILS are at least reviewers in every campaign.
 
 `allows()` below is the one list of these rules: app/auth.py's checks use it, and
-the chart on Manage › Table is drawn from it.
+the chart on Backstage › Table is drawn from it.
 
 Access is checked on every request, so the rows are cached in memory for a few
 seconds and reloaded after any change made on Accounts or Table.
@@ -191,7 +191,7 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
         return ADMIN
     stored = ((_rows() if rows is None else rows).get(email) or {}).get("access")
     if stored == REMOVED:
-        return None  # removed on Manage › Accounts
+        return None  # removed on Backstage › Accounts
     if stored in TOOL_ROLES:
         return stored
     listed = config.is_allowed(email, config.ALLOWED_EMAILS) or config.is_allowed(email, config.REVIEWER_EMAILS)
@@ -200,7 +200,7 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
 
 def sends_feedback(email: str | None, rows: dict[str, dict] | None = None) -> bool:
     """Whether this person can send notes about askdnd (app/fft/sending.py): admins, and accounts switched on for it on
-    Manage › Accounts (Brett's test accounts, Nov 3)."""
+    Backstage › Accounts (Brett's test accounts, Nov 3)."""
     if level(email, rows) == ADMIN:
         return True
     return bool(email and ((_rows() if rows is None else rows).get(email.strip().lower()) or {}).get("feedback"))
@@ -226,7 +226,7 @@ def is_dm(email: str | None, campaign_id: int | None = None) -> bool:
 
 # ------------------------------------------------------------------ what each role may do
 # The single list of rules. app/auth.py (and pictures, suggestions) ask these, and the
-# chart on Manage › Table is drawn from them, so the chart can't drift from the app.
+# chart on Backstage › Table is drawn from them, so the chart can't drift from the app.
 
 def dm_over(viewer: str | None, person: str | None, rows: dict[str, dict] | None = None) -> bool:
     """The viewer is the DM of a campaign this person plays in (not as its DM): their character notes and anything a
@@ -255,7 +255,7 @@ def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> boo
         "review": runs,                     # recaps, Claude's questions, key moments, character refresh
         "house_rules": campaign_role == DM or tool == ADMIN,  # the DM's rulings on how askdnd rolls and reads things
         "table": campaign_role == DM or tool == ADMIN,  # who's at the table (a brand-new email stays an admin's)
-        "see_table": campaign_role == DM or tool == ADMIN,  # Manage › Table: who plays which character (Brett, 2026-10-23)
+        "see_table": campaign_role == DM or tool == ADMIN,  # Backstage › Table: who plays which character (Brett, 2026-10-23)
         "settings": campaign_role == DM or tool == ADMIN,   # the campaign's name, DM's name, D&D Beyond id (Brett, 2026-10-23)
         "fight_hidden": campaign_role == DM or tool == ADMIN,  # a token the DM hid in D&D Beyond's VTT, in the fight band (app/fight.py)
         "fight_order": campaign_role == DM or tool == ADMIN,  # change the fight's order (app/initiative.py; in D&D Beyond only the DM does)
@@ -302,7 +302,7 @@ NOT_INCLUDED = [
 
 
 def chart() -> dict:
-    """The access chart on Manage › Table: a cell per campaign role, plus Admin."""
+    """The access chart on Backstage › Table: a cell per campaign role, plus Admin."""
     rows = []
     for group, what, rule in CHART:
         cells = ["own"] * len(COLUMNS) if rule == "own" else [

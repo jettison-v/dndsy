@@ -25,7 +25,7 @@ def made(db, main, name, kind="npc", **kw):
     (("npc", ""), "Enter a name."),
     (("npc", "x" * 201), "too long"),
     (("dragon", "Smaug"), "Pick what kind"),
-    (("pc", "Someone"), "Manage › Characters"),
+    (("pc", "Someone"), "Backstage › Characters"),
     (("npc", "Cole"), "already in the campaign record"),
 ])
 def test_a_new_entry_says_what_it_needs(db, main, args, said):

@@ -31,7 +31,7 @@ def user_row(db: Session, user: dict | None) -> User | None:
 
 
 def my_character(db: Session, user: dict | None) -> Character | None:
-    """The character the signed-in person plays (set on Manage › People): the one in the campaign they're in now,
+    """The character the signed-in person plays (set on Backstage › People): the one in the campaign they're in now,
     else their first."""
     me = user_row(db, user)
     if not me:

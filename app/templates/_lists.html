@@ -111,7 +111,7 @@
 <div class="empty-state" data-empty><span>{{ what }}</span>{% if caller is defined %} {{ caller() }}{% endif %}</div>
 {%- endmacro %}
 
-{# The status track (docs/DESIGN.md, Manage › askdnd › Design system): where something stands as its steps, the one it's
+{# The status track (docs/DESIGN.md, Backstage › askdnd › Design system): where something stands as its steps, the one it's
    at lit: done green, under way blue, waiting on you amber (Testing's areas), a stop grey with the rest struck through.
    steps: [{label, state: done | now | you | todo | stop | skip}] (your_notes.track, testing.areas_view) #}
 {% macro status_track(steps, label="Where it stands") -%}

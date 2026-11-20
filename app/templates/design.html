@@ -10,7 +10,7 @@
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
 {% from "_admin_bits.html" import state_word, state_line, timeline, more_menu, rd_section %}
-{% block title %}Design system · Manage · askdnd{% endblock %}
+{% block title %}Design system · Backstage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
 {% macro ds(name, code, about, later="") -%}
@@ -139,8 +139,8 @@
     {{ ds("A pill with a menu", "details.act-more > summary .state-word + .act-menu(.end) · _fft_status.html", "A setting whose current choice is a pill and whose choices open under it, each with one line saying what it does, so no separate Help is needed (Deploys in the status bar on For you and Where it stands, Brett's pick A, issue 42; the lane menu is the same pieces). At a row's right end the menu opens toward the page (.act-menu.end). The pill never shortens; words beside it do first.") }}
     <div class="ds-row"><details class="act-more fft-deploys" style="margin-left:0"><summary aria-label="Deploys: When tests pass (sample)"><span class="state-word fft-deploys-pill" data-tone="independent"><span class="k">Deploys:</span> When tests pass ▾</span></summary>
       <div class="act-menu fft-deploys-menu" role="group" aria-label="Deploys (sample)"><button type="button" data-mode-pick="sample" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="pick">After my local try</span><small>Visible changes wait for your try on your Mac.</small></button><button type="button" data-mode-pick="sample" aria-pressed="true"><span class="ck" aria-hidden="true">✓</span><span class="pick">When tests pass</span><small>The default. Visible changes go live once their tests pass.</small></button></div></details></div>
-    {{ ds("Badge on a menu button", ".notes-dot-badge · .for-you-badge", "A count on a button of the menu bar, at its top corner. Red on your picture for Notes you sent's news; amber, as Yours is, on the Admin gear for For you (everything waiting on you; admins only). Hidden at zero.") }}
-    <div class="ds-row"><span class="ds-badge-host admin-gear">⚙<span class="notes-dot-badge for-you-badge">5</span></span></div>
+    {{ ds("Badge on a menu button", ".notes-dot-badge · .for-you-badge", "A count on a button of the menu bar, at its top corner. Red on your picture for Notes you sent's news; amber, as Yours is, on Backstage for For you (everything waiting on you; admins only). Hidden at zero.") }}
+    <div class="ds-row"><span class="manage"><button type="button" class="door">Backstage ▾<span class="notes-dot-badge for-you-badge">5</span></button></span></div>
     {{ ds("Row action", ".row-act · .row-act.conc-act", "An action inside a list's row (the Spell Book's Roll and Concentrate), compact so the row keeps its room; Concentrate is its ◎ icon, labelled on hover.") }}
     <div class="ds-row"><button class="row-act" type="button">Roll</button><button class="row-act conc-act" type="button" data-tip="Concentrate on Fly" aria-label="Concentrate on Fly">{{ cond_icon("Concentration") }}</button></div>
     {{ ds("Roll chip", ".roll-chip · .roll-hit", "Rolls dice (to hit, damage, healing); amber on hover. Kept separate from Chips (Brett, 2026-10-22).") }}
@@ -180,9 +180,9 @@
   <section class="section" id="surfaces">
     <h2>Sections and tiles</h2>
     {{ ds("Section", ".section", "A card on the page background. This page is made of them.") }}
-    {{ ds("Packed cards", ".packed > .panel", "Cards of different heights side by side, packed into columns so a long one never leaves a gap beside the short ones (Manage › askdnd › Product areas; Brett's round, Nov 18, issue 26). They read down each column, then across; a card never splits between columns.") }}
+    {{ ds("Packed cards", ".packed > .panel", "Cards of different heights side by side, packed into columns so a long one never leaves a gap beside the short ones (Backstage › askdnd › Product areas; Brett's round, Nov 18, issue 26). They read down each column, then across; a card never splits between columns.") }}
     <div class="packed"><div class="panel"><b>Battle</b><p class="note">Hit points · Conditions · Death saves · Casting · Items · Resources</p></div><div class="panel"><b>Rolls and dice</b></div><div class="panel"><b>The table</b><p class="note">Live · Party</p></div><div class="panel"><b>Manage</b></div></div>
-    {{ ds("Stat", ".stats > .stat", "A big number with what it means (Manage › Usage). .attention adds a red edge.") }}
+    {{ ds("Stat", ".stats > .stat", "A big number with what it means (Backstage › Usage). .attention adds a red edge.") }}
     <div class="stats"><div class="stat"><span>This month</span><b>$4.20</b><small>$15.80 left of $20.00</small></div><div class="stat attention"><span>Backups</span><b>2 days</b><small>Last backup failed</small></div><div class="stat"><span>All time</span><b>$31.06</b><small>48 drafts</small></div></div>
     {{ ds("Battle bar", ".battlebar", "The top of Battle, scrolling with the page: the resources row (Focus Points, Inspiration, Rest), then the number tiles beside the stacked saves, with a line under it.") }}
     {{ ds("Number tiles", ".strip.compact > .nt · _char.html ntile()", "Every number tile, on Battle, Sheet and Party (the UI pass, 2026-11-02): three rows, so nothing wraps, jumps or covers anything while a change is on its way. The label row, with the ↻ mark and any buttons at its right (− and + on Battle's Hit points); the value on one line; a foot for badges (Adv) and small notes (+5 temp). Each opens how it adds up.") }}
@@ -348,7 +348,7 @@
         <tr><td><b>Long words</b></td><td>Break rather than widen the page (a web address in a note).</td></tr>
       </tbody>
     </table></div>
-    {{ ds("Menu", ".menu", "Drops from the menu bar (Party, Manage, your picture): a fixed width, one line per item with its name only, groups with a small heading.") }}
+    {{ ds("Menu", ".menu", "Drops from the menu bar (Party, Backstage, your picture): a fixed width, one line per item with its name only, groups with a small heading.") }}
     <div class="ds-sample"><div class="menu" style="position:static">
       <div class="menu-group">Help</div>
       <a href="#narrow">Take the tour</a>
@@ -364,21 +364,21 @@
     <div class="scroll"><div class="story"><p>The party left Waterdeep at dawn, the dragon's map rolled tight in a waxed case. By dusk the road had turned to mud and the hired guide had quietly vanished.</p></div></div>
   </section>
   <section class="section" id="manage">
-    <h2>Manage pages</h2>
-    <p class="hint">Every Manage page is built from these and nothing else: a test fails on a Manage page with its own inline spacing (tests/test_design_system.py).</p>
-    {{ ds("Two doors", "Manage ▾ · ⚙ Admin ▾ · .menu-head.camp | .tool", "Manage is this campaign's (the DM, reviewers, admins), red; Admin is askdnd's as a whole (admins only), blue. Each menu opens with a head saying which, lists what's opened most, the rest on one line, and Manage lists your other campaigns.") }}
+    <h2>Backstage pages</h2>
+    <p class="hint">Every Backstage page is built from these and nothing else: a test fails on a Backstage page with its own inline spacing (tests/test_design_system.py).</p>
+    {{ ds("Backstage", "Backstage ▾ · .manage-menu.halves · .menu-half · .menu-head.camp | .tool", "One door for everything the table doesn't see while playing (Menu Bar Doors, Nov 20). Its menu has two halves side by side: This campaign (the DM, reviewers, admins), red, and Global, askdnd as a whole (admins only), blue; whoever has one half sees just it. Each half opens with a head saying which, lists what's opened most, the rest on one line, and This campaign lists your other campaigns.") }}
     <div class="ds-row ds-menus">
-      <div class="menu manage-menu ds-menu"><div class="menu-head camp"><b>The Lost Mine</b><span>This campaign</span></div>
+      <div class="menu manage-menu halves ds-menu"><div class="menu-half"><div class="menu-head camp"><b>This campaign</b><span>The Lost Mine</span></div>
         <a href="#manage" class="menu-count">Needs you<span class="mcount">3</span></a><a href="#manage" class="menu-count">Inbox<span class="mcount">5</span></a><a href="#manage" class="menu-count">Sessions</a><a href="#manage" class="menu-count">Table</a>
         <p class="menu-more"><a href="#manage">House rules</a><a href="#manage">Settings</a><a href="#manage">History</a><a href="#manage">DM guide</a></p>
         <div class="menu-group">Your other campaigns</div><a href="#manage">Test table<small>DM</small></a></div>
-      <div class="menu manage-menu ds-menu"><div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
-        <a href="#manage">Overview</a><a href="#manage">Accounts</a><a href="#manage">Campaigns</a><a href="#manage">Usage</a><a href="#manage">Backups and imports</a>
-        <p class="menu-more"><a href="#manage">askdnd history</a><a href="#manage">Tool corrections</a><a href="#manage">Dice tuning</a><a href="#manage">Design system</a></p></div>
+      <div class="menu-half"><div class="menu-head tool"><b>Global</b><span>Every campaign</span></div>
+        <div class="menu-group">General</div><a href="#manage">Overview</a><a href="#manage">Accounts</a><a href="#manage">Campaigns</a><a href="#manage">Usage</a><a href="#manage">Backups and imports</a>
+        <p class="menu-more"><a href="#manage">askdnd history</a><a href="#manage">Tool corrections</a><a href="#manage">Dice tuning</a><a href="#manage">Design system</a></p></div></div>
     </div>
-    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Manage and Admin page, in its half's colour, with the way to the other half on the right.") }}
-    <div class="ds-band"><div class="manage-band camp"><span class="sr">The Lost Mine: this campaign's Manage</span><a class="manage-cross btn" href="#manage" title="askdnd admin, the same in every campaign">⚙ Admin</a></div></div>
-    <div class="ds-band"><div class="manage-band tool"><span class="sr">askdnd admin: the same in every campaign</span><a class="manage-cross btn" href="#manage" title="The Lost Mine">Manage</a></div></div>
+    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Backstage page, in its half's colour, with the way to the other half on the right.") }}
+    <div class="ds-band"><div class="manage-band camp"><span class="sr">The Lost Mine: this campaign's Backstage</span><a class="manage-cross btn" href="#manage" title="Global: askdnd, the same in every campaign">Global</a></div></div>
+    <div class="ds-band"><div class="manage-band tool"><span class="sr">Global: askdnd, the same in every campaign</span><a class="manage-cross btn" href="#manage" title="The Lost Mine">This campaign</a></div></div>
     {{ ds("Section list", "_manage_head.html · .manage-side · .manage-sec · .manage-jump", "The page's half down the left, in sections, most often opened first (this page has one at 1240px and wider). Narrower, the same list opens from the jump control under the band. The list sits in the page's left padding, so the page keeps its width.") }}
     <div class="ds-narrow"><nav class="manage-jump-list" aria-label="Section list sample"><span class="manage-sec">Every week</span><a href="#manage" class="on">Needs you<span class="mcount">3</span></a><a href="#manage">Inbox<span class="mcount">5</span></a><a href="#manage">Sessions</a><span class="manage-sec">The table</span><a href="#manage">Table</a><a href="#manage">House rules</a></nav></div>
     {{ ds("Overview card", ".ov-cards > a.ov-card · .ov-state.ok | .warn", "One per page on askdnd's Overview: its name, how it stands (green when fine, amber when it needs a look), and what the page is for. The whole card opens the page.") }}
@@ -387,7 +387,7 @@
     <div class="title-row"><h1>Table</h1><button class="btn title-action" type="button">Refresh all</button></div>
     <p class="subtitle">Who plays in The Lost Mine and with which character.</p>
     {{ ds("Section", ".section > h2 + .hint", "A card with a heading and, when it helps, one hint line. The gaps are fixed, so never add margins.") }}
-    {{ ds("Records", ".records.cols-2 | cols-3 | cols-3-even | cols-4 > .record", "Any list of things on Manage: the thing (bold name, then notes), optional fields, then its buttons on the right. A header row (.records-head) names the columns. On phones the fields wrap under the name.") }}
+    {{ ds("Records", ".records.cols-2 | cols-3 | cols-3-even | cols-4 > .record", "Any list of things on Backstage: the thing (bold name, then notes), optional fields, then its buttons on the right. A header row (.records-head) names the columns. On phones the fields wrap under the name.") }}
     <ul class="records cols-4">
       <li class="records-head" aria-hidden="true"><span>Character</span><span>Played by</span><span>D&amp;D Beyond</span><span></span></li>
       <li class="record"><span class="record-main"><b>Brin</b><span class="note">Fighter 5</span></span>
@@ -442,7 +442,7 @@
     <div class="ds-sample"><div class="fight-band" data-turn="enemy"><span class="fb-round"><span class="fb-round-tx"><small>Round</small><b>2</b></span></span><span class="fb-call"><strong class="fb-head">Enemy 1’s turn</strong><span class="fb-sub"><span class="fb-mine">You’re next</span></span></span><span class="fb-order"><span class="fb-who enemy now"><span class="fb-pic">E</span><span class="fb-name">Enemy 1</span></span><span class="fb-who party"><span class="fb-pic">C</span><span class="fb-name">Cole</span></span></span></div></div>
     {{ ds("Dying tile", ".dying.dying | .stable | .out · _char.html hp_tile, dying_marks", "At 0 Hit Points the Hit points tile is the Dying tile: the death save marks from the sheet (green successes, red failures) and the Roll, which marks itself (app/death_saves.py). Stable turns it green; at three failures there's no Roll and the DM rules. Party's has the marks without the Roll.") }}
     <div class="strip compact ds-row"><div class="dying dying"><small>Dying</small><b>0</b><span class="note"> / 31</span><span class="ds-marks"><span class="ds-set"><i class="ds-pip s"></i><i class="ds-pip"></i><i class="ds-pip"></i><span class="ds-k">✓</span></span><span class="ds-set"><i class="ds-pip f"></i><i class="ds-pip f"></i><i class="ds-pip"></i><span class="ds-k">✗</span></span></span><button type="button" class="roll-chip tile-roll">Roll</button></div><div class="dying stable"><small>Stable</small><b>0</b><span class="note"> / 31</span><span class="ds-marks"><span class="ds-set"><i class="ds-pip s"></i><i class="ds-pip s"></i><i class="ds-pip s"></i><span class="ds-k">✓</span></span><span class="ds-set"><i class="ds-pip f"></i><i class="ds-pip"></i><i class="ds-pip"></i><span class="ds-k">✗</span></span></span></div></div>
-    {{ ds("Status badge", "button.br-st", "The bridge's health, beside the title of Manage › askdnd › D&D Beyond bridge (admins); a click runs the check on the test character.") }}
+    {{ ds("Status badge", "button.br-st", "The bridge's health, beside the title of Backstage › askdnd › D&D Beyond bridge (admins); a click runs the check on the test character.") }}
   </section>
 </main>
 {% endblock %}

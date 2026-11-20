@@ -11,7 +11,7 @@ from app.config import parse_allowlist
 from app.importer import import_bundle
 from app.main import app
 from app.models import Campaign, Entity, GameSession, JobRun, User
-from tests.menu import door, has_door, items
+from tests.menu import door, half, half_items, has_half, items
 from tests.test_suggestions import client_for
 
 
@@ -22,26 +22,28 @@ def _clear():
 
 
 def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
-    """Brett, 2026-10-27 (docs/mockups/manage-menu.html, round 2 option A): two doors, Manage for this campaign and
-    Admin for askdnd as a whole, every page listing its half down the left under a line in its half's colour; since
-    Nov 13 (The Three Menus, docs/mockups/menus/) each in fixed groups, Manage by the DM's week with DM Tools inside,
-    the DM guide in the account menu instead, the gear's rarely opened pages on its Tuning line."""
+    """Brett, 2026-10-27 (docs/mockups/manage-menu.html, round 2 option A): two halves, this campaign's and askdnd's as
+    a whole, every page listing its half down the left under a line in its half's colour; since Nov 13 (The Three Menus,
+    docs/mockups/menus/) each in fixed groups, the campaign's by the DM's week with DM Tools inside, the DM guide in the
+    account menu instead, the rarely opened pages on Tuning's line; since Nov 20 (Menu Bar Doors) one door, Backstage,
+    its two halves side by side: This campaign and Global (its groups Waiting on you, General, People, Tuning)."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
     import_bundle(db, {"campaign": {"slug": "second", "name": "Second Wind"}})
     admin = client_for(monkeypatch, db, "brett@example.com")
     page = admin.get("/c/main/manage").text  # opens Needs you at the campaign's address
     assert "<h1>Needs you</h1>" in page and "What's waiting in The Lost Mine" in page
-    menu = door(page, "manage")
-    assert "The Lost Mine" in menu  # whose it is, at its head
+    menu = half(page, "campaign")
+    assert "The Lost Mine" in menu and "This campaign" in menu  # whose it is, at its head
     # the campaign's pages (the most used, then the rest on one line), then your other campaigns (tests/menu.py)
-    assert items(page, "manage") == ["needs", "inbox", "sessions", "dm-tools", "table", "house", "settings", "history", "campaign:second"]
+    assert half_items(page, "campaign") == ["needs", "inbox", "sessions", "dm-tools", "table", "house", "settings", "history", "campaign:second"]
+    assert items(page, "manage") == half_items(page, "campaign") + half_items(page, "askdnd")  # (one door, both halves)
     assert [g.split("<")[0] for g in menu.split('class="menu-group">')[1:]] == ["After the game", "The next game", "The table", "Your other campaigns"]
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
-    assert "askdnd admin" in door(page, "admin")
-    assert items(page, "admin") == ["for-you", "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
+    assert "Global" in half(page, "askdnd")
+    assert half_items(page, "askdnd") == ["for-you", "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
-    assert [g.split("<")[0] for g in door(page, "admin").split('class="menu-group">')[1:]] == ["People", "Tuning"]
+    assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Waiting on you", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' camp"') and "The Lost Mine" in band and 'class="manage-cross btn" href="/manage/askdnd"' in band
@@ -50,14 +52,14 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' tool"') and "askdnd admin" in band
+    assert band.startswith(' tool"') and "Global" in band
     assert 'class="manage-cross btn" href="/c/main/manage" title="The Lost Mine"' in band  # (short both ways, the campaign's name on hover: the UI review, Nov 16)
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
     assert side.index(">Overview<") < side.index(">Usage<") < side.index(">Accounts<") < side.index(">Design system<")  # (the menu is the page list)
 
     overview = admin.get("/manage/askdnd").text
-    assert "<h1>askdnd admin</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
+    assert "<h1>Global</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
     assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0, "feedback": 0, "for-you": 0}  # (the backup to check; notes for Claude and checks to try, admins)
 
 
@@ -66,8 +68,8 @@ def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     page = reviewer.get("/c/main/manage").text
-    assert {"sessions", "inbox"} <= set(items(page, "manage")) and not has_door(page, "admin")  # Admin is for admins
-    assert 'class="manage-band camp"' in page and "askdnd admin →" not in page
+    assert {"sessions", "inbox"} <= set(items(page, "manage")) and not has_half(page, "askdnd")  # Global is for admins
+    assert 'class="manage-band camp"' in page and 'class="manage-cross' not in page
     assert not {"table", "settings"} & set(items(page, "manage"))  # those are the DM's and admins'
     assert reviewer.get("/manage/askdnd").status_code == 403
     player = client_for(monkeypatch, db, "mark@example.com")

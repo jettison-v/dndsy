@@ -967,7 +967,7 @@ def extract_session(
     db.add(run)
     db.commit()
     try:
-        spending.check(db)  # the monthly limit set on Manage › Usage
+        spending.check(db)  # the monthly limit set on Backstage › Usage
         messages = build_messages(db, session, source, background, background_images, step=step, update=update)
         data, response = call_claude(client_factory(), messages, step=step)
         _usage(run, response)
