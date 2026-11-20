@@ -234,6 +234,25 @@ class FftTryIssue(Base):
     stops_round: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
 
+class FftLocalTry(_Stamped, Base):
+    """A change waiting for Brett's try on his Mac before it merges (Brett, Nov 19: while he's Available, Look work
+    gets a local round). What changed and what to look at are Claude's words, as it would say them in chat; `path` is
+    the page to open on Claude's local server. Answered good (it may merge), off (his words; it goes back to its plan)
+    or left (Available turned off first: it merges as Look work does, and its check comes to him on askdnd.ai)."""
+
+    __tablename__ = "fft_local_tries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    changed: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # a line each
+    look_at: Mapped[str] = mapped_column(Text, default="", server_default="")
+    path: Mapped[str] = mapped_column(String(300), default="/", server_default="/")
+    answer: Mapped[str] = mapped_column(String(8), default="", server_default="")  # "", good, off, left
+    words: Mapped[str] = mapped_column(Text, default="", server_default="")
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class FftQuestion(_Stamped, Base):
     """Something Claude asks Brett: about an issue, a check, an area, or a document (a decision on a mockup, kept with
     the version he saw). Answered in For you only; the answer names the question (R13)."""

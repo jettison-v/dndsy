@@ -1,0 +1,38 @@
+{# How things stand, one bar, on For you and Where it stands (Brett, Nov 19). Left: whether Claude is listening, and an
+   open round with End round. Right: "Deploys", one choice of three (his pick A on docs/mockups/deploy-controls/, general
+   so the module can go to another product): After my local try (visible changes wait for his try on his Mac), When tests
+   pass (the default), Paused (for any reason; pausing asks why, optional, and the bar says it). Two can't be on at once. What each part means is one Help ▾ button beside the choice, opening a short section under the bar (Brett, Nov 19: no
+   question-mark pointers; one place for the bar's help). `bar` is testing_page.status(), `back` the page it's on. #}
+{% set mode = bar.mode %}
+<div class="fft-banner fft-status" data-listening="{{ 1 if bar.listening else 0 }}" data-mode="{{ mode }}">
+  <div class="fft-status-left">
+    {% if bar.listening %}<span class="fb-listening fft-stat" data-stat="listening">Claude is listening{% if bar.listener %} <span class="note">({{ bar.listener.name }}, heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>
+    {% else %}<span class="fft-stat" data-stat="listening">Claude isn't listening{% if bar.listener and bar.listener.heard_at %} <span class="note">(last heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>{% endif %}
+    {% if bar.round %}<span class="fft-stat" data-stat="round">A round is open</span>
+      <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
+  </div>
+  <div class="fft-status-right">
+    <span class="note fft-mode-note" data-mode-note>{% if mode == "available" %}until <time datetime="{{ bar.available.until }}" data-clock="when">{{ bar.available.until }}</time>{% elif mode == "frozen" %}{% if bar.freeze.why %}Paused: {{ bar.freeze.why }} · {% endif %}since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time>{% elif bar.available.ended %}Local tries ended: {{ bar.available.why }}{% endif %}</span>
+    <span class="fft-mode-lbl" id="fft-mode-lbl">Deploys</span>
+    <form method="post" action="/manage/for-you/mode" class="seg fft-mode" role="group" aria-labelledby="fft-mode-lbl"><input type="hidden" name="back" value="{{ back }}">
+      <button type="submit" name="mode" value="available" aria-pressed="{{ 'true' if mode == 'available' else 'false' }}" data-mode-pick="available">After my local try</button>
+      <button type="submit" name="mode" value="independent" aria-pressed="{{ 'true' if mode == 'independent' else 'false' }}" data-mode-pick="independent">When tests pass</button>
+      <button type="button" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-mode-pick="frozen" data-show="fft-pause-why">Paused</button>
+    </form>
+    <button type="button" class="btn small fft-bar-i" data-menu="fft-bar-help" aria-expanded="false" aria-controls="fft-bar-help">Help <span class="fft-chev" aria-hidden="true">▾</span></button>
+  </div>
+</div>
+{# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, so anyone looking knows #}
+<form method="post" action="/manage/for-you/mode" class="composer fb-fold fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}">
+  <label class="field"><span>Why pause deploys? <span class="note">(optional)</span></span><input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow"></label>
+  <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>
+</form>
+<section class="fft-bar-help" id="fft-bar-help" hidden aria-label="What this bar means">
+  <dl>
+    <dt>Claude listening</dt><dd>While a Claude session runs, what you send reaches Claude within minutes. When none is, it waits for the next one: open the Claude app and say "check askdnd".</dd>
+    <dt>A round is open</dt><dd>Nothing merges to askdnd.ai until you end it; Claude only sorts what you send meanwhile.</dd>
+    <dt>Deploys: After my local try</dt><dd>You're around: visible changes wait for your try on your Mac before they deploy (a Try on your Mac item in For you, and a notification). It goes back to When tests pass after 2 hours, or sooner if you're quiet in askdnd for 30 minutes or a try waits 30 minutes.</dd>
+    <dt>Deploys: When tests pass</dt><dd>The default. Claude deploys visible changes once their tests pass, and you try them on the live site afterwards. Careful changes (who sees what, sign-in, spending, the D&amp;D Beyond bridge) still wait for your try first.</dd>
+    <dt>Deploys: Paused</dt><dd>Nothing deploys to the live site until you choose another, for whatever reason you give. Claude goes on building on branches.</dd>
+  </dl>
+</section>

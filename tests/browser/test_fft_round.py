@@ -4,11 +4,14 @@ and moves on, with Undo in the corner card; Something's wrong… is the note win
 says the try failed with Next check →; End round ends it."""
 
 import json
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
 
 from tests.table_setup import plain_id
+
+CHECK = (Path(__file__).parent / "layout_check.js").read_text()
 
 
 def _checks(url, *pages):
@@ -79,7 +82,7 @@ def test_a_round_page_to_page_with_its_card(people, server, browser_db):
 
 
 def test_testing_holds_together_at_every_width(people, server, browser_db):
-    from tests.browser.test_layout import problems
+    from tests.browser.test_layout import POLISH_FROM, problems
 
     _checks(browser_db[0], "/party")
     admin = people("admin")
@@ -88,7 +91,7 @@ def test_testing_holds_together_at_every_width(people, server, browser_db):
         page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
         for path, said in (("/manage/for-you", "For you"), ("/manage/testing", "Testing")):
             admin.open(path)
-            found += problems(page, f"{said} at {width}px")
+            found += problems(page, f"{said} at {width}px", hard_only=width < POLISH_FROM)  # (admin pages: polish is the weekly sweep's)
     assert not found, "\n".join(found)
     assert not admin.errors, admin.errors
 
@@ -245,7 +248,7 @@ def test_counts_never_blink_between_manage_pages(people, server, browser_db):
     assert not admin.errors, admin.errors
 
 
-def test_where_it_stands_keeps_a_build_batchs_menu_on_its_row_and_grey_parts_whole(people, server, browser_db):
+def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, browser_db):
     """Issue 38 (Brett, Nov 19): a grey part of the status bar moves to the next line whole, never split; and a build
     batch's ⋯ stays at its row's right end, never on a line of its own under its Features."""
     engine = create_engine(browser_db[0])
@@ -256,7 +259,9 @@ def test_where_it_stands_keeps_a_build_batchs_menu_on_its_row_and_grey_parts_who
                             {"i": item}).scalar()
         conn.execute(text("INSERT INTO fft_issues (title, state, area_id, feature, from_player, reopened, workspace_id) "
                           "VALUES ('A long name wraps', 'to_fix', :a, 'homebrew', false, 0, 1)"), {"a": area})
-        conn.execute(text("INSERT INTO fft_listeners (name, heard_at, workspace_id) VALUES ('main', now(), 1)"))
+        conn.execute(text("INSERT INTO fft_listeners (name, heard_at, workspace_id) VALUES ('main', now(), 1) ON CONFLICT DO NOTHING"))
+        conn.execute(text("INSERT INTO tool_settings (key, value) VALUES ('fft_available', :v) ON CONFLICT (key) DO UPDATE SET value = :v"),
+                     {"v": json.dumps({"by": "Dev", "actor": "user:0", "since": "2099-01-01T00:00:00+00:00", "until": "2099-01-01T02:00:00+00:00"})})
     engine.dispose()
     admin = people("admin")
     page = admin.page
@@ -267,6 +272,17 @@ def test_where_it_stands_keeps_a_build_batchs_menu_on_its_row_and_grey_parts_who
         menu, opener = row.locator("> .act-more:not(.fft-lane) summary"), row.locator('[data-do="open-area"]')
         m, o = menu.bounding_box(), opener.bounding_box()
         assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
+        bar = [x for x in page.evaluate(CHECK, {"baseline": True}) if "fft-status" in x["where"]]  # (Nov 19: squeezed, off baseline)
+        assert not bar, f"the status bar at {width}px: {bar}"
+        right = page.locator(".fft-status-right").bounding_box()  # (the choice and its Help)
+        bar_box = page.locator(".fft-status").bounding_box()
+        assert bar_box["x"] + bar_box["width"] - (right["x"] + right["width"]) < 40, f"the choice isn't at the bar's right end at {width}px"
+        help_btn = page.locator(".fft-bar-i")
+        assert page.locator("#fft-bar-help").is_hidden() and help_btn.get_attribute("aria-expanded") == "false"
+        help_btn.click()
+        assert page.locator("#fft-bar-help").is_visible() and help_btn.get_attribute("aria-expanded") == "true"  # (it opens the section)
+        help_btn.click()
+        assert page.locator("#fft-bar-help").is_hidden()
         for grey in page.locator(".fft-status .note").all():
             tops = grey.evaluate("e => [...e.getClientRects()].map(r => Math.round(r.top))")
             assert max(tops) - min(tops) < 4, f"a grey part split over lines at {width}px: {tops}"

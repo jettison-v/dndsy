@@ -393,13 +393,33 @@ def incident(a) -> None:
 
 
 def freeze(a) -> None:
-    """Whether Brett's game-night freeze is on (he turns it on and off on Testing › Where it stands)."""
+    """Whether Brett paused deploys (Deploys: Paused, in the bar on For you and Where it stands)."""
     req = urllib.request.Request(a.base.rstrip("/") + "/api/fft/freeze", headers={"User-Agent": "askdnd-feedback-script"})
     on = json.loads(urllib.request.urlopen(req, timeout=30).read())["frozen"]
-    print("Game-night freeze is ON: nothing merges or deploys until Brett turns it off (a [table-fix] commit, with his OK)." if on
-          else "Game-night freeze is off.")
+    print("Deploys are PAUSED: nothing merges or deploys until Brett chooses another (a [table-fix] commit, with his OK)." if on
+          else "Deploys aren't paused.")
     if on and a.check:
         sys.exit(1)
+
+
+def available(a) -> None:
+    """Whether Deploys is After my local try (Look work waits for his try on his Mac), and the local tries with his answers."""
+    st = call(a.base, "/available")
+    print(f"Deploys after his local try until {st['until']}: Look work waits for his try." if st["on"] else "Deploys aren't After my local try: no local tries" + (f" (it ended: {st['why']})." if st.get("why") else "."))
+    for t in st["tries"][:8]:
+        said = {"": "waiting", "good": "looks good: merge it", "off": "something's off", "left": "left: merge it as Look work"}[t["answer"]]
+        print(f"  local {t['id']} · {said} · {t['title']}" + (f"  {t['pr']}" if t["pr"] else ""))
+        if t.get("words"):
+            print(f"    {_quote(t['words'])}")
+
+
+def local(a) -> None:
+    """A change for Brett's try on his Mac (only while he's Available): what changed, what to look at, the page. Then
+    send him a push notification (PushNotification) and keep the local server (preview "web-claude", port 8004) on the
+    branch until he answers."""
+    got = call(a.base, "/local", {"title": a.title, "area_id": _area_id(a, a.area) if a.area else None, "changed": a.changed,
+                                  "look_at": a.look, "path": a.path, "pr": a.pr})
+    print(f"Local try {got['id']} is in Brett's For you. Now send the push notification, and keep port 8004 on this branch.")
 
 
 def item(a) -> None:
@@ -566,7 +586,15 @@ def main() -> None:
     s = sub.add_parser("incident", help="it broke at the table: that Product Area is Careful for 30 days")
     s.add_argument("area")
     s.add_argument("words", nargs="*")
-    s = sub.add_parser("freeze", help="whether Brett's game-night freeze is on")
+    sub.add_parser("available", help="whether Deploys is After my local try, and the local tries' answers")
+    s = sub.add_parser("local", help="a change for Brett's try on his Mac, while Deploys is After my local try")
+    s.add_argument("title")
+    s.add_argument("--area")
+    s.add_argument("--changed", action="append", default=[], help="a line of what changed (repeat)")
+    s.add_argument("--look", default="", help="what to look at")
+    s.add_argument("--path", default="/", help="the page to open, like /party")
+    s.add_argument("--pr", default="")
+    s = sub.add_parser("freeze", help="whether Brett paused deploys")
     s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
     s = sub.add_parser("deploy")
@@ -581,7 +609,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "available": available, "local": local}[a.cmd](a)
 
 
 if __name__ == "__main__":

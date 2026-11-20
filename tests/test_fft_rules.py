@@ -617,3 +617,56 @@ def test_an_add_only_sql_line_doesnt_make_a_plan_careful():
     index = "def upgrade():\n    op.execute(\"CREATE INDEX x_y ON x (y)\")\n"
     assert lanes.pick([f], read=lambda _: index)[0] == "ship"
     assert lanes.higher("careful", "look") and not lanes.higher("look", "careful")
+
+
+# ------------------------------------------------------------------ Available (Brett, Nov 19: local tries while he's around)
+
+
+def test_available_lets_claude_ask_for_a_local_try_and_turning_it_off_leaves_what_waits(db):
+    with pytest.raises(rules.RuleError):  # (not Available: Look work merges, he tries it after)
+        rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill."], "A fight running.", "/party")
+    rules.set_available(db, "user:1", True, by="Brett")
+    st = rules.available_state(db)
+    assert st["on"] and st["actor"] == "user:1" and st["until"]
+    lt = rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill."], "A fight running.", "/party")
+    other = rules.new_local_try(db, "claude", "Sheet: rests", None, ["Rests line up."], "", "/party")
+    rules.answer_local_try(db, "user:1", lt, "good")
+    with pytest.raises(rules.RuleError):
+        rules.answer_local_try(db, "user:1", other, "off")  # (say what's off)
+    rules.set_available(db, "user:1", False)
+    assert lt.answer == "good" and other.answer == "left" and not rules.available_state(db)["on"]
+    kinds = [e.kind for e in db.scalars(select(FftEvent).where(FftEvent.thing.in_(("local", "tool"))).order_by(FftEvent.id))]
+    assert kinds == ["available_on", "local_new", "local_new", "local_good", "local_left", "available_off"]
+
+
+def test_available_turns_itself_off_on_any_of_its_signals(db):
+    """Brett's picks (Nov 19): quiet in askdnd for 30 minutes, a local try unanswered for 30 minutes, game night, or the
+    2 hours (the backstop); the bar says why."""
+    real = rules.now
+    try:
+        rules.set_available(db, "user:1", True)
+        assert rules.check_available(db)["on"]
+        rules.now = lambda: real() + timedelta(minutes=31)
+        assert rules.check_available(db)["why"] == "quiet for 30 minutes"
+        rules.now = real
+        rules.set_available(db, "user:1", True)
+        rules.new_local_try(db, "claude", "Battle", None, ["x"], "", "/party")
+        db.flush()
+        rules.now = lambda: real() + timedelta(minutes=31)
+        assert rules.check_available(db, last_seen=real() + timedelta(minutes=30))["why"] == "a try waited 30 minutes"
+        rules.now = real
+        rules.set_available(db, "user:1", True)
+        rules.now = lambda: real() + timedelta(hours=2, minutes=1)
+        assert rules.check_available(db, last_seen=real() + timedelta(hours=2))["why"] == "the 2 hours are up"
+        rules.now = real
+        rules.set_available(db, "user:1", True)
+        rules.set_freeze(db, "user:1", True)
+        assert not rules.available_state(db)["on"] and not rules.available_state(db)["why"]  # (his own choice: nothing to explain)
+        rules.set_mode(db, "user:1", "available")
+        assert rules.mode_of(db) == "available" and not rules.frozen(db)  # (one at a time, Brett, Nov 19)
+        rules.set_mode(db, "user:1", "independent")
+        assert rules.mode_of(db) == "independent"
+        with pytest.raises(rules.RuleError):
+            rules.set_mode(db, "user:1", "both")
+    finally:
+        rules.now = real

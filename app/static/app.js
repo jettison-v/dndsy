@@ -4775,14 +4775,15 @@ document.addEventListener('click', e => {
     btn.setAttribute('aria-label', n ? said + ', ' + n + ' waiting on you' : said);
   }
   try { const was = sessionStorage.getItem(KEY); if (was !== null) put(Number(was)); } catch (e) { /* (no storage: it comes with the answer) */ }
-  function ask() {
-    fetch('/manage/for-you/count', { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
+  function ask(shown) {
+    fetch('/manage/for-you/count' + (shown === true ? '?seen=1' : ''), { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
       if (!j) return;
       put(j.n);
       try { sessionStorage.setItem(KEY, String(j.n || 0)); } catch (e) { /* (fine) */ }
     }).catch(() => {});
   }
-  if (document.readyState === 'complete') setTimeout(ask, 300); else addEventListener('load', () => setTimeout(ask, 300));
+  const seen = () => ask(true);  // (a page of his just showed: Available's quiet signal reads it)
+  if (document.readyState === 'complete') setTimeout(seen, 300); else addEventListener('load', () => setTimeout(seen, 300));
   document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(tick); tick = setTimeout(ask, 400); } });
 })();
 

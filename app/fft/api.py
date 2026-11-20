@@ -423,6 +423,38 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
     return _ok(out)
 
 
+@router.get("/available")
+def available(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Whether Deploys is After my local try (Look work then waits for his try on his Mac), and each local try with its answer."""
+    keys.require(db, x_fft_key, "read")
+    st = rules.check_available(db)
+    db.commit()
+    tries = [{"id": t.id, "title": t.title, "area_id": t.area_id, "pr": t.pr, "answer": t.answer, "words": _quoted(t.words, "Brett") if t.words else None,
+              "at": t.created_at.isoformat() if t.created_at else ""}
+             for t in db.scalars(select(rules.FftLocalTry).order_by(rules.FftLocalTry.id.desc()).limit(20))]
+    return _ok({k: st[k] for k in ("on", "until", "off_at", "why")} | {"tries": tries})
+
+
+@router.post("/local")
+def local_try(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude's change, waiting for Brett's try on his Mac while Deploys is After my local try (refused when it isn't)."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    rules.check_available(db)
+    area = db.get(FftArea, _int(body.get("area_id"), "area_id")) if body.get("area_id") else None
+    changed = body.get("changed") or []
+    if not isinstance(changed, list) or not all(isinstance(c, str) for c in changed):
+        raise HTTPException(400, "changed: a list of lines")
+    try:
+        lt = rules.new_local_try(db, actor.name, _str(body, "title", 120, need=True), area, changed, _str(body, "look_at", 1000),
+                                 _str(body, "path", 300) or "/", _str(body, "pr", 300))
+    except rules.RuleError as e:
+        db.commit()  # (local tries may have just ended by themselves)
+        _rule(e)
+    db.commit()
+    return _ok({"id": lt.id})
+
+
 @router.get("/freeze")
 def freeze(db: Session = Depends(get_db)):
     """Public, and only this (Brett, Nov 19: a switch he turns on before a game): whether deploys are frozen. GitHub's

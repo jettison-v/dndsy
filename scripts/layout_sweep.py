@@ -5,7 +5,9 @@ private/layout-sweep/ (gitignored) for the look-over the checks can't do.
 
 Against a local server with the dev login (DEV_LOGIN_EMAIL set in .env), on a copy of real data:
     uv run python scripts/layout_sweep.py --as brett@example.com --as dm@example.com
-Run it at the end of each roadmap phase (docs/plans/2026-10-22-vtt-roadmap.md › How we build)."""
+Run it at the end of each roadmap phase (docs/plans/2026-10-22-vtt-roadmap.md › How we build). The weekly phone sweep
+(Brett, Nov 19: phone polish once a week, not on every change) runs it at phone and tablet widths only:
+    uv run python scripts/layout_sweep.py --as brett@example.com --as dm@example.com --widths 375,768 --base http://localhost:8004"""
 
 import argparse
 import re
@@ -50,11 +52,11 @@ def pages_from(page, base: str, start: str, limit: int) -> list[str]:
 
 
 def scan(page, found, who, width, where):
-    for p in page.evaluate(CHECK, {"rows": True}):
+    for p in page.evaluate(CHECK, {"rows": True, "baseline": True}):  # (off baseline: the Live UI Audit's list, Nov 19)
         found[(p["kind"], p["where"])].append((who, width, where, p["detail"]))
 
 
-def sweep(base: str, people: list[str], limit: int) -> dict:
+def sweep(base: str, people: list[str], limit: int, widths: tuple = WIDTHS) -> dict:
     found = defaultdict(list)
     shots = ROOT / "private" / "layout-sweep"
     with sync_playwright() as pw:
@@ -65,7 +67,7 @@ def sweep(base: str, people: list[str], limit: int) -> dict:
             page.goto(f"{base}/dev/login?as={who}")
             paths = pages_from(page, base, "/", limit)
             print(f"{who}: {len(paths)} pages")
-            for width in WIDTHS:
+            for width in widths:
                 page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
                 for i, path in enumerate(paths):
                     try:
@@ -107,8 +109,9 @@ def main():
     ap.add_argument("--base", default="http://localhost:8000")
     ap.add_argument("--as", dest="people", action="append", required=True, help="an email the dev login accepts (repeat)")
     ap.add_argument("--limit", type=int, default=80, help="pages per person")
+    ap.add_argument("--widths", default=",".join(map(str, WIDTHS)), help="comma-separated, e.g. 375,768 for the weekly phone sweep")
     args = ap.parse_args()
-    found = sweep(args.base, args.people, args.limit)
+    found = sweep(args.base, args.people, args.limit, tuple(int(w) for w in args.widths.split(",") if w.strip()))
     if not found:
         print("Nothing scrolls sideways, spills, wraps or overlaps.")
         return

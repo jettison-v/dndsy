@@ -3,6 +3,7 @@ scrolls sideways, spills out of its box, breaks a one-line control onto two line
 (tests/browser/layout_check.js). With long names on purpose, since real names are what break layouts. Each page's
 tabs, the menu bar's menus and Battle's side panel are checked too."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,15 @@ from tests.browser.conftest import Person
 
 CHECK = (Path(__file__).parent / "layout_check.js").read_text()
 
-WIDTHS = (375, 768, 1000, 1280)
+# Brett, Nov 19 (measured: phone work was ~9-10% of active time, and he waits while he watches): every change checks
+# admin pages at phone and tablet widths for hard breaks only; their polish (a control that wraps, squeezed words, a
+# word broken, a cut hint, tiny words in a chart) is the weekly phone sweep's (scripts/phone_sweep.py). Players' pages
+# keep every check at every width: they're used at the table. LAYOUT_LAPTOP=1 runs only the laptop widths (Claude's
+# runs while Brett watches; GitHub runs them all).
+HARD = {"scrolls sideways", "spills", "overlaps", "zooms", "repeats an id"}
+LAPTOP_ONLY = bool(os.environ.get("LAYOUT_LAPTOP"))
+WIDTHS = (1000, 1280) if LAPTOP_ONLY else (375, 768, 1000, 1280)
+POLISH_FROM = 1000  # (admin pages below it: hard breaks only)
 PAGES = {
     "player": ("/c/main/campaign", "/c/main/campaign?tab=sessions", "/c/main/campaign?tab=world", "/characters/{cole}/battle", "/characters/{cole}",
                "/characters/{cole}/plan", "/c/main/campaign?tab=glossary", "/party", "/help", "/your-notes", "/your-notes?tab=askdnd"),
@@ -58,11 +67,11 @@ def told_session(browser_db):
     return f"/c/main/sessions/{sid}"
 
 
-def problems(page, where: str) -> list[str]:
-    return [f"{where} · {p['kind']}: {p['where']} ({p['detail']})" for p in page.evaluate(CHECK)]
+def problems(page, where: str, hard_only: bool = False) -> list[str]:
+    return [f"{where} · {p['kind']}: {p['where']} ({p['detail']})" for p in page.evaluate(CHECK) if not hard_only or p["kind"] in HARD]
 
 
-def check(person, server, paths, widths=WIDTHS) -> list[str]:
+def check(person, server, paths, widths=WIDTHS, hard_below: int = 0) -> list[str]:
     page, found = person.page, []
     for width in widths:
         if page.viewport_size["width"] != width:
@@ -71,15 +80,16 @@ def check(person, server, paths, widths=WIDTHS) -> list[str]:
             path = path.format(cole=server["cole"])
             person.open(path)
             page.wait_for_load_state("load")
-            found += problems(page, f"{path} at {width}px")
+            hard = width < hard_below
+            found += problems(page, f"{path} at {width}px", hard)
             tabs = page.locator("main [role=tab]:visible")
             for k in range(tabs.count()):
                 tabs.nth(k).click()
-                found += problems(page, f"{path} › {tabs.nth(k).inner_text().split(chr(10))[0]} at {width}px")
+                found += problems(page, f"{path} › {tabs.nth(k).inner_text().split(chr(10))[0]} at {width}px", hard)
         for opener in page.locator(".topbar [data-menu]:visible").all():  # the menu bar's menus
             opener.click()
             page.wait_for_timeout(300)
-            found += problems(page, f"menu {opener.get_attribute('data-menu')} at {width}px")
+            found += problems(page, f"menu {opener.get_attribute('data-menu')} at {width}px", width < hard_below)
             page.keyboard.press("Escape")
             page.mouse.click(2, 400)
     return found
@@ -108,11 +118,13 @@ SAFARI = {375: "iPhone 13 Mini", 768: "iPad Mini"}
 
 @pytest.mark.parametrize("who", ["player", "admin"])
 def test_pages_hold_together_in_safari_on_a_phone_and_a_tablet(webkit, playwright, server, long_names, who):
+    if LAPTOP_ONLY:
+        pytest.skip("laptop widths only (LAYOUT_LAPTOP): GitHub runs Safari")
     found = []
     for width, device in SAFARI.items():
         person = Person(webkit, server, who, **{k: v for k, v in playwright.devices[device].items() if k != "default_browser_type"})
         try:
-            found += [f"Safari · {f}" for f in check(person, server, PAGES[who], widths=(width,))]
+            found += [f"Safari · {f}" for f in check(person, server, PAGES[who], widths=(width,), hard_below=POLISH_FROM if who == "admin" else 0)]
             assert person.errors == [], person.errors
         finally:
             person.context.close()
@@ -239,7 +251,7 @@ def test_tap_targets_on_a_phone(people, server):
 def test_manage_pages_hold_together_at_every_width(people, server, long_names, told_session):
     admin = people("admin")
     review = told_session.replace("/sessions/", "/manage/sessions/")  # (the review wizard: every step's tab is checked)
-    found = check(admin, server, PAGES["admin"] + (review,))
+    found = check(admin, server, PAGES["admin"] + (review,), hard_below=POLISH_FROM)
     # The review's seven steps fit a laptop's column, with Table rolls open beside it and closed (the UI review, Nov 16:
     # "6 Award…" at 1440)
     for width, rolls in ((1000, "closed"), (1280, "open"), (1280, "closed"), (1440, "open"), (1440, "closed"), (1512, "open")):
@@ -260,7 +272,7 @@ def test_the_dms_manage_pages_hold_together_at_every_width(people, server, long_
     line on a phone and pushed the title's button in on a laptop. The same pages as the DM, who has no way across."""
     dm = people("dm")
     review = told_session.replace("/sessions/", "/manage/sessions/")
-    found = check(dm, server, tuple(p for p in PAGES["admin"] if p.startswith("/c/")) + (review,))
+    found = check(dm, server, tuple(p for p in PAGES["admin"] if p.startswith("/c/")) + (review,), hard_below=POLISH_FROM)
     for width in (375, 1280):
         dm.page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
         dm.open("/c/main/manage/sessions")
@@ -628,3 +640,24 @@ def test_the_menu_bar_never_runs_wider_than_a_phone(people, server, long_names):
         if spill > 0:
             found.append(f"{state}: {spill}px wider than the screen")
     assert not found, "\n".join(found)
+
+
+def test_the_check_catches_words_squeezed_onto_two_lines_and_off_their_line(people, server):
+    """Brett, Nov 19 ("is there a way to put a check in for alignment and wrapping that is more robust"): a row whose
+    parts are equal shares wraps the longer one though everything fits on one line (squeezed); a bold label beside a
+    smaller note, centred as boxes, puts their words on different lines (off baseline, asked for until the Live UI
+    Audit makes it always). The same rows done right pass."""
+    page = people("player").open("/help")
+    page.set_content("""<body style="font: 15px sans-serif; width: 900px">
+      <div id="even" style="display:flex; gap:12px; width:700px"><span style="flex:1">Available until 4:59 PM</span>
+        <span style="flex:1">Claude isn't listening (last heard 4:10 PM) and a little more</span><span style="flex:1">Freeze off</span></div>
+      <div id="natural" style="display:flex; gap:12px; width:700px"><span>Available until 4:59 PM</span>
+        <span>Claude isn't listening (last heard 4:10 PM)</span><span>Freeze off</span></div>
+      <div id="boxes" style="display:flex; align-items:center; gap:8px"><b style="font-size:24px">Available</b><span style="font-size:12px">until 4:59 PM</span></div>
+      <div id="lined" style="display:flex; align-items:baseline; gap:8px"><b style="font-size:24px">Available</b><span style="font-size:12px">until 4:59 PM</span></div>
+    </body>""")
+    found = page.evaluate(CHECK, {"baseline": True})
+    kinds = {(p["kind"], p["where"].split(" > ")[0]) for p in found}
+    assert ("squeezed", "#even") in kinds and ("off baseline", "#boxes") in kinds
+    assert not {k for k in kinds if k[1] in ("#natural", "#lined")}
+    assert not [p for p in page.evaluate(CHECK, {}) if p["kind"] == "off baseline"]  # (only when asked, for now)

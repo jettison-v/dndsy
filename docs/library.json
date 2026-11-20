@@ -1420,5 +1420,23 @@
   "what": "Four ways to show which area Claude takes next on Testing › Where it stands, now that the turn pill shows only Yours: a pill by its name, the row standing out, a line above it, or in the status bar.",
   "source": "docs/mockups/next-marker/index.html",
   "link": "https://claude.ai/artifact/TW4UbGQWJ1rU4A9LrnXzzh"
+ },
+ {
+  "title": "Available to Try Locally",
+  "kind": "design",
+  "status": "Built (PR 422); its words and control are being redrawn on Deploy Controls",
+  "date": "Nov 19",
+  "what": "Your Available switch: while it's on, visible (Look) changes wait for your try on your Mac, with a For you item (what changed, what to look at, one link to my local server, Looks good or Something's off…) and a push notification; it turns itself off after a few hours. Four screens and four picks.",
+  "source": "docs/mockups/available/index.html",
+  "link": "https://claude.ai/artifact/53yLaCGcoLPT52C3gR6mVV"
+ },
+ {
+  "title": "Deploy Controls",
+  "kind": "design",
+  "status": "Picked: A, with a reason when pausing; built",
+  "date": "Nov 19",
+  "what": "How Claude's finished work reaches the live site, as one labeled control in the status bar, made general enough to carry to another product: five versions (Deploys, Releases, two controls, Visible changes, and pausing with a reason), each clickable.",
+  "source": "docs/mockups/deploy-controls/index.html",
+  "link": "https://claude.ai/artifact/DuTxk35VH2By1fuNqFfjzj"
  }
 ]

@@ -370,3 +370,15 @@ def test_claudes_words_link_their_addresses_and_escape_the_rest():
     assert "&lt;b&gt;this&lt;/b&gt;" in out
     assert '<a href="https://claude.ai/artifact/abc" target="_blank" rel="noopener">https://claude.ai/artifact/abc</a>.' in out
     assert 'https://x.y/"onmouseover=' not in str(linked('https://x.y/"onmouseover=alert(1)'))
+
+
+def test_claude_asks_for_a_local_try_only_while_brett_is_available(api, db):
+    body = {"title": "Battle: the Count pill", "changed": ["The Count is a pill."], "look_at": "A fight running.", "path": "/party"}
+    assert api.post("/api/fft/local", headers=_as(CLAUDE), json=body).status_code == 400
+    rules.set_available(db, "user:1", True, by="Brett")
+    db.flush()
+    made = api.post("/api/fft/local", headers=_as(CLAUDE), json=body)
+    assert made.status_code == 200
+    got = api.get("/api/fft/available", headers=_as(CLAUDE)).json()
+    assert got["on"] and got["tries"][0]["id"] == made.json()["id"] and got["tries"][0]["answer"] == ""
+    assert api.get("/api/fft/available").status_code in (401, 403, 404)  # (no key: no one)

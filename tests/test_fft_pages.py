@@ -272,16 +272,31 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
     rules.set_lane(db, "claude", a, "careful", "It touches sign-in")
     db.flush()
     page = admin.get("/manage/testing?show=stands").text
-    assert 'data-lane-tag="careful"' in page and 'data-freeze="0"' in page and 'data-do="freeze-on"' in page
+    assert 'data-lane-tag="careful"' in page and 'data-mode="independent"' in page and 'data-mode-pick="frozen"' in page
     assert f'data-area="{a.id}" data-next="next"' in page and 'data-turn="claude"' not in page  # (Brett's picks, Nov 19: the next row stands out; the turn pill only when Yours)
     admin.post(f"/manage/testing/areas/{a.id}", data={"do": "lane", "lane": "look"})
     assert rules.lane_of(a) == "look"  # (Brett's word moves it down)
-    admin.post("/manage/testing/freeze", data={"on": "1"})
-    assert rules.frozen(db) and 'data-freeze="1"' in admin.get("/manage/testing?show=stands").text
-    player.post("/manage/testing/freeze", data={"on": "0"})
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})
+    assert rules.frozen(db) and 'data-mode="frozen"' in admin.get("/manage/testing?show=stands").text
+    player.post("/manage/for-you/mode", data={"mode": "independent"})
     assert rules.frozen(db)  # (admins only)
-    admin.post("/manage/testing/freeze", data={"on": "0"})
+    admin.post("/manage/for-you/mode", data={"mode": "independent"})
     assert not rules.frozen(db)
+
+
+def test_pausing_deploys_says_why_in_the_bar(admin, db):
+    """Brett's pick A on docs/mockups/deploy-controls/ (Nov 19): Deploys is labelled, pausing asks why (optional), and the bar says it."""
+    page = admin.get("/manage/for-you").text
+    assert 'aria-labelledby="fft-mode-lbl"' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "a demo tomorrow"})
+    assert rules.frozen(db) and rules.freeze_state(db)["why"] == "a demo tomorrow"
+    page = admin.get("/manage/for-you").text
+    assert "Paused: a demo tomorrow" in page and 'data-do="pause">Change the reason' in page
+    since = rules.freeze_state(db)["since"]
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "game night"})
+    assert rules.freeze_state(db)["why"] == "game night" and rules.freeze_state(db)["since"] == since  # (a new reason only: still paused since then)
+    admin.post("/manage/for-you/mode", data={"mode": "frozen"})
+    assert rules.frozen(db) and "Paused:" not in admin.get("/manage/for-you").text  # (the reason is optional)
 
 
 def test_lines_to_claude_stay_between_you_and_claude(admin, sender, db):
@@ -478,3 +493,29 @@ def test_an_idea_goes_on_the_roadmap_is_built_or_declined_with_why(admin, sender
     assert idea.state == "declined" and idea.reason == "Out of scope."
     assert admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": "lost"}).status_code == 400
     assert list(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "idea", FftEvent.thing_id == idea.id)))[-3:] == ["idea_roadmap", "idea_shipped", "idea_declined"]
+
+
+def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
+    """Brett, Nov 19 (docs/mockups/available/): the Available switch in the status bar on For you and Where it stands;
+    a change waiting for his try on his Mac comes first in For you, with its link, Looks good and Something's off."""
+    page = admin.get("/manage/for-you").text
+    assert 'data-mode="independent"' in page and 'data-mode-pick="available"' in page  # (the default: Work independently)
+    admin.post("/manage/for-you/mode", data={"mode": "available"})
+    assert rules.available_state(db)["on"]
+    assert 'data-mode="available"' in admin.get("/manage/testing?show=stands").text
+    lt = rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill beside the turn."], "A fight running.", "/party")
+    db.flush()
+    page = admin.get("/manage/for-you").text
+    assert 'data-section="local"' in page and f'data-row="l{lt.id}"' in page and "1 change to try on your Mac" in page
+    assert f'data-fft-local="{lt.id}"' in page and "localhost:8004/dev/login?next=/party" in page and "The Count is a pill" in page
+    player.post(f"/manage/for-you/local/{lt.id}", data={"answer": "good"})
+    assert lt.answer == ""  # (admins only)
+    admin.post(f"/manage/for-you/local/{lt.id}", data={"answer": "off", "words": "The pill wraps on a phone."})
+    assert lt.answer == "off" and lt.words == "The pill wraps on a phone."
+    player.post("/manage/for-you/mode", data={"mode": "independent"})
+    assert rules.available_state(db)["on"]
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})  # (Frozen ends Available: one at a time)
+    assert not rules.available_state(db)["on"] and rules.frozen(db) and rules.mode_of(db) == "frozen"
+    page = admin.get("/manage/for-you").text
+    assert 'aria-controls="fft-bar-help"' in page and 'id="fft-bar-help" hidden' in page  # (one Help ▾ for the bar's help, Nov 19)
+    assert "Local tries ended" not in page  # (he chose it: nothing to explain)
