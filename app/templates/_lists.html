@@ -112,13 +112,13 @@
 {%- endmacro %}
 
 {# The status track (docs/DESIGN.md, Backstage › Global › Design system): where something stands as its steps, the one it's
-   at lit: done green, under way blue, waiting on you amber (Testing's areas), a stop grey with the rest struck through.
+   at lit: done green, under way blue, waiting on you amber, a stop grey with the rest struck through.
    steps: [{label, state: done | now | you | todo | stop | skip}] (your_notes.track, testing.areas_view) #}
 {% macro status_track(steps, label="Where it stands") -%}
 <ol class="st-track" aria-label="{{ label }}">{% for s in steps %}<li class="st-{{ s.state }}">{{ s.label }}</li>{% endfor %}</ol>
 {%- endmacro %}
 
-{# A drag handle (a row that's dragged into order: the fight's turn order, Testing's areas) #}
+{# A drag handle (a row that's dragged into order: the fight's turn order, Work's plans) #}
 {% macro grip() -%}
 <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 18" width="10" height="15" fill="currentColor"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg></span>
 {%- endmacro %}

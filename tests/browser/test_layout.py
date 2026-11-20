@@ -28,7 +28,7 @@ PAGES = {
     "admin": tuple(f"/c/main/manage{p}" for p in ("", "/inbox", "/sessions", "/table", "/house-rules", "/history", "/settings", "/places",
                                                   "/dm-guide"))
              + tuple(f"/manage/{p}" for p in ("askdnd", "campaigns", "accounts", "tool-corrections", "usage", "features", "backups", "history",
-                                               "design", "dice", "feedback", "testing", "testing?show=stands", "product-areas"))
+                                               "design", "dice", "feedback", "work", "work?tab=checks", "work?tab=scheduled", "work?tab=how", "product-areas"))
              + ("/c/main/dm", "/c/main/dm/items/new"),  # (DM Tools: app/homebrew.py)
 }
 

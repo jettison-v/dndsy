@@ -306,9 +306,18 @@ def set_feature(db: Session, actor: str, issue: FftIssue, key: str) -> None:
 
 
 def move_issue(db: Session, actor: str, issue: FftIssue, area_id: int | None) -> None:
-    """R8: moved to another area; its checks are worked out again (check_state reads issues live)."""
+    """R8: moved to another area; its checks are worked out again (check_state reads issues live). A check follows it
+    when every issue the check tries is now in that area (The Work Pages, Nov 20: a plan's test round holds its
+    issues' checks; check 33 stayed behind its issue 8); one trying issues in other plans too stays where it is."""
     was = issue.area_id
     issue.area_id = area_id
+    db.flush()
+    for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
+                        .where(FftCheckIssue.issue_id == issue.id, FftCheck.retired.is_(False))):
+        theirs = set(db.scalars(select(FftIssue.area_id).join(FftCheckIssue, FftCheckIssue.issue_id == FftIssue.id).where(FftCheckIssue.check_id == c.id)))
+        if c.area_id != area_id and c.area_id in (was, None) and theirs == {area_id}:
+            c.area_id = area_id
+            _event(db, actor, "check_moved", "check", c.id, area_id=area_id, was=was, issue=issue.id)
     _event(db, actor, "issue_moved", "issue", issue.id, area_id=area_id, was=was)
 
 
@@ -1097,7 +1106,7 @@ def unlock_area(db: Session, owner: str, area: FftArea) -> None:
 
 
 def order_items(db: Session, actor: str, ids: list[int]) -> None:
-    """Brett's one order: the Roadmap's items, top first (on Where it stands until the Roadmap page exists)."""
+    """Brett's one order: the Roadmap's items, top first (on Work's Queue)."""
     rows = {it.id: it for it in db.scalars(select(FftItem))}
     for n, i in enumerate(x for x in ids if x in rows):
         rows[i].place = n + 1
@@ -1144,6 +1153,14 @@ def merge_area(db: Session, actor: str, area: FftArea, into: FftArea) -> None:
         c.area_id = into.id
     area.archived, area.lock_owner, area.lock_until = True, "", None
     _event(db, actor, "area_merged", "area", area.id, area_id=into.id, into=into.id)
+
+
+def hold_area(db: Session, actor: str, area: FftArea, held: bool) -> None:
+    """Below Work's cut line, or back above it (The Work Pages, Nov 20): Claude takes only the plans above the line."""
+    if area.held == held:
+        return
+    area.held = held
+    _event(db, actor, "area_held" if held else "area_let_go", "area", area.id, area_id=area.id)
 
 
 def archive_area(db: Session, actor: str, area: FftArea) -> None:
@@ -1302,6 +1319,9 @@ def pick_next(db: Session) -> Pick:
         for area in db.scalars(select(FftArea).where(FftArea.item_id == item.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
             turn = area_turn(db, area)
             if turn != "claude":
+                continue
+            if area.held:  # (below Work's cut line: Brett holds it)
+                skipped.append((f"{item.title} › {area.title}", "held below the line"))
                 continue
             if in_open_round(db, area):
                 skipped.append((f"{item.title} › {area.title}", "in Brett's open round"))

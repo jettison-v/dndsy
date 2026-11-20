@@ -128,14 +128,14 @@ def test_claude_reads_its_gaps_and_brett_sees_them_on_where_it_stands(db, admin,
         assert [(g["kind"], g["id"]) for g in got] == [("no_feature", issue.id)]
     finally:
         app.dependency_overrides[get_db] = before
-    page = admin.get("/manage/testing?show=stands").text
+    page = admin.get("/manage/work").text
     assert "data-missed" not in page  # (just made: not missed yet, issue 39)
     from sqlalchemy import update
 
     from app.fft.models import FftEvent
     db.execute(update(FftEvent).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id).values(at=rules.now() - timedelta(hours=1)))
     db.flush()
-    page = admin.get("/manage/testing?show=stands").text
+    page = admin.get("/manage/work").text
     assert "data-missed" in page and 'data-gap="no_feature"' in page and f"open=i{issue.id}" in page
 
 

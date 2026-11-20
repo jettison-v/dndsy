@@ -76,6 +76,7 @@ A canary is a small check that runs on its own and warns you before anyone else 
 
 - **The job:** `~/Library/LaunchAgents/ai.askdnd.live-test.plist` (its source is `scripts/ai.askdnd.live-test.plist`). A Mini asleep at 4:00 runs it when it wakes. To switch it on, from the repo on your Mac: `scp scripts/ai.askdnd.live-test.plist mac-mini-server:Library/LaunchAgents/ && ssh mac-mini-server 'launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.askdnd.live-test.plist'` (on since Nov 2, Brett approved; a deliberate miss reached Sentry).
 - **The Sentry key:** `SENTRY_DSN` in `~/askdnd-tests/.env` on the Mini, readable only by its owner, put there with `scripts/set-secret.sh SENTRY_DSN --mini`. Never in git.
+- **It reports to Work:** at the end, the live test and iPhone Safari each report ok or failed to Backstage › Global › Work › Scheduled on askdnd.ai (`POST /api/fft/jobs/nightly` and `/iphone`, with the Mini's own `FFT_MINI_KEY` in `~/askdnd-tests/.env`, which may report only those two). A night that doesn't report shows there as Late.
 - **Try the alert:** `real_table_nightly.sh --try-alert closed-sheet` on the Mini adds one deliberate miss to a short run. Resolve the issue it makes in Sentry afterwards.
 - **After changing the scripts:** the Mini runs its own copies. Copy them again: `scp scripts/real_table.py scripts/real_table_seats.sh scripts/real_table_nightly.sh mac-mini-server:askdnd-tests/`.
 - **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.live-test` on the Mini.

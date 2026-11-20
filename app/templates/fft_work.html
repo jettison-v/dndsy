@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "_admin_bits.html" import state_word, more_menu %}
+{% from "_lists.html" import empty_state, count_pill, grip %}
+{% block title %}Work · Backstage · askdnd{% endblock %}
+{% block head %}{% if tab == "queue" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
+{% block content %}
+{# Backstage › Global › Work (app/fft/work_page.py; The Work Pages, Brett's picks Nov 20, docs/mockups/work-pages/): the
+   plans in Brett's one order with the line Claude works down to, a row each (its lane, stage, fixes, checks, who it
+   waits on); tabs Queue · Done · Checks · Scheduled · How we work. A plan's row opens its page; a check opens in the
+   item window. #}
+{% macro lane_menu(r) %}{# (a plan's lane, chosen from the lane itself: Where it stands' menu, kept) #}
+<details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
+  <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><input type="hidden" name="back" value="/manage/work"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ lane_said[l] }}</button></form>{% endfor %}</div></details>
+{% endmacro %}
+{% macro plan_more(r) %}
+{% call more_menu("More for " ~ r.a.title) %}
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="{{ 'unhold' if r.a.held else 'hold' }}"><input type="hidden" name="back" value="/manage/work"><button type="submit" data-do="{{ 'unhold' if r.a.held else 'hold' }}">{{ "Let it go: back above the line" if r.a.held else "Hold: below the line" }}</button></form>
+  {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}
+  <button type="button" data-show="fft-rename-{{ r.a.id }}">Rename…</button>
+  <button type="button" data-show="fft-merge-{{ r.a.id }}">Merge into…</button>
+  <button type="button" data-show="fft-moveto-{{ r.a.id }}">Move to another item…</button>
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work"><button type="submit">Archive</button></form>
+  {% endif %}
+{% endcall %}
+{% endmacro %}
+{% macro plan_forms(r) %}{% if not r.a.key %}{# (a hand-made plan's Rename, Merge and Move, under the table: each opens from ⋯) #}
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-rename-{{ r.a.id }}" hidden><input type="hidden" name="do" value="rename"><input type="hidden" name="back" value="/manage/work">
+    <label class="field"><span>Name</span><input type="text" name="title" value="{{ r.a.title }}" maxlength="80" required></label><div class="row tight"><button class="btn primary small" type="submit">Rename</button><button class="btn link small" type="button" data-cancel="fft-rename-{{ r.a.id }}">Cancel</button></div></form>
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-merge-{{ r.a.id }}" hidden><input type="hidden" name="do" value="merge"><input type="hidden" name="back" value="/manage/work">
+    <label class="field"><span>Its issues and checks join</span><select name="into" class="ls-select" required>{% for o in all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Merge</button><button class="btn link small" type="button" data-cancel="fft-merge-{{ r.a.id }}">Cancel</button></div></form>
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move"><input type="hidden" name="back" value="/manage/work">
+    <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in all_items if o.id != r.a.item_id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button><button class="btn link small" type="button" data-cancel="fft-moveto-{{ r.a.id }}">Cancel</button></div></form>
+{% endif %}
+{% endmacro %}
+{% macro plan_row(r, drag=True) %}
+<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
+  <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
+  <td class="dt-title"><a href="/manage/work/{{ r.a.id }}" class="wk-name">{{ r.a.title }}</a>
+    <span class="dt-why">{{ r.kind }}{% for t, n in r.features[:3] %} · {{ t }}{% if n > 1 %} {{ n }}{% endif %}{% endfor %}{% if r.features | length > 3 %} · …{% endif %}{% if r.locked %} · building ({{ r.locked }}){% endif %}</span></td>
+  <td>{{ lane_menu(r) }}</td>
+  <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
+  <td class="num" data-fixed>{% if r.issues %}{{ r.fixed }} of {{ r.issues }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+  <td class="num" data-passed>{% if r.checks %}{{ r.passed }} of {{ r.checks }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+  <td class="dt-wrap wk-waits">{{ r.waits }}</td>
+  <td>{{ plan_more(r) }}</td>
+</tr>
+{% endmacro %}
+<main class="page manage-page" data-fft-page="work">
+  {% include "_manage_head.html" %}
+  {% with fft_here = "work" %}{% include "_fft_tabs.html" %}{% endwith %}
+  <div class="title-row"><h1>Work</h1></div>
+  <p class="subtitle">The plans in your order and what's being built: Claude takes the ones above the line. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
+  {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
+  {% if missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
+    <h3 class="plabel" id="fft-missed-h">Claude missed · {{ missed | length }}</h3>
+    <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
+    <ul class="fft-missed-list">{% for g in missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/work' if g.thing == 'area' else '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+      <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane"}[g.kind] }}</span></li>{% endfor %}</ul>
+  </section>{% endif %}
+
+  <nav class="sub-tabs" aria-label="Work">
+    {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "queue" %}{{ count_pill(q.above) }}{% elif key == "done" %}{{ count_pill(n_done) }}{% endif %}</a>{% endfor %}
+  </nav>
+
+  {% if tab == "queue" %}
+  <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.pick.area %} · Claude's next: <b>{{ q.pick.area.title }}</b>{% endif %} · drag to reorder</p>
+  <div class="table-scroll" id="wk-queue">
+  <table class="dtable dt-wide fft-table wk-queue" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tbody.wk-item" data-sort-handle=".wk-item-head .grip">
+    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w2" title="Open issues with a fix">Fixed</th><th class="num dt-w2" title="This plan's checks that passed">Passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
+    {% for x in q.rows %}
+    <tbody class="wk-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-plan" data-sort-handle=".wk-grip .grip">
+      <tr class="dt-group wk-item-head"><td colspan="8">{{ grip() }} <span data-sort-n>{{ x.n }}</span> · {{ x.it.title }}{% if x.it.standing %} <span class="tag">standing</span>{% endif %}
+        {% if x.it.next_whose == "brett" %} · {{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %} · {{ x.why }}{% elif not x.plans %} · nothing open{% endif %}</td></tr>
+      {% for r in x.plans %}{{ plan_row(r) }}{% endfor %}
+    </tbody>
+    {% else %}<tbody><tr><td colspan="8">{{ empty_state("Nothing on the Roadmap yet: Claude adds items as work comes in.") }}</td></tr></tbody>
+    {% endfor %}
+    <tbody class="wk-held" data-held>
+      <tr class="dt-cut"><td colspan="8">Claude takes the plans above this line{% if q.held %} · held below it{% else %} · Hold a plan (⋯) to put it below{% endif %}</td></tr>
+      {% for r in q.held %}{{ plan_row(r, drag=False) }}{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="wk-forms">{% for x in q.rows %}{% for r in x.plans %}{{ plan_forms(r) }}{% endfor %}{% endfor %}{% for r in q.held %}{{ plan_forms(r) }}{% endfor %}</div>
+
+  {% elif tab == "done" %}
+  {% if not done %}{{ empty_state("No plan is done yet.") }}{% else %}
+  <div class="table-scroll"><table class="dtable fft-table" data-done>
+    <thead><tr><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Last change</th><th class="dt-w5">What it closed</th><th class="dt-w0"></th></tr></thead>
+    <tbody>{% for d in done %}
+      <tr data-area="{{ d.a.id }}" data-href="/manage/work/{{ d.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ d.a.id }}">{{ d.a.title }}</a><span class="dt-why">{{ d.item.title if d.item else "" }}</span></td>
+        <td>{{ lane_said[d.lane] if d.lane else "—" }}</td>
+        <td>{% if d.last %}<time datetime="{{ d.last.isoformat() }}" data-clock="ago">{{ d.last | ago }}</time>{% endif %}</td>
+        <td>{{ d.closed }} issue{{ "s" if d.closed != 1 }} · {{ d.passed }} check{{ "s" if d.passed != 1 }} passed</td>
+        <td>{% if not d.a.key %}<form method="post" action="/manage/testing/areas/{{ d.a.id }}" class="inline"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work?tab=done"><button class="btn link small" type="submit">Archive</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>{% endif %}
+
+  {% elif tab == "checks" %}
+  <p class="note">Every check, with where it stands on each device. A check is tried in its plan's test round; a row opens it.</p>
+  {% if not checks %}{{ empty_state("No checks yet.") }}{% else %}
+  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="checks"{% if pick %} data-open-item="/manage/item/{{ pick }}?from=checks"{% endif %}>
+    <thead><tr><th class="num dt-w1">#</th><th>Check</th><th class="dt-w4">Plan</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for r in checks %}
+      <tr data-panel-url="/manage/item/{{ r.key }}?from=checks" tabindex="0" data-row="{{ r.key }}" data-kind="check">
+        <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
+        <td class="dt-title">{{ r.c.title }}{% if r.issues %}<span class="dt-why">issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}</span>{% endif %}</td>
+        <td>{% if r.area %}<a href="/manage/work/{{ r.area.id }}">{{ r.area.title }}</a>{% else %}<span class="dt-id">In no plan</span>{% endif %}</td>
+        {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
+      </tr>{% endfor %}</tbody></table></div>{% endif %}
+
+  {% elif tab == "scheduled" %}
+  <p class="note">Jobs that run on their own. Each reports its run here; one that's late or failed says so.</p>
+  <div class="table-scroll"><table class="dtable fft-table" data-jobs>
+    <thead><tr><th>Job</th><th class="dt-w4">When</th><th class="dt-w3">Where</th><th class="dt-w3">Last run</th><th class="dt-w5">Result</th></tr></thead>
+    <tbody>{% for j in jobs %}
+      <tr data-job="{{ j.key }}"><td class="dt-title">{{ j.title }}<span class="dt-why">{{ j.what }}</span></td><td class="dt-wrap">{{ j.when }}</td><td>{{ j.where }}</td>
+        <td>{% if j.at %}<time datetime="{{ j.at.isoformat() }}" data-clock="ago">{{ j.at | ago }}</time>{% else %}<span class="dt-id">Not reported yet</span>{% endif %}</td>
+        <td>{% if not j.at %}<span class="dt-id">—</span>{% elif j.late %}{{ state_word("Late", "failed") }} {{ j.words }}{% elif j.result == "failed" %}{{ state_word("Failed", "failed") }} {{ j.words }}{% else %}{{ state_word("OK", "passed") }} {{ j.words }}{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+
+  {% elif tab == "how" %}
+  <p class="note">Drawn from the settings the tools follow, so it says what's done. Each plan takes a lane from the files its change touches; Claude may move a lane up and says why, only you move one down.</p>
+  <div class="table-scroll"><table class="dtable fft-table" data-how-lanes>
+    <thead><tr><th class="dt-w2">Lane</th><th>What it's for</th><th class="dt-w5">Before it's live</th><th class="dt-w4">Who tries it</th></tr></thead>
+    <tbody>{% for l in how.lanes %}
+      <tr data-lane-row="{{ l.key }}"><td><span class="state-word lane-tag" data-lane-tag="{{ l.key }}">{{ l.said }}</span></td>
+        <td class="dt-title">{{ l.what }}<span class="dt-why">{{ l.files | join(" · ") }}</span></td><td class="dt-wrap">{{ l.needs }}</td><td class="dt-wrap">{{ l.who }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  <h2 class="plabel wk-h2">Every plan, the same steps</h2>
+  <div class="table-scroll"><table class="dtable fft-table" data-how-steps>
+    <thead><tr><th class="num dt-w1">#</th><th>Step</th></tr></thead>
+    <tbody>{% for s in how.steps %}<tr><td class="num"><span class="dt-id">{{ loop.index }}</span></td><td class="dt-title">{{ s }}</td></tr>{% endfor %}</tbody></table></div>
+  {% endif %}
+</main>
+{% endblock %}

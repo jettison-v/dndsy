@@ -58,6 +58,8 @@ class FftArea(_Stamped, Base):
     lane_by: Mapped[str] = mapped_column(String(80), server_default="")
     lane_why: Mapped[str] = mapped_column(String(300), server_default="")
     careful_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"))
+    # Below Work's cut line (Brett's picks on The Work Pages, Nov 20): Claude takes only the plans above it
+    held: Mapped[bool] = mapped_column(Boolean, server_default=false())
 
 
 class FftIdea(_Stamped, Base):

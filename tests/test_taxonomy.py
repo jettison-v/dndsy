@@ -163,8 +163,8 @@ def test_product_areas_page_and_where_it_stands_show_the_list(db, admin):
     page = admin.get("/manage/product-areas").text
     assert page.count('class="panel pa-card"') == len(taxonomy.areas()) and "data-loose" in page
     assert 'href="/manage/feedback?tab=open&amp;pa=battle&amp;feature=hp"' in page
-    stands = admin.get("/manage/testing?show=stands").text
-    assert "data-features" in stands and "Hit points" in stands and "pa=battle" in stands
+    work = admin.get("/manage/work").text  # (each plan says its open issues' Features)
+    assert "Hit points" in work and 'data-stage="' in work
     assert "Product Area" in admin.get("/manage/askdnd").text  # (its Overview card)
 
 

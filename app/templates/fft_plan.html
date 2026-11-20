@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "_admin_bits.html" import state_word %}
+{% from "_lists.html" import empty_state, count_pill %}
+{% block title %}{{ a.title }} · Work · Backstage · askdnd{% endblock %}
+{% block content %}
+{# A plan's page (app/fft/work_page.py `plan`; The Work Pages, Nov 20): everything of its batch. Overview (its stage, lane,
+   fixes, checks, what's next and whose), Issues, Test round (its checks on each device: tried once it's live, a failed
+   one files an issue back here), Timeline (what happened, from the record). One item opens in the item window. #}
+<main class="page manage-page" data-fft-page="plan" data-plan="{{ a.id }}">
+  {% include "_manage_head.html" %}
+  {% with fft_here = "work" %}{% include "_fft_tabs.html" %}{% endwith %}
+  <div class="title-row"><h1><a href="/manage/work" class="crumb">Work ›</a> {{ a.title }}</h1></div>
+  <p class="subtitle wk-facts" data-facts>{{ state_word(row.stage_said[0], row.stage_said[1], ' data-stage-word="' ~ row.stage ~ '"') }}
+    <span>{{ lane_said[row.lane] if row.lane else "No lane yet" }}</span>
+    <span>{{ row.kind }}{% if item %} · {{ item.title }}{% endif %}{% if at %} · plan {{ at }} of {{ of }}{% endif %}</span>
+    <span>Waits on: <b>{{ row.waits }}</b></span></p>
+
+  <nav class="sub-tabs" aria-label="{{ a.title }}">
+    {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "issues" %}{{ count_pill(open_n) }}{% elif key == "round" %}{{ count_pill(now_n) }}{% endif %}</a>{% endfor %}
+  </nav>
+
+  {% if tab == "overview" %}
+  <div class="stats stats-fit" data-stats>
+    <div class="stat"><span>Stage</span><b>{{ row.stage_said[0] }}</b></div>
+    <div class="stat"><span>Lane</span><b>{{ lane_said[row.lane] if row.lane else "—" }}</b>{% if a.lane_why %}<small>{{ a.lane_why }}</small>{% endif %}</div>
+    <div class="stat"><span>Issues fixed</span><b>{{ row.fixed }} of {{ row.issues }}</b><small>open issues with a fix</small></div>
+    <div class="stat"><span>Checks passed</span><b>{{ row.passed }} of {{ row.checks }}</b></div>
+    <div class="stat"><span>To try now</span><b>{{ row.minutes }} min</b></div>
+  </div>
+  <h2 class="plabel wk-h2">Next</h2>
+  <div class="table-scroll"><table class="dtable fft-table" data-next>
+    <thead><tr><th class="dt-w3">Whose</th><th>What</th></tr></thead>
+    <tbody>
+      {% if row.stage == "held" %}<tr><td>{{ state_word("Held", "quiet") }}</td><td class="dt-title">Below the line on Work: Claude takes it once you let it go.</td></tr>
+      {% elif row.turn == "brett" %}<tr><td>{{ state_word("Yours", "ask") }}</td><td class="dt-title">{{ row.waits[5:] }}: in <a href="/manage/for-you">For you</a></td></tr>
+      {% elif row.turn == "claude" %}<tr><td>{{ state_word("Claude's", "claude") }}</td><td class="dt-title">{{ {"building": "Building the fix, then the review and one pull request", "next": "Takes it next: reads its issues whole, then designs one fix", "frozen": "Waits for game night to end: nothing merges", "waiting": "Waits for the plans above it"}.get(row.stage, "Fixing what's open") }}</td></tr>
+      {% else %}<tr><td>{{ state_word("Done", "passed") }}</td><td class="dt-title">Nothing open.</td></tr>{% endif %}
+      {% for qn in questions %}<tr data-panel-url="/manage/item/q{{ qn.id }}" tabindex="0"><td>{{ state_word("Yours", "ask") }}</td><td class="dt-title">Answer: {{ qn.text | truncate(110) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+
+  {% elif tab == "issues" %}
+  {% if not issues %}{{ empty_state("No issues in this plan.") }}{% else %}
+  <div class="table-scroll"><table class="dtable fft-table" data-fft-list="plan:{{ a.id }}">
+    <thead><tr><th class="num dt-w1">#</th><th>Issue</th><th class="dt-w4">Feature</th><th class="dt-w3">State</th><th class="dt-w2">Turn</th></tr></thead>
+    <tbody>{% for i in issues %}
+      <tr data-panel-url="/manage/item/i{{ i.id }}?from=plan:{{ a.id }}" tabindex="0" data-row="i{{ i.id }}" data-kind="issue" data-state="{{ i.state }}">
+        <td class="num"><span class="dt-id">{{ i.id }}</span></td>
+        <td class="dt-title">{{ i.title }}</td>
+        <td>{{ paths[i.id] or "—" }}</td>
+        <td>{% if i.state == "closed" %}{{ state_word(closed_word.get(i.close_reason, "Closed"), "quiet") }}{% else %}{{ state_word(issue_word[i.state], "passed" if i.state == "ready" else "ask" if i.state in ("asks", "merge_ok") else "claude") }}{% endif %}</td>
+        <td>{% if turns.get(i.id) %}{{ state_word(turns[i.id][0], turns[i.id][1]) }}{% endif %}</td>
+      </tr>{% endfor %}</tbody></table></div>{% endif %}
+
+  {% elif tab == "round" %}
+  <p class="note">Its checks on each device you try them on. They come to For you once the plan's fix is live; a failed one files an issue back into this plan.</p>
+  {% if not checks %}{{ empty_state("No checks in this plan yet.") }}{% else %}
+  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="round:{{ a.id }}">
+    <thead><tr><th class="num dt-w1">#</th><th>Check</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}<th class="dt-w3">Tries</th></tr></thead>
+    <tbody>{% for r in checks %}
+      {% if loop.index0 == now_n %}<tr class="dt-group" data-group="earlier"><td colspan="{{ 3 + devices | length }}">Passed before this plan's open work</td></tr>{% endif %}
+      <tr data-panel-url="/manage/item/{{ r.key }}?from=round:{{ a.id }}" tabindex="0" data-row="{{ r.key }}" data-kind="check">
+        <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
+        <td class="dt-title">{{ r.c.title }}<span class="dt-why">about {{ r.c.minutes }} min</span></td>
+        {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
+        <td>{% if r.issues %}issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody></table></div>{% endif %}
+
+  {% else %}
+  {% if not events %}{{ empty_state("Nothing has happened in this plan yet.") }}{% else %}
+  <div class="table-scroll"><table class="dtable fft-table" data-timeline>
+    <thead><tr><th class="dt-w3">When</th><th class="dt-w2">Who</th><th>What</th></tr></thead>
+    <tbody>{% for e, words, who in events %}
+      <tr data-event="{{ e.kind }}"><td><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time></td><td>{{ who }}</td><td class="dt-title">{{ words }}</td></tr>
+    {% endfor %}</tbody></table></div>{% endif %}
+  {% endif %}
+</main>
+{% endblock %}

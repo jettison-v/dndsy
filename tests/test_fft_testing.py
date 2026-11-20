@@ -78,7 +78,7 @@ def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
     db.flush()
     page = admin.get("/manage/for-you").text
     assert f'data-row="c{mine.id}"' in page and f'data-row="c{phone.id}"' in page and "Not tried by Claude yet" not in page
-    assert "The Mini runs this" not in page and "The Mini runs this" in admin.get("/manage/testing?show=claudes").text
+    assert "The Mini runs this" not in page and "The Mini runs this" in admin.get("/manage/work?tab=checks").text
     assert "on your iPhone" in page and f'data-row="n{n.id}"' in page and f'data-row="r{road.id}"' in page and 'data-kind="question"' in page
     assert f'data-row="d{db.scalar(select(FftIdea.id))}"' in page
     assert "▶ Start round · 1 check" in page  # (only what this device can try)
@@ -100,13 +100,16 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     assert f'data-group="a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
     assert f"{a.title} · Claude asks" in page
     assert 'data-fft-page="for-you"' in page and 'data-tab="stands"' not in page and 'data-do="start-round"' in page
-    assert 'class="on" data-tab="foryou" aria-current="page"' in page  # (For you · Testing · Feedback across the top, The Work Pages)
-    stands = admin.get("/manage/testing").text
-    assert 'data-tab="stands"' in stands and 'class="on" data-tab="stands"' in stands and 'data-do="start-round"' not in stands
+    assert 'class="on" data-tab="foryou" aria-current="page"' in page  # (For you · Work · Feedback across the top, The Work Pages)
     for old in ("/manage/testing?show=foryou", f"/manage/testing?open=c{c.id}"):
         r = admin.get(old, follow_redirects=False)
         assert r.status_code == 303 and r.headers["location"].startswith("/manage/for-you")
-    assert admin.get("/manage/testing", follow_redirects=False).status_code == 200
+    for old, to in (("/manage/testing", "/manage/work"), ("/manage/testing?show=stands", "/manage/work"),  # (Testing became Work, Nov 20)
+                    ("/manage/testing?show=claudes", "/manage/work?tab=checks"), (f"/manage/testing?show=done&open=c{c.id}", f"/manage/work?tab=checks&open=c{c.id}")):
+        r = admin.get(old, follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"] == to, old
+    work = admin.get("/manage/work").text
+    assert 'class="on" data-tab="queue"' in work and 'class="on" data-tab="work"' in work and 'data-do="start-round"' not in work
     assert admin.get("/manage/for-you/count").json() == {"n": 4}
     assert "data-for-you-count" in admin.get("/party").text  # (the badge's place on the Admin gear, on every page)
     assert "4 waiting on you: " in admin.get("/manage/askdnd").text  # (its card on Overview says how much)

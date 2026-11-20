@@ -398,8 +398,13 @@ def incident(a) -> None:
     print(call(a.base, "/areas", {"do": "incident", "area_id": _area_id(a, a.area), "why": " ".join(a.words)}))
 
 
+def job(a) -> None:
+    """A scheduled job's run, for Work › Scheduled (app/data/jobs.json lists them): ok or failed, and what it found."""
+    print(call(a.base, f"/jobs/{a.key}", {"result": a.result, "words": " ".join(a.words)}))
+
+
 def freeze(a) -> None:
-    """Whether Brett paused deploys (Deploys: Paused, in the bar on For you and Where it stands)."""
+    """Whether Brett paused deploys (Deploys: Paused, in the bar on For you and Work)."""
     req = urllib.request.Request(a.base.rstrip("/") + "/api/fft/freeze", headers={"User-Agent": "askdnd-feedback-script"})
     on = json.loads(urllib.request.urlopen(req, timeout=30).read())["frozen"]
     print("Deploys are PAUSED: nothing merges or deploys until Brett chooses another (a [table-fix] commit, with his OK)." if on
@@ -604,6 +609,10 @@ def main() -> None:
     s.add_argument("--look", default="", help="what to look at")
     s.add_argument("--path", default="/", help="the page to open, like /party")
     s.add_argument("--pr", default="")
+    s = sub.add_parser("job", help="a scheduled job's run, for Work › Scheduled (app/data/jobs.json)")
+    s.add_argument("key")
+    s.add_argument("result", choices=("ok", "failed"))
+    s.add_argument("words", nargs="*")
     s = sub.add_parser("freeze", help="whether Brett paused deploys")
     s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
@@ -619,7 +628,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "available": available, "local": local}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "available": available, "local": local}[a.cmd](a)
 
 
 if __name__ == "__main__":

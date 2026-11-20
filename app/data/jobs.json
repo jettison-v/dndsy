@@ -1,0 +1,11 @@
+{
+  "_about": "Jobs that run on their own, listed on Backstage › Global › Work › Scheduled (app/fft/work_page.py; The Work Pages, Nov 20). Each reports its run with POST /api/fft/jobs/<key> (Claude's key, or the Mac Mini's for the Mini's jobs; scripts/feedback.py job <key> ok|failed \"what it found\"). every_hours: a run older than one and a half times this is Late.",
+  "jobs": [
+    {"key": "nightly", "title": "The live test", "what": "Part 1 on the real D&D Beyond, then through the DM", "when": "Nightly, 4:00", "where": "Mac Mini", "every_hours": 24},
+    {"key": "iphone", "title": "iPhone Safari", "what": "The seats' pages in real iPhone and iPad Safari", "when": "Nightly, after the live test", "where": "Mac Mini", "every_hours": 24},
+    {"key": "drift", "title": "D&D Beyond drift", "what": "Today's test sheets against the fixtures' shape", "when": "Daily, 12:30 UTC", "where": "GitHub", "every_hours": 24},
+    {"key": "backup", "title": "Backups", "what": "The database, to S3", "when": "Nightly", "where": "Railway", "every_hours": 24},
+    {"key": "notes", "title": "New notes", "what": "Sorts what came in overnight against what's merged", "when": "Daily, 6:00", "where": "Claude", "every_hours": 24},
+    {"key": "phones", "title": "The phone sweep", "what": "Every page at 375 and 768 as admin, DM and player; one pull request", "when": "Mondays", "where": "Claude", "every_hours": 168}
+  ]
+}

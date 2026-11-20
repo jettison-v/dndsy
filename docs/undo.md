@@ -12,7 +12,7 @@ database after it.
 4. Open [askdnd.ai](https://askdnd.ai) and check that the broken thing works again.
 5. Send a note in askdnd saying what broke (\ on any page). Claude picks it up from there.
 
-Turn on the **game-night freeze** (Manage › askdnd › Testing › Where it stands) if a game is close, so nothing new
+Turn on the **game-night freeze** (Backstage › Global › Work, the status bar: Deploys › Paused) if a game is close, so nothing new
 deploys on top.
 
 ## What Claude does
