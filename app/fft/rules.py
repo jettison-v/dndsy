@@ -127,10 +127,13 @@ def _first_words(text: str, n: int = 90) -> str:
     return t if len(t) <= n else t[: n - 1].rsplit(" ", 1)[0] + "…"
 
 
-def file_issue(db: Session, actor: str, note: FftNote, title: str = "") -> FftIssue:
-    """A note becomes a new issue (Claude's: to fix)."""
+def file_issue(db: Session, actor: str, note: FftNote, title: str = "", kind: str = "") -> FftIssue:
+    """A note becomes a new issue (Claude's: to fix): a fix, or an improvement (by default as its sender called it)."""
     _waiting_or_own(note)
-    issue = FftIssue(title=(title or _first_words(note.text))[:120], from_player=note.role != "admin")
+    kind = kind or ("improvement" if note.kind == "idea" else "fix")
+    if kind not in ISSUE_KINDS:
+        raise RuleError("bad", "A fix or an improvement.")
+    issue = FftIssue(title=(title or _first_words(note.text))[:120], from_player=note.role != "admin", **({"kind": kind} if kind != "fix" else {}))
     db.add(issue)
     db.flush()
     note.state, note.filed_as, note.issue_id = "filed", "issue", issue.id
@@ -265,17 +268,32 @@ def _set_issue(db: Session, actor: str, issue: FftIssue, to: str, kind: str, **d
     _event(db, actor, kind, "issue", issue.id, area_id=issue.area_id, **{"from": was, "to": to}, **data)
 
 
+ISSUE_KINDS = ("fix", "improvement")  # (Brett, Nov 20: a change to a Product Area is a fix, it's broken, or an improvement,
+# make it better; an idea that needs discussion is the Roadmap's)
+
+
 def new_issue(db: Session, actor: str, title: str, area_id: int | None = None, origin_try_id: int | None = None,
-              feature: str = "") -> FftIssue:
+              feature: str = "", kind: str = "fix") -> FftIssue:
     if not title.strip():
         raise RuleError("bad", "Give it a title.")
-    issue = FftIssue(title=title.strip()[:120], area_id=area_id, origin_try_id=origin_try_id)
+    if kind not in ISSUE_KINDS:
+        raise RuleError("bad", "A fix or an improvement.")
+    issue = FftIssue(title=title.strip()[:120], area_id=area_id, origin_try_id=origin_try_id, **({"kind": kind} if kind != "fix" else {}))
     db.add(issue)
     db.flush()
     _event(db, actor, "issue_new", "issue", issue.id, area_id=area_id, origin_try=origin_try_id)
     if feature:
         set_feature(db, actor, issue, feature)
     return issue
+
+
+def set_kind(db: Session, actor: str, issue: FftIssue, kind: str) -> None:
+    """A fix or an improvement (Nov 20), with its event."""
+    if kind not in ISSUE_KINDS:
+        raise RuleError("bad", "A fix or an improvement.")
+    if issue.kind != kind:
+        was, issue.kind = issue.kind, kind
+        _event(db, actor, "issue_kind", "issue", issue.id, area_id=issue.area_id, was=was, became=kind)  # (never "to": that's a state)
 
 
 def retitle(db: Session, actor: str, issue: FftIssue, title: str) -> None:

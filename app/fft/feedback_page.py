@@ -102,6 +102,8 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         q = q.where(FftIssue.area_id == area)
     if chip == "players":
         q = q.where(FftIssue.from_player.is_(True))
+    elif chip in rules.ISSUE_KINDS:  # (Fixes, Improvements: Nov 20)
+        q = q.where(FftIssue.kind == chip)
     elif chip == "checks":  # (Found on a check: what a check's try turned up; an issue a check is written for shows it in
         # Where it stands. Brett's round, Nov 18, issue 33: "From checks" said neither)
         q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftTryIssue.issue_id))))
@@ -119,7 +121,7 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
             bits.append(", ".join(who))
         elif i.origin_try_id:
             bits.append("from a check")
-        out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits),
+        out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits), "kind": i.kind,
                     "pa": f.area if f else "", "feature": f.key if f else ""})
     if tab == "open" and not chip and not area:  # (a question sent for Claude to answer, waiting: Claude's; issue 27)
         for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
@@ -246,7 +248,7 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
         return denied
     n = counts(db)
     tab = tab if tab in dict(TABS) else ("approve" if n["approve"] else "open")
-    chip = chip if chip in ("players", "checks") else ""
+    chip = chip if chip in ("players", "checks", *rules.ISSUE_KINDS) else ""
     keyed = db.get(FftArea, area) if area else None
     if keyed is not None and keyed.key:  # (a Product Area's batch, as Where it stands links it: its chip)
         pa, area = keyed.key, 0
@@ -328,9 +330,9 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
     if do != "tell" and note.state == "waiting" and seen.isdigit() and int(seen) != last_line(db, note):
         request.session["toast"] = web.notice(f"{note.first_name} added to it while you were looking: read it again first.", "warn")
         return RedirectResponse(f"{BACK}?tab=approve&open=n{note.id}", status_code=303)
-    if do == "issue":
-        made = _act(lambda: rules.file_issue(db, actor, note))
-        _said(request, "Approved as a new issue: it's Claude's to fix", undo)
+    if do in ("issue", "fix", "improvement"):  # (Nov 20: a fix or an improvement, the two kinds of change to a Product Area)
+        made = _act(lambda: rules.file_issue(db, actor, note, kind="" if do == "issue" else do))
+        _said(request, f"Approved as {'an improvement' if made.kind == 'improvement' else 'a fix'}: it's Claude's", undo)
         key = f"i{made.id}"
     elif do == "same":
         target = db.get(FftIssue, issue) or _missing()
@@ -380,7 +382,7 @@ def note_undo(request: Request, note_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/manage/feedback/issues/{issue_id:int}")
-def issue_change(request: Request, issue_id: int, do: str = Form(...), words: str = Form(""), to: str = Form(""), feature: str = Form(""),
+def issue_change(request: Request, issue_id: int, do: str = Form(...), words: str = Form(""), to: str = Form(""), feature: str = Form(""), kind: str = Form(""),
                  reason: str = Form(""), same_as: int = Form(0), note: int = Form(0), seen: str = Form(""), db: Session = Depends(get_db)):
     user, denied = _admin(request)
     if denied:
@@ -391,6 +393,9 @@ def issue_change(request: Request, issue_id: int, do: str = Form(...), words: st
     if do == "feature":
         _act(lambda: rules.set_feature(db, actor, i, feature))
         _said(request, f"Now in {taxonomy.path(i.feature)}: Claude sees it")
+    elif do == "kind":
+        _act(lambda: rules.set_kind(db, actor, i, kind))
+        _said(request, "Now an improvement" if i.kind == "improvement" else "Now a fix")
     elif do == "close":
         other = db.get(FftIssue, same_as) if same_as else None
         if reason == "same" and other is None:

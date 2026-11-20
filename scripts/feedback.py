@@ -225,7 +225,7 @@ def issues(a) -> None:
 
 def issue(a) -> None:
     if a.id == "new":
-        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area, "feature": a.feature or ""}))
+        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area, "feature": a.feature or "", "kind": a.kind or "fix"}))
         return
     if not a.do:
         print_issue(call(a.base, f"/issues/{a.id}"))
@@ -236,6 +236,8 @@ def issue(a) -> None:
         body["title"] = w[0]
     elif a.do == "feature":
         body["feature"] = w[0] if w else ""
+    elif a.do == "kind":
+        body["kind"] = w[0] if w else ""
     elif a.do == "move":
         body["area_id"] = int(w[0]) if w and w[0] != "none" else None
     elif a.do == "pr":
@@ -254,7 +256,7 @@ def sort(a) -> None:
     """Sort an issue in one go (Nov 20: one command, not one per change): its short title, its Feature, a reply to
     whoever wrote it, and the fix's pull request, each only when given."""
     got = None
-    for do, body in (("title", {"title": a.title}), ("feature", {"feature": a.feature}), ("pr", {"pr": a.pr})):
+    for do, body in (("title", {"title": a.title}), ("feature", {"feature": a.feature}), ("kind", {"kind": a.kind}), ("pr", {"pr": a.pr})):
         if body[do]:
             got = call(a.base, f"/issues/{a.id}", {"do": do, **body})
     if a.tell:
@@ -568,16 +570,18 @@ def main() -> None:
     s.add_argument("--feature", default="")
     s = sub.add_parser("issue")
     s.add_argument("id")
-    s.add_argument("do", nargs="?", help="title, feature, move, start, pr, close, reopen or tell (after new: the title)")
+    s.add_argument("do", nargs="?", help="title, feature, kind, move, start, pr, close, reopen or tell (after new: the title)")
     s.add_argument("words", nargs="*")
     s.add_argument("--area", type=int)
     s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
+    s.add_argument("--kind", choices=["fix", "improvement"], help="new: a fix (it's broken) or an improvement (make it better)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
-    s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --tell (a reply), --pr")
+    s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --kind, --tell (a reply), --pr")
     s.add_argument("id")
     s.add_argument("--title", default="")
     s.add_argument("--feature", default="")
+    s.add_argument("--kind", default="", choices=["", "fix", "improvement"], help="a fix (it's broken) or an improvement (make it better)")
     s.add_argument("--tell", default="")
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
     s.add_argument("--pr", default="")
@@ -653,7 +657,7 @@ def main() -> None:
     s.add_argument("--pr", action="append", default=[])
     s.add_argument("--rollback", action="store_true")
     a = p.parse_args()
-    known = {"issue": ("title", "feature", "move", "start", "pr", "close", "reopen", "tell"), "check": ("version", "preflight", "retire", "link")}
+    known = {"issue": ("title", "feature", "kind", "move", "start", "pr", "close", "reopen", "tell"), "check": ("version", "preflight", "retire", "link")}
     if a.cmd in known and a.id != "new" and a.do and a.do not in known[a.cmd]:
         p.error(f"{a.cmd} {a.id}: one of {', '.join(known[a.cmd])}")
     if a.cmd == "item":

@@ -45,7 +45,7 @@ def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_d
     page.locator(f'tr[data-row="n{nid}"] td.dt-title').click()
     win = _item(page, f"n{nid}")
     page.evaluate("window.__stayed = true")
-    win.locator('[data-do="issue"]').click()
+    win.locator('[data-do="fix"]').click()
     card = page.locator("#cards > .card", has=page.locator(".card-act"))
     card.wait_for()
     assert page.evaluate("window.__stayed === true") and "/manage/feedback" in page.url and "tab=open" not in page.url  # (this page stayed)
@@ -55,7 +55,7 @@ def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_d
     assert _one(browser_db[0], "SELECT state FROM fft_notes WHERE id = :i", i=nid)[0] == "waiting"
 
     page.locator(f'tr[data-row="n{nid}"] td.dt-title').click()
-    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
+    press(_item(page, f"n{nid}").locator('[data-do="fix"]'))
     iid = _issue_of(browser_db[0], nid)
     page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
     issue = _item(page, f"i{iid}").locator("[data-fft-issue]")
@@ -87,7 +87,7 @@ def test_the_window_walks_its_list_and_moves_on_after_a_press(people, server, br
     _item(page, f"n{second}")
     page.keyboard.press("ArrowUp")
     win = _item(page, f"n{first}")
-    win.locator('[data-do="issue"]').click()
+    win.locator('[data-do="fix"]').click()
     _item(page, f"n{second}")  # (filed: on to the next)
     assert page.locator(f'tr[data-row="n{first}"]').count() == 0 and _issue_of(browser_db[0], first) is not None
     assert not admin.errors, admin.errors
@@ -98,7 +98,7 @@ def test_same_as_searches_and_joins_in_its_window(people, server, browser_db):
     second = _waiting_note(browser_db[0], "Same thing after a rest.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{first}")
-    press(_item(page, f"n{first}").locator('[data-do="issue"]'))
+    press(_item(page, f"n{first}").locator('[data-do="fix"]'))
     page = admin.open(f"/manage/feedback?tab=approve&open=n{second}")  # (this note, whatever a failed first try left waiting)
     _item(page, f"n{second}").locator('[data-do="same"]').click()
     page.locator(".peek #fft-same-options").wait_for()
@@ -124,7 +124,7 @@ def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
     nid = _waiting_note(browser_db[0], "The rest button does nothing.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
-    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
+    press(_item(page, f"n{nid}").locator('[data-do="fix"]'))
     iid = _issue_of(browser_db[0], nid)
     page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
     _item(page, f"i{iid}").locator('[data-fft-issue] [data-do="close"]').click()
@@ -197,7 +197,7 @@ def test_change_and_rename_close_with_cancel_or_escape_and_change_nothing(people
     nid = _waiting_note(browser_db[0], "The rest button is grey.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
-    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
+    press(_item(page, f"n{nid}").locator('[data-do="fix"]'))
     iid, feature, title = _one(browser_db[0], "SELECT i.id, i.feature, i.title FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid)
     page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
     _item(page, f"i{iid}")

@@ -79,9 +79,14 @@ class FftIssue(_Stamped, Base):
     (rules.ISSUE_TURN); closed issues carry their reason."""
 
     __tablename__ = "fft_issues"
+    __mapper_args__: ClassVar[dict] = {"eager_defaults": False}  # (`kind`'s default is read when used, never fetched on insert:
+    # the carry-over migration writes issues before that column exists, as fft_areas' lanes)
     id: Mapped[int] = mapped_column(primary_key=True)
     area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True, index=True)
     feature: Mapped[str] = mapped_column(String(20), default="", server_default="", index=True)  # what it's about (app/fft/taxonomy.py)
+    kind: Mapped[str] = mapped_column(String(12), server_default="fix")  # fix or improvement (rules.ISSUE_KINDS; Nov 20). No
+    # Python default: written only for an improvement, so the carry-over (migration 0c3e5a7b9d14, through today's models)
+    # never writes a column its database doesn't have yet
     title: Mapped[str] = mapped_column(String(120))
     # to_fix (queued), fixing (in hand), asks (Claude asks Brett), merge_ok (a player-prompted fix waits for Brett's OK,
     # R17), ready (fixed and live: ready to try), closed
