@@ -1433,7 +1433,7 @@
  {
   "title": "Deploy Controls",
   "kind": "design",
-  "status": "Waiting on your picks",
+  "status": "Picked: A, with a reason when pausing; built",
   "date": "Nov 19",
   "what": "How Claude's finished work reaches the live site, as one labeled control in the status bar, made general enough to carry to another product: five versions (Deploys, Releases, two controls, Visible changes, and pausing with a reason), each clickable.",
   "source": "docs/mockups/deploy-controls/index.html",
