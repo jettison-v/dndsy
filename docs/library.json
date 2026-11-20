@@ -1467,6 +1467,15 @@
   "link": "https://claude.ai/artifact/EKyJvsUXt4iqEP19TkpLCK"
  },
  {
+  "title": "Backstage Mode",
+  "kind": "design",
+  "status": "Waiting on your picks",
+  "date": "Nov 20",
+  "what": "One design system, two modes: Backstage pages dense, neutral and full width (tables with columns, the facts in a line, a reader beside the list), drawn beside today on For you, Feedback, Work, a plan, Usage and Accounts; short issue and check titles. Five picks.",
+  "source": "docs/mockups/backstage-mode/index.html",
+  "link": "https://claude.ai/artifact/3qPD7Gnb9C1675k5fpMtgz"
+ },
+ {
   "title": "The Work Page",
   "kind": "design",
   "status": "Waiting on your picks",
