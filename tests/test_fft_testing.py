@@ -164,15 +164,43 @@ def test_try_it_on_one_check_ends_with_it(admin, db):
     assert rules.round_open(db) is None and "data-round-done" not in admin.get("/manage/testing/card").text
 
 
-def test_while_a_round_is_open_nothing_merges(admin, db):
-    """R11."""
+def test_a_round_over_every_area_holds_an_issue_in_none(admin, db):
+    """R11: a sitting over every area holds an issue in no area; ending it lets it go."""
     issue = rules.new_issue(db, "claude", "Something else")
     rules.start_fixing(db, "claude", issue)
     _check(db)
     admin.post("/manage/testing/round")
-    assert rules.may_merge(db, issue) == (False, "Brett's round is open: nothing merges until it ends (only an issue that stops his round may).")
+    assert rules.may_merge(db, issue) == (False, "Brett's round is testing this area: it merges when the round ends (only an issue that stops his round may).")
     admin.post("/manage/testing/round/end")
     assert rules.may_merge(db, issue)[0] and db.scalar(select(FftRound)).ended_at is not None
+
+
+def test_a_round_holds_only_its_own_area(admin, db):
+    """A lighter round (Brett's pick, Nov 19, docs/plans/2026-11-19-lighter-rounds.md): ▶ Just this area holds Claude's
+    merges in that area only; work in another area still merges."""
+    item = rules.new_item(db, "claude", "Two areas", "now", False)
+    a, b = rules.new_area(db, "claude", item, "Battle"), rules.new_area(db, "claude", item, "Sheet")
+    in_a, in_b = rules.new_issue(db, "claude", "In Battle", area_id=a.id), rules.new_issue(db, "claude", "In Sheet", area_id=b.id)
+    for i in (in_a, in_b):
+        rules.start_fixing(db, "claude", i)
+    _check(db, area=a)
+    db.flush()
+    admin.post("/manage/testing/round", data={"area": a.id})
+    assert rules.round_open(db) is not None and rules.in_open_round(db, a) and not rules.in_open_round(db, b)
+    assert not rules.may_merge(db, in_a)[0] and rules.may_merge(db, in_b)[0]
+
+
+def test_try_it_on_one_check_holds_nothing(admin, db):
+    """A lighter round (Brett's pick, Nov 19): ▶ Try it on one check opens its round of one for the card, but never
+    stops a merge, its own area's included."""
+    item = rules.new_item(db, "claude", "One area", "now", False)
+    a = rules.new_area(db, "claude", item, "Battle")
+    issue = rules.new_issue(db, "claude", "In Battle", area_id=a.id)
+    rules.start_fixing(db, "claude", issue)
+    c = _check(db, area=a)
+    admin.post(f"/manage/testing/checks/{c.id}/go")
+    assert rules.round_open(db) is not None and rules.holding_round(db) is None
+    assert not rules.in_open_round(db, a) and rules.may_merge(db, issue)[0]
 
 
 def test_somethings_wrong_fails_the_try_and_another_adds_to_it(admin, db):

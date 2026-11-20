@@ -337,13 +337,19 @@ def ok_merge(db: Session, actor: str, issue: FftIssue) -> None:
 
 
 def may_merge(db: Session, issue: FftIssue) -> tuple[bool, str]:
-    """R11 and the game-night freeze: may this issue's fix merge to askdnd.ai now?"""
+    """R11 and Deploys: may this issue's fix merge to askdnd.ai now? Not while deploys are paused; not while Brett's
+    sitting is testing its area (a lighter round, Nov 19: a round holds only its own area, ▶ Try it nothing)."""
     if issue.state == "merge_ok":
         return False, "It waits for Brett's OK to merge (held from before R17 was retired)."
     if frozen(db):
-        return False, "The game-night freeze is on: nothing merges until Brett turns it off (a fix for something broken at the table, with his OK)."
-    if round_open(db) and not stops_round(db, issue):
-        return False, "Brett's round is open: nothing merges until it ends (only an issue that stops his round may)."
+        return False, "Deploys are paused: nothing merges until Brett chooses another (a fix for something broken at the table, with his OK)."
+    if issue.area_id:
+        held = in_open_round(db, db.get(FftArea, issue.area_id))
+    else:  # (in no area: held only by a round over every area)
+        r = holding_round(db)
+        held = r is not None and r.area_id is None
+    if held and not stops_round(db, issue):  # (only its own area: a lighter round, Brett's pick Nov 19)
+        return False, "Brett's round is testing this area: it merges when the round ends (only an issue that stops his round may)."
     return True, ""
 
 
@@ -1037,11 +1043,13 @@ def check_state(db: Session, check: FftCheck) -> dict:
 # ------------------------------------------------------------------ rounds, areas, the one order (R11, R12, R15)
 
 
-def open_round(db: Session, actor: str, user_id: int | None, area_id: int | None = None) -> FftRound:
+def open_round(db: Session, actor: str, user_id: int | None, area_id: int | None = None, holds: bool = True) -> FftRound:
+    """A sitting of tries. `holds` (a lighter round, Brett's pick Nov 19): ▶ Start round holds Claude's merges in its
+    own area(s); ▶ Try it on one check opens one that holds nothing. A round already open is kept as it is."""
     _expire_rounds(db)
     r = db.scalar(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.user_id == user_id))
     if r is None:
-        r = FftRound(user_id=user_id, area_id=area_id)
+        r = FftRound(user_id=user_id, area_id=area_id, holds=holds)
         db.add(r)
         db.flush()
         _event(db, actor, "round_opened", "round", r.id, area_id=area_id)
@@ -1169,8 +1177,16 @@ def area_turn(db: Session, area: FftArea) -> str:
     return "done"
 
 
+def holding_round(db: Session) -> FftRound | None:
+    """The open round that holds Claude's merges, if any (▶ Try it's never does: a lighter round, Nov 19)."""
+    _expire_rounds(db)
+    return db.scalar(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.holds.is_(True)).order_by(FftRound.id.desc()))
+
+
 def in_open_round(db: Session, area: FftArea) -> bool:
-    r = round_open(db)
+    """Is this area held by Brett's sitting (R11, lightened Nov 19): its own area, or for a round over all of them,
+    every area with a check in his turn."""
+    r = holding_round(db)
     if r is None:
         return False
     if r.area_id is not None:

@@ -1,4 +1,4 @@
-# A lighter round (proposed, Nov 19)
+# A lighter round (Brett picked all three, Nov 19)
 
 Brett, Nov 19: "I feel like starting a round makes you less efficient because it interrupts you and pauses
 deployments. Can you think of a better workflow? Maybe it warns when I am going to be stopping something?"
@@ -12,7 +12,7 @@ deployments. Can you think of a better workflow? Maybe it warns when I am going 
 - A round doesn't pause Railway itself; only **Deploys: Paused** does (the Game-night freeze job). On Nov 19 the pause
   came from check 27's own steps, which had him press Paused on the live site. Checks no longer ask that.
 
-## The proposal (Claude's recommendation; waits on Brett's yes, since it changes R11)
+## The change (Brett's pick: all three)
 
 1. **A round holds only what it's testing**: its own Product Area(s). Claude's work in other areas still merges and
    deploys. R11's reasons, nothing changing under him while he tests and issues found together fixed together, are
@@ -23,7 +23,7 @@ deployments. Can you think of a better workflow? Maybe it warns when I am going 
    first]". Let it go live first starts the round once it's live. askdnd knows what's in flight from the pull requests
    attached to issues (`feedback.py issue <id> pr <url>`) and from auto-merge.
 
-Items 1 and 2 need no design. Item 3 is a small new screen: a mockup first.
+Items 1 and 2 are built (`FftRound.holds`, `rules.holding_round`, `may_merge` by area). Item 3 is a small new screen: an HTML mockup first (docs/mockups/round-heads-up/).
 
 ## Where it's tracked
 

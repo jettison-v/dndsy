@@ -6,7 +6,7 @@ they can be erased without breaking the record (T7)."""
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false, func, true
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -199,6 +199,8 @@ class FftRound(_Stamped, Base):
     area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True)
     last_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # (a lighter round, Brett's pick Nov 19: a sitting holds Claude's merges in its own area(s); ▶ Try it holds nothing)
+    holds: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
 
 
 class FftTry(_Stamped, Base):

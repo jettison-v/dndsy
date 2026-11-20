@@ -4,7 +4,7 @@
    `act-menu`): After my local try (visible changes wait for his try on his Mac), When tests pass (the default), Paused
    (for any reason; it asks why, optional). Each choice says what it does in the menu, so the bar needs no Help. Under
    the top row, only when there is one: a pause's reason, whole on its own line (his comment); why local tries ended by
-   themselves; an open round with End round (issue 41). `bar` is testing_page.status(), `back` the page it's on. #}
+   themselves; an open round with End round (issue 41), saying what it holds: its own area, or nothing for ▶ Try it (a lighter round, Nov 19). `bar` is testing_page.status(), `back` the page it's on. #}
 {% set mode = bar.mode %}
 {% set said = {"available": "After my local try", "independent": "When tests pass", "frozen": "Paused"} %}
 {% set does = {"available": "Visible changes wait for your try on your Mac. Back to When tests pass after 2 hours, or when you're quiet in askdnd 30 minutes or a try waits 30 minutes.",
@@ -32,6 +32,6 @@
   </div>
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span></div>
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
-  {% if bar.round %}<div class="fft-status-round"><span data-stat="round">A round is open</span>
+  {% if bar.round %}<div class="fft-status-round"><span data-stat="round" data-holds="{{ 1 if bar.round.holds else 0 }}">{% if not bar.round.holds %}Trying a check <span class="note">nothing of Claude's waits</span>{% elif bar.round_area %}A round is open <span class="note">Claude's work in {{ bar.round_area }} waits</span>{% else %}A round is open <span class="note">Claude's work in the areas you're trying waits</span>{% endif %}</span>
     <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form></div>{% endif %}
 </div>

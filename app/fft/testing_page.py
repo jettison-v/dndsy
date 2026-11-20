@@ -315,7 +315,10 @@ def status(db: Session) -> dict:
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
     av = rules.check_available(db)
     av["ended"] = bool(av["why"] and av["off_at"] and rules.now() - datetime.fromisoformat(av["off_at"]) < timedelta(hours=2))  # (said for a while)
-    return {"available": av, "listening": views.listening(db), "listener": li, "round": rules.round_open(db),
+    r = rules.round_open(db)
+    area = db.get(FftArea, r.area_id) if r is not None and r.area_id else None
+    return {"available": av, "listening": views.listening(db), "listener": li, "round": r,
+            "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)
             "freeze": rules.freeze_state(db), "mode": rules.mode_of(db)}
 
 
@@ -626,7 +629,8 @@ def round_start(request: Request, area: int = Form(0), db: Session = Depends(get
 
 @router.post("/manage/testing/checks/{check_id:int}/go")
 def go(request: Request, check_id: int, db: Session = Depends(get_db)):
-    """▶ Try it: a round of one, on the check's page with its card."""
+    """▶ Try it: a round of one, on the check's page with its card. It holds nothing (a lighter round, Brett's pick
+    Nov 19: one quick try never stops Claude's merges); a sitting already open stays as it is."""
     user, denied = _admin(request)
     if denied:
         return denied
@@ -634,7 +638,7 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
     me = views.person(db, user)
     was = rules.round_open(db)
     try:
-        r = rules.open_round(db, f"user:{me['id']}", me["id"], c.area_id)
+        r = rules.open_round(db, f"user:{me['id']}", me["id"], c.area_id, holds=False)
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
     here = access.current_campaign(me["email"])
@@ -652,7 +656,7 @@ def round_end(request: Request, db: Session = Depends(get_db)):
         return denied
     to = _end(request, db)
     db.commit()
-    request.session["toast"] = "Round ended: Claude may merge again"
+    request.session["toast"] = "Round ended: Claude's work in its area may merge again"
     return RedirectResponse(to, status_code=303)
 
 
