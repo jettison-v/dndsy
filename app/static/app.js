@@ -991,7 +991,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
   // A press redraws in place (the Live UI Audit, Brett, Nov 19: "only what changed redraws, and nothing needs a
-  // refresh"; issue 40, the page flashing on the freeze and lanes). A plain form in the page's main that changes
+  // refresh"; issue 40, the page flashing on the freeze and lanes). A plain form in the page's main or a side panel that changes
   // something is sent in the background; when askdnd answers with this same page (a redirect back here, or a page drawn
   // for the answer), its new copy goes in through swapMain, as a change from elsewhere does: scroll, tabs and what was
   // open stay, the corner card says what happened, the address follows. An answer that is another page loads it as
@@ -1006,7 +1006,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const by = e.submitter, method = ((by && by.getAttribute('formmethod')) || form.method).toLowerCase();  // (a button may send it elsewhere: Suggestions' Dismiss)
     if (e.defaultPrevented || !(form instanceof HTMLFormElement) || method !== 'post' || form.hasAttribute('hx-post')) return;
     const target = (by && by.getAttribute('formtarget')) || form.target;
-    if (!main || !main.contains(form) || form.closest('[data-reload]') || (target && target !== '_self')) return;
+    const panel = form.closest('aside.peek');  // (a side panel's press too, batch 3: it closes as the reload closed it)
+    if (!main || !(main.contains(form) || panel) || form.closest('[data-reload]') || (target && target !== '_self')) return;
     const to = new URL((by && by.hasAttribute('formaction') && by.formAction) || form.action, location.href);
     if (to.origin !== location.origin) return;
     e.preventDefault();
@@ -1029,6 +1030,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         }
         const same = !r.redirected || url.search === location.search;  // (another view of this page: its tab is the answer's)
         if (r.redirected) history.replaceState(history.state, '', url.pathname + url.search);
+        if (panel) closeLayer(layers.base);  // (done in the panel: it closes, the page under it redraws)
         swapMain(doc, same);
         if (doc.title) document.title = doc.title;
         if (said) { try { toast(JSON.parse(said)); } catch (err) { /* not a message */ } }
