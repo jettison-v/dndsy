@@ -18,7 +18,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -32,7 +32,7 @@ WORK = "/manage/work"
 TABS = (("queue", "Queue"), ("done", "Done"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
 # (the Work Flow Map's stages, worked out from what's true: words and state_word's tone)
-STAGES = {"held": ("Held", "quiet"), "frozen": ("Held for game night", "quiet"), "round": ("In your round", "ask"),
+STAGES = {"blocker": ("Blocker: Claude's now", "failed"), "held": ("Held", "quiet"), "frozen": ("Held for game night", "quiet"), "round": ("In your round", "ask"),
           "try": ("Live: try it", "ask"), "yours": ("Waiting on you", "ask"), "building": ("Building", "claude"),
           "next": ("Claude's next", "claude"), "waiting": ("Waiting its turn", "quiet"), "done": ("Done", "passed")}
 CHECK_TONE = {"to_try": "ask", "later": "ask", "asks": "ask", "failed": "failed", "fixing": "claude", "wrong": "claude",
@@ -51,6 +51,8 @@ def stage(db: Session, a: FftArea, turn: str, pick: rules.Pick, frozen: bool) ->
         return "held"
     if turn == "done":
         return "done"
+    if pick.blocker and pick.area is not None and pick.area.id == a.id:  # (an issue in it stops Brett's round: Claude fixes it now)
+        return "blocker"
     if rules.in_open_round(db, a):
         return "round"
     if turn == "brett":
@@ -128,11 +130,11 @@ def done(db: Session) -> list[dict]:
     for a in db.scalars(select(FftArea).where(FftArea.archived.is_(False))):
         if rules.area_turn(db, a) != "done" or rules.area_open_issues(db, a):
             continue
-        closed = db.scalar(select(FftIssue.id).where(FftIssue.area_id == a.id).limit(1)) is not None
+        had = db.scalar(select(FftIssue.id).where(FftIssue.area_id == a.id).limit(1)) is not None
         last = db.scalar(select(FftEvent.at).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc()).limit(1))
-        n_closed = len(list(db.scalars(select(FftIssue.id).where(FftIssue.area_id == a.id, FftIssue.state == "closed"))))
+        n_closed = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.area_id == a.id, FftIssue.state == "closed"))
         n_passed = sum(1 for c in rules.area_checks(db, a) if rules.check_state(db, c)["state"] == "passed")
-        if not closed and not n_passed:
+        if not had and not n_passed:
             continue  # (a batch that never held anything isn't done work)
         out.append({"a": a, "item": db.get(FftItem, a.item_id), "lane": rules.lane_of(a), "last": last, "closed": n_closed, "passed": n_passed})
     return sorted(out, key=lambda d: d["last"] or datetime.min.replace(tzinfo=rules.now().tzinfo), reverse=True)
@@ -257,6 +259,16 @@ def page(request: Request, tab: str = "queue", open: str = "", db: Session = Dep
     return templates.TemplateResponse(request, "fft_work.html", ctx)
 
 
+def _above(db: Session) -> list[int]:
+    """The plans above the line, in order (as the Queue lists them): a plan's page says where it is among them."""
+    out = []
+    for it in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
+        for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False), FftArea.held.is_(False)).order_by(FftArea.place, FftArea.id)):
+            if rules.area_open_issues(db, a) or rules.area_turn(db, a) != "done":
+                out.append(a.id)
+    return out
+
+
 def _plan_issues(db: Session, area_id: int) -> list[FftIssue]:
     return list(db.scalars(select(FftIssue).where(FftIssue.area_id == area_id)
                            .order_by((FftIssue.state == "closed").asc(), FftIssue.id.desc())))
@@ -282,8 +294,8 @@ def plan(request: Request, area_id: int, tab: str = "overview", db: Session = De
     events = list(db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200)))
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
                                                           FftQuestion.about_id.in_([i.id for i in issues] or [0]))))
-    order = [r for x in queue(db)["rows"] for r in x["plans"]]
-    at = next((n for n, r in enumerate(order, 1) if r["a"].id == a.id), 0)
+    order = _above(db)
+    at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
         "a": a, "item": db.get(FftItem, a.item_id), "row": row, "tab": tab, "tabs": PLAN_TABS, "issues": issues,

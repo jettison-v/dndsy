@@ -69,6 +69,18 @@ def test_the_queue_shows_each_plan_with_its_stage_and_hold_puts_it_below_the_lin
     assert kinds[-2:] == ["area_held", "area_let_go"]
 
 
+def test_an_issue_that_stops_bretts_round_marks_its_plan_a_blocker(db, admin):
+    _, battle, party = _plans(db)
+    c = _check(db, battle, rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id))
+    rules.new_issue(db, "claude", "Party's names cut off", area_id=party.id)
+    r = rules.open_round(db, "user:1", None)
+    rules.record_try(db, "user:1", c, result="failed", round_id=r.id, found=[rules.Found(title="The Count is gone", stops_round=True)])
+    db.flush()
+    assert rules.pick_next(db).blocker
+    page = admin.get("/manage/work").text
+    assert f'data-area="{battle.id}" data-href="/manage/work/{battle.id}" data-stage="blocker"' in page
+
+
 def test_holding_is_brett_only_and_changes_nothing_twice(db, admin, dm, player):
     _, battle, _ = _plans(db)
     db.flush()
@@ -123,6 +135,10 @@ def test_the_item_window_walks_works_lists(db, admin):
     win = admin.get(f"/manage/item/c{a.id}?from=checks").text
     assert f'data-item-next="/manage/item/c{b.id}?from=checks"' in win or f"/manage/item/c{b.id}" in win
     assert "Open in Work" in win
+    issue = rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)
+    db.flush()
+    win = admin.get(f"/manage/item/i{issue.id}?from=plan:{battle.id}").text
+    assert f'href="/manage/work/{battle.id}?tab=issues"' in win  # (Open in its plan, not Feedback)
 
 
 # ------------------------------------------------------------------ a check follows its issue

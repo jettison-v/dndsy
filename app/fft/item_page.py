@@ -33,10 +33,10 @@ def _list(db: Session, frm: str, device: str) -> list[str]:
 def _home(picked: dict, frm: str) -> tuple[str, str]:
     """Where the item lives as a page: Open in … (its old address, which opens it in this window there)."""
     k = picked["kind"]
-    if k in ("note", "issue", "idea"):
-        return "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
     if k == "issue" and frm.startswith("plan:"):
         return "its plan", f"/manage/work/{frm[5:]}?tab=issues"
+    if k in ("note", "issue", "idea"):
+        return "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
     if k == "check" and frm.startswith("round:"):
         return "its plan", f"/manage/work/{frm[6:]}?tab=round"
     if k == "check" and frm == "checks":

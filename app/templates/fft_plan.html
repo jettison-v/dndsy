@@ -20,12 +20,12 @@
   </nav>
 
   {% if tab == "overview" %}
-  <div class="wk-stats" data-stats>
-    <div><b>{{ row.stage_said[0] }}</b><span>stage</span></div>
-    <div><b>{{ lane_said[row.lane] if row.lane else "—" }}</b><span>lane{% if a.lane_why %} · {{ a.lane_why }}{% endif %}</span></div>
-    <div><b>{{ row.fixed }} of {{ row.issues }}</b><span>open issues with a fix</span></div>
-    <div><b>{{ row.passed }} of {{ row.checks }}</b><span>checks passed</span></div>
-    <div><b>{{ row.minutes }} min</b><span>to try now</span></div>
+  <div class="stats stats-fit" data-stats>
+    <div class="stat"><span>Stage</span><b>{{ row.stage_said[0] }}</b></div>
+    <div class="stat"><span>Lane</span><b>{{ lane_said[row.lane] if row.lane else "—" }}</b>{% if a.lane_why %}<small>{{ a.lane_why }}</small>{% endif %}</div>
+    <div class="stat"><span>Issues fixed</span><b>{{ row.fixed }} of {{ row.issues }}</b><small>open issues with a fix</small></div>
+    <div class="stat"><span>Checks passed</span><b>{{ row.passed }} of {{ row.checks }}</b></div>
+    <div class="stat"><span>To try now</span><b>{{ row.minutes }} min</b></div>
   </div>
   <h2 class="plabel wk-h2">Next</h2>
   <div class="table-scroll"><table class="dtable fft-table" data-next>

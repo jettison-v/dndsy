@@ -819,6 +819,7 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .stat span { display: block; color: var(--muted); font-size: var(--fs-sm); }
 .stat b { display: block; font-size: var(--fs-2xl); font-weight: 700; margin: 2px 0; }
 .stat small { color: var(--muted); }
+.stats.stats-fit { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-2); }  /* (as many as there are, side by side: a plan's Overview on Work) */
 .stat.attention { box-shadow: inset 3px 0 0 var(--red); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
@@ -1602,7 +1603,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Work (app/fft/work_page.py, fft_work.html, fft_plan.html; The Work Pages, Nov 20): the plans as a table, a group row
    per Roadmap item (dragged by its grip, its plans by theirs), the cut line, held plans under it */
 .dtable .dt-w0 { width: 40px; }
-.wk-queue tbody.wk-item, .wk-queue tbody.wk-held { border: 0; }
 .wk-queue .grip { cursor: grab; color: var(--faint); vertical-align: -2px; }
 .wk-plan.is-next td:first-child { box-shadow: inset 3px 0 0 var(--violet); }  /* (Claude's next: its edge violet, as on the old Where it stands) */
 .wk-plan .wk-name { color: var(--text-strong); text-decoration: none; }
@@ -1616,10 +1616,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .wk-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-4); }
 .crumb { color: var(--muted); text-decoration: none; font-weight: 600; }
 .crumb:hover { color: var(--text); }
-.wk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-2); }
-.wk-stats > div { display: grid; gap: 2px; padding: var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
-.wk-stats b { font-size: var(--fs-lg); color: var(--text-strong); font-variant-numeric: tabular-nums; }
-.wk-stats span { font-size: var(--fs-xs); color: var(--muted); }
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
    which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px), the title taking the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
