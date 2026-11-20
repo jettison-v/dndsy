@@ -4,6 +4,8 @@ card whose Undo puts it back; writing to the one who sent it reaches their Notes
 
 from sqlalchemy import create_engine, text
 
+from tests.browser.pages import press
+
 
 def _waiting_note(url, words="My spell slots came back after a Short Rest."):
     engine = create_engine(url)
@@ -45,8 +47,7 @@ def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_d
     composer = issue.locator("[data-composer]")
     composer.locator('input[value="senders"]').check()
     composer.locator("textarea[name=words]").fill("Thanks: it's being fixed.")
-    composer.locator("button[type=submit]").click()
-    page.wait_for_url("**/manage/feedback?**")
+    press(composer.locator("button[type=submit]"))  # (the reply saved and the page redrawn, before the sender looks)
 
     mine = player.open("/your-notes?tab=askdnd")
     row = mine.locator(f'[data-note="f{nid}"]')
@@ -101,8 +102,7 @@ def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
     win.locator('[data-reason="withdrawn"]').wait_for()
     assert win.locator("textarea[name=words]").input_value() == "Typed before Same as"
     assert win.locator('[data-reason="withdrawn"] input').is_checked()
-    win.locator('[data-do="close"]').click()
-    page.wait_for_url("**/manage/feedback?**")
+    press(win.locator('[data-do="close"]'))
     assert _one(browser_db[0], "SELECT i.state, i.close_words FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid) == ("closed", "Typed before Same as")
     assert not admin.errors, admin.errors
 

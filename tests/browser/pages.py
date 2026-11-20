@@ -49,3 +49,11 @@ def tone(page: Page) -> str:
 def wait_tone(page: Page, *tones: str, timeout: float = 10000) -> None:
     """Until the Live pill's tone is one of these."""
     page.wait_for_function("ts => ts.includes(document.getElementById('live-pill')?.dataset.tone)", arg=list(tones), timeout=timeout)
+
+
+def press(locator: Locator) -> None:
+    """Press a button whose form redraws the page in place (app.js "A press redraws in place") and wait until askdnd has
+    answered and the page is redrawn: its marker, `data-pressing` on <html>, is gone. Never wait on the address: it may
+    not change (Nov 19, a Feedback test read the database before the reply was saved)."""
+    locator.click()
+    locator.page.wait_for_function("() => !document.documentElement.dataset.pressing")

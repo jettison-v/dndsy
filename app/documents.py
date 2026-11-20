@@ -123,8 +123,8 @@ def document_page(request: Request, did: str, page: str = "", part: int = 0):
     body = None
     if current.endswith(".md"):
         body = Markup(markdown_to_html((DOCS / current).read_text(), lambda _name: None))  # noqa: S704
-    if part and not body:
-        return templates.TemplateResponse(request, "_document_window.html", {"e": entry, "frame": file_url(current)})
+    if part:  # (a plan written as text too, in the window as itself: it showed the whole page there, unscrollable, Nov 19)
+        return templates.TemplateResponse(request, "_document_window.html", {"e": entry, "body": body, "frame": None if body else file_url(current)})
     return templates.TemplateResponse(request, "manage_document.html", {
         "e": entry, "pages": pages, "current": current, "body": body, "frame": None if body else file_url(current),
         "label": lambda p: Path(p).name.removesuffix(".dc.html").removesuffix(".html")})
