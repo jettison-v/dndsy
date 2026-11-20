@@ -308,15 +308,18 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
         admin.open("/manage/testing?show=stands")
-        before = page.locator(".fft-deploys > summary").bounding_box()
+        def where():  # (the pill against its bar, not the window: a scrollbar coming or going shifts both alike on Linux)
+            p, b = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status").bounding_box()
+            return {"x": p["x"] - b["x"], "y": p["y"] - b["y"], "height": p["height"], "top": p["y"]}
+        before = where()
         engine = create_engine(browser_db[0])
         with engine.begin() as conn:
             conn.execute(text("INSERT INTO fft_rounds (workspace_id) VALUES (1)"))
         engine.dispose()
         admin.open("/manage/testing?show=stands")
-        after, row = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status-round").bounding_box()
+        after, row = where(), page.locator(".fft-status-round").bounding_box()
         assert abs(after["y"] - before["y"]) < 2 and abs(after["x"] - before["x"]) < 2, f"the top row moved at {width}px"
-        assert row["y"] >= after["y"] + after["height"] and page.locator('.fft-status-round [data-do="end-round"]').is_visible()
+        assert row["y"] >= after["top"] + after["height"] and page.locator('.fft-status-round [data-do="end-round"]').is_visible()
         bar = [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]
         assert not bar, f"the status bar at {width}px: {bar}"
         engine = create_engine(browser_db[0])

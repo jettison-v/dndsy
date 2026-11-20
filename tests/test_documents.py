@@ -35,6 +35,18 @@ def test_every_listed_document_opens(admin):
             assert served.headers["referrer-policy"] == "no-referrer"
 
 
+
+def test_a_document_in_for_yous_window_is_itself_and_scrolls(admin):
+    """For you's Open (part=1, a window nearly the whole screen): a mockup in its sealed frame; a plan written as text,
+    its words in the window's scrolling body, never the whole Documents page inside the window (Brett, Nov 19: the
+    lighter-round plan "does not scroll")."""
+    plan = next(e for e in documents.library() if e["source"].endswith(".md"))
+    window = admin.get(f"/manage/documents/{plan['id']}?part=1").text
+    assert 'class="peek-body"' in window and 'class="doc-text"' in window and "doc-back" not in window and "<html" not in window
+    mockup = next(e for e in documents.library() if e["source"].endswith(".html") and e["source"].startswith("docs/mockups/"))
+    window = admin.get(f"/manage/documents/{mockup['id']}?part=1").text
+    assert 'class="doc-frame"' in window and "doc-text" not in window
+
 def test_nothing_in_the_repo_is_left_out_of_the_library():
     """Every page in docs/artifacts, docs/mockups and docs/plans is in the library (a new one is added to
     docs/library.json the day it's made), and the library names no two pages the same way."""

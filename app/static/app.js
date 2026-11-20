@@ -1011,6 +1011,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const to = new URL((by && by.hasAttribute('formaction') && by.formAction) || form.action, location.href);
     if (to.origin !== location.origin) return;
     e.preventDefault();
+    const root = document.documentElement;  // (data-pressing while it's on its way: tests wait for the outcome on it, never an address)
+    root.dataset.pressing = String((+root.dataset.pressing || 0) + 1);
+    const done = () => { const n = (+root.dataset.pressing || 1) - 1; if (n > 0) root.dataset.pressing = String(n); else delete root.dataset.pressing; };
     fetch(to.href, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
       .then(r => r.text().then(html => [r, html]))
       .then(([r, html]) => {
@@ -1036,7 +1039,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         if (said) { try { toast(JSON.parse(said)); } catch (err) { /* not a message */ } }
         document.dispatchEvent(new CustomEvent('askdnd:changed'));
       })
-      .catch(() => { unbusy(form); toast('Not done: askdnd can\'t be reached. Try again.', null, 'warn'); });
+      .catch(() => { unbusy(form); toast('Not done: askdnd can\'t be reached. Try again.', null, 'warn'); })
+      .finally(done);
   });
 
   // At the table (body.at-table; docs/mockups/table-without-modes.html): every few minutes, while the tab is visible, the
