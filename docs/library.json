@@ -1467,9 +1467,18 @@
   "link": "https://claude.ai/artifact/EKyJvsUXt4iqEP19TkpLCK"
  },
  {
-  "title": "Menu Bar Doors",
+  "title": "The Work Page",
   "kind": "design",
   "status": "Waiting on your picks",
+  "date": "Nov 20",
+  "what": "Slice 4 drawn before it's built: Work as its own page with the cut line, Scheduled work and How we work; how For you, Work and Feedback connect; a link to one item opens it in a window (issue 44); issues 45 and 46 drawn fixed. Four picks.",
+  "source": "docs/mockups/work-page/index.html",
+  "link": "https://claude.ai/artifact/Cti4BWM96jGf9HStrT5Q6E"
+ },
+ {
+  "title": "Menu Bar Doors",
+  "kind": "design",
+  "status": "Built (PR 433)",
   "date": "Nov 20",
   "what": "The menu bar's two picks, A and R, clickable: Manage and the gear as two doors or one (Backstage, Workspace, Manage), seen by the admin, the DM or a player, and whether your picture gets a mark.",
   "source": "docs/mockups/menu-bar-doors/index.html",
