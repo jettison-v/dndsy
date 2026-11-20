@@ -125,6 +125,28 @@ b { color: var(--strong); }
 .o-n4 .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
 /* R: the bar's own red line thickens under the lit door, no gap */
 .o-r .d.here::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: -13px; height: 5px; border-radius: 3px 3px 0 0; background: var(--brand); }
+/* One icon size in the bar (Brett, Nov 20: the gear matches the other doors): the mark, Cole's portrait, the gear and your picture */
+:root { --icon: 24px; }
+.brand, .d .av, .d.me .pic, .d .gear { width: var(--icon); height: var(--icon); flex: none; }
+.d .gear { display: inline-grid; place-items: center; }
+.d .gear svg { width: 20px; height: 20px; }
+/* The two picks, clickable: places go, menus open */
+.toppicks { display: grid; gap: 12px; }
+.toppicks > h2, .every { font-size: 1.25rem; }
+#top { display: grid; gap: 14px; }
+.frame.live { position: relative; overflow: visible; }
+.frame.live .d { cursor: pointer; }
+.frame.live .tb, .frame.live .page { min-width: 0; }
+#top .opt { grid-template-columns: minmax(0, 1fr); }
+.frame.live .tool.search { min-width: 44px; gap: 8px; }
+.frame.live .tool.search > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.frame.live .tool.search > span:last-child { display: none; }
+.frame.live .d:hover { background: var(--surface-2); }
+.dd { position: absolute; z-index: 4; min-width: 210px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px; padding: 6px; display: grid; gap: 2px; box-shadow: 0 10px 24px rgba(0, 0, 0, .45); }
+.dd button { text-align: left; background: none; border: 0; color: var(--text); font: 500 .9rem/1 var(--sans); padding: 9px 10px; border-radius: 6px; cursor: pointer; }
+.dd button:hover, .dd button[aria-current="page"] { background: var(--surface-3); color: var(--strong); }
+.dd .grp { color: var(--faint); font: 700 .7rem/1 var(--sans); text-transform: uppercase; letter-spacing: .08em; padding: 8px 10px 4px; }
+@media (max-width: 1100px) { .frame.live { overflow-x: auto; } }
 .page { background: var(--bg); padding: 12px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; min-width: 1040px; color: var(--muted); font-size: .9rem; }
 .decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
 .decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -144,6 +166,12 @@ b { color: var(--strong); }
     <h1>Where You Are</h1>
     <p class="lede">Thought through freshly, from your comment: the menu bar has three kinds of door, and today they mix their looks (outlined or not, ▾ or not). Each option below is one rule for each kind, then where you are and counts on top of it. Pick a page to see each mark it; the first bar is today. R and N1 to N4, at the end, come from an outside review: a separate Claude that looked at every bar with fresh eyes.</p>
   </header>
+  <section class="toppicks" aria-labelledby="top-h">
+    <h2 id="top-h">The two picks · click around</h2>
+    <p class="lede">My pick (A) and the outside review's pick (R). Click a door: Campaign and Cole take you there, a door with ▾ opens its menu, and its pages take you there. Where you are moves in both bars at once. Every icon in the bar is one size now, the gear too.</p>
+    <div id="top"></div>
+  </section>
+  <h2 class="every">Every idea</h2>
   <div class="kinds">
     <div class="kind"><b>Places you go</b><span>Campaign, Table ↗ (opens the table in a new tab), your character (Cole)</span></div>
     <div class="kind"><b>Menus</b><span>The campaign's name, Party, Manage, the Admin gear, your picture</span></div>
@@ -178,7 +206,8 @@ b { color: var(--strong); }
 
 <script>
 (() => {
-  let at = "campaign";
+  let at = "campaign", sub = null;
+  const GEAR = '<span class="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>';
   const h = k => at === k ? " here" : "";
   const counts = (cls) => ({ gear: `<span class="badge${cls === "today" ? " amber" : ""}">5</span>`, me: `<span class="badge">4</span>` });
   const doors = (o) => {
@@ -191,10 +220,10 @@ b { color: var(--strong); }
     const tools = `<span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="tool chain">Not connected</span>`;
     const menus = `<span class="d${box} k-party${h("party")}">Party<span class="chev">${ch.party}</span></span>
       <span class="d${box} k-manage${h("manage")}">Manage<span class="chev">${ch.manage}</span></span>
-      <span class="d${box} k-gear${h("gear")}">⚙<span class="chev">${ch.gear}</span>${c.gear}</span>
+      <span class="d${box} k-gear${h("gear")}">${GEAR}<span class="chev">${ch.gear}</span>${c.gear}</span>
       <span class="d me k-me${h("me")}"><span class="pic">D</span><span class="chev">${ch.me}</span>${c.me}</span>`;
     if (o === "o-c") return `${left}${tools}<span class="cluster">${menus}</span>`;
-    const plainMenus = (arrows) => `<span class="d k-gear${h("gear")}">⚙${arrows ? '<span class="chev"> ▾</span>' : ""}${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${arrows ? '<span class="chev"> ▾</span>' : ""}${c.me}</span>`;
+    const plainMenus = (arrows) => `<span class="d k-gear${h("gear")}">${GEAR}${arrows ? '<span class="chev"> ▾</span>' : ""}${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${arrows ? '<span class="chev"> ▾</span>' : ""}${c.me}</span>`;
     if (o === "o-d") return `<span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="sep"></span>
       <span class="places"><span class="d k-campaign${h("campaign")}">Campaign</span><span class="d">Table ↗</span><span class="d k-cole${h("cole")}"><span class="av"></span>Cole</span></span>
       <span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span>${plainMenus(true)}`;
@@ -203,7 +232,7 @@ b { color: var(--strong); }
       <span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span>${plainMenus(false)}`;
     if (o === "o-g") { const trail = { campaign: "Campaign", cole: "Cole › Battle", party: "Party", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent" }[at];
       return `<span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="crumb">› <b>${trail}</b></span><span class="sep"></span>
-      <span class="d">Campaign</span><span class="d">Table ↗</span><span class="d"><span class="av"></span>Cole</span><span class="d">Party<span class="chev"> ▾</span></span>${tools}<span class="d">Manage<span class="chev"> ▾</span></span><span class="d">⚙<span class="chev"> ▾</span>${c.gear}</span><span class="d me"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span>`; }
+      <span class="d">Campaign</span><span class="d">Table ↗</span><span class="d"><span class="av"></span>Cole</span><span class="d">Party<span class="chev"> ▾</span></span>${tools}<span class="d">Manage<span class="chev"> ▾</span></span><span class="d">${GEAR}<span class="chev"> ▾</span>${c.gear}</span><span class="d me"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span>`; }
     if (o === "o-h") return `<span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="sep"></span>
       <span class="d k-campaign${h("campaign")}">Campaign</span><span class="d">Table ↗</span><span class="sep"></span><span class="d k-cole${h("cole")}"><span class="av"></span>Cole</span>
       <span class="split"><span class="d k-party${h("party")}">Party</span><span class="arr">▾</span></span>${tools}<span class="split"><span class="d k-manage${h("manage")}">Manage</span><span class="arr">▾</span></span>${plainMenus(true)}`;
@@ -212,13 +241,14 @@ b { color: var(--strong); }
       <span class="chip"><span class="d k-cole${h("cole")}"><span class="av"></span>Cole</span><span class="link"><span class="dot"></span>Not connected</span></span>
       <span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span><span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="sep"></span>
       <span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span>${plainMenus(true)}`;
-    if (o === "today") return `${left}<span class="d${box} k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d${box} k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d${box} k-gear${h("gear")}">⚙${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${c.me}</span>`;
+    if (o === "today") return `${left}<span class="d${box} k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d${box} k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d${box} k-gear${h("gear")}">${GEAR}${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${c.me}</span>`;
     // N1 and R: the menu you're inside names its page on its door
     const named = o === "o-n1" || o === "o-r";
-    const nm = k => named && at === k ? `<span class="pg"><i>›</i> ${{ manage: "Inbox", gear: "For you" }[k]}</span>` : "";
-    const nmMe = named && at === "me" ? '<span class="pg">Notes you sent</span>' : "";
-    return `${left}<span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage${nm("manage")}<span class="chev"> ▾</span></span><span class="d k-gear${h("gear")}">⚙${nm("gear")}<span class="chev"> ▾</span>${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${nmMe}<span class="chev"> ▾</span>${c.me}</span>`;
+    const nm = k => named && at === k ? `<span class="pg"><i>›</i> ${subOf(k)}</span>` : "";
+    const nmMe = named && at === "me" ? `<span class="pg">${subOf("me")}</span>` : "";
+    return `${left}<span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage${nm("manage")}<span class="chev"> ▾</span></span><span class="d k-gear${h("gear")}">${GEAR}${nm("gear")}<span class="chev"> ▾</span>${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${nmMe}<span class="chev"> ▾</span>${c.me}</span>`;
   };
+  const subOf = k => (at === k && sub) || PAGES[k][1];
   const OPTS = [
     { k: "today", name: "Today", why: "Campaign, your character and Party turn grey where you are; Manage gets a red outline, the gear a blue one, your picture nothing. Cole, Party, Manage and the gear are outlined, the campaign's name and Campaign aren't; the campaign's name, Party and Manage have ▾, the gear and your picture don't; the gear's count is amber, your picture's red." },
     { k: "o-a", name: "A · Plain doors, boxed tools", mine: true, why: "The fewest rules, and the ones most sites use: a door is plain words (a place) or plain words with ▾ (a menu), so you can tell them apart at a glance; a box means a tool you use right there. Where you are is the red line askdnd's tabs already use.",
@@ -248,21 +278,53 @@ b { color: var(--strong); }
     { k: "o-n4", name: "N4 · Quiet at rest, strong where you are", why: "From the outside review: A, but doors you're not on are quiet grey, like Campaign today, and the one you're on turns white with the red line. Fixes A's “every door is bright” problem. The grey has to stay readable (4.5 : 1) at the bar's size; it would be checked before building.",
       rules: [["Places", "quiet grey words"], ["Menus", "quiet grey words with ▾"], ["Tools", "outlined"], ["You're here", "white words and a red line"], ["Counts", "one badge, red"]] },
   ];
-  const box = document.getElementById("opts");
+  const box = document.getElementById("opts"), topBox = document.getElementById("top");
   const el = s => { const t = document.createElement("template"); t.innerHTML = s.trim(); return t.content.firstElementChild; };
   const cards = OPTS.map(o => {
     const rules = o.rules ? `<dl class="rules">${o.rules.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>` : "";
     const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}${o.tag ? `<span class="mine">${o.tag}</span>` : ""}</div><p class="why">${o.why}</p>${rules}<div class="frame"></div></section>`);
-    box.append(c); return { o, frame: c.querySelector(".frame") };
+    const live = o.k === "o-a" || o.k === "o-r";
+    if (live) c.querySelector(".frame").classList.add("live");
+    (live ? topBox : box).append(c); return { o, frame: c.querySelector(".frame") };
   });
-  const said = { campaign: "Campaign › Previously on…", cole: "Cole › Battle", party: "Party › Everyone at a glance", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent" };
+  // Where you are: a door and the page inside it (a menu's pages, from the bars at the top)
+  const PAGES = { campaign: ["Campaign", "Previously on…"], cole: ["Cole", "Battle"], party: ["Party", "Everyone at a glance"], manage: ["Manage", "Inbox"], gear: ["Admin", "For you"], me: [null, "Notes you sent"] };
+  const said = () => PAGES[at][0] ? `${PAGES[at][0]} › ${sub || PAGES[at][1]}` : (sub || PAGES[at][1]);
+  const MENUS = {
+    camp: [["Campaigns"], ["The Adventure Begins", "campaign", "Previously on…"]],
+    party: [["Party"], ["Everyone at a glance", "party"], ["Characters"], ["Big C", "party", "Big C"], ["Trah", "party", "Trah"], ["No Name", "party", "No Name"]],
+    manage: [["Manage"], ["Inbox", "manage"], ["Sessions", "manage", "Sessions"], ["World", "manage", "World"], ["Settings", "manage", "Settings"]],
+    gear: [["Admin"], ["For you", "gear"], ["Feedback", "gear", "Feedback"], ["Testing", "gear", "Testing"], ["Documents", "gear", "Documents"]],
+    me: [["You"], ["Notes you sent", "me"], ["Your dice", "me", "Your dice"]],
+  };
   const twoRows = () => { const c = counts("o-e"), t = k => at === k ? " here" : "";
-    return `<div class="tb o-e"><span class="brand"></span><span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="tool chain">Not connected</span><span class="d">⚙<span class="chev"> ▾</span>${c.gear}</span><span class="d me"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span></div>
-      <div class="tb2"><span class="tab${t("campaign")}">Campaign</span><span class="tab">Table ↗</span><span class="tab${t("cole")}"><span class="av" style="width:18px;height:18px;border-radius:50%;background:#6b7b8c;display:inline-block"></span>Cole</span><span class="tab${t("party")}">Party</span><span class="tab${t("manage")}">Manage</span>${at === "gear" ? '<span class="tab here">Admin</span>' : ""}</div>`; };
-  const draw = () => cards.forEach(c => { c.frame.innerHTML = (c.o.k === "o-e" ? twoRows() : `<div class="tb ${c.o.k}"><span class="brand"></span>${doors(c.o.k)}</div>`) + `<div class="page">${said[at]}</div>`; });
+    return `<div class="tb o-e"><span class="brand"></span><span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="tool chain">Not connected</span><span class="d">${GEAR}<span class="chev"> ▾</span>${c.gear}</span><span class="d me"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span></div>
+      <div class="tb2"><span class="tab${t("campaign")}">Campaign</span><span class="tab">Table ↗</span><span class="tab${t("cole")}"><span class="av"></span>Cole</span><span class="tab${t("party")}">Party</span><span class="tab${t("manage")}">Manage</span>${at === "gear" ? '<span class="tab here">Admin</span>' : ""}</div>`; };
+  const draw = () => cards.forEach(c => { c.frame.innerHTML = (c.o.k === "o-e" ? twoRows() : `<div class="tb ${c.o.k}"><span class="brand"></span>${doors(c.o.k)}</div>`) + `<div class="page">${said()}</div>`; });
   document.querySelectorAll("[data-ctl] button").forEach(b => b.addEventListener("click", () => {
-    b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); at = b.dataset.v; draw();
+    b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); at = b.dataset.v; sub = null; draw();
   }));
+  // The top bars are clickable: a place goes there, a door with ▾ opens its menu, a menu's page goes there
+  const go = (k, page) => { at = k; sub = page || null; closeMenu(); draw();
+    document.querySelectorAll("[data-ctl] button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === k))); };
+  const closeMenu = () => document.querySelectorAll(".dd").forEach(m => m.remove());
+  const doorKey = d => d.classList.contains("camp") ? "camp" : ([...d.classList].find(x => x.startsWith("k-")) || "").slice(2);
+  topBox.addEventListener("click", e => {
+    const pick = e.target.closest(".dd button"); if (pick) { go(pick.dataset.at, pick.dataset.sub); return; }
+    const d = e.target.closest(".tb .d"); if (!d) return;
+    const k = doorKey(d), open = document.querySelector(`.dd[data-for="${k}"]`); closeMenu();
+    if (k === "campaign" || k === "cole") { go(k); return; }
+    if (!MENUS[k] || open) return;
+    const frame = d.closest(".frame"), fr = frame.getBoundingClientRect(), dr = d.getBoundingClientRect();
+    const m = document.createElement("div"); m.className = "dd"; m.dataset.for = k; m.setAttribute("role", "menu");
+    m.innerHTML = MENUS[k].map(([label, to, page]) => to === undefined ? `<span class="grp">${label}</span>`
+      : `<button type="button" role="menuitem" data-at="${to}" data-sub="${page || ""}"${at === to && (sub || PAGES[to][1]) === (page || PAGES[to][1]) ? ' aria-current="page"' : ""}>${label}</button>`).join("");
+    frame.append(m);
+    m.style.top = (dr.bottom - fr.top + 6) + "px";
+    m.style.left = Math.max(0, Math.min(dr.left - fr.left, frame.clientWidth - m.offsetWidth)) + "px";
+  });
+  document.addEventListener("click", e => { if (!e.target.closest("#top")) closeMenu(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
   draw();
 })();
 (() => {
