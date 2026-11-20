@@ -418,3 +418,23 @@ def test_the_inbox_held_open_answers_when_something_changes(api, db, monkeypatch
     got = api.get("/api/fft/inbox/wait?seconds=20", headers=_as(CLAUDE)).json()
     assert time.monotonic() - t < 5 and [e["kind"] for e in got["items"]] == ["issue_new"]  # (woken by the change)
     assert api.get("/api/fft/inbox/wait?seconds=1").status_code == 404  # (no key: no inbox)
+
+
+def test_a_check_waits_for_its_deploy_before_it_reaches_brett(api, db):
+    """Brett, Nov 20 ("Ensure the test/checks do not arrive on Prod until the deployment is confirmed"): a check written
+    with its change's pull request stays Claude's until a deploy carrying that pull request is live."""
+    from app.fft import testing_page
+
+    pr = "https://github.com/jettison-v/dndsy/pull/9999"
+    made = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "The page's new list", "steps": ["Open the page."], "expect": "It lists.",
+                                                                 "path": "/party", "pr": pr}).json()
+    c = db.get(FftCheck, made["id"])
+    rules.preflight(db, "claude", c, True)
+    db.flush()
+    assert rules.check_state(db, c)["state"] == "deploying" and rules.check_state(db, c)["turn"] == "claude"
+    assert not any(r["key"] == f"c{c.id}" for g in testing_page.for_you(db, "laptop") for r in g["rows"])
+    got = api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "a" * 40, "prs": ["https://github.com/jettison-v/dndsy/pull/1"]}).json()
+    assert got["checks"] == [] and rules.check_state(db, c)["state"] == "deploying"  # (another pull request: still waits)
+    got = api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "b" * 40, "prs": [pr]}).json()
+    assert got["checks"] == [c.id] and rules.check_state(db, c)["state"] == "to_try"
+    assert any(r["key"] == f"c{c.id}" for g in testing_page.for_you(db, "laptop") for r in g["rows"])

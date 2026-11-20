@@ -81,7 +81,7 @@ def first_name_of(db: Session, user_id: int | None) -> str:
 
 
 CHECK_WORD = {"to_try": "To try", "again": "To try again", "later": "Later", "asks": "Claude asks", "failed": "Failed",
-              "fixing": "Being fixed", "wrong": "Being rewritten", "blocked": "Blocked", "preflight": "Claude tries it first",
+              "fixing": "Being fixed", "wrong": "Being rewritten", "blocked": "Blocked", "preflight": "Claude tries it first", "deploying": "Waits for its deploy",
               "passed": "Passed", "retired": "Retired"}  # (where a check stands, in words: `rules.check_state`)
 
 

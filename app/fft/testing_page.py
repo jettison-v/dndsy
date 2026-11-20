@@ -118,7 +118,7 @@ def sentence(st: dict, issues: list[FftIssue], device: str, mine: list[str]) -> 
     return {"to_try": f"To try: Claude built it and tried it first.{on}", "later": f"You said later.{on}",
             "asks": "Claude asks you something about it first.", "failed": "Your try failed; it comes back to you once its issues are fixed and live.",
             "fixing": "Claude is fixing what was found; it comes back when the fix is live.", "wrong": "Claude is rewriting it (you said it was wrong).",
-            "blocked": "Blocked by another issue; it comes back when that's fixed.", "preflight": "Claude tries it first, then it's yours.",
+            "blocked": "Blocked by another issue; it comes back when that's fixed.", "preflight": "Claude tries it first, then it's yours.", "deploying": "Its change isn't live yet; it comes to you once its deploy is.",
             "passed": "Passed.", "retired": "Retired: it no longer applies."}.get(s, "")
 
 

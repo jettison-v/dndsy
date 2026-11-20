@@ -322,7 +322,7 @@ def check(a) -> None:
         if c is None:
             sys.exit(f"No check {a.id}.")
     elif a.id == "new":
-        body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area,
+        body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area, "pr": a.pr,
                 "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes,
                 "as_character": a.as_character}
         c = call(a.base, "/checks", body)
@@ -669,6 +669,7 @@ def main() -> None:
     s.add_argument("--as-character", type=int, default=None, help="tried through this character's player's eyes (View as): its id")
     s.add_argument("--makes", action="store_true", help="it makes something: its page is in a test campaign (docs/testing-guide.md)")
     s.add_argument("--tried", action="store_true", help="new: Claude tried it itself and it passed (preflight pass, R18)")
+    s.add_argument("--pr", default="", help="new: the pull request its change is in: it reaches Brett once a deploy carrying it is live")
     s = sub.add_parser("ask")
     s.add_argument("about", choices=["issue", "check", "area", "document"])
     s.add_argument("about_id", help="its id (a document: its path)")

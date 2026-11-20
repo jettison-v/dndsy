@@ -1,8 +1,8 @@
 """Backstage › Global › Documents (Brett, Nov 6): every page made for askdnd (guides, plans, designs, earlier ones) in one
 place, for admins, read from the repo's own copies, so nothing depends on claude.ai to be found or kept.
 
-The list is docs/library.json, the one source: the roadmap's table of documents is written from it too
-(scripts/library.py). A plan (Markdown) is shown in the page; an HTML page or a design's boards open in a sealed
+The list is docs/library.json, the one source (the Roadmap page's table of documents was written from it until the
+Roadmap moved into askdnd, Nov 20). A plan (Markdown) is shown in the page; an HTML page or a design's boards open in a sealed
 frame: served with a Content-Security-Policy sandbox, so their scripts run without askdnd's origin (no sign-in, no
 storage, no requests as you), from an address that carries a signed key good for an hour (the frame's own requests
 for a page's pictures and styles can't carry the sign-in), and with no referrer, so the key never leaves askdnd.
