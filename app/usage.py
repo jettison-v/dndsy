@@ -84,6 +84,9 @@ PAGES: list[tuple[str, str]] = [
 ]
 _FEATURES = [(re.compile(p), f) for p, f in FEATURES]
 _PAGES = [(re.compile(p), n) for p, n in PAGES]
+# What a stored page is called now (the names are kept as recorded, so a day's counts never split): Manage and Admin are
+# Backstage's halves since Nov 20 (Menu Bar Doors)
+SHOWN = {"Manage": "Backstage", "Admin": "Backstage › Global"}
 VERSION = (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "")[:12]
 
 
@@ -243,10 +246,10 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
     used_families = {_family(f) for f in uses}
     never = sorted({f for _, f in FEATURES} - ADMIN_ONLY - {"Rolls"} - used_families)
     unknown = "Not kept (rolls before Nov 9)"
-    pages = Counter(e.page or unknown for e in here)
+    pages = Counter(SHOWN.get(e.page, e.page) or unknown for e in here)
     page_top = defaultdict(Counter)
     for e in here:
-        page_top[e.page or unknown][e.feature] += 1
+        page_top[SHOWN.get(e.page, e.page) or unknown][e.feature] += 1
     grid_features = [r["feature"] for r in sorted(rows, key=lambda r: -r["uses"])[:12]]
     grid = {(e.feature, e.user_id): 0 for e in here}
     for e in here:

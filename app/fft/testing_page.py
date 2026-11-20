@@ -1,4 +1,4 @@
-"""Backstage › askdnd › Testing (screens 1–8 of docs/mockups/found-fixed-tried/): everything that's Brett's turn, and
+"""Backstage › Global › Testing (screens 1–8 of docs/mockups/found-fixed-tried/): everything that's Brett's turn, and
 trying what Claude built.
 
 - **For you** (its own page, `/manage/for-you`, since Nov 19, the work flow's slice 2; its count on Backstage):
@@ -282,7 +282,7 @@ def page(request: Request, show: str = "", open: str = "", db: Session = Depends
 
 @router.get("/manage/for-you")
 def for_you_page(request: Request, open: str = "", db: Session = Depends(get_db)):
-    """Backstage › askdnd › For you: everything that's Brett's turn, by what he does with it (the work flow's slice 2)."""
+    """Backstage › Global › For you: everything that's Brett's turn, by what he does with it (the work flow's slice 2)."""
     user, denied = _admin(request)
     if denied:
         return denied

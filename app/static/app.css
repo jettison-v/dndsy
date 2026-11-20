@@ -1574,12 +1574,12 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
-/* Backstage › askdnd › Overview: a card per admin page */
+/* Backstage › Global › Overview: a card per admin page */
 .ov-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-3); }
 .ov-card { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); text-decoration: none; }
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
-/* Backstage › askdnd › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
+/* Backstage › Global › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
 .doc-search { margin: 0 0 var(--sp-3); max-width: 520px; }
 /* Documents: one list, its rows lined up as columns (title, status, date, what it is) on the list's grid (the UI review) */
 .doc-rows { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 13rem) 4.5rem minmax(0, 1fr); column-gap: var(--sp-3); }
@@ -3321,13 +3321,13 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .br-log li { padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
 /* the bridge's health, bottom right on every page (bottom left is Table rolls' pop-ups and tray); phones read only */
-button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridge's health on Backstage › askdnd › D&D Beyond bridge: a click runs the check */
+button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridge's health on Backstage › Global › D&D Beyond bridge: a click runs the check */
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }
-/* What each connection can change (Backstage › askdnd › D&D Beyond bridge; Brett, 2026-11-04): how each state comes about,
+/* What each connection can change (Backstage › Global › D&D Beyond bridge; Brett, 2026-11-04): how each state comes about,
    in the Live pill's colours, then a matrix of marks (a tick, a clock for partly, a dash for no) */
 .br-states { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
 .br-state { border: 1px solid var(--line); border-top-width: 3px; border-radius: var(--r-md); padding: var(--sp-3); display: grid; gap: var(--sp-2); align-content: start; }
@@ -4499,7 +4499,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-local-kick { color: var(--green); }
 .fft-local-list { margin: 0 0 var(--sp-2); padding-left: 1.2em; display: grid; gap: var(--sp-1); }
 .fft-feat-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-1); }  /* a Product Area's open issues by Feature */
-/* Backstage › askdnd › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
+/* Backstage › Global › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
 /* Packed cards (docs/DESIGN.md › Packed cards): columns of cards, each its own height, none split; a long one never
    leaves a gap beside short ones (Brett's round, Nov 18, issue 26: rows as tall as their longest card left ragged gaps) */
 .packed { columns: 280px; column-gap: var(--sp-3); }

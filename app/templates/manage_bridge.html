@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}D&amp;D Beyond bridge · Backstage · askdnd{% endblock %}
 {% block content %}
-{# Backstage › askdnd › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
+{# Backstage › Global › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>D&amp;D Beyond bridge</h1><button type="button" class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st title-action" title="The bridge's health; click to run the check on the test character">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</button></div>

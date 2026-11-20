@@ -921,7 +921,7 @@ class Feedback(Timestamped, Base):
     send feedback (the old app/feedback.py;
     Brett, 2026-11-03, docs/mockups/feedback-queue/), with what the page was at that moment: where and when, the screen,
     the browser and the extension's version (`context`), the page as drawn (`html`), its picture and a pasted one. It
-    waits in Backstage › askdnd › Feedback until Claude works through the queue: new → question (Claude asked, in
+    waits in Backstage › Global › Feedback until Claude works through the queue: new → question (Claude asked, in
     `thread`) → planned → done (with its PR), or deleted. Its `kind` says what it is: something broken, an idea or a
     question."""
 
@@ -968,7 +968,7 @@ class Check(Timestamped, Base):
     to try in askdnd (Testing, the old app/testing.py; Brett's idea and picks, Nov 16,
     docs/mockups/testing/): what to do and what to expect, on which page and through whose eyes, why it exists (the
     note it came from, the change that made it), and where it stands. Claude writes them (`feedback.py check`); an admin
-    marks them in Backstage › askdnd › Testing or on the page itself during a round."""
+    marks them in Backstage › Global › Testing or on the page itself during a round."""
 
     __tablename__ = "checks"
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -278,7 +278,7 @@ def counts(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/manage/askdnd")
 def overview(request: Request, db: Session = Depends(get_db)):
-    """Backstage › askdnd › Overview: how each admin page stands, one card each, so most days none needs opening."""
+    """Backstage › Global › Overview: how each admin page stands, one card each, so most days none needs opening."""
     from app.admin_usage import usage_summary
     from app.models import Campaign, User
     from app.tool_corrections_pages import open_count

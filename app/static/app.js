@@ -3191,7 +3191,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   });
 
   // ---------------------------------------------------------------- Dice tuning
-  // Backstage › askdnd › Dice tuning (manage_dice.html, app/dice.py): a tab per place dice are thrown, sliders that show
+  // Backstage › Global › Dice tuning (manage_dice.html, app/dice.py): a tab per place dice are thrown, sliders that show
   // their value and mark changes against what's saved, and a preview that throws with the sliders as they are now.
   const tuneShow = (v, how) => how === 'toggle' ? (v ? 'on' : 'off') : how === 'x' ? v.toFixed(1) + '×' : how === 'pct' ? Math.round(v * 100) + '%'
     : (how === 's' || how === 'px') ? +v.toFixed(2) + ' ' + how : +v.toFixed(2) + how;
@@ -4681,7 +4681,7 @@ document.addEventListener('click', e => {
 // The bridge (app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
 // read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The bridge's health shows on
-// Backstage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
+// Backstage › Global › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
 (function () {
 
   // Is the extension in this browser? It answers a ping; on a computer, no answer means the Live pill offers it. (Phones
@@ -4736,7 +4736,7 @@ document.addEventListener('click', e => {
   }
   if (pill) {
     checkHealth();
-    pill.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › askdnd › D&D Beyond bridge)
+    pill.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › Global › D&D Beyond bridge)
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
       if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }
@@ -4746,7 +4746,7 @@ document.addEventListener('click', e => {
   }
 
   const all = document.querySelector('[data-br-check-all]');
-  if (all) all.addEventListener('click', async () => {  // Backstage › askdnd › D&D Beyond bridge: every kind of change, out and back
+  if (all) all.addEventListener('click', async () => {  // Backstage › Global › D&D Beyond bridge: every kind of change, out and back
     all.disabled = true;
     const r = await fetch('/bridge/check?full=1', { method: 'POST', headers: { Accept: 'application/json' } });
     if (r.ok) window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin);
