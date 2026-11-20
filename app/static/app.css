@@ -4403,8 +4403,12 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-group:first-child { margin-top: 0; }
 /* For you's sections (the work flow's slice 2, Nov 19): Try, Decide, Look at, From the table, From the Roadmap */
 .fft-section { margin: var(--sp-4) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 700; color: var(--text-strong); }
+.fft-section-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: var(--sp-4) 0 var(--sp-1); padding-right: var(--sp-2); }  /* (a section's name, and Try's ▶ Start round at its right, as ▶ Just this area) */
+.fft-section-row:first-child { margin-top: 0; }
+.fft-section-row .fft-section { margin: 0; }
+.fft-section-row form { margin: 0; }
 .fft-section:first-child { margin-top: 0; }
-.fft-section + .fft-group { margin-top: var(--sp-1); }
+.fft-section + .fft-group, .fft-section-row + .fft-group { margin-top: var(--sp-1); }
 .fft-group-name { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .fft-group form { display: contents; }
 .fft-devices { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--muted); }
