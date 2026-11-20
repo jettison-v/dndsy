@@ -348,3 +348,15 @@ def test_a_long_pause_reason_has_its_own_line_whole(people, server, browser_db):
         with engine.begin() as conn:
             conn.execute(text("UPDATE tool_settings SET value = '' WHERE key = 'fft_freeze'"))
         engine.dispose()
+
+
+def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browser_db):
+    """At 375px the top row can't hold both: Claude listening keeps its line and Deploys goes whole under it, never over
+    it (seen in the before-and-after pictures, Nov 19)."""
+    admin = people("admin")
+    page = admin.page
+    page.set_viewport_size({"width": 375, "height": 812})
+    admin.open("/manage/testing?show=stands")
+    said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
+    assert pill["y"] >= said["y"] + said["height"] - 1, "Deploys sits over Claude listening on a phone"
+    assert pill["x"] + pill["width"] <= 375 and page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)
