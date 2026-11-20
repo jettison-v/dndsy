@@ -501,7 +501,7 @@ def mode(request: Request, mode: str = Form(...), back: str = Form(""), why: str
     db.commit()
     request.session["toast"] = {"available": f"Deploys after your local try, for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
                                 "independent": "Deploys when tests pass: visible changes go live, and you try them after",
-                                "frozen": "Deploys paused" + (f": {why.strip()}" if why.strip() else "") + ". Nothing deploys until you choose another"}[mode]
+                                "frozen": "Deploys paused" + (f": {why.strip()[:120]}" if why.strip() else "") + ". Nothing deploys until you choose another"}[mode]
     return RedirectResponse(f"{BACK}?show=stands" if back == "stands" else FOR_YOU, status_code=303)
 
 

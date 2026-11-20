@@ -418,6 +418,17 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -
         set_available(db, actor, False)
 
 
+def _set_freeze_why(db: Session, actor: str, why: str) -> None:
+    """A new reason for a pause already on (Brett's pick, Nov 19): the bar says it; when it began stays."""
+    from app.models import ToolSetting
+
+    row = db.get(ToolSetting, FREEZE)
+    data = json.loads(row.value)
+    data["why"] = why.strip()[:120]
+    row.value = json.dumps(data)
+    _event(db, actor, "freeze_why", "tool", 0, why=data["why"])
+
+
 # ------------------------------------------------------------------ Available (Brett, Nov 19: local tries while he's around)
 
 AVAILABLE = "fft_available"  # (a ToolSetting: {"by", "since", "until"} while on; {"off_at", "why"} after)
@@ -473,9 +484,10 @@ def set_mode(db: Session, actor: str, mode: str, by: str = "", why: str = "") ->
     if mode not in MODES:
         raise RuleError("bad", "After my local try, When tests pass, or Paused.")
     if mode == "frozen":
-        if frozen(db):  # (paused again: only its reason changes)
-            set_freeze(db, actor, False)
-        set_freeze(db, actor, True, by=by, why=why)  # (it ends local tries)
+        if frozen(db):  # (paused again: only its reason changes, and it stays paused since when it was)
+            _set_freeze_why(db, actor, why)
+        else:
+            set_freeze(db, actor, True, by=by, why=why)  # (it ends local tries)
     else:
         set_freeze(db, actor, False)
         set_available(db, actor, mode == "available", by=by)

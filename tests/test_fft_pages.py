@@ -292,8 +292,9 @@ def test_pausing_deploys_says_why_in_the_bar(admin, db):
     assert rules.frozen(db) and rules.freeze_state(db)["why"] == "a demo tomorrow"
     page = admin.get("/manage/for-you").text
     assert "Paused: a demo tomorrow" in page and 'data-do="pause">Change the reason' in page
+    since = rules.freeze_state(db)["since"]
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "game night"})
-    assert rules.freeze_state(db)["why"] == "game night"  # (pausing again changes the reason)
+    assert rules.freeze_state(db)["why"] == "game night" and rules.freeze_state(db)["since"] == since  # (a new reason only: still paused since then)
     admin.post("/manage/for-you/mode", data={"mode": "frozen"})
     assert rules.frozen(db) and "Paused:" not in admin.get("/manage/for-you").text  # (the reason is optional)
 
