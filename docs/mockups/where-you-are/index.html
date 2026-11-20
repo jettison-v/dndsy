@@ -103,6 +103,28 @@ b { color: var(--strong); }
 .o-h .split .arr { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid var(--line); color: var(--faint); font-size: .7em; }
 .o-h .d.here { color: var(--strong); }
 .o-h .d.here::after { content: ""; position: absolute; left: 8px; right: 6px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+/* N1 to N4 and R: from an outside review (a separate Claude, fresh eyes, Nov 20) */
+.o-n1 .d, .o-n2 .d, .o-n3 .d { color: var(--text); }
+.o-n1 .d.here, .o-n2 .d.here, .o-n3 .d.here { color: var(--strong); }
+.o-n1 .d.here::after, .o-n3 .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+.o-r .tool.search, .o-n1 .tool.search { min-width: 96px; }
+.d .pg { color: var(--strong); font-weight: 600; }
+.d .pg i { color: var(--faint); font-style: normal; font-weight: 500; }
+/* N2: the lit door is a tab that opens into the page */
+.o-n2 .d.here { z-index: 0; }
+.o-n2 .d.here::before { content: ""; position: absolute; z-index: -1; left: -2px; right: -2px; top: -4px; bottom: -13px; background: var(--bg); border: 2px solid var(--brand); border-bottom: 0; border-radius: 9px 9px 0 0; }
+/* N3: your character carries the connection */
+.o-n3 .chip { flex: none; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding-right: 12px; }
+.o-n3 .chip .d { min-height: 30px; }
+.o-n3 .chip .d.here::after { bottom: -12px; }
+.o-n3 .chip .link { display: inline-flex; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid var(--line); color: var(--muted); font-weight: 500; white-space: nowrap; }
+.o-n3 .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+/* N4 and R: quiet at rest, strong where you are */
+.o-n4 .d, .o-r .d, .o-n4 .d.camp, .o-r .d.camp { color: var(--muted); }
+.o-n4 .d.here, .o-r .d.here { color: var(--strong); }
+.o-n4 .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+/* R: the bar's own red line thickens under the lit door, no gap */
+.o-r .d.here::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: -13px; height: 5px; border-radius: 3px 3px 0 0; background: var(--brand); }
 .page { background: var(--bg); padding: 12px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; min-width: 1040px; color: var(--muted); font-size: .9rem; }
 .decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
 .decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -120,7 +142,7 @@ b { color: var(--strong); }
 <div class="wrap">
   <header style="display:grid;gap:8px">
     <h1>Where You Are</h1>
-    <p class="lede">Thought through freshly, from your comment: the menu bar has three kinds of door, and today they mix their looks (outlined or not, ▾ or not). Each option below is one rule for each kind, then where you are and counts on top of it. Pick a page to see each mark it; the first bar is today.</p>
+    <p class="lede">Thought through freshly, from your comment: the menu bar has three kinds of door, and today they mix their looks (outlined or not, ▾ or not). Each option below is one rule for each kind, then where you are and counts on top of it. Pick a page to see each mark it; the first bar is today. R and N1 to N4, at the end, come from an outside review: a separate Claude that looked at every bar with fresh eyes.</p>
   </header>
   <div class="kinds">
     <div class="kind"><b>Places you go</b><span>Campaign, Table ↗ (opens the table in a new tab), your character (Cole)</span></div>
@@ -140,6 +162,14 @@ b { color: var(--strong); }
       <label class="o"><input type="radio" name="shape" value="f"><span>F · Icons are menus without ▾</span><small>Only word menus carry ▾; where you are in red words.</small></label>
       <label class="o"><input type="radio" name="shape" value="g"><span>G · A breadcrumb says where you are</span><small>No door changes; "› Manage › Inbox" after the campaign's name.</small></label>
       <label class="o"><input type="radio" name="shape" value="h"><span>H · Split doors</span><small>Party and Manage: the word goes to the page, a separate ▾ opens the menu.</small></label>
+      <label class="o"><input type="radio" name="shape" value="r"><span>R · A, quiet at rest, the red line thickens <span class="mine">the review's pick</span></span><small>Grey doors, white where you are, the bar's red line thicker under it; Manage, the gear and your picture name their page.</small></label>
+      <label class="o"><input type="radio" name="shape" value="n1"><span>N1 · The door names its page</span><small>A, and “Manage › Inbox ▾” when you're inside Manage.</small></label>
+      <label class="o"><input type="radio" name="shape" value="n2"><span>N2 · The notch</span><small>A, and the door you're on is a tab opening into the page.</small></label>
+      <label class="o"><input type="radio" name="shape" value="n4"><span>N4 · Quiet at rest, strong where you are</span><small>A, with grey doors and white where you are.</small></label>
+    </fieldset>
+    <fieldset><legend>The connection pill</legend>
+      <label class="o"><input type="radio" name="pill" value="keep"><span>Keep it beside Search</span><small>As today.</small></label>
+      <label class="o"><input type="radio" name="pill" value="chip"><span>N3 · Join it to your character</span><small>Cole and how the sheet is connected in one chip; the three menus end the bar.</small></label>
     </fieldset>
     <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
@@ -177,8 +207,17 @@ b { color: var(--strong); }
     if (o === "o-h") return `<span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="sep"></span>
       <span class="d k-campaign${h("campaign")}">Campaign</span><span class="d">Table ↗</span><span class="sep"></span><span class="d k-cole${h("cole")}"><span class="av"></span>Cole</span>
       <span class="split"><span class="d k-party${h("party")}">Party</span><span class="arr">▾</span></span>${tools}<span class="split"><span class="d k-manage${h("manage")}">Manage</span><span class="arr">▾</span></span>${plainMenus(true)}`;
+    if (o === "o-n3") return `<span class="d camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="sep"></span>
+      <span class="d k-campaign${h("campaign")}">Campaign</span><span class="d">Table ↗</span><span class="sep"></span>
+      <span class="chip"><span class="d k-cole${h("cole")}"><span class="av"></span>Cole</span><span class="link"><span class="dot"></span>Not connected</span></span>
+      <span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span><span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="sep"></span>
+      <span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span>${plainMenus(true)}`;
     if (o === "today") return `${left}<span class="d${box} k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d${box} k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d${box} k-gear${h("gear")}">⚙${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${c.me}</span>`;
-    return `${left}<span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d k-gear${h("gear")}">⚙<span class="chev"> ▾</span>${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span>`;
+    // N1 and R: the menu you're inside names its page on its door
+    const named = o === "o-n1" || o === "o-r";
+    const nm = k => named && at === k ? `<span class="pg"><i>›</i> ${{ manage: "Inbox", gear: "For you" }[k]}</span>` : "";
+    const nmMe = named && at === "me" ? '<span class="pg">Notes you sent</span>' : "";
+    return `${left}<span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage${nm("manage")}<span class="chev"> ▾</span></span><span class="d k-gear${h("gear")}">⚙${nm("gear")}<span class="chev"> ▾</span>${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${nmMe}<span class="chev"> ▾</span>${c.me}</span>`;
   };
   const OPTS = [
     { k: "today", name: "Today", why: "Campaign, your character and Party turn grey where you are; Manage gets a red outline, the gear a blue one, your picture nothing. Cole, Party, Manage and the gear are outlined, the campaign's name and Campaign aren't; the campaign's name, Party and Manage have ▾, the gear and your picture don't; the gear's count is amber, your picture's red." },
@@ -198,12 +237,22 @@ b { color: var(--strong); }
       rules: [["Places", "plain words"], ["Menus", "plain words with ▾"], ["Tools", "outlined"], ["You're here", "a breadcrumb after the campaign's name"], ["Counts", "one badge, red"]] },
     { k: "o-h", name: "H · Split doors: the page and its menu", why: "Party and Manage each have a page and a menu: the word goes to the page, its own ▾ opens the menu. Where you are underlines the word. Precise, but two targets side by side are easy to miss.",
       rules: [["Places", "plain words"], ["Menus", "a page word and a separate ▾"], ["Tools", "outlined"], ["You're here", "a red line under the word"], ["Counts", "one badge, red"]] },
+    { k: "o-r", name: "R · A, quiet at rest, the red line thickens", tag: "the review's pick", why: "From the outside review: A's rules, but every door is quiet grey until you're on it, so the one you're on stands out by contrast. The mark is the bar's own red line growing thicker under that door, the same red line the phone's bottom bar already uses. Manage, the gear and your picture also name their page on the door (Manage › Inbox). The page name drops first as the window narrows; the bar shrinks as it does today.",
+      rules: [["Places", "quiet grey words"], ["Menus", "quiet grey words with ▾; inside one, its page named on the door"], ["Tools", "outlined"], ["You're here", "white words, the bar's red line thicker under them"], ["Counts", "one badge, red"]] },
+    { k: "o-n1", name: "N1 · The door names its page", why: "From the outside review: A, and the menu you're inside adds its page after a thin ›, so Manage reads “Manage › Inbox ▾” and the gear “⚙ › For you ▾”. You see which Manage or Admin page you're on without reading the page. The name drops at the first narrowing step, with the word askdnd; long page names end in “…”.",
+      rules: [["Places", "plain words"], ["Menus", "plain words with ▾; inside one, its page named"], ["Tools", "outlined"], ["You're here", "a red line under the door, and the page's name for menus"], ["Counts", "one badge, red"]] },
+    { k: "o-n2", name: "N2 · The notch: the door opens into the page", why: "From the outside review: A's rules, but the door you're on becomes a tab, a box in the page's colour that drops through the bar's red line into the page, like a folder tab. A different shape from hover, seen at a glance. The louder choice if a line feels too quiet. A new piece for the design system; staging's amber bar needs its own version.",
+      rules: [["Places", "plain words"], ["Menus", "plain words with ▾"], ["Tools", "outlined"], ["You're here", "a tab opening into the page"], ["Counts", "one badge, red"]] },
+    { k: "o-n3", name: "N3 · Your character carries the connection", why: "From the outside review: the bridge's chain joins Cole as one chip, since it answers “is my sheet connected?” (the DM's count of sheets sits there for her). The right end is then just the three menus: Manage, the gear, your picture. Every part of the bar holds one kind of thing: places, people, Search, menus. A separate choice from the others; it moves the Live pill, which the tour and the live test point at.",
+      rules: [["Places", "plain words"], ["Your character", "one chip: Cole and how the sheet is connected"], ["Menus", "plain words with ▾, together at the right end"], ["You're here", "a red line under the door"], ["Counts", "one badge, red"]] },
+    { k: "o-n4", name: "N4 · Quiet at rest, strong where you are", why: "From the outside review: A, but doors you're not on are quiet grey, like Campaign today, and the one you're on turns white with the red line. Fixes A's “every door is bright” problem. The grey has to stay readable (4.5 : 1) at the bar's size; it would be checked before building.",
+      rules: [["Places", "quiet grey words"], ["Menus", "quiet grey words with ▾"], ["Tools", "outlined"], ["You're here", "white words and a red line"], ["Counts", "one badge, red"]] },
   ];
   const box = document.getElementById("opts");
   const el = s => { const t = document.createElement("template"); t.innerHTML = s.trim(); return t.content.firstElementChild; };
   const cards = OPTS.map(o => {
     const rules = o.rules ? `<dl class="rules">${o.rules.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>` : "";
-    const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p>${rules}<div class="frame"></div></section>`);
+    const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}${o.tag ? `<span class="mine">${o.tag}</span>` : ""}</div><p class="why">${o.why}</p>${rules}<div class="frame"></div></section>`);
     box.append(c); return { o, frame: c.querySelector(".frame") };
   });
   const said = { campaign: "Campaign › Previously on…", cole: "Cole › Battle", party: "Party › Everyone at a glance", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent" };
@@ -221,7 +270,7 @@ b { color: var(--strong); }
   // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["shape"];
+  const NAMES = ["shape", "pill"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
