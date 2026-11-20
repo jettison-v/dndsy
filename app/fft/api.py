@@ -135,6 +135,38 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
     return _ok({"items": out, "listening": True})
 
 
+WAIT_MAX = 25  # seconds a wait is held open: under Railway's and urllib's limits, with room to spare
+
+
+@router.get("/inbox/wait")
+def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x_fft_key: str | None = Header(default=None),
+               db: Session = Depends(get_db)):
+    """The inbox's peek, held open until something is new (Brett, Nov 20: "is your communication ... very efficient?"):
+    Claude's `feedback.py wait` hears a change within moments instead of on its next 30-second ask. A plain route, on a
+    worker thread: it waits on the same live messages pages hear (app/fft/live.py, `realtime.heard`), holding no
+    database connection meanwhile (each read commits), then lets the change settle (rules.SETTLE) before reading."""
+    import time
+
+    from app import realtime
+
+    actor = keys.require(db, x_fft_key, "read")
+
+    def peek() -> list[dict]:
+        li = rules.listener(db, listener, area_id=area or None)
+        rows = [e for e in rules.unread(db, li, peek=True) if e.actor != actor.name]
+        out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
+                "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
+        db.commit()  # (gives the connection back while it waits)
+        return out
+
+    items, until = peek(), time.monotonic() + max(1, min(seconds, WAIT_MAX))
+    while not items and (left := until - time.monotonic()) > 0:
+        if realtime.heard(realtime.EVERYONE, left):
+            time.sleep(rules.SETTLE.total_seconds() + 0.5)  # (read only once it has settled)
+            items = peek()
+    return _ok({"items": items, "listening": True})
+
+
 @router.get("/next")
 def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """R15: what Claude takes next, why each item above it was skipped, and what waits on Brett."""

@@ -125,15 +125,23 @@ def inbox(a) -> None:
         print(_event(e))
 
 
+HOLD = {"on": True}  # askdnd holds the ask open until something's new (/inbox/wait); off if this askdnd hasn't it yet
+
+
 def _peek(base: str, listener: str) -> dict | None:
     """A read that rides out a deploy or a dropped connection (None), but ends the script on an answer that won't change
-    by asking again: a wrong FEEDBACK_KEY (404) or a refusal, so `wait` never sits deaf for hours."""
-    req = urllib.request.Request(base.rstrip("/") + "/api/fft/inbox?peek=1&listener=" + urllib.parse.quote(listener) + _area_of(listener),
+    by asking again: a wrong FEEDBACK_KEY (404) or a refusal, so `wait` never sits deaf for hours. It asks askdnd to hold
+    it open until something's new (up to 25 seconds; Nov 20), so a change is heard within moments."""
+    path = "/api/fft/inbox/wait?seconds=25&" if HOLD["on"] else "/api/fft/inbox?peek=1&"
+    req = urllib.request.Request(base.rstrip("/") + path + "listener=" + urllib.parse.quote(listener) + _area_of(listener),
                                  headers={"X-Fft-Key": key(), "Accept": "application/json", "User-Agent": "askdnd-feedback-script"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
+        if e.code in (404, 405) and HOLD["on"]:  # (an askdnd before /inbox/wait: ask every --every seconds instead)
+            HOLD["on"] = False
+            return _peek(base, listener)
         if e.code in (400, 401, 403, 404):
             sys.exit(f"askdnd answered {e.code}: is FEEDBACK_KEY askdnd's? wait stopped.")
         return None
@@ -142,7 +150,7 @@ def _peek(base: str, listener: str) -> dict | None:
 
 
 def wait(a) -> None:
-    """Asks every `--every` seconds until something's new, then says what (without marking it read) and ends: run in the
+    """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
     until, misses = time.monotonic() + a.hours * 3600, 0
     while time.monotonic() < until:
@@ -158,7 +166,7 @@ def wait(a) -> None:
             return
         else:
             misses = 0
-        time.sleep(a.every)
+        time.sleep(a.every if got is None or not HOLD["on"] else 0.2)  # (held open by askdnd: ask again at once)
     print(f"Nothing new in askdnd in {a.hours} hours.")
 
 
@@ -242,6 +250,20 @@ def issue(a) -> None:
         lane_from_pr(a, got["area_id"], w[0])
 
 
+def sort(a) -> None:
+    """Sort an issue in one go (Nov 20: one command, not one per change): its short title, its Feature, a reply to
+    whoever wrote it, and the fix's pull request, each only when given."""
+    got = None
+    for do, body in (("title", {"title": a.title}), ("feature", {"feature": a.feature}), ("pr", {"pr": a.pr})):
+        if body[do]:
+            got = call(a.base, f"/issues/{a.id}", {"do": do, **body})
+    if a.tell:
+        got = call(a.base, f"/issues/{a.id}", {"do": "line", "to": a.to, "words": a.tell})
+    print_issue(got or call(a.base, f"/issues/{a.id}"))
+    if a.pr and got and got.get("area_id"):
+        lane_from_pr(a, got["area_id"], a.pr)
+
+
 def lane_from_pr(a, area_id: int, pr: str) -> None:
     """The plan's lane from the files its pull request touches (app/fft/lanes.py), only ever up."""
     import subprocess
@@ -302,6 +324,8 @@ def check(a) -> None:
                 "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes,
                 "as_character": a.as_character}
         c = call(a.base, "/checks", body)
+        if a.tried:  # (R18: Claude's own try of this version, in the same go: Nov 20, one command not two)
+            c = call(a.base, f"/checks/{c['id']}", {"do": "preflight", "passed": True, "why": ""})
     else:
         w, body = a.words, {"do": a.do}
         if a.do == "version":
@@ -550,6 +574,13 @@ def main() -> None:
     s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
+    s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --tell (a reply), --pr")
+    s.add_argument("id")
+    s.add_argument("--title", default="")
+    s.add_argument("--feature", default="")
+    s.add_argument("--tell", default="")
+    s.add_argument("--to", default="senders", choices=["senders", "brett"])
+    s.add_argument("--pr", default="")
     s = sub.add_parser("checks")
     s.add_argument("--area", type=int, default=0)
     s = sub.add_parser("check")
@@ -566,6 +597,7 @@ def main() -> None:
     s.add_argument("--minutes", type=int, default=2)
     s.add_argument("--as-character", type=int, default=None, help="tried through this character's player's eyes (View as): its id")
     s.add_argument("--makes", action="store_true", help="it makes something: its page is in a test campaign (docs/testing-guide.md)")
+    s.add_argument("--tried", action="store_true", help="new: Claude tried it itself and it passed (preflight pass, R18)")
     s = sub.add_parser("ask")
     s.add_argument("about", choices=["issue", "check", "area", "document"])
     s.add_argument("about_id", help="its id (a document: its path)")
@@ -628,7 +660,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "available": available, "local": local}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "available": available, "local": local}[a.cmd](a)
 
 
 if __name__ == "__main__":
