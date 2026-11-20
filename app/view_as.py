@@ -27,7 +27,7 @@ from app.models import User
 router = APIRouter()
 STOP = "/view-as/stop"
 FEEDBACK = "/feedback"  # (a note is the admin's own, sent while viewing as someone: app/fft/sending.py)
-TESTING = ("/manage/testing", "/manage/for-you")  # (a check is the admin's own, tried while viewing as someone: app/fft/testing_page.py, Try it)
+TESTING = ("/manage/testing", "/manage/for-you", "/manage/item", "/manage/work")  # (a check is the admin's own, tried while viewing as someone: app/fft/testing_page.py, Try it; For you's item window and Work, The Work Pages, Nov 20)
 
 
 def viewing(session: dict | None) -> dict | None:
