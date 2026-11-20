@@ -1438,5 +1438,14 @@
   "what": "How Claude's finished work reaches the live site, as one labeled control in the status bar, made general enough to carry to another product: five versions (Deploys, Releases, two controls, Visible changes, and pausing with a reason), each clickable.",
   "source": "docs/mockups/deploy-controls/index.html",
   "link": "https://claude.ai/artifact/DuTxk35VH2By1fuNqFfjzj"
+ },
+ {
+  "title": "Status Bar Redesign",
+  "kind": "design",
+  "status": "Waiting on your picks",
+  "date": "Nov 19",
+  "what": "Issue 42: the bar on For you and Where it stands still wrapped. Three designs at the widths the bar really gets (650px on a 13\" laptop with Table rolls open), every state switchable: Deploys as one pill with a menu, two fixed rows, or listening beside the title.",
+  "source": "docs/mockups/status-bar/index.html",
+  "link": "https://claude.ai/artifact/FaukC9UciLe8xnzAWCt3as"
  }
 ]

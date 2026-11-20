@@ -52,7 +52,7 @@ def pages_from(page, base: str, start: str, limit: int) -> list[str]:
 
 
 def scan(page, found, who, width, where):
-    for p in page.evaluate(CHECK, {"rows": True, "baseline": True}):  # (off baseline: the Live UI Audit's list, Nov 19)
+    for p in page.evaluate(CHECK, {"rows": True}):
         found[(p["kind"], p["where"])].append((who, width, where, p["detail"]))
 
 

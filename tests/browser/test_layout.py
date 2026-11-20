@@ -645,8 +645,8 @@ def test_the_menu_bar_never_runs_wider_than_a_phone(people, server, long_names):
 def test_the_check_catches_words_squeezed_onto_two_lines_and_off_their_line(people, server):
     """Brett, Nov 19 ("is there a way to put a check in for alignment and wrapping that is more robust"): a row whose
     parts are equal shares wraps the longer one though everything fits on one line (squeezed); a bold label beside a
-    smaller note, centred as boxes, puts their words on different lines (off baseline, asked for until the Live UI
-    Audit makes it always). The same rows done right pass."""
+    smaller note, centred as boxes, puts their words on different lines (off baseline, a rule since the Live UI Audit;
+    an icon like ✕ is left out). The same rows done right pass."""
     page = people("player").open("/help")
     page.set_content("""<body style="font: 15px sans-serif; width: 900px">
       <div id="even" style="display:flex; gap:12px; width:700px"><span style="flex:1">Available until 4:59 PM</span>
@@ -655,9 +655,9 @@ def test_the_check_catches_words_squeezed_onto_two_lines_and_off_their_line(peop
         <span>Claude isn't listening (last heard 4:10 PM)</span><span>Freeze off</span></div>
       <div id="boxes" style="display:flex; align-items:center; gap:8px"><b style="font-size:24px">Available</b><span style="font-size:12px">until 4:59 PM</span></div>
       <div id="lined" style="display:flex; align-items:baseline; gap:8px"><b style="font-size:24px">Available</b><span style="font-size:12px">until 4:59 PM</span></div>
+      <div id="icon" style="display:flex; align-items:center; gap:8px"><b style="font-size:24px">Spell Book</b><span style="font-size:12px">✕</span></div>
     </body>""")
-    found = page.evaluate(CHECK, {"baseline": True})
+    found = page.evaluate(CHECK, {})  # (off baseline is a rule since the Live UI Audit: no asking)
     kinds = {(p["kind"], p["where"].split(" > ")[0]) for p in found}
     assert ("squeezed", "#even") in kinds and ("off baseline", "#boxes") in kinds
-    assert not {k for k in kinds if k[1] in ("#natural", "#lined")}
-    assert not [p for p in page.evaluate(CHECK, {}) if p["kind"] == "off baseline"]  # (only when asked, for now)
+    assert not {k for k in kinds if k[1] in ("#natural", "#lined", "#icon")}  # (an icon with no words is centred on purpose)
