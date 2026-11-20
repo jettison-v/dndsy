@@ -284,6 +284,20 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
     assert not rules.frozen(db)
 
 
+def test_pausing_deploys_says_why_in_the_bar(admin, db):
+    """Brett's pick A on docs/mockups/deploy-controls/ (Nov 19): Deploys is labelled, pausing asks why (optional), and the bar says it."""
+    page = admin.get("/manage/for-you").text
+    assert 'id="fft-mode-lbl">Deploys<' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "a demo tomorrow"})
+    assert rules.frozen(db) and rules.freeze_state(db)["why"] == "a demo tomorrow"
+    page = admin.get("/manage/for-you").text
+    assert "Paused: a demo tomorrow" in page and 'data-do="pause">Change the reason' in page
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "game night"})
+    assert rules.freeze_state(db)["why"] == "game night"  # (pausing again changes the reason)
+    admin.post("/manage/for-you/mode", data={"mode": "frozen"})
+    assert rules.frozen(db) and "Paused:" not in admin.get("/manage/for-you").text  # (the reason is optional)
+
+
 def test_lines_to_claude_stay_between_you_and_claude(admin, sender, db):
     send(sender)
     n = _note(db)
@@ -503,4 +517,4 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     assert not rules.available_state(db)["on"] and rules.frozen(db) and rules.mode_of(db) == "frozen"
     page = admin.get("/manage/for-you").text
     assert 'aria-controls="fft-bar-help"' in page and 'id="fft-bar-help" hidden' in page  # (one Help ▾ for the bar's help, Nov 19)
-    assert "Local Testing ended" not in page  # (he chose it: nothing to explain)
+    assert "Local tries ended" not in page  # (he chose it: nothing to explain)

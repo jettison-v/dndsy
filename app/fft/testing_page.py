@@ -488,20 +488,20 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
 
 
 @router.post("/manage/for-you/mode")
-def mode(request: Request, mode: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
-    """How Claude works (Brett, Nov 19): Local Testing, Independent Work or Deploy Freeze, one choice."""
+def mode(request: Request, mode: str = Form(...), back: str = Form(""), why: str = Form(""), db: Session = Depends(get_db)):
+    """Deploys (Brett, Nov 19): After my local try, When tests pass, or Paused (with an optional reason)."""
     user, denied = _admin(request)
     if denied:
         return denied
     me = views.person(db, user)
     try:
-        rules.set_mode(db, f"user:{me['id']}", mode, by=me["first_name"])
+        rules.set_mode(db, f"user:{me['id']}", mode, by=me["first_name"], why=why)
     except rules.RuleError as e:
         raise HTTPException(400, e.words) from e
     db.commit()
-    request.session["toast"] = {"available": f"Local Testing for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
-                                "independent": "Independent Work: visible changes merge, and you try them after they're live",
-                                "frozen": "Deploy Freeze: nothing deploys to askdnd.ai until you choose another"}[mode]
+    request.session["toast"] = {"available": f"Deploys after your local try, for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
+                                "independent": "Deploys when tests pass: visible changes go live, and you try them after",
+                                "frozen": "Deploys paused" + (f": {why.strip()}" if why.strip() else "") + ". Nothing deploys until you choose another"}[mode]
     return RedirectResponse(f"{BACK}?show=stands" if back == "stands" else FOR_YOU, status_code=303)
 
 

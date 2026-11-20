@@ -396,14 +396,14 @@ def freeze_state(db: Session) -> dict:
         data = json.loads(row.value) if row is not None and row.value else {}
     except ValueError:
         data = {}
-    return {"on": bool(data), "by": data.get("by", ""), "since": data.get("since", "")}
+    return {"on": bool(data), "by": data.get("by", ""), "since": data.get("since", ""), "why": data.get("why", "")}
 
 
 def frozen(db: Session) -> bool:
     return freeze_state(db)["on"]
 
 
-def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
+def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch (Nov 19): on before a game, off after. While it's on, nothing merges and GitHub's tests stop a
     deploy (the Server tests' first step asks /api/fft/freeze); a fix for something broken at the table may go."""
     from app.models import ToolSetting
@@ -411,9 +411,9 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
     if frozen(db) == on:
         return
     row = db.get(ToolSetting, FREEZE) or ToolSetting(key=FREEZE)
-    row.value = json.dumps({"by": by or actor, "since": now().isoformat()}) if on else ""
+    row.value = json.dumps({"by": by or actor, "since": now().isoformat(), "why": why.strip()[:120]}) if on else ""  # (why: Brett, Nov 19, optional)
     db.merge(row)
-    _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0)
+    _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0, **({"why": why.strip()[:120]} if on and why.strip() else {}))
     if on and available_state(db)["on"]:  # (game night: nobody is trying things locally; Brett chose it, so no why to show)
         set_available(db, actor, False)
 
@@ -459,7 +459,7 @@ def set_available(db: Session, actor: str, on: bool, by: str = "", why: str = ""
     _event(db, actor, "available_on" if on else "available_off", "tool", 0, **({"why": why} if why else {}))
 
 
-MODES = ("available", "independent", "frozen")  # (Brett, Nov 19: one choice, said Local Testing, Independent Work, Deploy Freeze)
+MODES = ("available", "independent", "frozen")  # (Brett, Nov 19: one choice, "Deploys": After my local try, When tests pass, Paused)
 
 
 def mode_of(db: Session) -> str:
@@ -468,12 +468,14 @@ def mode_of(db: Session) -> str:
     return "frozen" if frozen(db) else "available" if available_state(db)["on"] else "independent"
 
 
-def set_mode(db: Session, actor: str, mode: str, by: str = "") -> None:
+def set_mode(db: Session, actor: str, mode: str, by: str = "", why: str = "") -> None:
     """Brett's one choice. Each mode turns the others off: Frozen ends Available, Available ends the freeze."""
     if mode not in MODES:
-        raise RuleError("bad", "Local Testing, Independent Work or Deploy Freeze.")
+        raise RuleError("bad", "After my local try, When tests pass, or Paused.")
     if mode == "frozen":
-        set_freeze(db, actor, True, by=by)  # (it ends Available: game night)
+        if frozen(db):  # (paused again: only its reason changes)
+            set_freeze(db, actor, False)
+        set_freeze(db, actor, True, by=by, why=why)  # (it ends local tries)
     else:
         set_freeze(db, actor, False)
         set_available(db, actor, mode == "available", by=by)
@@ -508,7 +510,7 @@ def new_local_try(db: Session, actor: str, title: str, area: FftArea | None, cha
                   pr: str = "") -> FftLocalTry:
     """Claude's change, waiting for Brett's try on his Mac. Only while he's Available."""
     if not available_state(db)["on"]:
-        raise RuleError("bad", "Brett isn't in Local Testing: Look work merges, and he tries it after it's live.")
+        raise RuleError("bad", "Deploys aren't set to After my local try: Look work merges, and Brett tries it after it's live.")
     if not title.strip() or not changed:
         raise RuleError("bad", "Say what it is and what changed.")
     if not path.startswith("/"):
