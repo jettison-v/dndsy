@@ -166,11 +166,7 @@ b { color: var(--strong); }
     <h1>Where You Are</h1>
     <p class="lede">Thought through freshly, from your comment: the menu bar has three kinds of door, and today they mix their looks (outlined or not, ▾ or not). Each option below is one rule for each kind, then where you are and counts on top of it. Pick a page to see each mark it; the first bar is today. R and N1 to N4, at the end, come from an outside review: a separate Claude that looked at every bar with fresh eyes.</p>
   </header>
-  <section class="toppicks" aria-labelledby="top-h">
-    <h2 id="top-h">The two picks · click around</h2>
-    <p class="lede">My pick (A) and the outside review's pick (R). Click a door: Campaign and Cole take you there, a door with ▾ opens its menu, and its pages take you there. Where you are moves in both bars at once. Every icon in the bar is one size now, the gear too.</p>
-    <div id="top"></div>
-  </section>
+  <p class="lede"><b>The two picks, A and R, moved to Menu Bar Doors</b> (Nov 20), clickable, with one door or two and its name: https://claude.ai/artifact/QidvCACPQhu136JyFuLa2D</p>
   <h2 class="every">Every idea</h2>
   <div class="kinds">
     <div class="kind"><b>Places you go</b><span>Campaign, Table ↗ (opens the table in a new tab), your character (Cole)</span></div>
@@ -283,7 +279,7 @@ b { color: var(--strong); }
   const cards = OPTS.map(o => {
     const rules = o.rules ? `<dl class="rules">${o.rules.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>` : "";
     const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}${o.tag ? `<span class="mine">${o.tag}</span>` : ""}</div><p class="why">${o.why}</p>${rules}<div class="frame"></div></section>`);
-    const live = o.k === "o-a" || o.k === "o-r";
+    const live = false;  // the two picks moved to Menu Bar Doors (Nov 20)
     if (live) c.querySelector(".frame").classList.add("live");
     (live ? topBox : box).append(c); return { o, frame: c.querySelector(".frame") };
   });
