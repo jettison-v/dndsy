@@ -86,7 +86,8 @@ def test_only_its_sender_sees_the_full_picture(admin, sender, dm, db):
     theirs = admin.get(f"/manage/feedback/pictures/{page.id}")
     assert theirs.status_code == 200 and theirs.content == base64.b64decode(SAFE.split(",")[1])
     assert dm.get(f"/your-notes/pictures/{page.id}").status_code == 404 and dm.get(f"/manage/feedback/pictures/{page.id}").status_code in (303, 403, 404)
-    shown = admin.get("/manage/feedback?tab=approve").text
+    assert f'data-row="n{n.id}"' in admin.get("/manage/feedback?tab=approve").text  # (To sort lists it; it reads in the item window)
+    shown = admin.get(f"/manage/item/n{n.id}?from=feedback:approve::::").text
     assert f"/manage/feedback/pictures/{page.id}" in shown and "data-covered" in shown
 
 
@@ -239,7 +240,7 @@ def test_an_issue_moves_closes_with_a_reason_its_senders_read_and_reopens(admin,
     n = _note(db)
     admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
     i = db.get(FftIssue, n.issue_id)
-    page = admin.get(f"/manage/feedback?tab=open&open=i{i.id}").text
+    page = admin.get(f"/manage/item/i{i.id}").text
     assert f'data-fft-issue="{i.id}"' in page and "/manage/feedback/close?issue=" in page
     assert "Close it: why?" in admin.get(f"/manage/feedback/close?issue={i.id}").text
     admin.post(f"/manage/feedback/issues/{i.id}", data={"do": "close", "reason": "wont", "words": "It's as designed.", "seen": "to_fix"})
@@ -260,7 +261,7 @@ def test_a_fix_a_player_prompted_asks_no_second_ok(admin, sender, db):
     i = db.get(FftIssue, n.issue_id)
     rules.fix_ready(db, "claude", i, "https://github.com/x/y/pull/1")
     db.flush()
-    assert 'data-do="ok_merge"' not in admin.get(f"/manage/feedback?tab=open&open=i{i.id}").text
+    assert 'data-do="ok_merge"' not in admin.get(f"/manage/item/i{i.id}").text
     assert rules.may_merge(db, i)[0]
 
 
@@ -323,7 +324,7 @@ def test_a_players_reply_waits_and_does_it_work_now(admin, sender, db):
     line = db.scalar(select(FftLine).where(FftLine.note_id == n.id, FftLine.who == "sender"))
     assert line is not None and not line.approved
     i = db.get(FftIssue, n.issue_id)
-    assert 'data-do="approve-line"' in admin.get(f"/manage/feedback?tab=open&open=i{i.id}").text
+    assert 'data-do="approve-line"' in admin.get(f"/manage/item/i{i.id}").text
     admin.post(f"/manage/feedback/lines/{line.id}")
     assert line.approved
     rules.start_fixing(db, "claude", i)
@@ -395,7 +396,7 @@ def test_an_issue_reads_in_sections_its_new_lines_marked_until_opened(admin, sen
     newer = rules.add_line(db, "claude", "Something new since then.", issue=issue)
     mine = rules.add_line(db, "user:1", "My own words.", issue=issue, user_id=me.id)
     db.flush()
-    page = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    page = admin.get(f"/manage/item/i{issue.id}").text
     order = [page.index(f'data-sec="{k}"') for k in ("stands", "found", "talk", "history")]
     assert order == sorted(order)  # (in that order)
     report = page[page.index(f'data-report="{n.id}"'):]
@@ -403,7 +404,7 @@ def test_an_issue_reads_in_sections_its_new_lines_marked_until_opened(admin, sen
     assert f'data-line="{newer.id}" data-new' in page and f'data-line="{old.id}" data-new' not in page
     assert f'data-line="{mine.id}" data-new' not in page  # (never your own words)
     assert 'data-clock="when"' in page  # (each line says when)
-    again = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    again = admin.get(f"/manage/item/i{issue.id}").text
     assert "data-new" not in again  # (opened: seen)
 
 
@@ -436,7 +437,7 @@ def test_claudes_addresses_are_links_a_senders_are_not(admin, sender, db):
     issue = db.get(FftIssue, n.issue_id)
     rules.add_line(db, "claude", "The mockup: https://claude.ai/artifact/abc.", issue=issue, to="sender")
     db.flush()
-    page = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    page = admin.get(f"/manage/item/i{issue.id}").text
     assert '<a href="https://claude.ai/artifact/abc" target="_blank" rel="noopener">' in page
     assert 'href="https://example.com/mine' not in page  # (the sender's own words stay words)
     assert '<a href="https://claude.ai/artifact/abc"' in sender.get("/your-notes?tab=askdnd").text
@@ -507,7 +508,8 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     db.flush()
     page = admin.get("/manage/for-you").text
     assert 'data-section="local"' in page and f'data-row="l{lt.id}"' in page and "1 change to try on your Mac" in page
-    assert f'data-fft-local="{lt.id}"' in page and "localhost:8004/dev/login?next=/party" in page and "The Count is a pill" in page
+    window = admin.get(f"/manage/item/l{lt.id}?from=foryou").text
+    assert f'data-fft-local="{lt.id}"' in window and "localhost:8004/dev/login?next=/party" in window and "The Count is a pill" in window
     player.post(f"/manage/for-you/local/{lt.id}", data={"answer": "good"})
     assert lt.answer == ""  # (admins only)
     admin.post(f"/manage/for-you/local/{lt.id}", data={"answer": "off", "words": "The pill wraps on a phone."})

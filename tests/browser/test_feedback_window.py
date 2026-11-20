@@ -211,11 +211,13 @@ def test_the_pages_picture_keeps_what_the_screen_shows_when_scrolled(people, ser
     admin = people("admin")
     page = admin.open("/manage/feedback?tab=open")
     page.set_viewport_size({"width": 1280, "height": 720})
-    nav = page.locator(".reader-nav")
+    nav = page.locator("#fb-list")  # (Feedback's list, a table since The Work Pages: the page scrolls, the list with it)
     nav.wait_for()
-    page.evaluate("() => { scrollTo(0, 140); document.querySelector('.reader-nav').scrollTop = 600; }")
+    page.evaluate("() => scrollTo(0, 400)")
     box = nav.bounding_box()
-    clip = {"x": box["x"], "y": box["y"], "width": box["width"], "height": min(box["height"], 400)}
+    top = max(box["y"], 70)  # (the part of the list on the screen, under the menu bar)
+    clip = {"x": box["x"], "y": top, "width": box["width"], "height": min(box["y"] + box["height"] - top, 400)}
+    page.mouse.move(2, 700)  # (no row lit by the pointer)
     screen = page.screenshot(clip=clip)  # (the list as the screen shows it)
     page.keyboard.press("\\")
     win = page.locator("#fb-win")

@@ -363,3 +363,34 @@ def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browse
     said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
     assert pill["y"] >= said["y"] + said["height"] - 1, "Deploys sits over Claude listening on a phone"
     assert pill["x"] + pill["width"] <= 375 and page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)
+
+
+def test_for_you_opens_a_check_in_the_item_window_and_passed_moves_on(people, server, browser_db):
+    """The Work Pages (Brett, Nov 20): For you is a table; a row opens its check in the item window, ✓ Passed looks like
+    its neighbours until pressed (issue 45), and after it the window moves on to the next check, the row gone."""
+    first, second = _checks(browser_db[0], "/party", "/help")
+    admin = people("admin")
+    page = admin.open("/manage/for-you")
+    page.locator(f'tr[data-row="c{first}"] td.dt-title').click()
+    win = page.locator(f'#peek [data-item-panel="c{first}"]')
+    win.wait_for()
+    passed = page.locator('#peek [data-do="passed"]')
+    wrong = page.locator('#peek [data-do="wrong"]')
+    look = "el => getComputedStyle(el).backgroundColor"
+    assert passed.evaluate(look) == wrong.evaluate(look)  # (issue 45: no green before it's pressed)
+    passed.click()
+    page.locator(f'#peek [data-item-panel="c{second}"]').wait_for()  # (on to the next)
+    page.wait_for_function(f"() => !document.querySelector('tr[data-row=\"c{first}\"]')")
+    assert _one(browser_db[0], "SELECT result FROM fft_tries WHERE check_id = :c ORDER BY id DESC LIMIT 1", c=first) == [("passed",)]
+    assert not admin.errors, admin.errors
+
+
+def test_try_it_in_the_item_window_takes_you_to_the_checks_page(people, server, browser_db):
+    """▶ Try it, pressed in the item window, goes to the check's own page with its card, as from the list."""
+    first, = _checks(browser_db[0], "/help")
+    admin = people("admin")
+    page = admin.open(f"/manage/for-you?open=c{first}")
+    page.locator(f'#peek [data-item-panel="c{first}"]').wait_for()
+    page.locator('#peek [data-do="try-it"]').click()
+    page.wait_for_url("**/help**")
+    assert not admin.errors, admin.errors

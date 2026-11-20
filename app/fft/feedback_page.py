@@ -254,21 +254,47 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
     grouped = by_area(listed, pa, feature) if tab in ("open", "ready", "closed") else None
     if grouped:
         listed = grouped["rows"]
-    pick = open if any(r["key"] == open for r in listed) or open[:1] in ("n", "i", "d") else (listed[0]["key"] if listed else "")
-    me = views.person(db, user)
-    picked = None
-    if pick[:1] == "n" and pick[1:].isdigit() and (note := db.get(FftNote, int(pick[1:]))):
-        picked = {"kind": "note", **note_view(db, note, me["id"])} | ({"issue": issue_view(db, db.get(FftIssue, note.issue_id), me["id"])} if note.issue_id else {})
-    elif pick[:1] == "i" and pick[1:].isdigit() and (issue := db.get(FftIssue, int(pick[1:]))):
-        picked = {"kind": "issue", **issue_view(db, issue, me["id"])}
-        mark_seen(db, me["id"], issue)  # (drawn with what's new marked, then it's seen)
-    elif pick[:1] == "d" and pick[1:].isdigit() and (idea := db.get(FftIdea, int(pick[1:]))):
-        picked = {"kind": "idea", "d": idea, "word": idea_word(idea), "says": IDEA_SAYS.get(idea.state, ""), "notes": [note_view(db, x, me["id"]) for x in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id))]}
+    pick = open if open[:1] in ("n", "i", "d") and open[1:].isdigit() else ""  # (an old link to one item: it opens in the item window)
     return templates.TemplateResponse(request, "fft_feedback.html", {
-        "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "picked": picked, "chip": chip, "area": area,
-        "grouped": grouped, "taxonomy": taxonomy.areas(),
-        "kind_said": views.KIND_SAID, "closed_word": views.CLOSED_WORD, "issue_word": views.ISSUE_WORD, "me_id": me["id"],
+        "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "chip": chip, "area": area, "pa": pa, "feature": feature,
+        "grouped": grouped, "taxonomy": taxonomy.areas(), "from_": from_key(tab, chip, area, pa, feature),
         "toast": request.session.pop("toast", None)})
+
+
+def listed_keys(db: Session, tab: str, chip: str = "", area: int = 0, pa: str = "", feature: str = "") -> list[str]:
+    """The rows of one view of Feedback, in their order: the item window's ↑ ↓ follow it."""
+    listed = rows(db, tab, chip, area)
+    grouped = by_area(listed, pa, feature) if tab in ("open", "ready", "closed") else None
+    return [r["key"] for r in (grouped["rows"] if grouped else listed)]
+
+
+def from_key(tab: str, chip: str, area: int, pa: str, feature: str) -> str:
+    """Which list an item window was opened from (?from=), so ↑ ↓ walk that list: feedback:<tab>:<chip>:<area>:<pa>:<feature>."""
+    return ":".join(["feedback", tab, chip, str(area or ""), pa, feature])
+
+
+def picked_of(db: Session, key: str, viewer_id: int | None) -> dict | None:
+    """A note, an issue or an idea, as its reader draws it (the item window, app/fft/item_page.py)."""
+    kind, ident = key[:1], int(key[1:]) if key[1:].isdigit() else 0
+    if kind == "n" and (note := db.get(FftNote, ident)):
+        return {"kind": "note", **note_view(db, note, viewer_id)} | ({"issue": issue_view(db, db.get(FftIssue, note.issue_id), viewer_id)} if note.issue_id else {})
+    if kind == "i" and (issue := db.get(FftIssue, ident)):
+        picked = {"kind": "issue", **issue_view(db, issue, viewer_id)}
+        mark_seen(db, viewer_id, issue)  # (drawn with what's new marked, then it's seen)
+        return picked
+    if kind == "d" and (idea := db.get(FftIdea, ident)):
+        return {"kind": "idea", "d": idea, "word": idea_word(idea), "says": IDEA_SAYS.get(idea.state, ""), "notes": [note_view(db, x, viewer_id) for x in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id))]}
+    return None
+
+
+def tab_of(picked: dict) -> str:
+    """The Feedback tab an item lives on (its forms' ?tab=, where an answer lands)."""
+    if picked["kind"] == "note":
+        return "approve" if picked["n"].state == "waiting" else "open"
+    if picked["kind"] == "issue":
+        st = picked["i"].state
+        return "closed" if st == "closed" else "ready" if st == "ready" else "open"
+    return "ideas"
 
 
 def _back(request: Request, key: str = "") -> RedirectResponse:

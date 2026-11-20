@@ -107,7 +107,8 @@ One design system, two modes (Brett's picks on Backstage Mode, `docs/mockups/bac
 
 - **Table mode** is everything the table sees (players' and the DM's pages): as the rest of this document describes.
 - **Backstage mode** is every Backstage page (`main.manage-page`) and the windows opened over it, on a laptop and wider (901px+; a phone or tablet keeps Table mode's touch sizes and 16px boxes): type 11.5 · 12.5 · 13.5 · 15 · 19 · 22px, tighter space and controls (28px), tabular numbers, one font with labels in plain words (no gold, no condensed capitals), and the whole window's width up to 2,200px, a paragraph still stopping at about 75 characters. app.css › "Backstage mode"; tests/browser/test_backstage_mode.py.
-- **Lists in Backstage mode are tables** (`.dtable` in a `.table-scroll`, Backstage › Global › Design system › Table): a header row, columns sized by their header, the title the one cell that wraps, groups as divider rows; a row of one item opens it in the one item window.
+- **Lists in Backstage mode are tables** (`.dtable` in a `.table-scroll`, Backstage › Global › Design system › Table): a header row, columns sized by their header's width class (`dt-w1`…`dt-w5`), the title the one cell that wraps, groups as divider rows; a row of one item opens it in the one item window.
+- **One item, one window**: in Backstage, a link or a row of one item (an issue, a check, a note, a question) opens it in the item window, the side panel at the right (`data-panel-url="/manage/item/<key>?from=<its list>"`), where it's read and acted on; ↑ ↓ walk its list, a press moves on to the next. A link to a group (a plan, a Product Area) goes to its page.
 - **Short titles** for issues and checks: the part of askdnd first, then what's wrong ("Check buttons: Passed looks already chosen"), about 45 characters; the reporter's words stay whole on the issue.
 
 ## Rules for every page (Brett's reviews, 2026-10-23)

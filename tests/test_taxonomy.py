@@ -147,7 +147,7 @@ def test_feedback_groups_issues_by_product_area_and_change_moves_one(db, admin):
     only = admin.get("/manage/feedback?tab=open&pa=battle").text
     assert f'data-row="i{hp.id}"' in only and f'data-row="i{dice.id}"' not in only and 'data-feat-tray="battle"' in only
     assert 'data-feature="hp"' in only and 'data-feature="death"' not in only  # (only Features with something open)
-    issue = admin.get(f"/manage/feedback?tab=open&open=i{loose.id}").text
+    issue = admin.get(f"/manage/item/i{loose.id}").text  # (one issue: the item window)
     assert "No Feature yet" in issue and 'data-feature-pick' in issue and '<optgroup label="Battle">' in issue
     admin.post(f"/manage/feedback/issues/{loose.id}", data={"do": "feature", "feature": "menus"})
     assert loose.feature == "menus" and db.get(FftArea, loose.area_id).key == "around"
