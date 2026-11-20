@@ -18,8 +18,10 @@ what they are in the name ("Initiative (combat started)", "Initiative (Pip)").
 the message's id and time). They go only where the bridge works on the character and its sheet is in a D&D Beyond game.
 """
 
+from sqlalchemy import select
+
 from app import ddb_bridge
-from app.models import Character, TableRoll
+from app.models import Character, CharacterSnapshot, TableRoll
 from app.table_rolls import D20_KINDS, parse_formula
 
 SOURCE, MARK = "askdnd", "ⓐ"
@@ -119,7 +121,8 @@ def messages(db, row: TableRoll, character: Character | None) -> list[dict]:
     or [] where it doesn't go: no character, the bridge not on it, or its sheet not in a D&D Beyond game."""
     if not character or not character.ddb_id or not ddb_bridge.on_for(db, character) or not character.snapshot:
         return []
-    raw = character.snapshot.raw or {}
+    # (the sheet's game alone, never the whole half-megabyte sheet: every roll asks, Nov 20)
+    raw = {"campaign": db.scalar(select(CharacterSnapshot.raw["campaign"]).where(CharacterSnapshot.character_id == character.id)) or {}}
     game, aim = (raw.get("campaign") or {}).get("id"), _audience(row, raw)
     if not game or not aim:
         return []

@@ -41,12 +41,6 @@ def _co_mentioned(db: Session, entity_id: int, visible: Visible, events: list[St
 # --- Quests ------------------------------------------------------------------------
 
 
-def givers(db: Session, quest: Entity, visible: Visible) -> list[Entity]:
-    """Who gave the quest (the "gave" relationship)."""
-    rels = db.scalars(select(EntityRelation).where(EntityRelation.type == "gave", EntityRelation.to_entity_id == quest.id))
-    return [r.from_entity for r in rels if visible(r.from_entity)]
-
-
 @dataclass
 class _Read:
     """What the quest board reads once for every quest (Nov 20: each quest read its own, ~100 reads a Campaign page)."""
