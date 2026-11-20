@@ -8,6 +8,11 @@
 <span class="state-word sw-{{ tone }}"{{ attrs | safe }}>{{ word }}</span>
 {%- endmacro %}
 
+{# An issue's kind (Nov 20): a fix (red, it's broken) or an improvement (violet, make it better), the same everywhere #}
+{% macro kind_word(kind) -%}
+{{ state_word("Improvement" if kind == "improvement" else "Fix", "claude" if kind == "improvement" else "failed", ' data-kind-word="' ~ (kind or "fix") ~ '"') }}
+{%- endmacro %}
+
 {# A part of a reader, as a card (Brett's pick A, Nov 18, docs/mockups/fft-reader/, issue 4: "it all just blends
    together"): a small label with its count, then what's in it. `tone`: a state's tone (state_word's) for the part that
    says where something stands: its left edge in that colour. #}

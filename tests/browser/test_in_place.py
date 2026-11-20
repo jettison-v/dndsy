@@ -87,7 +87,7 @@ def test_a_press_in_a_side_panel_redraws_in_place(people, server, browser_db):
     nid = _waiting_note(browser_db[0], "The rest button does nothing.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
-    page.locator(f'#peek [data-fft-note="{nid}"] [data-do="issue"]').click()
+    page.locator(f'#peek [data-fft-note="{nid}"] [data-do="fix"]').click()
     page.locator("#cards > .card").first.wait_for()
     iid = _one(browser_db[0], f"SELECT issue_id FROM fft_notes WHERE id = {int(nid)}")  # noqa: S608 (a number of our own)
     page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_admin_bits.html" import state_word %}
+{% from "_admin_bits.html" import state_word, kind_word %}
 {% from "_lists.html" import empty_state, count_pill, history_link, history_head %}
 {% block title %}{{ a.title }} · Development · Backstage · askdnd{% endblock %}
 {% block content %}
@@ -41,11 +41,12 @@
   {% if history %}{{ history_head("closed issues", "?tab=issues") }}{% endif %}
   {% if not issues %}{{ empty_state("Nothing closed yet." if history else "Nothing open in this plan.") }}{% else %}
   <div class="table-scroll"><table class="dtable fft-table" data-fft-list="{{ i_from }}">
-    <thead><tr><th class="num dt-w1">#</th><th>Issue</th><th class="dt-w4">Feature</th><th class="dt-w3">State</th><th class="dt-w2">Turn</th></tr></thead>
+    <thead><tr><th class="num dt-w1">#</th><th>Issue</th><th class="dt-w3">Kind</th><th class="dt-w4">Feature</th><th class="dt-w3">State</th><th class="dt-w2">Turn</th></tr></thead>
     <tbody>{% for i in issues %}
       <tr data-panel-url="/manage/item/i{{ i.id }}?from={{ i_from | urlencode }}" tabindex="0" data-row="i{{ i.id }}" data-kind="issue" data-state="{{ i.state }}">
         <td class="num"><span class="dt-id">{{ i.id }}</span></td>
         <td class="dt-title">{{ i.title }}</td>
+        <td>{{ kind_word(i.kind) }}</td>
         <td>{{ paths[i.id] or "—" }}</td>
         <td>{% if i.state == "closed" %}{{ state_word(closed_word.get(i.close_reason, "Closed"), "quiet") }}{% else %}{{ state_word(issue_word[i.state], "passed" if i.state == "ready" else "ask" if i.state in ("asks", "merge_ok") else "claude") }}{% endif %}</td>
         <td>{% if turns.get(i.id) %}{{ state_word(turns[i.id][0], turns[i.id][1]) }}{% endif %}</td>

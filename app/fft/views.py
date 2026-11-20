@@ -308,6 +308,8 @@ def event_words(ev) -> str:
         who = "Claude" if ev.actor == "claude" else "askdnd" if ev.actor == "askdnd" else "An admin" if ev.actor.startswith("user:") else "Someone"
         to = {"sender": ", to its senders", "claude": ", to Claude"}.get(d.get("to") or "", "")
         return f"{who} wrote on {ev.thing} {ev.thing_id}{to}"
+    if ev.kind == "issue_kind":
+        return f"Issue {ev.thing_id} is {'an improvement' if d.get('became') == 'improvement' else 'a fix'}"
     if ev.kind == "issue_feature":
         return f"Issue {ev.thing_id} is about {taxonomy.path(d.get('feature', '')) or d.get('feature')}" + (f" (was {taxonomy.path(d['was'])})" if d.get("was") else "")
     if ev.kind == "area_lane":

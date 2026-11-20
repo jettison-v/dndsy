@@ -101,7 +101,7 @@ def _approved_note(db: Session, note_id: int) -> FftNote:
 
 def issue_view(db: Session, issue: FftIssue, full: bool = True) -> dict:
     out = {"id": issue.id, "title": issue.title, "state": issue.state, "turn": rules.ISSUE_TURN[issue.state], "area_id": issue.area_id,
-           "feature": issue.feature, "feature_path": taxonomy.path(issue.feature), "pr": issue.pr, "reopened": issue.reopened, "close_reason": issue.close_reason, "from_player": issue.from_player,
+           "feature": issue.feature, "feature_path": taxonomy.path(issue.feature), "kind": issue.kind, "pr": issue.pr, "reopened": issue.reopened, "close_reason": issue.close_reason, "from_player": issue.from_player,
            "confirm_by_player": bool(issue.confirm_by)}
     if full:
         notes = db.scalars(select(FftNote).where(FftNote.issue_id == issue.id, FftNote.state == "filed").order_by(FftNote.id))
@@ -295,7 +295,8 @@ def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     body = body if isinstance(body, dict) else {}
     _area_given(db, body.get("area_id"))
     try:
-        i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"), feature=_str(body, "feature", 20))
+        i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"), feature=_str(body, "feature", 20),
+                            kind=_str(body, "kind", 12) or "fix")
     except rules.RuleError as e:
         _rule(e)
     db.commit()
@@ -315,6 +316,8 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
             rules.retitle(db, actor.name, i, _str(body, "title", 120, need=True))
         elif do == "feature":
             rules.set_feature(db, actor.name, i, _str(body, "feature", 20, need=True))
+        elif do == "kind":  # (fix or improvement, Nov 20)
+            rules.set_kind(db, actor.name, i, _str(body, "kind", 12, need=True))
         elif do == "move":
             _area_given(db, body.get("area_id"))
             rules.move_issue(db, actor.name, i, body.get("area_id"))
