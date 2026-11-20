@@ -88,7 +88,7 @@ def app_version() -> str:
 
 
 def version_of(db: Session, c: FftCheck) -> FftCheckVersion | None:
-    return db.scalar(select(FftCheckVersion).where(FftCheckVersion.check_id == c.id, FftCheckVersion.version == c.version))
+    return rules.check_version(db, c)
 
 
 def page_of(db: Session, c: FftCheck) -> str:
@@ -101,7 +101,7 @@ def check_view(db: Session, c: FftCheck, device: str = "laptop") -> dict:
     st = rules.check_state(db, c)
     mine = [d for d in (c.devices or ["laptop"]) if d in PEOPLES and st["devices"].get(d) in ("to_try", "later")]
     word = views.check_word(st)
-    issues = list(db.scalars(select(FftIssue).join(FftCheckIssue, FftCheckIssue.issue_id == FftIssue.id).where(FftCheckIssue.check_id == c.id)))
+    issues = rules.check_issues(db, c)
     return {"c": c, "v": v, "steps": steps.walk("\n".join(v.steps)) if v else [], "state": st, "word": word,
             "turn": {"brett": "yours", "claude": "claude", "closed": "closed"}[st["turn"]], "mine": mine,
             "here": device in mine, "devices": st["devices"], "issues": issues, "area": db.get(FftArea, c.area_id) if c.area_id else None,

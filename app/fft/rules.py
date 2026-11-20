@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import event, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.fft import taxonomy
@@ -800,14 +800,82 @@ class Found:
     words: list[str] = field(default_factory=list)
 
 
+# ------------------------------------------------------------------ what check_state reads, loaded once (Nov 20)
+#
+# A page asks where many checks stand (For you, Development, a plan, the counts on every Backstage page), and each used
+# to read its own links, tries and issues: 150 to 500 small queries a page, about a second on askdnd.ai where each query
+# crosses Railway's network. Now the first ask in a request reads them all in four queries and keeps them on the
+# session (`db.info`); any change drops them (a flush, a commit or rollback, an UPDATE or DELETE run on the session),
+# and pending changes are flushed first, as autoflush would, so nothing is ever read stale.
+
+FACTS = "fft_check_facts"
+
+
+def _facts(db: Session) -> dict:
+    if db.new or db.dirty or db.deleted:
+        db.flush()
+    f = db.info.get(FACTS)
+    if f is not None:
+        return f
+    links: dict[int, set[int]] = {}
+    for c, i in db.execute(select(FftCheckIssue.check_id, FftCheckIssue.issue_id)):
+        links.setdefault(c, set()).add(i)
+    last: dict[tuple, FftTry] = {}
+    by_check: dict[int, list[FftTry]] = {}
+    for t in db.scalars(select(FftTry).where(FftTry.replaced.is_(False)).order_by(FftTry.id)):
+        last[(t.check_id, t.device, t.actor)] = t
+        by_check.setdefault(t.check_id, []).append(t)
+    named: dict[int, list[tuple[int, bool]]] = {}  # (a live try's id → the issues it named, and whether each blocks)
+    for t_id, i, b in db.execute(select(FftTryIssue.try_id, FftTryIssue.issue_id, FftTryIssue.blocking)
+                                 .join(FftTry, FftTry.id == FftTryIssue.try_id).where(FftTry.replaced.is_(False))):
+        named.setdefault(t_id, []).append((i, b))
+    issues = {i.id: i for i in db.scalars(select(FftIssue))}
+    versions = {(v.check_id, v.version): v for v in db.scalars(select(FftCheckVersion))}
+    f = {"links": links, "last": last, "by_check": by_check, "named": named, "issues": issues, "versions": versions, "memo": {}}
+    db.info[FACTS] = f
+    return f
+
+
+def check_issues(db: Session, check: FftCheck) -> list[FftIssue]:
+    """The issues a check tries the fix of, oldest first (from the request's facts: no query per check)."""
+    f = _facts(db)
+    return [f["issues"][i] for i in sorted(f["links"].get(check.id, ())) if i in f["issues"]]
+
+
+def check_version(db: Session, check: FftCheck) -> FftCheckVersion | None:
+    return _facts(db)["versions"].get((check.id, check.version))
+
+
+def _memo(db: Session, key: str, make):
+    """A value worked out once per request until anything changes (kept with the facts, dropped with them)."""
+    m = _facts(db)["memo"]
+    if key not in m:
+        m[key] = make()
+    return m[key]
+
+
+def _forget(session, *_) -> None:
+    session.info.pop(FACTS, None)
+
+
+for _when in ("after_flush", "after_commit", "after_soft_rollback"):
+    event.listen(Session, _when, _forget)
+
+
+@event.listens_for(Session, "do_orm_execute")
+def _forget_on_write(state) -> None:
+    if not state.is_select:  # (an UPDATE, DELETE or INSERT run on the session, not through the ORM's flush)
+        state.session.info.pop(FACTS, None)
+
+
 def _blocking_issues(db: Session, check: FftCheck) -> list[FftIssue]:
     """The issues that hold a check: those it tries the fix of, and those a live try named as stopping it."""
-    linked = set(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == check.id)))
-    named = db.execute(select(FftTryIssue.issue_id, FftTryIssue.blocking).join(FftTry, FftTry.id == FftTryIssue.try_id)
-                       .where(FftTry.check_id == check.id, FftTry.replaced.is_(False))).all()
+    f = _facts(db)
+    linked = f["links"].get(check.id, set())
+    named = [x for t in f["by_check"].get(check.id, []) for x in f["named"].get(t.id, [])]
     nonblocking = {i for i, b in named if not b}
     ids = (linked | {i for i, b in named if b}) - (nonblocking - linked)
-    return list(db.scalars(select(FftIssue).where(FftIssue.id.in_(ids)))) if ids else []
+    return sorted((f["issues"][i] for i in ids if i in f["issues"]), key=lambda i: i.id)
 
 
 def record_try(db: Session, actor: str, check: FftCheck, *, result: str, device: str = "laptop", where: str = "live",
@@ -1019,20 +1087,20 @@ def check_state(db: Session, check: FftCheck) -> dict:
     open_claude = [i for i in blocking if i.state in ("to_fix", "fixing", "asks", "merge_ok")]
     devices = {}
     again = False
+    f = _facts(db)
     for dev in check.devices or ["laptop"]:
-        last = db.scalar(select(FftTry).where(FftTry.check_id == check.id, FftTry.device == dev, FftTry.replaced.is_(False),
-                                              FftTry.actor == ("mini" if dev == "mac_mini" else "person")).order_by(FftTry.id.desc()))
+        last = f["last"].get((check.id, dev, "mini" if dev == "mac_mini" else "person"))
         if last is None or last.result == "untried":
             devices[dev] = "fixing" if open_claude else "to_try"
         elif last.result == "failed":
-            named = set(db.scalars(select(FftTryIssue.issue_id).where(FftTryIssue.try_id == last.id, FftTryIssue.blocking.is_(True))))
+            named = {i for i, b in f["named"].get(last.id, []) if b}
             still = [i for i in blocking if i.id in named and i.state != "ready" and i.state != "closed"]
             devices[dev] = "failed" if still or open_claude else "to_try"
             again = again or devices[dev] == "to_try"
         elif last.result == "passed":
             devices[dev] = "fixing" if open_claude else "passed"
         elif last.cant_kind == "blocked":
-            b = db.get(FftIssue, last.blocked_by) if last.blocked_by else None
+            b = f["issues"].get(last.blocked_by) if last.blocked_by else None
             devices[dev] = "to_try" if b is None or b.state in ("ready", "closed") else "blocked"
         elif last.cant_kind == "wrong":
             devices[dev] = "to_try" if last.version < check.version else "wrong"
@@ -1202,7 +1270,7 @@ def area_turn(db: Session, area: FftArea) -> str:
 def holding_round(db: Session) -> FftRound | None:
     """The open round that holds Claude's merges, if any (▶ Try it's never does: a lighter round, Nov 19)."""
     _expire_rounds(db)
-    return db.scalar(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.holds.is_(True)).order_by(FftRound.id.desc()))
+    return _memo(db, "holding_round", lambda: db.scalar(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.holds.is_(True)).order_by(FftRound.id.desc())))
 
 
 # ------------------------------------------------------------------ the heads-up before holding (a lighter round, item 3)
