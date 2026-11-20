@@ -118,7 +118,7 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
     box.append(sec);
   });
   document.querySelector("[data-total]").textContent = ROWS.length;
-  const tally = () => { const c = { keep: 0, cut: 0, hide: 0, shorten: 0 }; document.querySelectorAll(".row").forEach(r => { c[r.dataset.act]++; });
+  const tally = () => { const c = { keep: 0, cut: 0, hide: 0, shorten: 0 }; document.querySelectorAll(".row[data-id]").forEach(r => { c[r.dataset.act]++; });
     document.querySelector("[data-tally]").textContent = `${c.cut} cut · ${c.hide} hidden · ${c.shorten} shortened · ${c.keep} kept`; };
   box.addEventListener("change", e => {
     const row = e.target.closest(".row"); if (!row || e.target.type !== "radio") return;
@@ -127,7 +127,7 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
   let filter = "change";
   const apply = () => document.querySelectorAll(".grp").forEach(g => {
     let any = false;
-    g.querySelectorAll(".row").forEach(r => { const on = filter === "all" || (filter === "change" ? r.dataset.act !== "keep" : r.dataset.act === filter); r.hidden = !on && !r.closest(".kept"); if (on) any = true; });
+    g.querySelectorAll(".row[data-id]").forEach(r => { const on = filter === "all" || (filter === "change" ? r.dataset.act !== "keep" : r.dataset.act === filter); r.hidden = !on && !r.closest(".kept"); if (on) any = true; });
     const k = g.querySelector(".kept"); if (k) k.hidden = !(filter === "all" || filter === "change");
     g.hidden = !any && filter !== "all" && filter !== "change";
   });
@@ -143,7 +143,7 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
   const show = (t, ok) => { said.textContent = t; said.classList.toggle("ok", !!ok); };
   const picks = () => {
     const out = [{ name: "hide", value: document.querySelector("input[name=hide]:checked").value, label: "Hide: " + document.querySelector("input[name=hide]:checked").closest("label").querySelector("b").textContent }];
-    document.querySelectorAll(".row").forEach(r => { const v = r.dataset.act, w = r.querySelector(".new").value.trim();
+    document.querySelectorAll(".row[data-id]").forEach(r => { const v = r.dataset.act, w = r.querySelector(".new").value.trim();
       out.push({ name: "r" + r.dataset.id, value: v, label: v === "shorten" ? w : (v === r.dataset.sug ? "" : v) }); });
     return out;
   };
