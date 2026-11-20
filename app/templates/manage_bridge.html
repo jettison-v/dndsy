@@ -59,7 +59,7 @@
 
   <section class="section">
     <h2>Timers</h2>
-    <form method="post" action="/manage/bridge" class="form-narrow">
+    <form method="post" action="/manage/bridge" class="form-narrow" data-reload>
       {% for key, label, about, _, unit, default, lo, hi in timers %}
       <label class="field">{{ label }}
         <span class="row tight"><input type="number" name="{{ key }}" value="{{ now[key] }}" min="{{ lo }}" max="{{ hi }}" step="1" required class="br-num"> {{ unit }}</span>

@@ -174,7 +174,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (undoTo && undoTo.origin === location.origin) {  // (a form posted as a page: the server answers with where to go and what it did)
       action = { label: 'Undo', run: () => {
         const f = Object.assign(document.createElement('form'), { method: 'post', action: undoTo.pathname + undoTo.search });
-        document.body.append(f); f.submit();
+        (document.querySelector('main') || document.body).append(f); f.requestSubmit();  // (in main: it redraws in place too)
       } };
     }
     if (message && typeof message === 'object') { kind = message.kind; message = message.text; }
@@ -961,7 +961,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!btn) return;
     if (btn.name) {  // a disabled button isn't submitted, so keep its name/value
       const keep = document.createElement('input');
-      keep.type = 'hidden'; keep.name = btn.name; keep.value = btn.value;
+      keep.type = 'hidden'; keep.name = btn.name; keep.value = btn.value; keep.dataset.kept = '';
       form.appendChild(keep);
     }
     setTimeout(() => {  // after the browser has collected the form data
@@ -989,6 +989,52 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   window.addEventListener('pageshow', () => document.querySelectorAll('button.busy').forEach(b => {
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;
   }));
+  // A press redraws in place (the Live UI Audit, Brett, Nov 19: "only what changed redraws, and nothing needs a
+  // refresh"; issue 40, the page flashing on the freeze and lanes). A plain form in the page's main that changes
+  // something is sent in the background; when askdnd answers with this same page (a redirect back here, or a page drawn
+  // for the answer), its new copy goes in through swapMain, as a change from elsewhere does: scroll, tabs and what was
+  // open stay, the corner card says what happened, the address follows. An answer that is another page loads it as
+  // before, its card carried over. Refused: its words in a card, nothing redrawn. Opt out with data-reload on the form
+  // (or a box around it) where the change reaches outside main: the menu bar, the page's settings on body.
+  function unbusy(form) {
+    form.querySelectorAll('input[data-kept]').forEach(i => i.remove());
+    form.querySelectorAll('button.busy').forEach(b => { b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label; });
+  }
+  window.addEventListener('submit', e => {  // (on window: after every page's own handler has had its say)
+    const form = e.target, main = document.querySelector('main');
+    const by = e.submitter, method = ((by && by.getAttribute('formmethod')) || form.method).toLowerCase();  // (a button may send it elsewhere: Suggestions' Dismiss)
+    if (e.defaultPrevented || !(form instanceof HTMLFormElement) || method !== 'post' || form.hasAttribute('hx-post')) return;
+    const target = (by && by.getAttribute('formtarget')) || form.target;
+    if (!main || !main.contains(form) || form.closest('[data-reload]') || (target && target !== '_self')) return;
+    const to = new URL((by && by.hasAttribute('formaction') && by.formAction) || form.action, location.href);
+    if (to.origin !== location.origin) return;
+    e.preventDefault();
+    fetch(to.href, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+      .then(r => r.text().then(html => [r, html]))
+      .then(([r, html]) => {
+        if (!r.ok) {
+          unbusy(form);
+          let words = '';
+          try { words = JSON.parse(html).detail; } catch (err) { /* not askdnd's words */ }
+          toast(typeof words === 'string' && words ? words : 'Not done: try again.', null, 'warn');
+          return;
+        }
+        const url = new URL(r.url), page = (r.headers.get('content-type') || '').includes('text/html');
+        const doc = page ? new DOMParser().parseFromString(html, 'text/html') : null, said = doc && doc.body.dataset.toast;
+        if (!doc || !doc.querySelector('main') || (r.redirected && url.pathname !== location.pathname)) {
+          if (said) { try { sessionStorage.setItem('askdnd-card', said); } catch (err) { /* no storage */ } }
+          location.assign(r.redirected ? url.href : location.href);
+          return;
+        }
+        const same = !r.redirected || url.search === location.search;  // (another view of this page: its tab is the answer's)
+        if (r.redirected) history.replaceState(history.state, '', url.pathname + url.search);
+        swapMain(doc, same);
+        if (doc.title) document.title = doc.title;
+        if (said) { try { toast(JSON.parse(said)); } catch (err) { /* not a message */ } }
+        document.dispatchEvent(new CustomEvent('askdnd:changed'));
+      })
+      .catch(() => { unbusy(form); toast('Not done: askdnd can\'t be reached. Try again.', null, 'warn'); });
+  });
 
   // At the table (body.at-table; docs/mockups/table-without-modes.html): every few minutes, while the tab is visible, the
   // page asks the server to keep the party fresh (throttled per character, however many pages ask). askdnd reads the
@@ -1080,12 +1126,14 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
   const typingIn = box => { const a = document.activeElement; return !!(a && box.contains(a) && a.closest('form[hx-trigger*="input"]')); };
-  function keepState(box) {  // what the person had in a box (the page's main, a side panel); returns what puts it back
+  function keepState(box, view = true) {  // what the person had in a box (the page's main, a side panel); returns what puts it back
+    // (view false: the new copy is another view of the page, its own tab chosen by askdnd's answer, Feedback's
+    // Approve going on to the issue's tab: the tab the person was on doesn't come back)
     const scroller = () => box.matches('main') ? document.scrollingElement : box.querySelector('.peek-body');
     const y = (scroller() || {}).scrollTop || 0;
     const a = document.activeElement, form = a && box.contains(a) && a.name && a.closest('form');
     const field = form && ('form[' + (form.getAttribute('hx-post') ? 'hx-post="' + form.getAttribute('hx-post') : 'action="' + form.getAttribute('action')) + '"] [name="' + a.name + '"]');
-    const tabs = [...box.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab);
+    const tabs = view ? [...box.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab) : [];
     const searches = [...box.querySelectorAll('[data-list]')].map(r => [r.dataset.list, (r.querySelector('[data-ls-search]') || {}).value || '']).filter(([, q]) => q);
     // A pop-up you opened (a condition's pill, + Condition, Concentration) stays open in the new copy, if it's still
     // there (Nov 9: your own change landing on D&D Beyond closed the Exhaustion pill you had just opened)
@@ -1137,10 +1185,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     box.querySelectorAll('[data-mark]').forEach(el => { const b = el.querySelector('b'); if (b) one(el, before.get(el.dataset.mark), b.textContent.trim()); });
     box.querySelectorAll('.pips').forEach((el, i) => one(el, before.get('pips#' + i), String(el.querySelectorAll('.pip:not(.used)').length)));
   }
-  function swapMain(html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html'), here = document.querySelector('main'), there = doc.querySelector('main');
+  function swapMain(html, view = true) {
+    const doc = typeof html === 'string' ? new DOMParser().parseFromString(html, 'text/html') : html, here = document.querySelector('main'), there = doc.querySelector('main');
     if (!here || !there) return;
-    const restore = keepState(here), before = marksIn(here);
+    const restore = keepState(here, view), before = marksIn(here);
     [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
     // What's the same in both stays as it is ([data-keep]: askdnd's table map's picture, so it never flashes)
@@ -1192,11 +1240,15 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     showing = true;
     const get = url => fetch(url, { headers: { 'HX-Request': 'true' } }).then(r => r.ok ? r.text() : Promise.reject(r.status));
     const open = ['base', 'top'].map(n => layers[n]).filter(l => isOpen(l) && l.panel.dataset.url);
-    Promise.all([get(location.pathname + location.search), ...open.map(l => get(l.panel.dataset.url))])
+    const asked = location.pathname + location.search;
+    Promise.all([get(asked), ...open.map(l => get(l.panel.dataset.url))])
       .then(([page, ...panels]) => {
         showing = false;
         const queued = again, queuedNow = againNow;
         again = againNow = false;
+        // (the page moved on meanwhile, a press answered with another view of it: this copy is of the old one, so
+        // it's dropped and the new address asked for; Feedback's Approve, the Live UI Audit, Nov 19)
+        if (asked !== location.pathname + location.search) return showInPlace(queuedNow);
         if (!now && busyHere()) return queuedNow ? showInPlace(true) : later();
         const main = document.querySelector('main');
         if (main && !typingIn(main)) swapMain(page);  // (askdnd:swapped measures Resources again)
@@ -1688,6 +1740,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Flash message from a full page load
   if (document.body.dataset.toast) { try { toast(JSON.parse(document.body.dataset.toast)); } catch (e) { /* not a message */ } }
   try { const said = sessionStorage.getItem('askdnd-said'); if (said) { sessionStorage.removeItem('askdnd-said'); toast(said); } } catch (e) { /* no storage */ }
+  try { const carried = sessionStorage.getItem('askdnd-card'); if (carried) { sessionStorage.removeItem('askdnd-card'); if (!document.body.dataset.toast) toast(JSON.parse(carried)); } } catch (e) { /* no storage, or not a message */ }
 })();
 
 
@@ -4785,6 +4838,7 @@ document.addEventListener('click', e => {
   const seen = () => ask(true);  // (a page of his just showed: Available's quiet signal reads it)
   if (document.readyState === 'complete') setTimeout(seen, 300); else addEventListener('load', () => setTimeout(seen, 300));
   document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(tick); tick = setTimeout(ask, 400); } });
+  document.addEventListener('askdnd:changed', seen);  // (a press redrawn in place: his count may have moved)
 })();
 
 // ---------------------------------------------------------------- Changing spells and forms
