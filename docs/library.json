@@ -1397,7 +1397,7 @@
  {
   "title": "The work flow: build plan",
   "kind": "plan",
-  "status": "Building: slices 2 and 3 live (PRs 419, 420); the two audits come next, then slices 4 to 7",
+  "status": "Building: slices 2 and 3 live (PRs 419, 420), and Deploys (PR 422); the Live UI Audit is under way, then the String Audit, then slices 4 to 7",
   "date": "Nov 19",
   "what": "The seven slices that build the Work Flow Map as Brett agreed it: For you its own page, lanes on every plan, Work with a cut line, what players see, staging rounds for Careful work, checked live; what's decided, and what waits for the Team level.",
   "source": "docs/plans/2026-11-19-work-flow-build.md",
@@ -1442,10 +1442,19 @@
  {
   "title": "Status Bar Redesign",
   "kind": "design",
-  "status": "Waiting on your picks",
+  "status": "Picked: A, with your two comments; built",
   "date": "Nov 19",
   "what": "Issue 42: the bar on For you and Where it stands still wrapped. Three designs at the widths the bar really gets (650px on a 13\" laptop with Table rolls open), every state switchable: Deploys as one pill with a menu, two fixed rows, or listening beside the title.",
   "source": "docs/mockups/status-bar/index.html",
   "link": "https://claude.ai/artifact/FaukC9UciLe8xnzAWCt3as"
+ },
+ {
+  "title": "A lighter round",
+  "kind": "plan",
+  "status": "Proposed: waits on your yes",
+  "date": "Nov 19",
+  "what": "Brett's ask: a round interrupts Claude and holds deploys. A round would hold only its own Product Area, ▶ Try it on one check would hold nothing, and Start round and Paused would first say what they'd stop.",
+  "source": "docs/plans/2026-11-19-lighter-rounds.md",
+  "link": ""
  }
 ]

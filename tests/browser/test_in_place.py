@@ -18,6 +18,7 @@ def test_deploys_choice_redraws_in_place(people, server, browser_db):
     admin = people("admin")
     page = admin.open("/manage/for-you")
     page.evaluate("window.__stayed = true; window.scrollTo(0, 40)")
+    page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="frozen"]').click()
     page.locator('#fft-pause-why input[name="why"]').fill("a demo tomorrow")
     page.locator('#fft-pause-why [data-do="pause"]').click()
@@ -26,6 +27,7 @@ def test_deploys_choice_redraws_in_place(people, server, browser_db):
     assert page.evaluate("window.__stayed === true")  # (no reload: the page is the same document)
     assert "a demo tomorrow" in _one(browser_db[0], "SELECT value FROM tool_settings WHERE key = 'fft_freeze'")
 
+    page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="independent"]').click()
     page.locator('.fft-status[data-mode="independent"]').wait_for()
     assert page.evaluate("window.__stayed === true") and page.url.endswith("/manage/for-you")
@@ -37,10 +39,12 @@ def test_where_it_stands_redraws_in_place(people, server, browser_db):
     admin = people("admin")
     page = admin.open("/manage/testing?show=stands")
     page.evaluate("window.__stayed = true")
+    page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="frozen"]').click()
     page.locator('#fft-pause-why [data-do="pause"]').click()
     page.locator('.fft-status[data-mode="frozen"]').wait_for()
     assert page.evaluate("window.__stayed === true") and "show=stands" in page.url
+    page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="independent"]').click()
     page.locator('.fft-status[data-mode="independent"]').wait_for()
 
@@ -57,6 +61,7 @@ def test_a_buttons_own_address_wins(people, server, browser_db):
     page.locator('.fft-status[data-mode="frozen"]').wait_for()
     assert page.evaluate("window.__stayed === true")
     assert _one(browser_db[0], "SELECT value FROM tool_settings WHERE key = 'fft_freeze'")
+    page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="independent"]').click()
     page.locator('.fft-status[data-mode="independent"]').wait_for()
 

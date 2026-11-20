@@ -274,19 +274,29 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
         assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
         bar = [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]  # (Nov 19: squeezed, off baseline)
         assert not bar, f"the status bar at {width}px: {bar}"
-        right = page.locator(".fft-status-right").bounding_box()  # (the choice and its Help)
-        bar_box = page.locator(".fft-status").bounding_box()
-        assert bar_box["x"] + bar_box["width"] - (right["x"] + right["width"]) < 40, f"the choice isn't at the bar's right end at {width}px"
-        help_btn = page.locator(".fft-bar-i")
-        assert page.locator("#fft-bar-help").is_hidden() and help_btn.get_attribute("aria-expanded") == "false"
-        help_btn.click()
-        assert page.locator("#fft-bar-help").is_visible() and help_btn.get_attribute("aria-expanded") == "true"  # (it opens the section)
-        help_btn.click()
-        assert page.locator("#fft-bar-help").is_hidden()
-        for grey in page.locator(".fft-status .note").all():
+        _deploys_on_one_row(page, width)
+        for grey in page.locator(".fft-status .note:visible").all():
             tops = grey.evaluate("e => [...e.getClientRects()].map(r => Math.round(r.top))")
             assert max(tops) - min(tops) < 4, f"a grey part split over lines at {width}px: {tops}"
     assert not admin.errors, admin.errors
+
+
+def _deploys_on_one_row(page, width):
+    """Brett's pick A on issue 42: the bar's top row never wraps, Deploys is one pill at its right end that never
+    shortens (the grey note beside Claude is listening does first), and its menu opens on the page with three choices."""
+    top, pill = page.locator(".fft-status-top").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
+    listen = page.locator(".fft-listening").bounding_box()
+    assert abs((listen["y"] + listen["height"] / 2) - (pill["y"] + pill["height"] / 2)) < 6 and pill["height"] < 40, f"the top row wrapped at {width}px"
+    bar = page.locator(".fft-status").bounding_box()
+    assert bar["x"] + bar["width"] - (pill["x"] + pill["width"]) < 30, f"Deploys isn't at the bar's right end at {width}px"
+    assert page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1"), f"Deploys shortened at {width}px"
+    page.locator(".fft-deploys > summary").click()
+    menu = page.locator(".fft-deploys-menu")
+    m = menu.bounding_box()
+    assert menu.is_visible() and m["x"] >= 0 and m["x"] + m["width"] <= width, f"Deploys' menu off the page at {width}px"
+    assert menu.locator("[data-mode-pick]").count() == 3 and menu.locator("[data-mode-pick] small").count() == 3  # (each says what it does)
+    page.locator(".fft-deploys > summary").click()
+    assert top["height"] < 64
 
 
 def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db):
@@ -298,13 +308,13 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
         admin.open("/manage/testing?show=stands")
-        before = page.locator(".fft-status-right").bounding_box()
+        before = page.locator(".fft-deploys > summary").bounding_box()
         engine = create_engine(browser_db[0])
         with engine.begin() as conn:
             conn.execute(text("INSERT INTO fft_rounds (workspace_id) VALUES (1)"))
         engine.dispose()
         admin.open("/manage/testing?show=stands")
-        after, row = page.locator(".fft-status-right").bounding_box(), page.locator(".fft-status-round").bounding_box()
+        after, row = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status-round").bounding_box()
         assert abs(after["y"] - before["y"]) < 2 and abs(after["x"] - before["x"]) < 2, f"the top row moved at {width}px"
         assert row["y"] >= after["y"] + after["height"] and page.locator('.fft-status-round [data-do="end-round"]').is_visible()
         bar = [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]
@@ -313,3 +323,40 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
         with engine.begin() as conn:
             conn.execute(text("UPDATE fft_rounds SET ended_at = now() WHERE ended_at IS NULL"))
         engine.dispose()
+
+
+def test_a_long_pause_reason_has_its_own_line_whole(people, server, browser_db):
+    """Brett's comment on the Status Bar Redesign (issue 42): "The paused reason can have its full own line." The top
+    row stays one row; the reason, however long, is whole under it."""
+    reason = "a demo for the table tomorrow evening, keep everything exactly as it is until we're done, thank you all"
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO tool_settings (key, value) VALUES ('fft_freeze', :v) ON CONFLICT (key) DO UPDATE SET value = :v"),
+                     {"v": json.dumps({"by": "Dev", "since": "2026-11-19T20:00:00+00:00", "why": reason})})
+    admin = people("admin")
+    page = admin.page
+    try:
+        for width in (1000, 1280):
+            page.set_viewport_size({"width": width, "height": 900})
+            admin.open("/manage/for-you")
+            _deploys_on_one_row(page, width)
+            line = page.locator('.fft-status-line[data-stat="paused"]')
+            assert line.is_visible() and line.locator("span").first.evaluate("e => e.scrollWidth <= e.clientWidth + 1")
+            assert not [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]
+    finally:
+        engine = create_engine(browser_db[0])
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE tool_settings SET value = '' WHERE key = 'fft_freeze'"))
+        engine.dispose()
+
+
+def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browser_db):
+    """At 375px the top row can't hold both: Claude listening keeps its line and Deploys goes whole under it, never over
+    it (seen in the before-and-after pictures, Nov 19)."""
+    admin = people("admin")
+    page = admin.page
+    page.set_viewport_size({"width": 375, "height": 812})
+    admin.open("/manage/testing?show=stands")
+    said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
+    assert pill["y"] >= said["y"] + said["height"] - 1, "Deploys sits over Claude listening on a phone"
+    assert pill["x"] + pill["width"] <= 375 and page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)
