@@ -5,6 +5,8 @@ corner card says what happened. An answer that is another page still loads it.""
 
 from sqlalchemy import create_engine, text
 
+from tests.browser.pages import press
+
 
 def _one(url, sql):
     engine = create_engine(url)
@@ -100,3 +102,27 @@ def test_a_press_in_a_side_panel_redraws_in_place(people, server, browser_db):
         state = conn.execute(text("SELECT i.state FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i"), {"i": nid}).scalar()
     engine.dispose()
     assert state == "closed"
+
+
+def test_a_count_never_blinks_through_a_press(people, server, browser_db):
+    """Issue 40 (Brett, Nov 19: "the For you badge still flashes on changing the lane from Ship to Look and back"): a
+    press redraws Manage's side list, whose counts the server draws empty; the last ones go back in the same moment, so
+    no frame shows the count missing."""
+    import json
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        item = conn.execute(text("INSERT INTO fft_items (title, place, section, standing, next_whose, next_step, workspace_id) VALUES ('Fixes', 1, 'now', false, '', '', 1) RETURNING id")).scalar()
+        area = conn.execute(text("INSERT INTO fft_areas (item_id, key, title, place, workspace_id) VALUES (:i, '', 'Feedback and Testing', 1, 1) RETURNING id"), {"i": item}).scalar()
+        cid = conn.execute(text("INSERT INTO fft_checks (title, version, devices, minutes, place, preflight, area_id, workspace_id) VALUES ('A check', 1, CAST(:d AS jsonb), 2, 1, 'passed', :a, 1) RETURNING id"), {"d": json.dumps(["laptop"]), "a": area}).scalar()
+        conn.execute(text("INSERT INTO fft_check_versions (check_id, version, path, steps, expect, why, workspace_id) VALUES (:c, 1, '/party', CAST(:s AS jsonb), 'It shows.', '', 1)"), {"c": cid, "s": json.dumps(["Look."])})
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/testing?show=stands")
+    page.wait_for_function("() => { const c = document.querySelector('.manage-side [data-manage-count=\"for-you\"]'); return c && !c.hidden && c.textContent.trim(); }")
+    page.evaluate("""() => { window.__blinks = 0; const look = () => { const c = document.querySelector('.manage-side [data-manage-count="for-you"]');
+      if (!c || c.hidden || !c.textContent.trim()) window.__blinks++; window.__frames = requestAnimationFrame(look); }; look(); }""")
+    for lane in ("look", "ship"):
+        page.locator(f'[data-area="{area}"] details.fft-lane > summary').click()
+        press(page.locator(f'[data-area="{area}"] [data-lane-pick="{lane}"]'))
+    page.wait_for_timeout(300)
+    assert page.evaluate("cancelAnimationFrame(window.__frames), window.__blinks") == 0, "the For you count went missing in a frame"
