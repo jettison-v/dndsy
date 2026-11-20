@@ -1474,5 +1474,14 @@
   "what": "Issue 37: the menu bar showed where you are four ways. One way on every door, drawn three ways on the bar: a red line under the door, the grey fill, or the blue chosen ring.",
   "source": "docs/mockups/where-you-are/index.html",
   "link": "https://claude.ai/artifact/3xsMiGgjXAf9zLGDmc911w"
+ },
+ {
+  "title": "String Audit",
+  "kind": "design",
+  "status": "Waiting on your decisions",
+  "date": "Nov 19",
+  "what": "Every help line, page subtitle, pill and tab name in askdnd (438), each with Claude's suggestion chosen (keep, cut, hide, shorten); and the one way to hide what's needed but not critical. Brett changes what he disagrees with; one pass applies them.",
+  "source": "docs/mockups/string-audit/index.html",
+  "link": "https://claude.ai/artifact/86vWsRCqsfUPyZFRSAwjSq"
  }
 ]
