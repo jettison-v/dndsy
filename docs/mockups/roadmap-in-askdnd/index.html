@@ -184,14 +184,42 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
 .vers { display: flex; gap: 6px; flex-wrap: wrap; }
 .vers span { border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 11.5px; color: var(--muted); cursor: pointer; }
 .vers span.on { color: #fff; border-color: var(--blue); }
+/* round 3: the two types of work, and done off the list (Brett, Nov 20) */
+.types { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .88rem; }
+.types th, .types td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--soft); vertical-align: top; white-space: normal; height: auto; }
+.types th { color: var(--faint); font-weight: 600; background: var(--panel-2); }
+.types td:first-child { color: var(--faint); width: 150px; }
+.rule { border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; background: var(--panel); padding: 12px 14px; display: grid; gap: 6px; font-size: .9rem; color: var(--muted); }
+.rule b { color: var(--strong); }
+.rule ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.hist { display: flex; justify-content: flex-end; margin-top: 6px; }
+.hist a { color: var(--faint); font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.hist-head { display: flex; gap: 10px; align-items: baseline; margin: 10px 0 6px; color: var(--faint); font-size: 12.5px; }
+.hist-head b { color: var(--muted); }
+.choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.choice div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel-2); font-size: 12.5px; color: var(--muted); cursor: pointer; }
+.choice div b { display: block; color: #fff; font-size: 13px; }
+.choice div.on { border-color: var(--amber); }
 </style>
 
 <div class="wrap">
   <header style="display:grid;gap:8px">
     <h1>The Roadmap in askdnd</h1>
-    <p class="lede">Round 2, from your notes. Our work in the side list is For you, Feedback, Roadmap and Development (Work renamed), in that order, with no tab row. The Roadmap is its own page, because it will grow, and each item has its own page where its scope is worked out. It's for you and Claude only. Everything below is clickable; the example item is this conversation's.</p>
+    <p class="lede"><b>Round 3</b> adds your two types of work and one rule: done leaves the list. Round 2, from your notes: Our work in the side list is For you, Feedback, Roadmap and Development (Work renamed), in that order, with no tab row. The Roadmap is its own page, because it will grow, and each item has its own page where its scope is worked out. It's for you and Claude only. Everything below is clickable; the example item is this conversation's.</p>
   </header>
 
+  <table class="types" aria-label="Two types of work">
+    <thead><tr><th></th><th>1 · A change to a Product Area</th><th>2 · An idea that needs discussion</th></tr></thead>
+    <tbody>
+      <tr><td>What it is</td><td>Something that exists, and what you'd like different: small, little back-and-forth</td><td>Something new or large, not yet defined: a mockup and rounds of picks</td></tr>
+      <tr><td>Its kinds</td><td><b>Fix</b> (it's broken) or <b>Improvement</b> (make it better): one list, no separate Ideas</td><td>One Roadmap item</td></tr>
+      <tr><td>Where it lives</td><td>Feedback › Issues, by Product Area</td><td>The Roadmap</td></tr>
+      <tr><td>How it's worked</td><td>Batched per Product Area: one design, one pull request, a check for you</td><td>Scope as versions with your additions, your one OK, then steps and plans</td></tr>
+      <tr><td>Moving between</td><td colspan="2">An improvement that needs a mockup, Claude moves up to the Roadmap and says why; you can move one down. A note is sorted into one or the other when it comes in. Development builds both, in your one order.</td></tr>
+    </tbody>
+  </table>
+  <div class="rule"><b>Done leaves the list</b><span>Every list shows what's next. What's finished is one quiet link away (<i>History</i>), never a tab with a count, a chip beside Open, or a section in the list. Auditing stays possible; it isn't highlighted. Where done shows today, and where it goes:</span>
+    <ul><li>Feedback: the Closed chip beside Open, and Built or Declined ideas → History under Issues; the Ideas tab goes</li><li>Development: the Done tab, passed checks in Checks → History under each</li><li>A plan's page: closed issues in Issues, "Passed before" in its Test round → History under each</li><li>The Roadmap: the Shipped section → History</li><li>Product areas: only what's open, as now</li></ul></div>
   <div class="flow" aria-label="How an item is scoped">
     <div><i>1 · You</i><b>An idea</b>In chat, as now, or <b>+ New idea</b> on the Roadmap: a title and your words. It lands as an Idea.</div>
     <div><i>2 · Claude</i><b>Scope, version 1</b>Claude writes the scope on the item: what it is, what's in, what's not now, questions. In chat it says so with the link.</div>
@@ -205,7 +233,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   </div>
 
   <div class="controls">
-    <span class="ctl"><span class="lbl">Page</span><span class="seg" data-ctl="page"><button type="button" data-v="roadmap" aria-pressed="true">Roadmap</button><button type="button" data-v="item">An item</button><button type="button" data-v="foryou">For you</button></span></span>
+    <span class="ctl"><span class="lbl">Page</span><span class="seg" data-ctl="page"><button type="button" data-v="roadmap" aria-pressed="true">Roadmap</button><button type="button" data-v="item">An item</button><button type="button" data-v="foryou">For you</button><button type="button" data-v="issues">Feedback › Issues</button><button type="button" data-v="sort">Sorting a note</button><button type="button" data-v="dev">Development</button></span></span>
     <span class="ctl"><span class="lbl">An item opens</span><span class="seg" data-ctl="opens"><button type="button" data-v="page" aria-pressed="true">On its own page</button><button type="button" data-v="win">In the window at the right</button></span></span>
   </div>
   <div class="stage-wrap"><div class="stage" id="stage"></div></div>
@@ -241,6 +269,14 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
         <label class="o"><input type="radio" name="move" value="switch"><span>Copy them in and retire the page now</span><small>From then on, only in askdnd.</small></label>
         <label class="o"><input type="radio" name="move" value="empty"><span>Start empty</span><small>Only what's added from now on.</small></label>
       </fieldset>
+      <fieldset><legend>7 · Ideas from Feedback</legend>
+        <label class="o"><input type="radio" name="types" value="two"><span>Two types, as above <span class="mine">my pick</span></span><small>An issue is a Fix or an Improvement in its Product Area; an idea that needs discussion goes to the Roadmap. Claude proposes where each of today's ideas goes, for your OK.</small></label>
+        <label class="o"><input type="radio" name="types" value="keep"><span>Keep the Ideas tab</span><small>Ideas stay their own list until one is placed.</small></label>
+      </fieldset>
+      <fieldset><legend>8 · What's done</legend>
+        <label class="o"><input type="radio" name="done" value="history"><span>Off the list; a quiet History link under it <span class="mine">my pick</span></span><small>The same table, showing what's finished, with Back to what's open. No counts.</small></label>
+        <label class="o"><input type="radio" name="done" value="tab"><span>A Done tab on each page</span><small>As Development has now: one click, but it sits beside the work.</small></label>
+      </fieldset>
     </div>
     <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
@@ -249,7 +285,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
 
 <script>
 (() => {
-  const st = { page: "roadmap", opens: "page", width: 1440, item: null, list: [], form: null, ptab: "scope", ver: 3 };
+  const st = { page: "roadmap", opens: "page", width: 1440, item: null, list: [], form: null, ptab: "scope", ver: 4, hist: false, kind: "fix" };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const S = (c, w) => `<span class="st ${c}">${esc(w)}</span>`;
   const Y = "you", C = "cl";
@@ -259,8 +295,8 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     r1: { t: "Found, Fixed, Tried: slices 4 to 7", sec: "now", stage: "building", size: "L", status: "Slice 4 live; slice 5 next", up: "Today",
       steps: [[C, "Backstage mode", 1], [C, "One item, one window", 1], [C, "Work, with the line Claude works to", 1], [C, "Our work in the side list", 1], [Y, "Try slice 4's checks", 0], [C, "Slice 5: what players see", 0], [C, "Slice 6: staging rounds", 0], [C, "Slice 7: checked live", 0]],
       plans: [["Feedback and Testing", C, "Building"]], log: [["Today", "PR 440: Our work in the side list"], ["Today", "PR 438: Work replaces Testing"]] },
-    r2: { t: "The Roadmap in askdnd", sec: "now", stage: "scoping", size: "M", status: "Scope v3 waits for your OK", up: "Now",
-      steps: [], plans: [], log: [["Now", "Scope v3: how an item is scoped"], ["Now", "Scope v2: its own page, Development, the order"], ["Today", "Scope v1: mockup drawn"]] },
+    r2: { t: "The Roadmap in askdnd", sec: "now", stage: "scoping", size: "M", status: "Scope v4 waits for your OK", up: "Now",
+      steps: [], plans: [], log: [["Now", "Scope v4: two types of work, done off the list"], ["Now", "Scope v3: how an item is scoped"], ["Now", "Scope v2: its own page, Development, the order"], ["Today", "Scope v1: mockup drawn"]] },
     r3: { t: "String Audit: fewer, shorter words", sec: "next", stage: "agreed", size: "L", status: "After slices 4–7", up: "Nov 20", steps: [[Y, "Your decisions", 1], [C, "Apply them, page by page", 0]], plans: [], log: [] },
     r4: { t: "The waiting areas, one at a time", sec: "next", stage: "agreed", size: "L", status: "Next in your order", up: "Nov 19", steps: [[C, "Manage", 0], [C, "Party", 0]], plans: [["Manage", "q", "Waiting its turn"]], log: [] },
     r5: { t: "The kit for your next project", sec: "next", stage: "idea", size: "L", status: "An idea: Claude scopes it when it's next", up: "Nov 18", steps: [], plans: [], log: [] },
@@ -275,9 +311,12 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
          inn: ["Items in Now, Next, Later and Paused, in your order", "Each item: why, size, a status line", "Steps, each yours or Claude's; yours show in For you", "The plans building it, its documents, what changed", "Copy today's Roadmap page in"],
          not: ["Players seeing or voting on the Roadmap (Roadmap: Screens, later)", "Dates and timelines"], q: ["Where it lives, and how an item opens (picks)"] },
     2: { add: ["The Roadmap is its own page in Our work", "Work is renamed (Development, or a pick)", "Our work in the order For you, Feedback, Roadmap, Development", "No tab row: the side list is the one way between pages"] },
+    4: { add: ["Two types of work: a change to a Product Area (a fix or an improvement, by area) and an idea that needs discussion (the Roadmap); the Ideas tab goes", "Done leaves the list: History, one quiet link under each list"] },
     3: { add: ["Each item has a scope, kept as versions that say what changed", "Your additions are kept on the item, each with Claude's answer: in scope, later, or a question", "Talk in chat as now: Claude writes it onto the item; Add to this item… from askdnd too", "Scope looks right: your one OK, which makes its steps"] },
   };
   const ADDS = [
+    { v: 4, at: "Now", said: "We show what has already been done in a lot of places. It should be able to be seen, but never clutter the UI. If it is done, it is off the list. We want to focus on what is next.", where: "In chat", ans: ["ok", "In scope, v4"], why: "History, one quiet link; pick 8." },
+    { v: 4, at: "Now", said: "Two macro types of work: Product Area changes (issues and ideas, small, grouped) and ideas that need discussion (larger, mockups, rounds of back-and-forth).", where: "In chat", ans: ["ok", "In scope, v4"], why: "Fix or Improvement by area, or a Roadmap idea; pick 7." },
     { v: 2, at: "Now", said: "I think we have Roadmap as a separate item since it will grow. We might want to rename Work to Development or something similar. The order should be Feedback, Roadmap, Development.", where: "In chat", ans: ["ok", "In scope, v2"], why: "Its own page in Our work; Work's name is pick 1." },
     { v: 3, at: "Now", said: "Items have been me outlining an idea, you scoping it, me adding ideas, you modifying the plan. I'd like it managed by the tool's UI, but that seems inefficient.", where: "In chat", ans: ["ok", "In scope, v3"], why: "Talk where it's easiest; the item keeps the record (pick 4)." },
     { v: 1, at: "Today", said: "Get the Roadmap into askdnd, even if it's not in the form we want eventually. Just allow Roadmap items to be recorded and worked on.", where: "In chat", ans: ["ok", "The item's start, v1"], why: "" },
@@ -288,7 +327,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   const done = x => x.steps.filter(s => s[2]).length;
 
   const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Party ▾</span><span class="sp">Search</span><span class="here">Backstage ▾<span class="b">5</span></span><span class="pic">A</span></div>`;
-  const aside = () => `<nav class="aside"><span class="sec">Our work</span><a data-go="foryou" class="${st.page === "foryou" ? "on" : ""}">For you<span class="n">5</span></a><a class="off">Feedback</a><a data-go="roadmap" class="${["roadmap", "item"].includes(st.page) ? "on" : ""}">Roadmap</a><a class="off">Development</a><span class="sec">General</span><a class="off">Overview</a><a class="off">Product areas</a><a class="off">Documents</a><a class="off">Usage</a><a class="off">Backups</a><span class="sec">People</span><a class="off">Accounts</a><a class="off">Campaigns</a><span class="sec">Tuning</span><a class="off">Features</a><a class="off">Design system</a></nav>`;
+  const aside = () => `<nav class="aside"><span class="sec">Our work</span><a data-go="foryou" class="${st.page === "foryou" ? "on" : ""}">For you<span class="n">5</span></a><a data-go="issues" class="${["issues", "sort"].includes(st.page) ? "on" : ""}">Feedback</a><a data-go="roadmap" class="${["roadmap", "item"].includes(st.page) ? "on" : ""}">Roadmap</a><a data-go="dev" class="${st.page === "dev" ? "on" : ""}">Development</a><span class="sec">General</span><a class="off">Overview</a><a class="off">Product areas</a><a class="off">Documents</a><a class="off">Usage</a><a class="off">Backups</a><span class="sec">People</span><a class="off">Accounts</a><a class="off">Campaigns</a><span class="sec">Tuning</span><a class="off">Features</a><a class="off">Design system</a></nav>`;
   const bar = () => `<div class="status-bar"><span><span class="dot"></span>Claude is listening</span><span class="pill">Deploys: <b>When tests pass</b> ▾</span></div>`;
 
   // ---------------- the Roadmap page
@@ -305,24 +344,65 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
         body += `<tr data-open="${k}"><td style="color:#555b63">⋮⋮</td><td class="t">${esc(x.t)}<span class="why">${esc(x.status)}</span></td><td>${S(...STAGE[x.stage])}</td><td>${x.size}</td><td class="num">${x.steps.length ? `${done(x)} of ${x.steps.length}` : '<span class="id">—</span>'}</td><td>${nx}</td><td>${x.up}</td></tr>`;
       }
     }
-    body += `<tr class="grp"><td colspan="7">Shipped · 3, newest first</td></tr>` + [["The menu bar, rethought", "M", "Nov 20"], ["Live UI Audit", "L", "Nov 19"], ["Found, Fixed, Tried: the bugs that stay", "M", "Nov 18"]].map(s => `<tr><td></td><td class="t" style="color:var(--muted)">${s[0]}</td><td>${S("ok", "Shipped")}</td><td>${s[1]}</td><td></td><td></td><td>${s[2]}</td></tr>`).join("");
     st.list = keys;
+    if (st.hist) return bar() + histTable("Roadmap", "shipped items", ["Item", "Size", "Shipped"], [["The menu bar, rethought", "M", "Nov 20"], ["Live UI Audit", "L", "Nov 19"], ["Found, Fixed, Tried: the bugs that stay", "M", "Nov 18"]]);
     return bar() + `<div class="head"><h3>Roadmap</h3><div class="facts"><span><b>2</b> now</span><span><b>3</b> next</span><span><b>2</b> scopes wait for your OK</span></div></div>
       <div class="tool"><span class="btn p" data-new="idea">+ New idea</span><span class="chip on">All</span><span class="chip">Waits on you</span><span class="chip">Claude's</span><span class="find">Find an item…</span></div>
       <table><thead><tr><th style="width:30px"></th><th>Item</th><th style="width:140px">Stage</th><th style="width:50px">Size</th><th class="num" style="width:84px">Steps</th><th style="width:300px">Next</th><th style="width:76px">Updated</th></tr></thead><tbody>${body}</tbody></table>
+      <div class="hist"><a data-hist>History</a></div>
       <p style="color:var(--faint);font-size:12px;margin-top:8px">Drag an item within its section or to another: it's the order Claude follows. An item's plans are in Development.</p>`;
+  };
+
+  // ---------------- History: the same table, what's finished, one click back
+  const histTable = (page, what, cols, rows) => `<div class="head"><h3>${page}</h3></div><div class="hist-head"><b>History: ${what}</b><a class="link" data-hist>Back to what's open</a></div>
+    <table><thead><tr>${cols.map((c, i) => `<th${i ? ' style="width:140px"' : ""}>${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td${i ? "" : ' class="t" style="color:var(--muted)"'}>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+
+  // ---------------- Feedback › Issues: one list of fixes and improvements, by Product Area; no Ideas tab, no Closed chip
+  const ISSUES = [["Battle", [["i60", "Fix", "Concentration pill stays after the spell ends", "Conditions", "To fix", C], ["i61", "Improvement", "Hit points: show temporary HP beside the total", "Hit points", "To fix", C]]],
+    ["Feedback and Testing", [["i62", "Improvement", "For you: say how long the whole round takes", "Testing", "Fixing", C], ["i63", "Fix", "Item window: ↓ skips a row after a press", "Feedback", "Ready to try", Y]]],
+    ["Story", [["i64", "Improvement", "Recap: say who rolled the critical hit", "Session Story", "To fix", C]]]];
+  const issues = () => {
+    if (st.hist) return bar() + histTable("Feedback", "closed issues and declined notes", ["Issue", "Kind", "Closed"], [["Check buttons: Passed looks already chosen", "Fix", "Works now · Nov 20"], ["Links to one item: open it in a window", "Improvement", "Works now · Nov 20"], ["Dice: a sound when the roll lands", "Improvement", "Won't do · Nov 18"]]);
+    const body = ISSUES.map(([pa, rows]) => `<tr class="grp"><td colspan="6">${pa} · ${rows.length}</td></tr>` + rows.map(r => `<tr><td class="num"><span class="id">${r[0].slice(1)}</span></td><td class="t">${esc(r[2])}</td><td>${S(r[1] === "Fix" ? "bad" : "cl", r[1])}</td><td>${esc(r[3])}</td><td>${S(r[4] === "Ready to try" ? "ok" : "q", r[4])}</td><td>${S(r[5], r[5] === Y ? "Yours" : "Claude's")}</td></tr>`).join("")).join("");
+    return bar() + `<div class="head"><h3>Feedback</h3><div class="facts"><span><b>2</b> notes to sort</span><span><b>5</b> open issues: <b>2</b> fixes, <b>3</b> improvements</span></div></div>
+      <div class="vtabs"><span data-go="sort">To sort<i>2</i></span><span class="on">Issues<i>5</i></span></div>
+      <div class="tool"><span class="chip on">Open</span><span class="chip">Ready to try</span><span class="chip">Fixes</span><span class="chip">Improvements</span><span class="find">Find an issue…</span></div>
+      <table><thead><tr><th class="num" style="width:44px">#</th><th>Issue</th><th style="width:110px">Kind</th><th style="width:160px">Feature</th><th style="width:110px">State</th><th style="width:80px">Turn</th></tr></thead><tbody>${body}</tbody></table>
+      <div class="hist"><a data-hist>History</a></div>`;
+  };
+
+  // ---------------- Feedback › To sort: a note becomes one of the two types
+  const sortPage = () => bar() + `<div class="head"><h3>Feedback</h3><div class="facts"><span><b>2</b> notes to sort</span></div></div>
+      <div class="vtabs"><span class="on">To sort<i>2</i></span><span data-go="issues">Issues<i>5</i></span></div>
+      <table style="margin-top:10px"><thead><tr><th>Note</th><th style="width:150px">From</th><th style="width:130px">Page</th><th style="width:90px">Sent</th></tr></thead><tbody>
+      <tr data-sort="n51"><td class="t">“The concentration pill stays after the spell ends”</td><td>A player</td><td>Battle</td><td>Yesterday</td></tr>
+      <tr data-sort="n52"><td class="t">“Could the DM see every player's notes in one place, by session?”</td><td>The DM</td><td>Story</td><td>Nov 18</td></tr></tbody></table>
+      <p style="color:var(--faint);font-size:12px;margin-top:8px">Click a note to sort it.</p>`;
+
+  // ---------------- Development: what's being built; Done is History, not a tab
+  const dev = () => {
+    if (st.hist) return bar() + histTable("Development", "finished plans", ["Plan", "Lane", "Finished"], [["Getting around", "Careful", "Nov 20 · 1 issue, 1 check"], ["Battle and Sheet", "Look", "Nov 16 · 6 issues, 9 checks"]]);
+    const plans = [["Manage", "Product Area", "Look", [C, "Claude's next"], "0 of 6", "0 of 3", "Claude"], ["Feedback and Testing", "Product Area", "Look", [C, "Building"], "4 of 22", "6 of 8", "Claude"], ["The Roadmap in askdnd", "Roadmap build", "Look", [Y, "Waiting on you"], "—", "—", "You: scope v3"]];
+    return bar() + `<div class="head"><h3>Development</h3><div class="facts"><span><b>3</b> above the line</span><span>Claude's next: <b>Manage</b></span></div></div>
+      <div class="vtabs"><span class="on">Queue<i>3</i></span><span>Checks<i>4 open</i></span><span>Scheduled</span><span>How we work</span></div>
+      <table style="margin-top:10px"><thead><tr><th style="width:30px"></th><th>Plan</th><th style="width:70px">Lane</th><th style="width:140px">Stage</th><th class="num" style="width:76px">Fixed</th><th class="num" style="width:76px">Passed</th><th style="width:140px">Waits on</th></tr></thead><tbody>
+      <tr class="grp"><td colspan="7">1 · Fixes and polish</td></tr>${plans.slice(0, 2).map(p => `<tr><td style="color:#555b63">⋮⋮</td><td class="t">${p[0]}<span class="why">${p[1]}</span></td><td><span class="lane">${p[2]}</span></td><td>${S(...p[3])}</td><td class="num">${p[4]}</td><td class="num">${p[5]}</td><td>${p[6]}</td></tr>`).join("")}
+      <tr class="grp"><td colspan="7">2 · The Roadmap in askdnd</td></tr>${plans.slice(2).map(p => `<tr><td style="color:#555b63">⋮⋮</td><td class="t">${p[0]}<span class="why">${p[1]}</span></td><td><span class="lane">${p[2]}</span></td><td>${S(...p[3])}</td><td class="num">${p[4]}</td><td class="num">${p[5]}</td><td>${p[6]}</td></tr>`).join("")}
+      <tr class="cut"><td colspan="7">Claude takes the plans above this line</td></tr></tbody></table>
+      <div class="hist"><a data-hist>History</a></div>
+      <p style="color:var(--faint);font-size:12px;margin-top:8px">Only Roadmap items with plans show here; the rest wait on the Roadmap. Checks lists only checks still to pass; the passed ones are in its History.</p>`;
   };
 
   // ---------------- an item's page: Scope · Steps · Plans · Updates
   const scopeTab = () => {
-    const v1 = SCOPE[1], v = st.ver, adds2 = v >= 2 ? SCOPE[2].add : [], adds3 = v >= 3 ? SCOPE[3].add : [];
+    const v1 = SCOPE[1], v = st.ver, adds2 = v >= 2 ? SCOPE[2].add : [], adds3 = v >= 3 ? SCOPE[3].add : [], adds4 = v >= 4 ? SCOPE[4].add : [];
     const li = (arr, mark) => arr.map(s => `<li>${esc(s)}${mark ? '<span class="new">new in v' + mark + "</span>" : ""}</li>`).join("");
-    const doc = `<div class="doc"><div class="bar"><span class="vers">${[1, 2, 3].map(n => `<span data-ver="${n}" class="${n === v ? "on" : ""}">v${n}</span>`).join("")}</span><span>${v === 3 ? "Latest · written by Claude, now · waits for your OK" : "An earlier version"}</span></div>
+    const doc = `<div class="doc"><div class="bar"><span class="vers">${[1, 2, 3, 4].map(n => `<span data-ver="${n}" class="${n === v ? "on" : ""}">v${n}</span>`).join("")}</span><span>${v === 4 ? "Latest · written by Claude, now · waits for your OK" : "An earlier version"}</span></div>
       <div><b>What it is</b><p class="prose">${esc(v1.what)}</p></div>
-      <h5>In scope</h5><ul>${li(v1.inn)}${li(adds2, v === 2 ? 2 : 0)}${li(adds3, v === 3 ? 3 : 0)}</ul>
+      <h5>In scope</h5><ul>${li(v1.inn)}${li(adds2, v === 2 ? 2 : 0)}${li(adds3, v === 3 ? 3 : 0)}${li(adds4, v === 4 ? 4 : 0)}</ul>
       <h5>Not now</h5><ul>${li(v1.not)}</ul>
-      <h5>Open questions</h5><ul>${v >= 2 ? "<li>Development's name, and the five other picks on this mockup</li>" : li(v1.q)}</ul>
-      ${v === 3 ? `<div style="display:flex;gap:8px;margin-top:6px"><span class="btn p">Scope looks right</span><span class="btn" data-new="add">Add to this item…</span></div>` : ""}</div>`;
+      <h5>Open questions</h5><ul>${v >= 2 ? "<li>Development's name, and the other picks on this mockup</li>" : li(v1.q)}</ul>
+      ${v === 4 ? `<div style="display:flex;gap:8px;margin-top:6px"><span class="btn p">Scope looks right</span><span class="btn" data-new="add">Add to this item…</span></div>` : ""}</div>`;
     const adds = `<div class="adds"><div class="sect">Your additions · ${ADDS.length}</div>${ADDS.map(a => `<div class="add"><span class="who">${a.where} · ${a.at} · v${a.v}</span><span>“${esc(a.said)}”</span><span class="ans">${S(...a.ans)}${a.why ? " " + esc(a.why) : ""}</span></div>`).join("")}</div>`;
     return `<div class="scope">${doc}${adds}</div>`;
   };
@@ -343,13 +423,24 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     <table style="margin-top:10px"><thead><tr><th style="width:110px">Kind</th><th>What, and why it's here</th><th class="num" style="width:70px">Takes</th><th style="width:120px"></th></tr></thead><tbody>
     <tr class="grp"><td colspan="4">Try</td></tr><tr><td>${S(Y, "Check")}</td><td class="t">Our work: For you, Work and Feedback in the side list<span class="why">Feedback and Testing · live today</span></td><td class="num">1 min</td><td><span class="btn p">▶ Try it</span></td></tr>
     <tr class="grp"><td colspan="4">From the Roadmap</td></tr>
-    <tr data-open="r2"><td>${S(Y, "Scope")}</td><td class="t">The Roadmap in askdnd: scope v3<span class="why">Claude changed it after your additions · waits for your OK</span></td><td class="num">3 min</td><td><span class="btn">Read it</span></td></tr>
+    <tr data-open="r2"><td>${S(Y, "Scope")}</td><td class="t">The Roadmap in askdnd: scope v4<span class="why">Claude changed it after your additions · waits for your OK</span></td><td class="num">3 min</td><td><span class="btn">Read it</span></td></tr>
     <tr data-open="r8"><td>${S(Y, "Scope")}</td><td class="t">The component library: scope v1<span class="why">Claude scoped your idea · waits for your OK</span></td><td class="num">2 min</td><td><span class="btn">Read it</span></td></tr>
     <tr data-open="r6"><td>${S(Y, "Step")}</td><td class="t">Your audit of the roll card<span class="why">The roll card: what's left · its next step is yours</span></td><td class="num"></td><td><span class="btn">Open</span></td></tr>
     </tbody></table>`;
 
   // ---------------- windows: a quick look, a new idea, an addition
   const win = () => {
+    if (st.form === "sort") {
+      const k = st.kind;
+      return `<div class="veil" data-close><div class="win" role="dialog"><div class="w-h"><span>A note to sort · from a player, yesterday</span><span class="tools"><span class="btn" data-close>Close</span></span></div><div class="w-b">
+        <h4>“The concentration pill stays after the spell ends”</h4>
+        <div class="sect">What it becomes</div>
+        <div class="choice"><div data-kind="fix" class="${k === "fix" ? "on" : ""}"><b>A fix</b>Something that exists is broken</div><div data-kind="imp" class="${k === "imp" ? "on" : ""}"><b>An improvement</b>Something that exists, made better</div><div data-kind="road" class="${k === "road" ? "on" : ""}"><b>A Roadmap idea</b>New, or needs a mockup and discussion</div></div>
+        ${k === "road" ? `<label class="field">Its title on the Roadmap<span class="in">Concentration, shown on everyone's Battle</span></label><p style="color:var(--faint);font-size:12.5px">It lands on the Roadmap as an Idea; Claude scopes it when it's next. Its sender hears when it ships.</p>`
+          : `<label class="field">Product Area › Feature<span class="in">Battle › Conditions ▾</span></label><label class="field">Short title<span class="in">Concentration pill stays after the spell ends</span></label><p style="color:var(--faint);font-size:12.5px">It joins Battle's batch: Claude takes the area up whole. Its sender hears what became of it.</p>`}
+        <div class="sect">Or</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn">Same as an open issue…</span><span class="btn">Answer it…</span><span class="btn ghost">Decline with why…</span></div>
+      </div><div class="w-f"><span class="btn p">${k === "road" ? "Put it on the Roadmap" : k === "fix" ? "File as a fix" : "File as an improvement"}</span><span class="btn ghost" data-close>Cancel</span></div></div></div>`;
+    }
     if (st.form) {
       const idea = st.form === "idea";
       return `<div class="veil" data-close><div class="win" role="dialog"><div class="w-h"><span>${idea ? "A new idea for the Roadmap" : "Add to: The Roadmap in askdnd"}</span><span class="tools"><span class="btn" data-close>Close</span></span></div><div class="w-b">
@@ -363,13 +454,13 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     const x = ITEMS[st.item];
     return `<div class="veil" data-close><div class="win" role="dialog"><div class="w-h"><span>Roadmap item</span><span class="tools"><span class="btn" data-close>Close</span></span></div>
       <div class="w-b"><h4>${esc(x.t)}</h4><dl class="kv"><dt>Stage</dt><dd>${S(...STAGE[x.stage])}</dd><dt>Status</dt><dd>${esc(x.status)}</dd><dt>Steps</dt><dd>${x.steps.length ? `${done(x)} of ${x.steps.length}` : "—"}</dd></dl>
-      ${st.item === "r2" ? `<div class="sect">Scope v3 · in a narrow column</div>${scopeTab()}` : ""}</div>
+      ${st.item === "r2" ? `<div class="sect">Scope v4 · in a narrow column</div>${scopeTab()}` : ""}</div>
       <div class="w-f"><span class="btn" data-full>Open its page</span><span class="btn">Add to this item…</span></div></div></div>`;
   };
 
   const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note");
   const draw = () => {
-    const page = st.page === "foryou" ? foryou() : st.page === "item" ? itemPage() : roadmap();
+    const page = { foryou, item: itemPage, roadmap, issues, sort: sortPage, dev }[st.page]();
     stage.innerHTML = `<div class="app" style="width:${st.width}px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div class="amain">${page}</div></div>${win()}</div>`;
     const s = Math.min(1, wrapEl.clientWidth / st.width);
     stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
@@ -379,6 +470,9 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   const sync = () => document.querySelectorAll('[data-ctl="page"] button').forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === st.page)));
   stage.addEventListener("click", e => {
     const t = e.target;
+    if (t.closest("[data-hist]")) { st.hist = !st.hist; draw(); return; }
+    const kd = t.closest("[data-kind]"); if (kd) { st.kind = kd.dataset.kind; draw(); return; }
+    const so = t.closest("[data-sort]"); if (so) { st.form = "sort"; st.kind = so.dataset.sort === "n52" ? "road" : "fix"; draw(); return; }
     const nw = t.closest("[data-new]"); if (nw) { st.form = nw.dataset.new; draw(); return; }
     if (t.closest("[data-full]")) { st.page = "item"; st.ptab = "scope"; sync(); draw(); return; }
     const vr = t.closest("[data-ver]"); if (vr) { st.ver = +vr.dataset.ver; draw(); return; }
@@ -386,15 +480,15 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     if (t.matches("[data-close]") || t.closest(".btn[data-close]")) { st.form = null; if (st.page !== "item") st.item = null; draw(); return; }
     if (t.closest(".win")) return;
     const o = t.closest("[data-open]");
-    if (o) { st.item = o.dataset.open; st.ver = 3; if (st.opens === "page") { st.page = "item"; st.ptab = ITEMS[st.item].stage === "scoping" || st.item === "r2" ? "scope" : "steps"; sync(); } draw(); return; }
-    const g = t.closest("[data-go]"); if (g) { st.page = g.dataset.go; st.item = null; sync(); draw(); }
+    if (o) { st.item = o.dataset.open; st.ver = 4; if (st.opens === "page") { st.page = "item"; st.ptab = ITEMS[st.item].stage === "scoping" || st.item === "r2" ? "scope" : "steps"; sync(); } draw(); return; }
+    const g = t.closest("[data-go]"); if (g) { st.page = g.dataset.go; st.item = null; st.hist = false; sync(); draw(); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && (st.form || (st.item && st.page !== "item"))) { st.form = null; if (st.page !== "item") st.item = null; draw(); } });
   document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    st[seg.dataset.ctl] = b.dataset.v; st.form = null;
-    if (seg.dataset.ctl === "page") { st.item = b.dataset.v === "item" ? "r2" : null; st.ptab = "scope"; st.ver = 3; } else if (st.page === "item") { st.page = "roadmap"; st.item = null; sync(); }
+    st[seg.dataset.ctl] = b.dataset.v; st.form = null; st.hist = false;
+    if (seg.dataset.ctl === "page") { st.item = b.dataset.v === "item" ? "r2" : null; st.ptab = "scope"; st.ver = 4; } else if (st.page === "item") { st.page = "roadmap"; st.item = null; sync(); }
     draw();
   }));
   draw();
@@ -404,7 +498,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["dev", "fb", "opens", "scope", "steps", "move"];
+  const NAMES = ["dev", "fb", "opens", "scope", "steps", "move", "types", "done"];
   let db = null, inAskdnd = false, timer = 0;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
