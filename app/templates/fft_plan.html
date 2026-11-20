@@ -54,7 +54,7 @@
   {% elif tab == "round" %}
   <p class="note">Its checks on each device you try them on. They come to For you once the plan's fix is live; a failed one files an issue back into this plan.</p>
   {% if not checks %}{{ empty_state("No checks in this plan yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-fft-list="round:{{ a.id }}">
+  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="round:{{ a.id }}">
     <thead><tr><th class="num dt-w1">#</th><th>Check</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}<th class="dt-w3">Tries</th></tr></thead>
     <tbody>{% for r in checks %}
       {% if loop.index0 == now_n %}<tr class="dt-group" data-group="earlier"><td colspan="{{ 3 + devices | length }}">Passed before this plan's open work</td></tr>{% endif %}

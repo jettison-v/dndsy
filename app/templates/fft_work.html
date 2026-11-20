@@ -65,8 +65,8 @@
   {% if tab == "queue" %}
   <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.pick.area %} · Claude's next: <b>{{ q.pick.area.title }}</b>{% endif %} · drag to reorder</p>
   <div class="table-scroll" id="wk-queue">
-  <table class="dtable fft-table wk-queue" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tbody.wk-item" data-sort-handle=".wk-item-head .grip">
-    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w3">Issues fixed</th><th class="num dt-w3">Checks passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
+  <table class="dtable dt-wide fft-table wk-queue" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tbody.wk-item" data-sort-handle=".wk-item-head .grip">
+    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w2" title="Open issues with a fix">Fixed</th><th class="num dt-w2" title="This plan's checks that passed">Passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
     {% for x in q.rows %}
     <tbody class="wk-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-plan" data-sort-handle=".wk-grip .grip">
       <tr class="dt-group wk-item-head"><td colspan="8">{{ grip() }} <span data-sort-n>{{ x.n }}</span> · {{ x.it.title }}{% if x.it.standing %} <span class="tag">standing</span>{% endif %}
@@ -98,7 +98,7 @@
   {% elif tab == "checks" %}
   <p class="note">Every check, with where it stands on each device. A check is tried in its plan's test round; a row opens it.</p>
   {% if not checks %}{{ empty_state("No checks yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-fft-list="checks"{% if pick %} data-open-item="/manage/item/{{ pick }}?from=checks"{% endif %}>
+  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="checks"{% if pick %} data-open-item="/manage/item/{{ pick }}?from=checks"{% endif %}>
     <thead><tr><th class="num dt-w1">#</th><th>Check</th><th class="dt-w4">Plan</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}</tr></thead>
     <tbody>{% for r in checks %}
       <tr data-panel-url="/manage/item/{{ r.key }}?from=checks" tabindex="0" data-row="{{ r.key }}" data-kind="check">

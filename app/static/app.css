@@ -1612,7 +1612,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .wk-forms { display: grid; gap: var(--sp-2); }
 .wk-forms:empty { display: none; }
 .wk-h2 { margin: var(--sp-5) 0 var(--sp-2); }
-@media (max-width: 900px) { .table-scroll > .dtable.wk-queue { min-width: 980px; } }  /* (seven columns: the plan's name keeps room; it scrolls inside its frame) */
+
 .wk-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-4); }
 .crumb { color: var(--muted); text-decoration: none; font-weight: 600; }
 .crumb:hover { color: var(--text); }
@@ -1627,6 +1627,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .dtable td.dt-title { white-space: normal; color: var(--text-strong); line-height: 1.3; padding-block: var(--sp-2); }
 .dtable td.dt-title .dt-why { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .dtable td.dt-wrap { white-space: normal; line-height: 1.3; padding-block: var(--sp-2); }  /* (a cell of a few words that may wrap, never cut) */
+.table-scroll > .dtable.dt-wide { min-width: 880px; }  /* (many fixed columns: below this the title keeps its room and the table scrolls inside its frame, at any window width) */
 .dtable :is(td, th).num { text-align: right; }
 .dtable td .dt-id { color: var(--muted); }
 .dtable tbody tr:is([data-open], [data-href]) { cursor: pointer; }
