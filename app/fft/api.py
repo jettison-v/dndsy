@@ -246,6 +246,16 @@ def checks(area: int = 0, x_fft_key: str | None = Header(default=None), db: Sess
     return _ok({"items": [check_view(db, c) for c in db.scalars(q)]})
 
 
+@router.get("/checks/waiting")
+def checks_waiting(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The pull requests checks wait on (Nov 20): `feedback.py live` asks after each deploy, so a check whose change no
+    open issue names still reaches For you once its pull request is live."""
+    from app.fft.models import FftCheckWait
+
+    keys.require(db, x_fft_key, "read")
+    return _ok({"prs": sorted(set(db.scalars(select(FftCheckWait.pr))))})
+
+
 @router.get("/areas")
 def areas(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     keys.require(db, x_fft_key, "read")

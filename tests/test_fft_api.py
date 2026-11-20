@@ -349,7 +349,8 @@ def test_live_marks_only_fixes_askdnd_runs(monkeypatch):
     issues = [{"id": 1, "pr": "https://github.com/jettison-v/dndsy/pull/10"}, {"id": 2, "pr": "https://github.com/jettison-v/dndsy/pull/11"},
               {"id": 3, "pr": "https://github.com/jettison-v/dndsy/pull/12"}, {"id": 4, "pr": ""}]
     posted = []
-    monkeypatch.setattr(fbs, "call", lambda base, path, body=None, raw=False: (posted.append((path, body)) or {"live": [1]}) if body else {"items": issues})
+    monkeypatch.setattr(fbs, "call", lambda base, path, body=None, raw=False: (posted.append((path, body)) or {"live": [1]}) if body
+                        else {"prs": []} if path == "/checks/waiting" else {"items": issues})
     asked = []
     monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda req, timeout=0: (asked.append(req), io.BytesIO(b'{"version": "abc123"}'))[1])
     prs = {"10": {"state": "MERGED", "mergeCommit": {"oid": "inside"}}, "11": {"state": "OPEN", "mergeCommit": None},
@@ -438,3 +439,14 @@ def test_a_check_waits_for_its_deploy_before_it_reaches_brett(api, db):
     got = api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "b" * 40, "prs": [pr]}).json()
     assert got["checks"] == [c.id] and rules.check_state(db, c)["state"] == "to_try"
     assert any(r["key"] == f"c{c.id}" for g in testing_page.for_you(db, "laptop") for r in g["rows"])
+
+
+def test_the_pull_requests_checks_wait_on_are_listed_for_the_deploy_step(api, db):
+    """Nov 20: `feedback.py live` asks for these after each deploy, so a check whose change no open issue names still
+    reaches For you once its pull request is live."""
+    pr = "https://github.com/jettison-v/dndsy/pull/9998"
+    api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "A page", "steps": ["Open it."], "expect": "It opens.", "path": "/party", "pr": pr})
+    assert api.get("/api/fft/checks/waiting", headers=_as(CLAUDE)).json()["prs"] == [pr]
+    api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "c" * 40, "prs": [pr]})
+    assert api.get("/api/fft/checks/waiting", headers=_as(CLAUDE)).json()["prs"] == []
+    assert api.get("/api/fft/checks/waiting").status_code == 404  # (no key)

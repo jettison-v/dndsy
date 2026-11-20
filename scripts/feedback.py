@@ -70,6 +70,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+REPO = "jettison-v/dndsy"  # (the pull requests this repository's fixes are in)
 OUT = ROOT / "private" / "fft"
 
 
@@ -322,12 +323,16 @@ def check(a) -> None:
         if c is None:
             sys.exit(f"No check {a.id}.")
     elif a.id == "new":
-        body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area, "pr": a.pr,
+        pr = f"https://github.com/{REPO}/pull/{a.pr}" if a.pr.isdigit() else a.pr  # (a number or the link: one way stored)
+        body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area, "pr": pr,
                 "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes,
                 "as_character": a.as_character}
         c = call(a.base, "/checks", body)
         if a.tried:  # (R18: Claude's own try of this version, in the same go: Nov 20, one command not two)
             c = call(a.base, f"/checks/{c['id']}", {"do": "preflight", "passed": True, "why": ""})
+        if pr:  # (its change may be live already: let it through now rather than at the next deploy)
+            live(a)
+            c = next((x for x in call(a.base, f"/checks?area={a.area or 0}")["items"] if x["id"] == c["id"]), c)
     else:
         w, body = a.words, {"do": a.do}
         if a.do == "version":
@@ -548,23 +553,26 @@ def live(a) -> None:
     health = urllib.request.Request(a.base.rstrip("/") + "/health", headers={"User-Agent": "askdnd-feedback-script"})
     running = json.loads(urllib.request.urlopen(health, timeout=30).read())["version"]
     prs = []
-    for i in call(a.base, "/issues?state=fixing,to_fix")["items"]:
-        m = re.search(r"github\.com/jettison-v/dndsy/pull/(\d+)", i["pr"] or "")  # (only this repository's changes)
-        if not m:
+    asked = [(f"Issue {i['id']}", i["pr"]) for i in call(a.base, "/issues?state=fixing,to_fix")["items"]]
+    asked += [("A waiting check", p) for p in call(a.base, "/checks/waiting")["prs"]]  # (a check's own pull request, Nov 20)
+    for who, link in asked:
+        m = re.search(rf"github\.com/{REPO}/pull/(\d+)", link or "")  # (only this repository's changes)
+        if not m or link in prs:
             continue
         got = subprocess.run(["gh", "pr", "view", m.group(1), "--json", "state,mergeCommit"], capture_output=True, text=True, check=False)
         if got.returncode:
-            print(f"Issue {i['id']}: couldn't read PR {m.group(1)} ({got.stderr.strip()[:80]})")
+            print(f"{who}: couldn't read PR {m.group(1)} ({got.stderr.strip()[:80]})")
             continue
         pr = json.loads(got.stdout)
         sha = (pr.get("mergeCommit") or {}).get("oid") or ""
         if pr.get("state") == "MERGED" and sha and subprocess.run(["git", "merge-base", "--is-ancestor", sha, running], cwd=ROOT, capture_output=True).returncode == 0:
-            prs.append(i["pr"])
+            prs.append(link)
         else:
-            print(f"Issue {i['id']}: PR {m.group(1)} isn't live yet")
+            print(f"{who}: PR {m.group(1)} isn't live yet")
     if prs:
         got = call(a.base, "/deploy", {"commit": running, "prs": sorted(set(prs))})
-        print(f"Live in {running}: issues {', '.join(map(str, got['live'])) or 'none'} ready to try")
+        print(f"Live in {running}: issues {', '.join(map(str, got['live'])) or 'none'} ready to try"
+              + (f"; checks {', '.join(map(str, got.get('checks', [])))} reach For you" if got.get("checks") else ""))
     else:
         print("No fix newly live.")
 
