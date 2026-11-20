@@ -15,7 +15,6 @@
   <nav class="sub-tabs" aria-label="Feedback">
     <a href="?tab=approve" class="{{ 'on' if tab == 'approve' }}" data-tab="approve">To sort{{ count_pill(counts["approve"]) }}</a>
     <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues">Issues{{ count_pill(counts["open"]) }}</a>
-    <a href="?tab=ideas" class="{{ 'on' if tab == 'ideas' }}" data-tab="ideas">Ideas{{ count_pill(counts["ideas"]) }}</a>
   </nav>
   {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}
   {% elif issues_on %}<div class="fb-kind-chips fft-views" role="group" aria-label="Show issues" data-views>

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_admin_bits.html" import state_word, more_menu %}
+{% from "_lists.html" import empty_state, count_pill %}
+{% block title %}{{ it.title }} · Roadmap · Backstage · askdnd{% endblock %}
+{% block content %}
+{# A Roadmap item's page (app/fft/roadmap_page.py `item`; The Roadmap in askdnd, Nov 20): Scope (its versions, Brett's
+   additions with Claude's answers, Add to this item…, Scope looks right), Steps, Plans (in Development), Updates. The
+   conversation stays in chat; Claude writes it onto the item. #}
+<main class="page manage-page" data-fft-page="roadmap-item" data-item="{{ it.id }}">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1><a href="/manage/roadmap" class="crumb">Roadmap ›</a> {{ it.title }}</h1>
+    {% if it.section not in ("shipped", "not_doing") %}
+    {% call more_menu("More for " ~ it.title) %}
+      {% for k in sections if k != it.section %}<form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="move"><input type="hidden" name="section" value="{{ k }}"><button type="submit" data-move="{{ k }}">Move to {{ section_said[k] }}</button></form>{% endfor %}
+      <form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="ship"><button type="submit" data-do="ship">Shipped</button></form>
+      <form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="not_doing"><button type="submit" data-do="not-doing">Not doing</button></form>
+    {% endcall %}
+    {% else %}<form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="move"><input type="hidden" name="section" value="next"><button class="btn title-action" type="submit" data-do="reopen">Back on the Roadmap</button></form>{% endif %}</div>
+  <p class="subtitle wk-facts" data-facts>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}
+    <span>{{ section_said[it.section] }}</span>{% if it.size %}<span>Size {{ it.size }}</span>{% endif %}{% if r.status %}<span>{{ r.status }}</span>{% endif %}
+    {% if r.next[1] %}<span>Next: {{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude") }} {{ r.next[1] }}</span>{% endif %}</p>
+  {% if it.why %}<p class="rm-why" data-why>{{ it.why }}</p>{% endif %}
+
+  <nav class="sub-tabs" aria-label="{{ it.title }}">
+    {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "steps" %}{{ count_pill(steps | rejectattr("done_at") | list | length) }}{% elif key == "plans" %}{{ count_pill(plans | length) }}{% endif %}</a>{% endfor %}
+  </nav>
+
+  {% if tab == "scope" %}
+  <div class="rm-scope">
+    <section class="rm-doc panel" data-scope{% if shown %} data-version="{{ shown.version }}"{% endif %}>
+      {% if not shown %}{{ empty_state("No scope yet: Claude writes its first version when it's next, or when you say so in chat.") }}
+      {% else %}
+      <div class="rm-doc-bar"><span class="rm-vers">{% for s in scopes %}<a href="?tab=scope&amp;ver={{ s.version }}" class="{{ 'on' if s.version == shown.version }}" data-ver="{{ s.version }}">v{{ s.version }}</a>{% endfor %}</span>
+        <span class="note">{% if shown.version != latest.version %}An earlier version{% elif shown.agreed_at %}Agreed <time datetime="{{ shown.agreed_at.isoformat() }}" data-clock="ago">{{ shown.agreed_at | ago }}</time>{% else %}Latest · waits for your OK{% endif %}</span></div>
+      {% if shown.changed %}<p class="rm-changed" data-changed><b>What changed in v{{ shown.version }}:</b> {{ shown.changed }}</p>{% endif %}
+      <div><h3 class="plabel">What it is</h3><p>{{ shown.what }}</p></div>
+      <div><h3 class="plabel">In scope</h3><ul>{% for x in shown.inside %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      {% if shown.not_now %}<div><h3 class="plabel">Not now</h3><ul>{% for x in shown.not_now %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
+      {% if shown.questions %}<div><h3 class="plabel">Open questions</h3><ul>{% for x in shown.questions %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
+      {% if shown.version == latest.version and not shown.agreed_at and it.section not in ("shipped", "not_doing") %}
+      <form method="post" action="/manage/roadmap/{{ it.id }}" class="act-bar"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ shown.version }}"><button class="btn primary" type="submit" data-do="agree">Scope looks right</button></form>{% endif %}
+      {% endif %}
+    </section>
+    <section class="rm-adds" data-additions aria-labelledby="rm-adds-h">
+      <div class="rm-adds-head"><h3 class="plabel" id="rm-adds-h">Your additions · {{ adds | length }}</h3>
+        <button class="btn small" type="button" data-show="rm-add-{{ it.id }}" data-do="add">Add to this item…</button></div>
+      <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold" id="rm-add-{{ it.id }}" hidden><input type="hidden" name="do" value="add">
+        <label class="field"><span>What to add or change, in your words</span><textarea name="words" rows="3" required maxlength="8000"></textarea></label>
+        <p class="note">It's kept here as you wrote it and reaches Claude like a note; Claude answers it here and writes the scope's next version.</p>
+        <div class="row tight"><button class="btn primary small" type="submit">Add it</button><button class="btn link small" type="button" data-cancel="rm-add-{{ it.id }}">Cancel</button></div></form>
+      {% for a in adds %}
+      <article class="rm-add panel" data-addition="{{ a.id }}">
+        <p class="note">{{ "In chat" if a.where == "chat" else "In askdnd" }} · <time datetime="{{ a.created_at.isoformat() }}" data-clock="when">{{ a.created_at | ago }}</time>{% if a.scope_version %} · v{{ a.scope_version }}{% endif %}</p>
+        <p class="rm-add-words">“{{ a.words }}”</p>
+        <p class="rm-ans">{% if a.answer %}{{ state_word({"in": "In scope", "later": "Later", "question": "A question"}[a.answer], {"in": "passed", "later": "quiet", "question": "ask"}[a.answer], ' data-answer="' ~ a.answer ~ '"') }} {{ a.answer_words }}{% else %}{{ state_word("Claude's to answer", "claude", ' data-answer="none"') }}{% endif %}</p>
+      </article>
+      {% else %}<p class="note">Nothing added yet.</p>{% endfor %}
+    </section>
+  </div>
+
+  {% elif tab == "steps" %}
+  {% if not steps %}{{ empty_state("Steps come from the scope once you've said it looks right.") }}{% else %}
+  <ol class="rm-steps" data-steps>
+    {% set first = steps | rejectattr("done_at") | first %}
+    {% for s in steps %}
+    <li class="rm-step{{ ' done' if s.done_at }}{{ ' next' if first and s.id == first.id }}" data-step="{{ s.id }}" data-whose="{{ s.whose }}">
+      {% if s.whose == "brett" %}<form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="{{ 'untick' if s.done_at else 'tick' }}"><input type="hidden" name="step" value="{{ s.id }}"><button class="rm-box" type="submit" aria-pressed="{{ 'true' if s.done_at else 'false' }}" aria-label="{{ 'Not done' if s.done_at else 'Done' }}: {{ s.text }}" data-do="tick">{{ "✓" if s.done_at }}</button></form>
+      {% else %}<span class="rm-box" aria-hidden="true">{{ "✓" if s.done_at }}</span>{% endif %}
+      <span class="rm-step-text">{{ s.text }}{% if first and s.id == first.id %} <span class="note">· next</span>{% endif %}</span>
+      {{ state_word("Yours" if s.whose == "brett" else "Claude's", "ask" if s.whose == "brett" else "claude") }}
+    </li>{% endfor %}
+  </ol>{% endif %}
+
+  {% elif tab == "plans" %}
+  {% if not plans %}{{ empty_state("No plan yet: Claude makes one in Development when it starts building.") }}{% else %}
+  <div class="table-scroll"><table class="dtable fft-table" data-plans>
+    <thead><tr><th>Plan</th><th class="dt-w3">Stage</th><th class="num dt-w2">Fixed</th><th class="num dt-w2">Passed</th></tr></thead>
+    <tbody>{% for p in plans %}
+      <tr data-href="/manage/work/{{ p.a.id }}" data-area="{{ p.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ p.a.id }}">{{ p.a.title }}</a></td>
+        <td>{{ state_word(p.stage_said[0], p.stage_said[1]) }}</td><td class="num">{% if p.issues %}{{ p.fixed }} of {{ p.issues }}{% else %}—{% endif %}</td><td class="num">{% if p.checks %}{{ p.passed }} of {{ p.checks }}{% else %}—{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>{% endif %}
+
+  {% else %}
+  {% if not events %}{{ empty_state("Nothing has happened to it yet.") }}{% else %}
+  <div class="table-scroll"><table class="dtable fft-table" data-timeline>
+    <thead><tr><th class="dt-w3">When</th><th class="dt-w2">Who</th><th>What</th></tr></thead>
+    <tbody>{% for e, words, who in events %}<tr data-event="{{ e.kind }}"><td><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time></td><td>{{ who }}</td><td class="dt-title">{{ words }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  {% endif %}
+</main>
+{% endblock %}

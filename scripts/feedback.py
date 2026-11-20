@@ -466,6 +466,73 @@ def item(a) -> None:
         print(call(a.base, "/areas", {"do": "item", "title": a.title_or_id, "section": a.section, "standing": a.standing}))
 
 
+def roadmap(a) -> None:
+    """The Roadmap in askdnd (Nov 20). No id: the items in Brett's order (--history: shipped and not doing). An id: the
+    item whole, or one change: scope (--what, --in …, --not …, --question …, --changed), add "his words" (said in
+    chat), answer <addition> in|later|question "words" [--version N], step "text" [--whose brett], tick <step>
+    [--undo], unstep <step>, move now|next|later|paused, ship, not_doing, set [--title --why --size --status].
+    New: roadmap new "title" [--words "his words"] [--section next] [--why …] [--size M] [--status …]."""
+    if a.id is None:
+        for it in call(a.base, "/roadmap" + ("?history=1" if a.history else ""))["items"]:
+            n = it["next"]
+            print(f"{it['id']:>3}  {it['section']:<7} {it['stage']:<9} {it['size'] or '-':<2} steps {it['steps'][0]}/{it['steps'][1]}"
+                  f"{'  scope v' + str(it['scope_version']) + (' ok' if it['agreed'] else ' waits') if it['scope_version'] else ''}"
+                  f"{'  ' + str(it['unanswered']) + ' to answer' if it['unanswered'] else ''}  {it['title']}"
+                  + (f"\n       next ({n['whose']}): {n['step']}" if n["step"] else ""))
+        return
+    if a.id == "new":
+        got = call(a.base, "/roadmap", {"title": a.do or "", "words": a.words_opt, "section": a.section, "why": a.why, "size": a.size, "status": a.status})
+        print(f"Roadmap item {got['id']}: {got['title']} ({got['stage']})")
+        return
+    if not a.do:
+        it = call(a.base, f"/roadmap/{a.id}")
+        print(f"Roadmap item {it['id']} · {it['section']} · {it['stage']} · {it['size'] or '-'}: {it['title']}")
+        if it["why"]:
+            print(f"  Why: {it['why']}")
+        for sc in it["scopes"][-1:]:
+            print(f"  Scope v{sc['version']}{' (agreed)' if sc['agreed'] else ' (waits for his OK)'}: {sc['what']}")
+            for x in sc["inside"]:
+                print(f"    in: {x}")
+            for x in sc["not_now"]:
+                print(f"    not now: {x}")
+            for x in sc["questions"]:
+                print(f"    question: {x}")
+        for ad in it["additions"]:
+            print(f"  addition {ad['id']} ({ad['where']}): {_quote(ad['words'])}  → {ad['answer'] or 'to answer'} {ad['answer_words']}")
+        for st in it["steps"]:
+            print(f"  step {st['id']} [{'x' if st['done'] else ' '}] ({st['whose']}) {st['text']}")
+        return
+    w = a.words
+    body: dict = {"do": a.do}
+    if a.do == "scope":
+        body |= {"what": a.what, "inside": a.inside, "not_now": a.not_now, "questions": a.question, "changed": a.changed}
+    elif a.do == "add":
+        body |= {"words": w[0], "where": "chat"}
+    elif a.do == "answer":
+        body |= {"addition": int(w[0]), "answer": w[1], "words": w[2] if len(w) > 2 else "", "version": a.version}
+    elif a.do == "step":
+        body |= {"text": w[0], "whose": a.whose or "claude"}
+    elif a.do in ("tick", "unstep"):
+        body |= {"step": int(w[0]), "done": not a.undo}
+    elif a.do == "move":
+        body["section"] = w[0]
+    elif a.do == "set":
+        body |= {k: v for k, v in (("title", a.title), ("why", a.why), ("size", a.size), ("status", a.status)) if v is not None}
+    got = call(a.base, f"/roadmap/{a.id}", body)
+    print(f"Roadmap item {got['id']} · {got['stage']}: {got['title']}" + (f"  (next, {got['next']['whose']}: {got['next']['step']})" if got["next"]["step"] else ""))
+
+
+def ideas(a) -> None:
+    """Ideas from before the Roadmap was in askdnd: list them, or place one (roadmap, fix or improvement)."""
+    if a.id is None:
+        for d in call(a.base, "/ideas")["items"]:
+            print(f"idea {d['id']:>3}: {d['title']}")
+            for n in d["notes"]:
+                print(f"      {_quote(n)}")
+        return
+    print(call(a.base, f"/ideas/{a.id}", {"do": a.do}))
+
+
 def deploy(a) -> None:
     print(call(a.base, "/deploy", {"commit": a.commit, "prs": a.pr, "rollback": a.rollback}))
 
@@ -652,6 +719,28 @@ def main() -> None:
     s = sub.add_parser("freeze", help="whether Brett paused deploys")
     s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
+    s = sub.add_parser("roadmap", help="the Roadmap: list, an item, a new idea, or one change (see its docstring)")
+    s.add_argument("id", nargs="?")
+    s.add_argument("do", nargs="?")
+    s.add_argument("words", nargs="*")
+    s.add_argument("--history", action="store_true")
+    s.add_argument("--what", default="")
+    s.add_argument("--in", dest="inside", action="append", default=[])
+    s.add_argument("--not", dest="not_now", action="append", default=[])
+    s.add_argument("--question", action="append", default=[])
+    s.add_argument("--changed", default="")
+    s.add_argument("--version", type=int)
+    s.add_argument("--whose", default="", choices=["", "brett", "claude"])
+    s.add_argument("--undo", action="store_true")
+    s.add_argument("--words", dest="words_opt", default="")
+    s.add_argument("--section", default="next")
+    s.add_argument("--title")
+    s.add_argument("--why")
+    s.add_argument("--size")
+    s.add_argument("--status")
+    s = sub.add_parser("ideas", help="ideas from before the Roadmap: list, or place one: ideas <id> roadmap|fix|improvement")
+    s.add_argument("id", nargs="?")
+    s.add_argument("do", nargs="?", choices=[None, "roadmap", "fix", "improvement"])
     s = sub.add_parser("deploy")
     s.add_argument("commit")
     s.add_argument("--pr", action="append", default=[])
@@ -664,7 +753,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "available": available, "local": local}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local}[a.cmd](a)
 
 
 if __name__ == "__main__":

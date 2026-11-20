@@ -16,7 +16,7 @@
   {% else %}
   {# A table, one row an item (Backstage mode; The Work Pages, Nov 20): grouped by what you do, every row saying why it's
      here; a row opens its item in the item window at the right (app/fft/item_page.py), ↑ ↓ for the next. #}
-  {% set kinds = {"check": ("Check", "ask"), "question": ("Question", "claude"), "decision": ("Decision", "claude"), "merge": ("Fix to OK", "ask"), "ready": ("Fixed", "passed"), "local": ("On your Mac", "ask"), "note": ("Note", "quiet"), "idea": ("Idea", "quiet"), "roadmap": ("Roadmap", "quiet")} %}
+  {% set kinds = {"check": ("Check", "ask"), "question": ("Question", "claude"), "decision": ("Decision", "claude"), "merge": ("Fix to OK", "ask"), "ready": ("Fixed", "passed"), "local": ("On your Mac", "ask"), "note": ("Note", "quiet"), "idea": ("Idea", "quiet"), "roadmap": ("Step", "ask"), "scope": ("Scope", "ask")} %}
   <p class="note fft-foryou-sum" data-summary><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b> · {{ summary.line }}</p>
   <div class="table-scroll" id="ts-list">
   <table class="dtable fft-table" data-fft-list="{{ show }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
@@ -39,7 +39,7 @@
         <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
         <td class="num">{% if r.minutes %}{{ r.minutes }} min{% endif %}</td>
         <td>{% if r.kind == "check" %}<form method="post" action="/manage/testing/checks/{{ r.key[1:] }}/go" class="inline"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
-          {% else %}<button class="btn small" type="button" data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" data-do="open">{{ {"question": "Answer", "decision": "Decide", "note": "Sort", "idea": "Place", "merge": "Look", "ready": "Look", "local": "Look", "roadmap": "Open"}.get(r.kind, "Open") }}</button>{% endif %}</td>
+          {% else %}<button class="btn small" type="button" data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" data-do="open">{{ {"question": "Answer", "decision": "Decide", "note": "Sort", "idea": "Place", "merge": "Look", "ready": "Look", "local": "Look", "roadmap": "Open", "scope": "Read it"}.get(r.kind, "Open") }}</button>{% endif %}</td>
       </tr>
       {% endfor %}
     {% endfor %}

@@ -339,9 +339,9 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
         made = _act(lambda: rules.join_issue(db, actor, note, target))
         _said(request, f"Joined “{made.title}”", undo)
         key = f"i{made.id}"
-    elif do == "idea":
-        _act(lambda: rules.file_idea(db, actor, note))
-        _said(request, "Approved as an idea", undo)
+    elif do == "idea":  # (an idea that needs discussion: a Roadmap idea, Nov 20)
+        made = _act(lambda: rules.file_roadmap_idea(db, actor, note))
+        _said(request, "On the Roadmap as an idea: Claude scopes it when it's next", undo)
         key = ""
     elif do == "answer":
         _act(lambda: rules.answer_note(db, actor, note, words, user_id=views.person(db, user)["id"]))
