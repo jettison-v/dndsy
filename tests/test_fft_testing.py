@@ -7,7 +7,7 @@ import re
 import pytest
 from sqlalchemy import select
 
-from app.fft import rules
+from app.fft import rules, testing_page
 from app.fft.models import FftArea, FftCheck, FftEvent, FftIdea, FftIssue, FftItem, FftNote, FftRound, FftTry
 from app.importer import import_bundle
 from tests.table_setup import BUNDLE
@@ -99,7 +99,8 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     assert sections == ["try", "decide", "table", "roadmap"]  # (in that order; Look at only when there's something)
     assert f'data-group="a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
     assert f"{a.title} · Claude asks" in page
-    assert 'data-fft-page="for-you"' in page and 'data-tab="foryou"' not in page and 'data-do="start-round"' in page
+    assert 'data-fft-page="for-you"' in page and 'data-tab="stands"' not in page and 'data-do="start-round"' in page
+    assert 'class="on" data-tab="foryou" aria-current="page"' in page  # (For you · Testing · Feedback across the top, The Work Pages)
     stands = admin.get("/manage/testing").text
     assert 'data-tab="stands"' in stands and 'class="on" data-tab="stands"' in stands and 'data-do="start-round"' not in stands
     for old in ("/manage/testing?show=foryou", f"/manage/testing?open=c{c.id}"):
@@ -119,7 +120,7 @@ def test_a_check_reads_as_the_card_will_show_it(admin, db):
     rules.start_fixing(db, "claude", issue)
     rules.fix_live(db, "askdnd", issue, "abc")
     db.flush()
-    page = admin.get(f"/manage/for-you?open=c{c.id}").text
+    page = admin.get(f"/manage/item/c{c.id}").text
     assert f'data-fft-check="{c.id}"' in page and 'class="walk"' in page and "One line." in page
     assert "The ⋯ menu won&#39;t close" in page or "The ⋯ menu won't close" in page
     assert 'data-do="try-it"' in page and 'data-do="passed"' in page and 'data-do="wrong"' in page and 'data-history' in page
@@ -263,7 +264,7 @@ def test_change_result_corrects_and_withdraws_what_only_that_try_found(admin, db
     assert t.replaced and rules.check_state(db, c)["state"] == "to_try"
     issue = db.get(FftIssue, issue_id)
     assert issue.state == "closed" and issue.close_reason == "withdrawn"  # (only that try found it: withdrawn, still findable)
-    history = admin.get(f"/manage/for-you?open=c{c.id}").text
+    history = admin.get(f"/manage/item/c{c.id}").text
     assert "<s>" in history and "Pressed the wrong one" in history
 
 
@@ -273,7 +274,7 @@ def test_a_question_answered_in_for_you_names_itself(admin, db):
     q = rules.ask(db, "claude", about="issue", about_id=issue.id, text="Words or a pill?", choices=[{"label": "Words"}, {"label": "A pill"}], mine=0)
     db.flush()
     assert issue.state == "asks"
-    page = admin.get(f"/manage/for-you?open=q{q.id}").text
+    page = admin.get(f"/manage/item/q{q.id}").text
     assert "Claude&#39;s pick" in page or "Claude's pick" in page
     admin.post(f"/manage/testing/questions/{q.id}", data={"text": ""})
     assert q.answered_at is None  # (nothing picked for you)
@@ -295,16 +296,16 @@ def test_a_mockup_asked_about_an_issue_opens_from_for_you_and_shows_in_its_conve
     q = rules.ask(db, "claude", about="issue", about_id=issue.id, text="Which reader should I build?",
                   choices=[{"label": "Cards"}, {"label": "Tabs"}], mine=0, doc_path="docs/mockups/fft-reader/index.html")
     db.flush()
-    page = admin.get(f"/manage/for-you?open=q{q.id}").text
+    page = admin.get(f"/manage/item/q{q.id}").text
     assert 'data-modal-url="/manage/documents/mockups-fft-reader-index?part=1" data-modal-size="full" data-open-doc>Open mockup</a>' in page
     assert "Feedback&#39;s Reader: Sections" in page
     window = admin.get("/manage/documents/mockups-fft-reader-index?part=1").text  # (the mockup alone, in a window over For you)
     assert 'id="peek-title"' in window and 'class="doc-frame"' in window and "<main" not in window
-    reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    reader = admin.get(f"/manage/item/i{issue.id}").text
     assert f'data-question="{q.id}"' in reader and f'href="/manage/for-you?open=q{q.id}" data-do="answer"' in reader
     assert reader.index("I&#39;ll draw it.") < reader.index(f'data-question="{q.id}"')
     admin.post(f"/manage/testing/questions/{q.id}", data={"choice": "0", "text": "with counts"})
-    reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    reader = admin.get(f"/manage/item/i{issue.id}").text
     assert "data-answered" in reader and 'data-choice="0" class="on"' in reader and "with counts" in reader
 
 
@@ -339,7 +340,7 @@ def test_a_live_issue_names_its_checks_and_is_claudes_while_they_cant_be_tried(a
     db.flush()
     assert views.issue_turn(db, issue) == ("yours", "")
     assert views.issue_sentence(db, issue) == "Live: try its check in For you."
-    page = admin.get(f"/manage/feedback?tab=ready&open=i{issue.id}").text
+    page = admin.get(f"/manage/item/i{issue.id}").text
     assert f'data-check="{c.id}"' in page and "· To try" in page and "· to_try" not in page
 
     blocker = rules.new_issue(db, "claude", "The page won't load")
@@ -348,9 +349,9 @@ def test_a_live_issue_names_its_checks_and_is_claudes_while_they_cant_be_tried(a
     db.expire_all()
     assert views.issue_turn(db, issue) == ("claude", "")  # (nothing to try: never Yours)
     assert views.issue_sentence(db, issue) == "Live, but its check can't be tried yet: Claude's to sort out."
-    assert "· Blocked" in admin.get(f"/manage/feedback?tab=ready&open=i{issue.id}").text
-    assert f'data-check="{c.id}"' in admin.get(f"/manage/testing?show=claudes&open=i{issue.id}").text  # (Testing names it too: Claude's list)
-    assert '<span data-device="laptop"><b>Laptop</b> · Blocked</span>' in admin.get(f"/manage/testing?show=claudes&open=c{c.id}").text  # (Testing's words, never a code)
+    assert "· Blocked" in admin.get(f"/manage/item/i{issue.id}").text
+    assert f'data-check="{c.id}"' in admin.get(f"/manage/item/i{issue.id}").text  # (Testing names it too: Claude's list)
+    assert '<span data-device="laptop"><b>Laptop</b> · Blocked</span>' in admin.get(f"/manage/item/c{c.id}").text  # (Testing's words, never a code)
 
 
 def test_bretts_order_and_an_area_with_open_work_never_archived(admin, db):
@@ -424,3 +425,27 @@ def test_pausing_says_what_it_would_hold(admin, db):
     db.flush()
     page = admin.get("/manage/for-you").text
     assert "data-holds-flight" in page and "The Count wraps" in page[page.index("data-holds-flight"):]
+
+
+def test_one_item_opens_in_its_window_with_the_next_and_the_old_link_opens_it_there(admin, dm, db):
+    """Issue 44 and The Work Pages (Brett, Nov 20): any single item opens in one window, from any page, ↑ ↓ walking the
+    list it came from; an old link to one item (?open=) opens it in that window over its page. Admins only."""
+    first = rules.new_issue(db, "claude", "Check buttons: Passed looks already chosen")
+    a, b = _check(db, issue=first, why=""), _check(db, issue=first, why="")
+    rules.start_fixing(db, "claude", first)
+    rules.fix_live(db, "askdnd", first, "abc")
+    db.flush()
+    keys = [k for k in testing_page.listed_keys(db, "foryou", "laptop") if k in (f"c{a.id}", f"c{b.id}")]
+    assert len(keys) == 2
+    win = admin.get(f"/manage/item/{keys[0]}?from=foryou").text
+    assert f'data-item-panel="{keys[0]}"' in win and f'data-fft-check="{keys[0][1:]}"' in win
+    assert f'/manage/item/{keys[1]}?from=foryou" data-item-next' in win and "data-item-prev" not in win
+    assert f'data-next-url="/manage/item/{keys[1]}?from=foryou"' in win  # (after a press it moves on to this one)
+    last = admin.get(f"/manage/item/{keys[1]}?from=foryou").text
+    assert "data-item-prev" in last and "data-next-url" not in last
+    assert f'data-fft-issue="{first.id}"' in admin.get(f"/manage/item/i{first.id}").text
+    assert admin.get("/manage/item/i999999").status_code == 404
+    assert dm.get(f"/manage/item/i{first.id}").status_code in (303, 403, 404)  # (admins only, as the pages it opens from)
+    page = admin.get(f"/manage/feedback?tab=ready&open=i{first.id}").text  # (an old link: its page, the item over it)
+    assert f'data-open-item="/manage/item/i{first.id}?from=feedback%3Aready%3A%3A%3A%3A"' in page
+    assert f'data-panel-url="/manage/item/{keys[0]}?from=foryou"' in admin.get("/manage/for-you").text

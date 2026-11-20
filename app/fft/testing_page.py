@@ -199,7 +199,7 @@ def for_you(db: Session, device: str) -> list[dict]:
             continue
         where = "" if cv["here"] or not cv["mine"] else f" · on {DEVICE_SAID[cv['mine'][0]]}"
         rows.append((area_key(c.area_id), c.area_id, {"key": f"c{c.id}", "title": c.title, "kind": "check", "here": cv["here"],
-                                                       "sub": f"{cv['word']}{where} · {c.minutes} min", "minutes": c.minutes}))
+                                                       "sub": f"{cv['word']}{where}", "minutes": c.minutes}))
     for q in db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None)).order_by(FftQuestion.id)):
         aid = None
         if q.about == "issue" and q.about_id and (i := db.get(FftIssue, q.about_id)):
@@ -329,9 +329,7 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
     rules.confirm_due(db)  # (R5: a player's three days to say whether it works are up: it's yours)
     device = device_of(request)
     groups = for_you(db, device) if show == "foryou" else others(db, show, device) if show in ("claudes", "done") else []
-    keys = [r["key"] for g in groups for r in g["rows"]]
-    pick = _key(open) or (keys[0] if keys else "")
-    picked = _picked(db, pick, device)
+    pick = _key(open)  # (an old link to one item: it opens in the item window over the list)
     mine = for_you(db, device) if show != "foryou" else groups
     round_checks = [r for g in mine for r in g["rows"] if r["kind"] == "check" and r.get("here")]
     me = views.person(db, user)
@@ -341,11 +339,17 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
     return templates.TemplateResponse(request, "fft_testing.html", {
         "round_flight": any(g["area_ids"] & whole or None in g["area_ids"] for g in flight),
         "flight_areas": set().union(*[g["area_ids"] for g in flight]) if flight else set(),
-        "show": show, "shows": SHOWS, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
+        "show": show, "shows": SHOWS, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "summary": summary(mine), "from_": show,
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
         "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db), "here_path": FOR_YOU if show == "foryou" else BACK,
         "status": status(db) if show == "foryou" else None,
         "toast": request.session.pop("toast", None)})
+
+
+def listed_keys(db: Session, show: str, device: str) -> list[str]:
+    """The rows of For you, Claude's or Done, in their order: the item window's ↑ ↓ follow it."""
+    groups = for_you(db, device) if show == "foryou" else others(db, show, device) if show in ("claudes", "done") else []
+    return [r["key"] for g in groups for r in g["rows"]]
 
 
 def _picked(db: Session, pick: str, device: str) -> dict | None:
@@ -384,8 +388,12 @@ def _about(db: Session, q: FftQuestion) -> dict:
 
 
 def _last_failed(db: Session, c: FftCheck, device: str) -> FftTry | None:
+    """The try that left this check failed on this device, while it still stands (issue 46, Brett, Nov 20: a check back to
+    try once its fix went live opened as ✗ Failed; that failure is history now, and the card opens fresh)."""
     t = db.scalar(select(FftTry).where(FftTry.check_id == c.id, FftTry.device == device, FftTry.actor == "person").order_by(FftTry.id.desc()))
-    return t if t is not None and t.result == "failed" and not t.replaced else None
+    if t is None or t.result != "failed" or t.replaced:
+        return None
+    return t if rules.check_state(db, c)["devices"].get(device) == "failed" else None
 
 
 def stands(db: Session) -> dict:

@@ -1,6 +1,7 @@
 """Feedback and Notes you sent in a real browser (Found, Fixed, Tried: app/fft/feedback_page.py, app/your_notes.py;
-screens 10–15 of docs/mockups/found-fixed-tried/): a player's note waits on To approve; approving it gives a corner
-card whose Undo puts it back; writing to the one who sent it reaches their Notes you sent as a new reply."""
+screens 10–15 of docs/mockups/found-fixed-tried/): a player's note waits on To sort; it opens in the item window
+(app/fft/item_page.py, The Work Pages, Nov 20), filing it gives a corner card whose Undo puts it back; writing to the
+one who sent it reaches their Notes you sent as a new reply."""
 
 from sqlalchemy import create_engine, text
 
@@ -25,29 +26,45 @@ def _one(url, sql, **params):
     return got
 
 
+def _item(page, key):
+    """The item window, open on this item (a row pressed, ↑ ↓, or an old ?open= link)."""
+    win = page.locator(f'#peek [data-item-panel="{key}"]')
+    win.wait_for()
+    return page.locator("#peek")
+
+
+def _issue_of(url, nid):
+    return _one(url, "SELECT issue_id FROM fft_notes WHERE id = :i", i=nid)[0]
+
+
 def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_db):
     nid = _waiting_note(browser_db[0])
     admin, player = people("admin", "player")
     page = admin.open("/manage/feedback")
-    art = page.locator(f'[data-fft-note="{nid}"]')
-    art.wait_for()
-    assert page.locator('[data-tab="approve"]').get_attribute("class") == "on"
-    art.locator('[data-do="issue"]').click()
-    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
+    assert page.locator('[data-tab="approve"]').get_attribute("class") == "on"  # (To sort first, while a note waits)
+    page.locator(f'tr[data-row="n{nid}"] td.dt-title').click()
+    win = _item(page, f"n{nid}")
+    page.evaluate("window.__stayed = true")
+    win.locator('[data-do="issue"]').click()
     card = page.locator("#cards > .card", has=page.locator(".card-act"))
     card.wait_for()
+    assert page.evaluate("window.__stayed === true") and "/manage/feedback" in page.url and "tab=open" not in page.url  # (this page stayed)
+    assert page.locator(f'tr[data-row="n{nid}"]').count() == 0  # (filed: it left To sort)
     card.locator(".card-act").click()  # Undo
-    page.wait_for_url("**/manage/feedback?tab=approve&open=n*")
+    page.locator(f'tr[data-row="n{nid}"]').wait_for()
     assert _one(browser_db[0], "SELECT state FROM fft_notes WHERE id = :i", i=nid)[0] == "waiting"
 
-    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
-    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
-    issue = page.locator("[data-fft-issue]")
+    page.locator(f'tr[data-row="n{nid}"] td.dt-title').click()
+    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
+    iid = _issue_of(browser_db[0], nid)
+    page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
+    issue = _item(page, f"i{iid}").locator("[data-fft-issue]")
     assert issue.locator(".state-line .sw-claude").count() == 1  # (Claude's turn, in its colour)
     composer = issue.locator("[data-composer]")
     composer.locator('input[value="senders"]').check()
     composer.locator("textarea[name=words]").fill("Thanks: it's being fixed.")
-    press(composer.locator("button[type=submit]"))  # (the reply saved and the page redrawn, before the sender looks)
+    press(composer.locator("button[type=submit]"))  # (the reply saved; the window stays on the issue)
+    _item(page, f"i{iid}")
 
     mine = player.open("/your-notes?tab=askdnd")
     row = mine.locator(f'[data-note="f{nid}"]')
@@ -59,15 +76,31 @@ def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_d
     assert not player.errors, player.errors
 
 
+def test_the_window_walks_its_list_and_moves_on_after_a_press(people, server, browser_db):
+    """The Work Pages (Brett, Nov 20): ↑ ↓ walk the list the window came from; after a press it moves on to the next."""
+    first = _waiting_note(browser_db[0], "One.")
+    second = _waiting_note(browser_db[0], "Two.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{first}")
+    _item(page, f"n{first}")
+    page.keyboard.press("ArrowDown")
+    _item(page, f"n{second}")
+    page.keyboard.press("ArrowUp")
+    win = _item(page, f"n{first}")
+    win.locator('[data-do="issue"]').click()
+    _item(page, f"n{second}")  # (filed: on to the next)
+    assert page.locator(f'tr[data-row="n{first}"]').count() == 0 and _issue_of(browser_db[0], first) is not None
+    assert not admin.errors, admin.errors
+
+
 def test_same_as_searches_and_joins_in_its_window(people, server, browser_db):
     first = _waiting_note(browser_db[0], "Rests are wrong for my Wizard.")
     second = _waiting_note(browser_db[0], "Same thing after a rest.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{first}")
-    page.locator(f'[data-fft-note="{first}"] [data-do="issue"]').click()
-    page.wait_for_url("**/manage/feedback?tab=approve**")  # (on to the next waiting)
+    press(_item(page, f"n{first}").locator('[data-do="issue"]'))
     page = admin.open(f"/manage/feedback?tab=approve&open=n{second}")  # (this note, whatever a failed first try left waiting)
-    page.locator(f'[data-fft-note="{second}"] [data-do="same"]').click()
+    _item(page, f"n{second}").locator('[data-do="same"]').click()
     page.locator(".peek #fft-same-options").wait_for()
     page.eval_on_selector(".peek #fft-same-options", "el => el.dataset.before = '1'")
     page.locator(".peek input[type=search]").fill("Wizard")
@@ -75,12 +108,13 @@ def test_same_as_searches_and_joins_in_its_window(people, server, browser_db):
     page.wait_for_function("() => { const o = document.querySelector('.peek #fft-same-options'); return o && !o.dataset.before }")
     assert page.locator(".peek [data-option]").count() == 1
     page.locator(".peek input[type=search]").press("Enter")  # (Enter in the search never joins: nothing is picked for you)
-    assert _one(browser_db[0], "SELECT issue_id FROM fft_notes WHERE id = :i", i=second) == (None,)
+    assert _issue_of(browser_db[0], second) is None
     page.locator('.peek [data-option] input').first.check()
-    page.locator('.peek [data-do="join"]').click()
-    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
-    (issue_a,), (issue_b,) = _one(browser_db[0], "SELECT issue_id FROM fft_notes WHERE id = :i", i=first), _one(browser_db[0], "SELECT issue_id FROM fft_notes WHERE id = :i", i=second)
-    assert issue_a == issue_b and page.locator(f'[data-fft-issue="{issue_a}"] [data-report]').count() == 2
+    press(page.locator('.peek [data-do="join"]'))
+    issue_a, issue_b = _issue_of(browser_db[0], first), _issue_of(browser_db[0], second)
+    assert issue_a == issue_b
+    page = admin.open(f"/manage/feedback?tab=open&open=i{issue_a}")
+    assert _item(page, f"i{issue_a}").locator(f'[data-fft-issue="{issue_a}"] [data-report]').count() == 2
     assert not admin.errors, admin.errors
 
 
@@ -90,9 +124,10 @@ def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
     nid = _waiting_note(browser_db[0], "The rest button does nothing.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
-    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
-    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
-    page.locator('[data-fft-issue] [data-do="close"]').click()
+    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
+    iid = _issue_of(browser_db[0], nid)
+    page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
+    _item(page, f"i{iid}").locator('[data-fft-issue] [data-do="close"]').click()
     win = page.locator("#peek")
     win.locator('[data-reason="withdrawn"] input').check()
     win.locator("textarea[name=words]").fill("Typed before Same as")
@@ -148,11 +183,11 @@ def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server
     admin = people("admin")
     page = admin.open("/manage/feedback?tab=open")
     page.set_viewport_size({"width": 1000, "height": 800})
-    head = page.locator('.reader-rows > [data-group="battle"]')
+    head = page.locator('#fb-list tr.dt-group[data-group="battle"]')
     head.wait_for()
-    head.locator("span").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third'; }")
-    box, row = head.bounding_box(), page.locator('.reader-rows > [data-group="battle"] + .fb-row').bounding_box()
-    assert box["height"] > 40 and box["y"] + box["height"] <= row["y"] + 0.5  # (it grew, and the row starts below it)
+    head.locator("td").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third, and a fourth, and on past the width of the whole table so it must wrap'; s.style.whiteSpace = 'normal'; }")
+    box, row = head.bounding_box(), page.locator('#fb-list tr.dt-group[data-group="battle"] + tr').bounding_box()
+    assert box["y"] + box["height"] <= row["y"] + 0.5  # (however tall it grows, the row starts below it)
 
 
 def test_change_and_rename_close_with_cancel_or_escape_and_change_nothing(people, server, browser_db):
@@ -162,9 +197,10 @@ def test_change_and_rename_close_with_cancel_or_escape_and_change_nothing(people
     nid = _waiting_note(browser_db[0], "The rest button is grey.")
     admin = people("admin")
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
-    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
-    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
+    press(_item(page, f"n{nid}").locator('[data-do="issue"]'))
     iid, feature, title = _one(browser_db[0], "SELECT i.id, i.feature, i.title FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid)
+    page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
+    _item(page, f"i{iid}")
     form = page.locator(f"#fft-feature-{iid}")
     page.locator('[data-fft-issue] [data-do="feature"]').click()
     assert form.is_visible()

@@ -736,6 +736,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const shown = document.getElementById('reader-article');
     if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id) && !document.getElementById('quest-' + id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
+  // The item window (Nov 20): an old link to one item (?open=) opens it over its list; ↑ ↓ walk the list it came from
+  { const at = document.querySelector('[data-open-item]'); if (at) openPanel(at.dataset.openItem, null, null); }
+  document.addEventListener('keydown', e => {
+    if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || e.metaKey || e.ctrlKey || e.altKey) return;
+    const layer = layers.base;
+    if (!layer || !isOpen(layer) || !layer.panel.querySelector('[data-item-panel]') || (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) return;
+    const b = layer.panel.querySelector(e.key === 'ArrowUp' ? '[data-item-prev]' : '[data-item-next]');
+    if (b) { e.preventDefault(); b.click(); }
+  });
+
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
   // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide, "full" nearly the whole window
   // (a Wild Shape form, the Spell Book). A side panel opened from inside a modal goes on the top
@@ -997,6 +1007,25 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // open stay, the corner card says what happened, the address follows. An answer that is another page loads it as
   // before, its card carried over. Refused: its words in a card, nothing redrawn. Opt out with data-reload on the form
   // (or a box around it) where the change reaches outside main: the menu bar, the page's settings on body.
+  // The item window (app/fft/item_page.py; Brett, Nov 20, issue 44): after a press in it, the page underneath draws
+  // again and the window moves on to the next item of its list, or closes at the end; a conversation, a rename or a
+  // Feature stays on the item (what you're doing is still there).
+  function itemNext(panel, form) {
+    const doing = new FormData(form).get('do');
+    const stay = form.hasAttribute('data-stay') || ['line', 'tell', 'title', 'feature'].includes(doing);
+    const body = panel.querySelector('[data-next-url]');
+    const to = stay ? panel.dataset.url : body && body.dataset.nextUrl;
+    if (to) openPanel(to, null, null); else closeLayer(layers.base);
+  }
+  function itemDone(panel, form, said) {
+    fetch(location.href, { headers: { Accept: 'text/html' }, credentials: 'same-origin' }).then(r => r.text()).then(html => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      if (doc.querySelector('main')) swapMain(doc, true);
+      itemNext(panel, form);
+      if (said) { try { toast(JSON.parse(said)); } catch (err) { /* not a message */ } }
+      document.dispatchEvent(new CustomEvent('askdnd:changed'));
+    });
+  }
   function unbusy(form) {
     form.querySelectorAll('input[data-kept]').forEach(i => i.remove());
     form.querySelectorAll('button.busy').forEach(b => { b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label; });
@@ -1026,6 +1055,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         }
         const url = new URL(r.url), page = (r.headers.get('content-type') || '').includes('text/html');
         const doc = page ? new DOMParser().parseFromString(html, 'text/html') : null, said = doc && doc.body.dataset.toast;
+        const item = panel && panel.querySelector('[data-item-panel]');
+        if (item && doc) {  // (the item window: whatever page answered, this one stays where it is and draws again for what
+          // changed: For you loses what you just did, To sort the note you filed; the window moves on)
+          itemDone(panel, form, said);
+          return;
+        }
         if (!doc || !doc.querySelector('main') || (r.redirected && url.pathname !== location.pathname)) {
           if (said) { try { sessionStorage.setItem('askdnd-card', said); } catch (err) { /* no storage */ } }
           location.assign(r.redirected ? url.href : location.href);

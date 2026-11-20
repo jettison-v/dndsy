@@ -1588,6 +1588,17 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { max-width: 2200px; }  /* the whole window (Backstage mode): lists and tables use the width; centred past 2200px */
 }
+/* For you · Testing · Feedback across the top of each (The Work Pages, Nov 20) */
+.fft-tabs { display: flex; gap: var(--sp-1); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); }
+.fft-tabs a { position: relative; padding: var(--sp-2) var(--sp-4); color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.fft-tabs a.on { color: var(--text-strong); border-bottom-color: var(--red); }
+.fft-tabs .for-you-badge { position: static; margin-left: var(--sp-2); vertical-align: 1px; }
+/* The item window (app/fft/item_page.py, _fft_item.html; Nov 20): the side panel, wider for an item's whole reader */
+.peek:has(> .fft-item-head) { width: min(640px, 100%); }
+.fft-item-body .reader-article { display: grid; gap: var(--sp-3); }
+.dtable form.inline, .dt-group form.inline { display: inline; margin: 0; }
+.dt-group .btn.link { margin-left: var(--sp-3); }
+.fft-foryou-sum { margin: 0 0 var(--sp-3); }
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
    which wraps; columns sized by their header (<th style="width:…">), the title taking the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
@@ -4323,7 +4334,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ts-do { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
 .ts-read p { margin: 0; }  /* (the article's grid spaces its parts, as Notes you sent's: no paragraph's own margin on top) */
 .cc-acts form { display: contents; }
-.btn.ts-pass { background: var(--green-soft); border-color: var(--green); color: var(--text); }
+/* (✓ Passed is a button like its neighbours until pressed: green read as a result already in, issue 45, Brett, Nov 20) */
 .check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
 .check-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: var(--r-lg); box-shadow: var(--lift); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
 .check-card.folded { background: none; border: 0; box-shadow: none; padding: 0; justify-items: end; }
