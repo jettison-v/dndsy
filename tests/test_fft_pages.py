@@ -287,7 +287,7 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
 def test_pausing_deploys_says_why_in_the_bar(admin, db):
     """Brett's pick A on docs/mockups/deploy-controls/ (Nov 19): Deploys is labelled, pausing asks why (optional), and the bar says it."""
     page = admin.get("/manage/for-you").text
-    assert 'aria-labelledby="fft-mode-lbl"' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
+    assert 'data-mode-menu' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "a demo tomorrow"})
     assert rules.frozen(db) and rules.freeze_state(db)["why"] == "a demo tomorrow"
     page = admin.get("/manage/for-you").text
@@ -517,5 +517,6 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})  # (Frozen ends Available: one at a time)
     assert not rules.available_state(db)["on"] and rules.frozen(db) and rules.mode_of(db) == "frozen"
     page = admin.get("/manage/for-you").text
-    assert 'aria-controls="fft-bar-help"' in page and 'id="fft-bar-help" hidden' in page  # (one Help ▾ for the bar's help, Nov 19)
+    assert 'data-mode-menu' in page and 'fft-bar-help' not in page  # (each choice says what it does in Deploys' menu: no Help, issue 42)
+    assert page.count('data-mode-pick="') == 3 and page.count('<small>', page.index('data-mode-menu')) >= 3
     assert "Local tries ended" not in page  # (he chose it: nothing to explain)

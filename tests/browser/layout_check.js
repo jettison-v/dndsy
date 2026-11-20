@@ -20,7 +20,11 @@
 // Used by tests/browser/test_layout.py on every pull request and by scripts/layout_sweep.py for a sweep of real data.
 ask => {
   const problems = [], seen = new Set();
-  const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  const folded = el => {  // (inside a closed <details>, its summary aside: not drawn, though Chrome still gives it boxes)
+    const d = el.closest('details:not([open])'), s = el.closest('summary');
+    return !!d && !(s && s.parentElement === d);
+  };
+  const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' && !folded(el); };
   const where = el => {
     const parts = [];
     for (let e = el; e && e !== document.body && parts.length < 4; e = e.parentElement) {

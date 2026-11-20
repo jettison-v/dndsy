@@ -469,9 +469,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (b) { e.preventDefault(); b.click(); }
   });
 
-  // An action bar's ⋯ (_admin_bits.html more_menu): a choice in it, a click elsewhere or Escape closes it
+  // An action bar's ⋯ (_admin_bits.html more_menu): a choice in it, a click elsewhere or Escape closes it; a choice that
+  // opens more of the menu ([data-show]: Deploys' Paused asks why) keeps it open
   document.addEventListener('click', e => {
-    document.querySelectorAll('details.act-more[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('.act-menu button')) d.open = false; });
+    document.querySelectorAll('details.act-more[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('.act-menu button:not([data-show])')) d.open = false; });
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('details.act-more[open]').forEach(d => { d.open = false; }); });
 
