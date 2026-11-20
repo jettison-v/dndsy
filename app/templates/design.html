@@ -376,9 +376,9 @@
         <div class="menu-group">General</div><a href="#manage">Overview</a><a href="#manage">Accounts</a><a href="#manage">Campaigns</a><a href="#manage">Usage</a><a href="#manage">Backups and imports</a>
         <p class="menu-more"><a href="#manage">askdnd history</a><a href="#manage">Tool corrections</a><a href="#manage">Dice tuning</a><a href="#manage">Design system</a></p></div></div>
     </div>
-    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Backstage page, in its half's colour, with the way to the other half on the right.") }}
-    <div class="ds-band"><div class="manage-band camp"><span class="sr">The Lost Mine: this campaign's Backstage</span><a class="manage-cross btn" href="#manage" title="Global: askdnd, the same in every campaign">Global</a></div></div>
-    <div class="ds-band"><div class="manage-band tool"><span class="sr">Global: askdnd, the same in every campaign</span><a class="manage-cross btn" href="#manage" title="The Lost Mine">This campaign</a></div></div>
+    {{ ds("Band", "_manage_head.html · .manage-band.camp | .tool", "The top of every Backstage page, in its half's colour. The way to the other half is Backstage in the menu bar (issue 23, Nov 20).") }}
+    <div class="ds-band"><div class="manage-band camp"><span class="sr">The Lost Mine: this campaign's Backstage</span></div></div>
+    <div class="ds-band"><div class="manage-band tool"><span class="sr">Global: askdnd, the same in every campaign</span></div></div>
     {{ ds("Section list", "_manage_head.html · .manage-side · .manage-sec · .manage-jump", "The page's half down the left, in sections, most often opened first (this page has one at 1240px and wider). Narrower, the same list opens from the jump control under the band. The list sits in the page's left padding, so the page keeps its width.") }}
     <div class="ds-narrow"><nav class="manage-jump-list" aria-label="Section list sample"><span class="manage-sec">Every week</span><a href="#manage" class="on">Needs you<span class="mcount">3</span></a><a href="#manage">Inbox<span class="mcount">5</span></a><a href="#manage">Sessions</a><span class="manage-sec">The table</span><a href="#manage">Table</a><a href="#manage">House rules</a></nav></div>
     {{ ds("Overview card", ".ov-cards > a.ov-card · .ov-state.ok | .warn", "One per page on askdnd's Overview: its name, how it stands (green when fine, amber when it needs a look), and what the page is for. The whole card opens the page.") }}
