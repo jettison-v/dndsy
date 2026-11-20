@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from markupsafe import Markup, escape
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models import Entity, EntityAlias, Status
 
@@ -74,7 +74,7 @@ def entity_linker(db: Session, campaign_id: int, exclude_id: int | None = None, 
         return _cache[key]
 
     targets: dict[str, int] = {}
-    query = select(Entity).where(Entity.campaign_id == campaign_id)
+    query = select(Entity).where(Entity.campaign_id == campaign_id).options(selectinload(Entity.aliases))  # (in one read, Nov 20)
     if not include_drafts:
         query = query.where(Entity.status == Status.PUBLISHED)
     for e in db.scalars(query):

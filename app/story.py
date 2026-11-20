@@ -47,7 +47,10 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
     items = []
     dm_notes = list(db.scalars(select(Suggestion).where(Suggestion.campaign_id == campaign.id, Suggestion.target_type == "session",
                                                         Suggestion.from_dm.is_(True)).order_by(Suggestion.id)))
-    for s in timeline(db, campaign.id):
+    sessions = timeline(db, campaign.id)
+    if sessions:  # (every session's key moments in one read, not one per session: Nov 20)
+        db.scalars(select(GameSession).where(GameSession.id.in_([s.id for s in sessions])).options(selectinload(GameSession.events))).all()
+    for s in sessions:
         recap = next((r for r in reversed(s.recaps) if r.status == Status.PUBLISHED), None)
         if recap:
             events = [e for e in s.events if entities.shown(e)]  # (one naming a hidden entry waits until it's shown)

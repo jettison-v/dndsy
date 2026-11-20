@@ -25,6 +25,12 @@ def _app() -> FastAPI:
     def quick():
         return {}
 
+    @app.get("/held")
+    def held():  # (a long-poll: waiting is its job)
+        with timing.step(timing.HELD):
+            time.sleep(0.08)
+        return {}
+
     app.add_middleware(timing.Stopwatch)
     return app
 
@@ -40,6 +46,7 @@ def test_a_slow_request_says_where_its_time_went(monkeypatch, caplog):
     assert line.index("waiting for the character's lock") < line.index("reading D&D Beyond")  # (longest first)
     caplog.clear()
     c.get("/quick")
+    c.get("/held")  # (Nov 20: the inbox held open was a "slow request" every 25 seconds, and a Sentry warning)
     assert not [r for r in caplog.records if r.name == "askdnd.timing"]
 
 

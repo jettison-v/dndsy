@@ -20,6 +20,7 @@ SLOW = 2.0  # seconds: log it
 REPORT = 15.0  # seconds: tell Sentry too
 QUIET = 600  # seconds between Sentry warnings for the same route
 STEP_MIN = 0.005  # seconds: a step quicker than this isn't worth a word
+HELD = "held open"  # a step a route waits on by design (a long-poll, Nov 20): not counted towards slow
 
 _now: contextvars.ContextVar[dict | None] = contextvars.ContextVar("askdnd_timing", default=None)
 _reported: dict[str, float] = {}
@@ -104,7 +105,7 @@ class Stopwatch:
             await self.app(scope, receive, send)
         finally:
             _now.reset(token)
-            total = time.monotonic() - start
+            total = time.monotonic() - start - watch.pop(HELD, 0.0)
             if total >= SLOW:
                 try:
                     _report(scope.get("method", ""), route_of(scope), total, dict(watch))
