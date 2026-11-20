@@ -8,7 +8,7 @@
   <p class="subtitle">How thrown dice move and how long they stay, for everyone in every campaign. Players only choose their own dice (Your dice). Only admins can see this page.</p>
 
   <div class="tn-grid" data-dice-tuner>
-    <form class="section tn-controls" method="post" action="/manage/dice">
+    <form class="section tn-controls" method="post" action="/manage/dice" data-reload>
       <nav class="sub-tabs" aria-label="Where the dice are thrown">
         {% for key, name, _, _ in places %}<a href="#{{ key }}" class="{{ 'on' if loop.first }}" data-place="{{ key }}">{{ name }}</a>{% endfor %}
       </nav>
@@ -76,7 +76,7 @@
   <section class="section">
     <h2>askdnd's own tuning</h2>
     <p class="note">Puts every slider back to what askdnd used before this page, for everyone.</p>
-    <form method="post" action="/manage/dice" data-confirm="Put every slider back to askdnd&#39;s own tuning, for everyone?">
+    <form data-reload method="post" action="/manage/dice" data-confirm="Put every slider back to askdnd&#39;s own tuning, for everyone?">
       <input type="hidden" name="reset" value="1"><button class="btn" type="submit">Back to askdnd's own</button>
     </form>
   </section>

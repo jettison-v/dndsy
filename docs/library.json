@@ -1424,7 +1424,7 @@
  {
   "title": "Available to Try Locally",
   "kind": "design",
-  "status": "Built (PR 422); its words and control are being redrawn on Deploy Controls",
+  "status": "Built (PR 422), redrawn as Deploys on Deploy Controls",
   "date": "Nov 19",
   "what": "Your Available switch: while it's on, visible (Look) changes wait for your try on your Mac, with a For you item (what changed, what to look at, one link to my local server, Looks good or Something's off…) and a push notification; it turns itself off after a few hours. Four screens and four picks.",
   "source": "docs/mockups/available/index.html",

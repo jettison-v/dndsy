@@ -1,5 +1,5 @@
-{# How things stand, one bar, on For you and Where it stands (Brett, Nov 19). Left: whether Claude is listening, and an
-   open round with End round. Right: "Deploys", one choice of three (his pick A on docs/mockups/deploy-controls/, general
+{# How things stand, one bar, on For you and Where it stands (Brett, Nov 19). Left: whether Claude is listening. Under
+   both, only while a round is open, its own row with End round (issue 41: nothing above moves). Right: "Deploys", one choice of three (his pick A on docs/mockups/deploy-controls/, general
    so the module can go to another product): After my local try (visible changes wait for his try on his Mac), When tests
    pass (the default), Paused (for any reason; pausing asks why, optional, and the bar says it). Two can't be on at once. What each part means is one Help ▾ button beside the choice, opening a short section under the bar (Brett, Nov 19: no
    question-mark pointers; one place for the bar's help). `bar` is testing_page.status(), `back` the page it's on. #}
@@ -8,8 +8,6 @@
   <div class="fft-status-left">
     {% if bar.listening %}<span class="fb-listening fft-stat" data-stat="listening">Claude is listening{% if bar.listener %} <span class="note">({{ bar.listener.name }}, heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>
     {% else %}<span class="fft-stat" data-stat="listening">Claude isn't listening{% if bar.listener and bar.listener.heard_at %} <span class="note">(last heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>{% endif %}
-    {% if bar.round %}<span class="fft-stat" data-stat="round">A round is open</span>
-      <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
   </div>
   <div class="fft-status-right">
     <span class="note fft-mode-note" data-mode-note>{% if mode == "available" %}until <time datetime="{{ bar.available.until }}" data-clock="when">{{ bar.available.until }}</time>{% elif mode == "frozen" %}{% if bar.freeze.why %}Paused: {{ bar.freeze.why }} · {% endif %}since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time>{% elif bar.available.ended %}Local tries ended: {{ bar.available.why }}{% endif %}</span>
@@ -21,6 +19,9 @@
     </form>
     <button type="button" class="btn small fft-bar-i" data-menu="fft-bar-help" aria-expanded="false" aria-controls="fft-bar-help">Help <span class="fft-chev" aria-hidden="true">▾</span></button>
   </div>
+  {# An open round has a row of its own under the rest, so nothing above moves when one starts (Brett's pick, issue 41) #}
+  {% if bar.round %}<div class="fft-status-round"><span class="fft-stat" data-stat="round">A round is open</span>
+    <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form></div>{% endif %}
 </div>
 {# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, so anyone looking knows #}
 <form method="post" action="/manage/for-you/mode" class="composer fb-fold fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}">

@@ -287,3 +287,29 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
             tops = grey.evaluate("e => [...e.getClientRects()].map(r => Math.round(r.top))")
             assert max(tops) - min(tops) < 4, f"a grey part split over lines at {width}px: {tops}"
     assert not admin.errors, admin.errors
+
+
+def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db):
+    """Brett's pick on issue 41 (Nov 19): the bar wrapped by how long its left words were, so it moved when a round
+    opened. Now its top row (Claude listening; Deploys) stays where it was, and an open round is a row of its own under
+    it with End round."""
+    admin = people("admin")
+    page = admin.page
+    for width in (1000, 1280):
+        page.set_viewport_size({"width": width, "height": 900})
+        admin.open("/manage/testing?show=stands")
+        before = page.locator(".fft-status-right").bounding_box()
+        engine = create_engine(browser_db[0])
+        with engine.begin() as conn:
+            conn.execute(text("INSERT INTO fft_rounds (workspace_id) VALUES (1)"))
+        engine.dispose()
+        admin.open("/manage/testing?show=stands")
+        after, row = page.locator(".fft-status-right").bounding_box(), page.locator(".fft-status-round").bounding_box()
+        assert abs(after["y"] - before["y"]) < 2 and abs(after["x"] - before["x"]) < 2, f"the top row moved at {width}px"
+        assert row["y"] >= after["y"] + after["height"] and page.locator('.fft-status-round [data-do="end-round"]').is_visible()
+        bar = [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]
+        assert not bar, f"the status bar at {width}px: {bar}"
+        engine = create_engine(browser_db[0])
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE fft_rounds SET ended_at = now() WHERE ended_at IS NULL"))
+        engine.dispose()

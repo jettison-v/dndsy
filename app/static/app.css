@@ -4445,6 +4445,8 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-status .fft-stat + .fft-stat { padding-left: var(--sp-3); border-left: 1px solid var(--line); }
 .fft-status .note { white-space: nowrap; }  /* (a grey part moves to the next line whole, never split: issue 38) */
 .fft-status .fft-mode { margin: 0; }
+.fft-status-round { flex-basis: 100%; display: flex; align-items: center; gap: var(--sp-3); padding-top: var(--sp-2); border-top: 1px solid var(--line); }  /* (an open round: its own row, issue 41) */
+.fft-status-round form { margin: 0; }
 .fft-mode-lbl { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }  /* (what the choice is about: Brett, Nov 19) */
 .fft-pause { margin-top: var(--sp-2); }
 .fft-status[data-mode="available"] { border-color: var(--green); background: var(--green-soft); }
