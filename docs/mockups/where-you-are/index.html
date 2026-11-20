@@ -3,10 +3,11 @@
 <title>Where You Are</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* The menu bar shows where you are one way (issue 37, Brett, Nov 19: "The menu bar has 4 different methods to tell the
-   user where they are in the product ... This needs to be standardized"). Today: Campaign, your character and Party
-   turn grey; Manage gets a red outline; the Admin gear a blue one; your picture nothing. Three ways, each applied to
-   every door, drawn at a laptop's width. Source: docs/mockups/where-you-are/index.html. */
+/* The menu bar, thought through freshly (issue 37; Brett's comment, Nov 19: "I think the consistency goes further than
+   just the active tab ... Some areas are outlined, some are not, some open menus and have arrows, some open menus and
+   do not have arrows. I think we need to be more consistent. Can we think of this freshly?"). The bar has three kinds
+   of door: places you go, menus, and tools. Each option is one rule per kind, then where you are and counts on top.
+   Drawn at a laptop's width. Source: docs/mockups/where-you-are/index.html. */
 :root {
   --bg: #15171a; --chrome: #0f1113; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-strong: #464b53;
   --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f;
@@ -21,7 +22,11 @@ h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
 h2 { font-size: 1.05rem; margin: 0; color: var(--strong); }
 p { margin: 0; }
 b { color: var(--strong); }
-.lede { color: var(--muted); max-width: 84ch; }
+.lede { color: var(--muted); max-width: 86ch; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.kind { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .9rem; }
+.kind b { display: block; margin-bottom: 2px; }
+.kind span { color: var(--muted); }
 .controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); }
 .lbl { color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
@@ -32,30 +37,47 @@ b { color: var(--strong); }
 .opt-h { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
 .mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .opt .why { color: var(--muted); font-size: .9rem; max-width: 92ch; }
+.rules { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: .86rem; margin: 0; }
+.rules dt { color: var(--strong); font-weight: 600; }
+.rules dd { margin: 0; color: var(--muted); }
 .frame { overflow-x: auto; border-radius: 10px; }
-/* the menu bar, as askdnd draws it */
+/* the bar */
 .tb { width: 100%; min-width: 1040px; display: flex; align-items: center; gap: 10px; padding: 10px 14px 11px; background: var(--chrome); border-bottom: 2px solid var(--brand); font: 600 .92rem/1 var(--sans); }
 .brand { width: 26px; height: 26px; border-radius: 7px; background: var(--brand); flex: none; }
-.camp { color: var(--strong); font-weight: 700; padding: 0 6px; }
-.sep { width: 1px; height: 22px; background: var(--line); }
-.door { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; border-radius: 8px; color: var(--muted); border: 1px solid transparent; background: none; font: inherit; cursor: pointer; white-space: nowrap; }
-.door.boxed { border-color: var(--line); color: var(--text); }
-.door .av { width: 20px; height: 20px; border-radius: 50%; background: #6b7b8c; }
-.search { flex: 1; min-width: 140px; white-space: nowrap; overflow: hidden; gap: 8px; display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-weight: 500; }
-.chain { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-weight: 500; }
-.gear { min-width: 34px; justify-content: center; }
-.badge { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--amber); color: #111; font: 700 .66rem/16px var(--sans); text-align: center; padding: 0 4px; }
-.me { width: 32px; height: 32px; border-radius: 50%; padding: 0; justify-content: center; background: #4a5563; color: #fff; }
-/* the three ways */
-.s-a .door.here { background: var(--surface-3); color: var(--strong); }
-.s-b .door.here { color: var(--strong); }
-.s-b .door.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
-.s-b .door.me.here::after, .s-b .door.gear.here::after { left: 4px; right: 4px; }
-.s-c .door.here { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); border-color: transparent; }
-.today .door.here.k-campaign, .today .door.here.k-cole, .today .door.here.k-party { background: var(--surface-3); color: var(--strong); }
-.today .door.here.k-manage { border-color: var(--brand); color: var(--strong); }
-.today .door.here.k-gear { border-color: var(--blue); }
-.page { background: var(--bg); padding: 14px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; min-width: 1040px; color: var(--muted); font-size: .9rem; }
+.sep { width: 1px; height: 22px; background: var(--line); flex: none; }
+.d { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; color: var(--muted); border: 1px solid transparent; background: none; white-space: nowrap; }
+.d .av { width: 20px; height: 20px; border-radius: 50%; background: #6b7b8c; }
+.d .chev { font-size: .7em; color: var(--faint); }
+.d.camp { color: var(--strong); font-weight: 700; }
+.d.me .pic { width: 26px; height: 26px; border-radius: 50%; background: #4a5563; color: #fff; display: grid; place-items: center; font-size: .8rem; }
+.d.me { padding: 0 6px; }
+.badge { position: absolute; top: -5px; right: -4px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--brand); color: #fff; font: 700 .66rem/16px var(--sans); text-align: center; padding: 0 4px; }
+.badge.amber { background: var(--amber); color: #111; }
+.tool { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-weight: 500; white-space: nowrap; }
+.tool.search { flex: 1; min-width: 140px; justify-content: space-between; overflow: hidden; }
+.tool.chain { border-radius: 999px; color: var(--muted); }
+/* today */
+.today .d.boxed { border-color: var(--line); color: var(--text); }
+.today .d.here.k-campaign, .today .d.here.k-cole, .today .d.here.k-party { background: var(--surface-3); color: var(--strong); }
+.today .d.here.k-manage { border-color: var(--brand); color: var(--strong); }
+.today .d.here.k-gear { border-color: var(--blue); }
+/* A: plain doors, boxed tools; a red line under where you are */
+.o-a .d { color: var(--text); }
+.o-a .d.here { color: var(--strong); }
+.o-a .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+.o-a .d:hover { background: var(--surface-2); }
+/* B: every door a button */
+.o-b .d { border-color: var(--line); color: var(--text); }
+.o-b .d.camp { border-color: transparent; }
+.o-b .d.here { background: var(--surface-3); border-color: var(--line-strong); color: var(--strong); }
+/* C: places left, plain; menus right, one cluster */
+.o-c .d { color: var(--text); }
+.o-c .cluster { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 10px; flex: none; }
+.o-c .cluster .d { min-height: 30px; }
+.o-c .d.here { color: var(--strong); }
+.o-c .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+.o-c .cluster .d.here::after { bottom: -6px; }
+.page { background: var(--bg); padding: 12px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; min-width: 1040px; color: var(--muted); font-size: .9rem; }
 .decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
 .decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
 .decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
@@ -72,16 +94,21 @@ b { color: var(--strong); }
 <div class="wrap">
   <header style="display:grid;gap:8px">
     <h1>Where You Are</h1>
-    <p class="lede">The menu bar should show where you are one way, the same on every door: Campaign, Table, your character, Party, Manage, the Admin gear and your picture (issue 37). Pick a page below to see each way mark it; the first bar is how it looks today. Your picture marks the pages that are yours alone: Notes you sent, Help, the DM guide.</p>
+    <p class="lede">Thought through freshly, from your comment: the menu bar has three kinds of door, and today they mix their looks (outlined or not, ▾ or not). Each option below is one rule for each kind, then where you are and counts on top of it. Pick a page to see each mark it; the first bar is today.</p>
   </header>
+  <div class="kinds">
+    <div class="kind"><b>Places you go</b><span>Campaign, Table ↗ (opens the table in a new tab), your character (Cole)</span></div>
+    <div class="kind"><b>Menus</b><span>The campaign's name, Party, Manage, the Admin gear, your picture</span></div>
+    <div class="kind"><b>Tools</b><span>Search, the D&amp;D Beyond bridge's chain (it says how the sheet is connected)</span></div>
+  </div>
   <div class="controls"><span class="lbl">You're on</span> <span class="seg" data-ctl><button type="button" data-v="campaign" aria-pressed="true">Campaign</button><button type="button" data-v="cole">Cole's Battle</button><button type="button" data-v="party">Party</button><button type="button" data-v="manage">Manage › Inbox</button><button type="button" data-v="gear">Admin › For you</button><button type="button" data-v="me">Notes you sent</button></span></div>
   <div id="opts"></div>
 
   <form class="decide" aria-label="Your picks">
-    <fieldset><legend>Which way shows where you are</legend>
-      <label class="o"><input type="radio" name="shape" value="b"><span>B · A red line under the door <span class="mine">my pick</span></span><small>The same mark as askdnd's tabs (Where it stands, Claude's, Done), so "you're here" reads one way everywhere; the doors' own outlines stay as they are.</small></label>
-      <label class="o"><input type="radio" name="shape" value="a"><span>A · The grey fill on every door</span><small>What Campaign and your character do today, extended to Manage, the gear and your picture.</small></label>
-      <label class="o"><input type="radio" name="shape" value="c"><span>C · The blue chosen ring</span><small>The design system's "this one is chosen" (a switch's choice, a list's row), on the door.</small></label>
+    <fieldset><legend>Which menu bar</legend>
+      <label class="o"><input type="radio" name="shape" value="a"><span>A · Plain doors, boxed tools <span class="mine">my pick</span></span><small>No door is outlined; every menu ends in ▾ (the gear and your picture too); only Search and the bridge's chain keep a box, because you use them, you don't go there. Where you are: a red line under the door, as askdnd's tabs.</small></label>
+      <label class="o"><input type="radio" name="shape" value="b"><span>B · Every door a button</span><small>Every door outlined the same, menus with ▾, places without; where you are: filled.</small></label>
+      <label class="o"><input type="radio" name="shape" value="c"><span>C · Places left, menus together on the right</span><small>Places plain on the left; every menu in one outlined group on the right, each with ▾; where you are: a red line under it.</small></label>
     </fieldset>
     <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
@@ -91,22 +118,42 @@ b { color: var(--strong); }
 <script>
 (() => {
   let at = "campaign";
-  const bar = cls => `<div class="tb ${cls}"><span class="brand"></span><span class="camp">The Adventure Begins ▾</span><span class="sep"></span>
-    <span class="door k-campaign${at === "campaign" ? " here" : ""}">Campaign</span><span class="door">Table ↗</span><span class="sep"></span>
-    <span class="door boxed k-cole${at === "cole" ? " here" : ""}"><span class="av"></span>Cole</span><span class="door boxed k-party${at === "party" ? " here" : ""}">Party ▾</span>
-    <span class="search"><span style="overflow:hidden;text-overflow:ellipsis">Search your character, the rules…</span><span>⌘F</span></span><span class="chain">Not connected</span>
-    <span class="door boxed k-manage${at === "manage" ? " here" : ""}">Manage ▾</span><span class="door boxed gear k-gear${at === "gear" ? " here" : ""}">⚙<span class="badge">5</span></span><span class="door me k-me${at === "me" ? " here" : ""}">D</span></div>
-    <div class="page">${{campaign: "Campaign › Previously on…", cole: "Cole › Battle", party: "Party › Everyone at a glance", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent"}[at]}</div>`;
+  const h = k => at === k ? " here" : "";
+  const counts = (cls) => ({ gear: `<span class="badge${cls === "today" ? " amber" : ""}">5</span>`, me: `<span class="badge">4</span>` });
+  const doors = (o) => {
+    const ch = o === "today" ? { camp: " ▾", party: " ▾", manage: " ▾", gear: "", me: "" } : { camp: " ▾", party: " ▾", manage: " ▾", gear: " ▾", me: " ▾" };
+    const box = o === "today" ? " boxed" : "";
+    const c = counts(o);
+    const left = `<span class="d camp">The Adventure Begins<span class="chev">${ch.camp}</span></span><span class="sep"></span>
+      <span class="d k-campaign${h("campaign")}">Campaign</span><span class="d">Table ↗</span><span class="sep"></span>
+      <span class="d${box} k-cole${h("cole")}"><span class="av"></span>Cole</span>`;
+    const tools = `<span class="tool search"><span>Search your character, the rules…</span><span>⌘F</span></span><span class="tool chain">Not connected</span>`;
+    const menus = `<span class="d${box} k-party${h("party")}">Party<span class="chev">${ch.party}</span></span>
+      <span class="d${box} k-manage${h("manage")}">Manage<span class="chev">${ch.manage}</span></span>
+      <span class="d${box} k-gear${h("gear")}">⚙<span class="chev">${ch.gear}</span>${c.gear}</span>
+      <span class="d me k-me${h("me")}"><span class="pic">D</span><span class="chev">${ch.me}</span>${c.me}</span>`;
+    if (o === "o-c") return `${left}${tools}<span class="cluster">${menus}</span>`;
+    if (o === "today") return `${left}<span class="d${box} k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d${box} k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d${box} k-gear${h("gear")}">⚙${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span>${c.me}</span>`;
+    return `${left}<span class="d k-party${h("party")}">Party<span class="chev"> ▾</span></span>${tools}<span class="d k-manage${h("manage")}">Manage<span class="chev"> ▾</span></span><span class="d k-gear${h("gear")}">⚙<span class="chev"> ▾</span>${c.gear}</span><span class="d me k-me${h("me")}"><span class="pic">D</span><span class="chev"> ▾</span>${c.me}</span>`;
+  };
   const OPTS = [
-    { k: "today", name: "Today: four ways", why: "Campaign, your character and Party turn grey; Manage gets a red outline; the gear a blue one; your picture shows nothing." },
-    { k: "s-b", name: "B · A red line under the door", mine: true, why: "The mark askdnd's tabs already use for the one you're on, so the menu bar and every page's tabs say \"you're here\" the same way. The doors keep their own outlines (Cole, Party, Manage, the gear), so nothing else changes." },
-    { k: "s-a", name: "A · The grey fill on every door", why: "What Campaign and your character do today, on every door. Quiet; close to the hover look, so it can read as \"the mouse is here\"." },
-    { k: "s-c", name: "C · The blue chosen ring", why: "The design system's \"chosen\" look (a switch's choice, a list's row). Clear, but blue in the menu bar is new, and it's louder than the page's own tabs." },
+    { k: "today", name: "Today", why: "Campaign, your character and Party turn grey where you are; Manage gets a red outline, the gear a blue one, your picture nothing. Cole, Party, Manage and the gear are outlined, the campaign's name and Campaign aren't; the campaign's name, Party and Manage have ▾, the gear and your picture don't; the gear's count is amber, your picture's red." },
+    { k: "o-a", name: "A · Plain doors, boxed tools", mine: true, why: "The fewest rules, and the ones most sites use: a door is plain words (a place) or plain words with ▾ (a menu), so you can tell them apart at a glance; a box means a tool you use right there. Where you are is the red line askdnd's tabs already use.",
+      rules: [["Places", "plain words; Table keeps its ↗ (a new tab)"], ["Menus", "plain words with ▾, the gear and your picture too"], ["Tools", "outlined: Search, the bridge's chain"], ["You're here", "a red line under the door"], ["Counts", "one badge, red, at the door's corner"]] },
+    { k: "o-b", name: "B · Every door a button", why: "Every door looks pressable the same way, which is clear but heavy: eight outlined boxes in a row, and the tools look like doors. Where you are fills the box.",
+      rules: [["Places", "outlined, no ▾"], ["Menus", "outlined, with ▾"], ["Tools", "outlined (they look like doors)"], ["You're here", "the door filled"], ["Counts", "one badge, red"]] },
+    { k: "o-c", name: "C · Places left, menus together on the right", why: "Groups by kind: where you go on the left, everything that opens a menu in one outlined group on the right. Tidy, but it moves Party away from your character, which it lists.",
+      rules: [["Places", "plain words, on the left"], ["Menus", "together in one outlined group on the right, each with ▾"], ["Tools", "outlined, in the middle"], ["You're here", "a red line under the door"], ["Counts", "one badge, red"]] },
   ];
   const box = document.getElementById("opts");
-  const el = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
-  const cards = OPTS.map(o => { const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p><div class="frame"></div></section>`); box.append(c); return { o, frame: c.querySelector(".frame") }; });
-  const draw = () => cards.forEach(c => { c.frame.innerHTML = bar(c.o.k); });
+  const el = s => { const t = document.createElement("template"); t.innerHTML = s.trim(); return t.content.firstElementChild; };
+  const cards = OPTS.map(o => {
+    const rules = o.rules ? `<dl class="rules">${o.rules.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>` : "";
+    const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p>${rules}<div class="frame"></div></section>`);
+    box.append(c); return { o, frame: c.querySelector(".frame") };
+  });
+  const said = { campaign: "Campaign › Previously on…", cole: "Cole › Battle", party: "Party › Everyone at a glance", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent" };
+  const draw = () => cards.forEach(c => { c.frame.innerHTML = `<div class="tb ${c.o.k}"><span class="brand"></span>${doors(c.o.k)}</div><div class="page">${said[at]}</div>`; });
   document.querySelectorAll("[data-ctl] button").forEach(b => b.addEventListener("click", () => {
     b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); at = b.dataset.v; draw();
   }));
