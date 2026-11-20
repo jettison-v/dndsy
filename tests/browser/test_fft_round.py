@@ -368,7 +368,7 @@ def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browse
 def test_for_you_opens_a_check_in_the_item_window_and_passed_moves_on(people, server, browser_db):
     """The Work Pages (Brett, Nov 20): For you is a table; a row opens its check in the item window, ✓ Passed looks like
     its neighbours until pressed (issue 45), and after it the window moves on to the next check, the row gone."""
-    first, second = _checks(browser_db[0], "/party", "/help")
+    first, _second = _checks(browser_db[0], "/party", "/help")
     admin = people("admin")
     page = admin.open("/manage/for-you")
     page.locator(f'tr[data-row="c{first}"] td.dt-title').click()
@@ -378,8 +378,11 @@ def test_for_you_opens_a_check_in_the_item_window_and_passed_moves_on(people, se
     wrong = page.locator('#peek [data-do="wrong"]')
     look = "el => getComputedStyle(el).backgroundColor"
     assert passed.evaluate(look) == wrong.evaluate(look)  # (issue 45: no green before it's pressed)
+    nxt = page.locator("#peek [data-next-url]").get_attribute("data-next-url")  # (the next row: a check another test left may come first)
+    key = nxt.split("/manage/item/")[1].split("?")[0]
+    assert key != f"c{first}" and f'data-row="{key}"' in page.content()
     passed.click()
-    page.locator(f'#peek [data-item-panel="c{second}"]').wait_for()  # (on to the next)
+    page.locator(f'#peek [data-item-panel="{key}"]').wait_for()  # (on to the next)
     page.wait_for_function(f"() => !document.querySelector('tr[data-row=\"c{first}\"]')")
     assert _one(browser_db[0], "SELECT result FROM fft_tries WHERE check_id = :c ORDER BY id DESC LIMIT 1", c=first) == [("passed",)]
     assert not admin.errors, admin.errors
