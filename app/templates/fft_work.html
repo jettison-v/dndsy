@@ -69,7 +69,7 @@
     {% for x in q.rows %}
     <tbody class="wk-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-plan" data-sort-handle=".wk-grip .grip">
       <tr class="dt-group wk-item-head"><td colspan="8">{{ grip() }} <span data-sort-n>{{ x.n }}</span> · {{ x.it.title }}{% if x.it.standing %} <span class="tag">standing</span>{% endif %}
-        {% if x.it.next_whose == "brett" %} · {{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %} · {{ x.why }}{% elif not x.plans %} · nothing open{% endif %}</td></tr>
+        {% if x.it.next_whose == "brett" %} · {{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %} · {{ x.why }}{% elif not x.plans %} · its plans are held{% endif %}</td></tr>
       {% for r in x.plans %}{{ plan_row(r) }}{% endfor %}
     </tbody>
     {% else %}<tbody><tr><td colspan="8">{{ empty_state("Nothing on the Roadmap yet: Claude adds items as work comes in.") }}</td></tr></tbody>

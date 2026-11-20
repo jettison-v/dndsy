@@ -475,6 +475,31 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     document.querySelectorAll('details.act-more[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('.act-menu button:not([data-show])')) d.open = false; });
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('details.act-more[open]').forEach(d => { d.open = false; }); });
+  // A ⋯ or a lane's menu in a table's row (issue 47, Nov 20: Development's menus opened behind the next row): a table's
+  // cells and its scroll frame cut off what sticks out, so the menu floats over the page, placed by its button (below it,
+  // or above when the window has no room); it follows its button as the page scrolls, and closes once the button is gone.
+  function placeMenu(d) {
+    const m = d.querySelector(':scope > .act-menu');
+    if (!m) return;
+    const r = d.querySelector(':scope > summary').getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) { d.open = false; return; }
+    m.classList.add('floats');
+    const w = m.offsetWidth, h = m.offsetHeight;
+    let left = m.classList.contains('end') || r.left + w > innerWidth - 8 ? r.right - w : r.left;
+    left = Math.max(8, Math.min(left, innerWidth - w - 8));
+    const top = r.bottom + 4 + h > innerHeight - 8 && r.top - h - 4 > 8 ? r.top - h - 4 : r.bottom + 4;
+    m.style.left = `${Math.round(left)}px`; m.style.top = `${Math.round(top)}px`;
+  }
+  document.addEventListener('toggle', e => {
+    const d = e.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.matches('details.act-more') || !d.closest('.table-scroll')) return;
+    if (d.open) { placeMenu(d); return; }
+    const m = d.querySelector(':scope > .act-menu');
+    if (m) { m.classList.remove('floats'); m.style.left = m.style.top = ''; }
+  }, true);
+  const followMenus = () => document.querySelectorAll('.table-scroll details.act-more[open]').forEach(placeMenu);
+  document.addEventListener('scroll', followMenus, true);
+  window.addEventListener('resize', followMenus);
 
   // The walkthrough's ticks (Brett's 3A, Nov 17): only to keep your place, kept on this device for the check you're on
   // and cleared once you're on another

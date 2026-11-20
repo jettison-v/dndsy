@@ -105,12 +105,14 @@ def plan_row(db: Session, a: FftArea, pick: rules.Pick, frozen: bool) -> dict:
 
 
 def queue(db: Session) -> dict:
-    """The Queue: the Roadmap's items in Brett's order, each with its plans in his order; held plans below the cut line."""
+    """The Queue: the Roadmap's items that have plans, in Brett's order, each with its plans in his order; held plans below
+    the cut line. An item with no plan (an idea not built yet, or one finished) isn't Development's: it waits on the
+    Roadmap (issue 49, Nov 20: "Why do these exist here if they are still open?")."""
     pick = rules.pick_next(db)
     skipped = dict(pick.skipped)
     frozen = rules.freeze_state(db)["on"]
     items, held = [], []
-    for n, it in enumerate(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)), 1):
+    for it in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
         rows = []
         for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
             if rules.area_turn(db, a) == "done" and not rules.area_open_issues(db, a):
@@ -118,8 +120,10 @@ def queue(db: Session) -> dict:
             row = plan_row(db, a, pick, frozen)
             row["item"] = it
             (held if a.held else rows).append(row)
+        if not rows and not any(h["item"].id == it.id for h in held):
+            continue
         why = skipped.get(it.title, "")
-        items.append({"it": it, "n": n, "plans": rows, "why": f"skipped: {why}" if why else ""})
+        items.append({"it": it, "n": len(items) + 1, "plans": rows, "why": f"skipped: {why}" if why else ""})
     return {"rows": items, "held": held, "pick": pick, "above": sum(len(x["plans"]) for x in items),
             "yours": sum(1 for x in items for r in x["plans"] if r["turn"] == "brett")}
 

@@ -1106,9 +1106,12 @@ def unlock_area(db: Session, owner: str, area: FftArea) -> None:
 
 
 def order_items(db: Session, actor: str, ids: list[int]) -> None:
-    """Brett's one order: the Roadmap's items, top first (on Work's Queue)."""
+    """Brett's one order: the Roadmap's items, top first (dragged on Development's Queue, which lists only those with plans:
+    the items dragged come first in their new order, the rest keep theirs after them)."""
     rows = {it.id: it for it in db.scalars(select(FftItem))}
-    for n, i in enumerate(x for x in ids if x in rows):
+    moved = [x for x in dict.fromkeys(ids) if x in rows]
+    rest = [it.id for it in sorted(rows.values(), key=lambda it: (it.place, it.id)) if it.id not in moved]
+    for n, i in enumerate(moved + rest):
         rows[i].place = n + 1
     _event(db, actor, "items_ordered", "item", 0, order=[x for x in ids if x in rows])
 
