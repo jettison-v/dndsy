@@ -380,3 +380,47 @@ def test_bretts_order_and_an_area_with_open_work_never_archived(admin, db):
     rules.close(db, "claude", issue, "withdrawn")
     rules.archive_area(db, "claude", db.get(FftArea, a.id))
     assert db.get(FftArea, a.id).archived
+
+
+def test_the_heads_up_before_a_round_holds_a_change_about_to_go_live(admin, player, db):
+    """A lighter round, item 3 (Brett's pick A on docs/mockups/round-heads-up/, Nov 19): ▶ Start round first says what
+    it would hold when a change of Claude's is about to go live there; Let it go live first opens the round by itself
+    once it's live; Cancel lets it go; with nothing in flight the button starts the round at once, as before."""
+    item = rules.new_item(db, "claude", "One area", "now", False)
+    a = rules.new_area(db, "claude", item, "Battle")
+    _check(db, area=a)
+    page = admin.get("/manage/for-you").text
+    assert 'data-modal-url="/manage/testing/round/heads-up"' not in page  # (nothing in flight: it starts at once)
+    issue = rules.new_issue(db, "claude", "The Count wraps", area_id=a.id)
+    rules.start_fixing(db, "claude", issue)
+    rules.fix_ready(db, "claude", issue, "https://github.com/x/y/pull/431")
+    db.flush()
+    assert [g["n"] for g in rules.in_flight(db, rules.round_areas(db), whole=True)] == ["431"]
+    page = admin.get("/manage/for-you").text
+    assert 'data-modal-url="/manage/testing/round/heads-up" data-do="start-round"' in page
+    window = admin.get("/manage/testing/round/heads-up").text
+    assert 'data-pr="431"' in window and 'data-do="round-after"' in window and 'data-do="round-now"' in window
+    assert player.post("/manage/testing/round/after").status_code in (303, 403) and not rules.after_state(db)["on"]  # (admins only)
+    admin.post("/manage/testing/round/after")
+    assert rules.after_state(db)["on"] and rules.round_open(db) is None
+    assert 'data-stat="after"' in admin.get("/manage/for-you").text
+    rules.fix_live(db, "claude", issue, "abc1234")  # (it's live: the round opens by itself, and holds)
+    assert not rules.after_state(db)["on"] and rules.holding_round(db) is not None
+    admin.post("/manage/testing/round/end")
+    issue2 = rules.new_issue(db, "claude", "Another", area_id=a.id)
+    rules.start_fixing(db, "claude", issue2)
+    rules.fix_ready(db, "claude", issue2, "https://github.com/x/y/pull/432")
+    admin.post("/manage/testing/round/after")
+    admin.post("/manage/testing/round/after/cancel")
+    assert not rules.after_state(db)["on"]
+
+
+def test_pausing_says_what_it_would_hold(admin, db):
+    """The heads-up's second part: Deploys › Paused's reason box says what pausing holds, when something's in flight."""
+    assert "data-holds-flight" not in admin.get("/manage/for-you").text
+    issue = rules.new_issue(db, "claude", "The Count wraps")
+    rules.start_fixing(db, "claude", issue)
+    rules.fix_ready(db, "claude", issue, "https://github.com/x/y/pull/433")
+    db.flush()
+    page = admin.get("/manage/for-you").text
+    assert "data-holds-flight" in page and "The Count wraps" in page[page.index("data-holds-flight"):]

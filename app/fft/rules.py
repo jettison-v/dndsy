@@ -562,6 +562,8 @@ def fix_live(db: Session, actor: str, issue: FftIssue, commit: str) -> None:
     if reporter:
         issue.confirm_by, issue.confirm_since = reporter, now()
     _set_issue(db, actor, issue, "ready", "issue_live", commit=commit)
+    db.flush()
+    _after_live(db, actor)  # (Brett's round, if it waited for this to go live)
 
 
 def rollback(db: Session, actor: str, commit: str) -> list[int]:
@@ -1181,6 +1183,86 @@ def holding_round(db: Session) -> FftRound | None:
     """The open round that holds Claude's merges, if any (▶ Try it's never does: a lighter round, Nov 19)."""
     _expire_rounds(db)
     return db.scalar(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.holds.is_(True)).order_by(FftRound.id.desc()))
+
+
+# ------------------------------------------------------------------ the heads-up before holding (a lighter round, item 3)
+
+AFTER = "fft_round_after"  # (a ToolSetting: {"user_id", "area_id", "prs", "since"}: Brett's round waits for these to go live)
+
+
+def round_areas(db: Session, area_id: int | None = None) -> set[int]:
+    """The areas a round would hold: ▶ Just this area, that one; ▶ Start round, every area with a check in his turn."""
+    if area_id:
+        return {area_id}
+    return {a.id for a in db.scalars(select(FftArea).where(FftArea.archived.is_(False)))
+            if any(check_state(db, c)["turn"] == "brett" for c in area_checks(db, a))}
+
+
+def in_flight(db: Session, area_ids: set[int] | None = None, whole: bool = False) -> list[dict]:
+    """Claude's changes about to go live (Brett, Nov 19: "maybe it warns when I am going to be stopping something"):
+    issues being fixed whose pull request is attached and not yet live, one entry per pull request. `area_ids` keeps
+    those areas' (None: every one); `whole` adds the issues in no area, which a round over every area holds too."""
+    out: dict[str, dict] = {}
+    for i in db.scalars(select(FftIssue).where(FftIssue.state == "fixing", FftIssue.pr != "").order_by(FftIssue.id)):
+        if area_ids is not None and not (i.area_id in area_ids or (whole and i.area_id is None)):
+            continue
+        g = out.setdefault(i.pr, {"pr": i.pr, "n": i.pr.rstrip("/").rsplit("/", 1)[-1], "titles": [], "areas": [], "area_ids": set()})
+        g["titles"].append(i.title)
+        g["area_ids"].add(i.area_id)
+        area = db.get(FftArea, i.area_id) if i.area_id else None
+        if area is not None and area.title not in g["areas"]:
+            g["areas"].append(area.title)
+    return list(out.values())
+
+
+def after_state(db: Session) -> dict:
+    """Whether Brett's round waits for changes to go live first, and which ({"on", "user_id", "area_id", "prs", "since"})."""
+    from app.models import ToolSetting
+
+    row = db.get(ToolSetting, AFTER)
+    try:
+        data = json.loads(row.value) if row is not None and row.value else {}
+    except ValueError:
+        data = {}
+    return {"on": bool(data), "user_id": data.get("user_id"), "area_id": data.get("area_id"), "prs": data.get("prs", []), "since": data.get("since", "")}
+
+
+def wait_for_live(db: Session, actor: str, user_id: int | None, area_id: int | None) -> list[dict]:
+    """Let it go live first: Brett's round opens by itself once the changes it would hold are live (`fix_live`)."""
+    from app.models import ToolSetting
+
+    flight = in_flight(db, round_areas(db, area_id), whole=not area_id)
+    if not flight:
+        raise RuleError("stale", "Nothing is about to go live there now: start your round.")
+    row = db.get(ToolSetting, AFTER) or ToolSetting(key=AFTER)
+    row.value = json.dumps({"user_id": user_id, "area_id": area_id, "prs": [g["pr"] for g in flight], "since": now().isoformat()})
+    db.merge(row)
+    _event(db, actor, "round_after", "tool", 0, area_id=area_id, prs=[g["pr"] for g in flight])
+    return flight
+
+
+def cancel_wait(db: Session, actor: str) -> None:
+    from app.models import ToolSetting
+
+    row = db.get(ToolSetting, AFTER)
+    if row is not None and row.value:
+        row.value = ""
+        _event(db, actor, "round_after_off", "tool", 0)
+
+
+def _after_live(db: Session, actor: str) -> FftRound | None:
+    """A change Brett's round waited for is live: once none of them is still on its way, his round opens (it holds)."""
+    from app.models import ToolSetting
+
+    st = after_state(db)
+    if not st["on"]:
+        return None
+    if db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state == "fixing", FftIssue.pr.in_(st["prs"]))):
+        return None
+    db.get(ToolSetting, AFTER).value = ""
+    r = open_round(db, actor, st["user_id"], st["area_id"])
+    _event(db, actor, "round_after_live", "round", r.id, area_id=st["area_id"])
+    return r
 
 
 def in_open_round(db: Session, area: FftArea) -> bool:

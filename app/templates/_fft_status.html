@@ -24,6 +24,7 @@
         <button type="button" data-mode-pick="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-show="fft-pause-why"><span class="ck" aria-hidden="true">{{ "✓" if mode == "frozen" }}</span><span class="pick">{{ said.frozen }}</span><small>{{ does.frozen }}</small></button>
         {# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, whole, on its own line #}
         <form method="post" action="/manage/for-you/mode" class="fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}">
+          {% if bar.flight and mode != "frozen" %}<p class="fft-holds" data-holds-flight>⚠ Pausing holds {{ bar.flight | length }} change{{ "s" if bar.flight | length != 1 }} about to go live: {{ bar.flight | map(attribute="titles") | map("first") | join("; ") }}</p>{% endif %}{# (the heads-up, Brett's pick A) #}
           <label class="field"><span>Why pause? <span class="note">(optional)</span></span><input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow"></label>
           <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>
         </form>
@@ -32,6 +33,8 @@
   </div>
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span></div>
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
+  {% if bar.after.on and not bar.round %}<div class="fft-status-line" data-stat="after"><span>Your round starts when {{ bar.after.prs | length }} change{{ "s" if bar.after.prs | length != 1 }} of Claude's {{ "is" if bar.after.prs | length == 1 else "are" }} live</span>
+    <form method="post" action="/manage/testing/round/after/cancel" class="fft-inline"><button class="btn link small" type="submit" data-do="round-after-cancel">Cancel</button></form></div>{% endif %}
   {% if bar.round %}<div class="fft-status-round"><span data-stat="round" data-holds="{{ 1 if bar.round.holds else 0 }}">{% if not bar.round.holds %}Trying a check <span class="note">nothing of Claude's waits</span>{% elif bar.round_area %}A round is open <span class="note">Claude's work in {{ bar.round_area }} waits</span>{% else %}A round is open <span class="note">Claude's work in the areas you're trying waits</span>{% endif %}</span>
     <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form></div>{% endif %}
 </div>
