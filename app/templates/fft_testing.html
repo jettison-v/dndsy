@@ -80,9 +80,9 @@
      here; a row opens its item in the item window at the right (app/fft/item_page.py), ↑ ↓ for the next. #}
   {% set kinds = {"check": ("Check", "ask"), "question": ("Question", "claude"), "decision": ("Decision", "claude"), "merge": ("Fix to OK", "ask"), "ready": ("Fixed", "passed"), "local": ("On your Mac", "ask"), "note": ("Note", "quiet"), "idea": ("Idea", "quiet"), "roadmap": ("Roadmap", "quiet")} %}
   {% if show == "foryou" %}<p class="note fft-foryou-sum" data-summary><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b> · {{ summary.line }}</p>{% endif %}
-  <div class="table-scroll" id="ts-list"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-  <table class="dtable fft-table" data-fft-list="{{ show }}">
-    <thead><tr><th style="width:110px">Kind</th><th>What, and why it's here</th><th class="num" style="width:70px">Takes</th><th style="width:160px"></th></tr></thead>
+  <div class="table-scroll" id="ts-list">
+  <table class="dtable fft-table" data-fft-list="{{ show }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
+    <thead><tr><th class="dt-w3">Kind</th><th>What, and why it's here</th><th class="num dt-w2">Takes</th><th class="dt-w4"></th></tr></thead>
     <tbody>
     {% for g in groups %}
       {% if show == "foryou" and (loop.first or loop.previtem.section != g.section) %}

@@ -16,7 +16,7 @@
   <div class="fft-devices" data-devices>{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
   {% if picked.turn == "yours" %}
   <div class="act-bar" data-check-acts>
-    <form method="post" action="/manage/testing/checks/{{ c.id }}/go"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
+    <form method="post" action="/manage/testing/checks/{{ c.id }}/go" data-reload>{# (it takes you to the check's page: a full load) #}<button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
     {% if picked.here %}<form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ picked.devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed">✓ Passed</button></form>
     <button class="btn small" type="button" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="wrong">✗ Something's wrong…</button>{% endif %}
     <button class="btn link small" type="button" data-modal-url="/manage/testing/checks/{{ c.id }}/cant" data-do="cant">Can't try…</button>

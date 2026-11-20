@@ -53,9 +53,9 @@
     <td>{{ state_word(r.word, r.tone, ' data-turn="' ~ r.tone ~ '"') }}</td>
   </tr>
   {% endmacro %}
-  <div class="table-scroll" id="fb-list"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-  <table class="dtable fft-table" data-fft-list="{{ tab }}">
-    <thead><tr><th class="num" style="width:56px">#</th><th>{{ {"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") }}, and where it stands</th><th style="width:120px">Whose</th></tr></thead>
+  <div class="table-scroll" id="fb-list">
+  <table class="dtable fft-table" data-fft-list="{{ tab }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
+    <thead><tr><th class="num dt-w1">#</th><th>{{ {"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") }}, and where it stands</th><th class="dt-w3">Whose</th></tr></thead>
     <tbody>
     {% if g %}{% for grp in g.groups %}
       <tr class="dt-group" data-group="{{ grp.key }}"><td colspan="3">{{ grp.title }} · {{ grp.rows | length }}</td></tr>

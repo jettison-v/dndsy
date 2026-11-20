@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.fft import feedback_page, testing_page, views
+from app.fft import feedback_page, taxonomy, testing_page, views
 from app.templating import templates
 
 router = APIRouter()
@@ -61,5 +61,5 @@ def item(request: Request, key: str, frm: str = Query("", alias="from"), db: Ses
         "prev": prev, "next": nxt, "at": at + 1, "of": len(keys), "page_name": page_name, "page_href": page_href,
         # (what the readers used from their pages: Feedback's words and the tab a press lands on; Testing's device)
         "tab": feedback_page.tab_of(picked) if picked["kind"] in ("note", "issue", "idea") else "",
-        "kind_said": views.KIND_SAID, "closed_word": views.CLOSED_WORD, "issue_word": views.ISSUE_WORD, "me_id": me["id"],
+        "kind_said": views.KIND_SAID, "closed_word": views.CLOSED_WORD, "issue_word": views.ISSUE_WORD, "me_id": me["id"], "taxonomy": taxonomy.areas(),
         "device": device, "device_said": testing_page.DEVICE_SAID, "check_words": views.CHECK_WORD})

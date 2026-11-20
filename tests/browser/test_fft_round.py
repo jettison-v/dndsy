@@ -383,3 +383,14 @@ def test_for_you_opens_a_check_in_the_item_window_and_passed_moves_on(people, se
     page.wait_for_function(f"() => !document.querySelector('tr[data-row=\"c{first}\"]')")
     assert _one(browser_db[0], "SELECT result FROM fft_tries WHERE check_id = :c ORDER BY id DESC LIMIT 1", c=first) == [("passed",)]
     assert not admin.errors, admin.errors
+
+
+def test_try_it_in_the_item_window_takes_you_to_the_checks_page(people, server, browser_db):
+    """▶ Try it, pressed in the item window, goes to the check's own page with its card, as from the list."""
+    first, = _checks(browser_db[0], "/help")
+    admin = people("admin")
+    page = admin.open(f"/manage/for-you?open=c{first}")
+    page.locator(f'#peek [data-item-panel="c{first}"]').wait_for()
+    page.locator('#peek [data-do="try-it"]').click()
+    page.wait_for_url("**/help**")
+    assert not admin.errors, admin.errors
