@@ -1,0 +1,164 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Where You Are</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The menu bar shows where you are one way (issue 37, Brett, Nov 19: "The menu bar has 4 different methods to tell the
+   user where they are in the product ... This needs to be standardized"). Today: Campaign, your character and Party
+   turn grey; Manage gets a red outline; the Admin gear a blue one; your picture nothing. Three ways, each applied to
+   every door, drawn at a laptop's width. Source: docs/mockups/where-you-are/index.html. */
+:root {
+  --bg: #15171a; --chrome: #0f1113; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-strong: #464b53;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f;
+  --brand: #d64545; --amber: #e8b34b; --blue: #7ea6e0; --selected-bg: rgba(126, 166, 224, .18); --green: #5bbf7f;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.05rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 84ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); }
+.lbl { color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 12px; min-height: 30px; font: 500 .875rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+#opts { display: grid; gap: 14px; }
+.opt { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.opt-h { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.opt .why { color: var(--muted); font-size: .9rem; max-width: 92ch; }
+.frame { overflow-x: auto; border-radius: 10px; }
+/* the menu bar, as askdnd draws it */
+.tb { width: 100%; min-width: 1040px; display: flex; align-items: center; gap: 10px; padding: 10px 14px 11px; background: var(--chrome); border-bottom: 2px solid var(--brand); font: 600 .92rem/1 var(--sans); }
+.brand { width: 26px; height: 26px; border-radius: 7px; background: var(--brand); flex: none; }
+.camp { color: var(--strong); font-weight: 700; padding: 0 6px; }
+.sep { width: 1px; height: 22px; background: var(--line); }
+.door { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; border-radius: 8px; color: var(--muted); border: 1px solid transparent; background: none; font: inherit; cursor: pointer; white-space: nowrap; }
+.door.boxed { border-color: var(--line); color: var(--text); }
+.door .av { width: 20px; height: 20px; border-radius: 50%; background: #6b7b8c; }
+.search { flex: 1; min-width: 140px; white-space: nowrap; overflow: hidden; gap: 8px; display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-weight: 500; }
+.chain { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-weight: 500; }
+.gear { min-width: 34px; justify-content: center; }
+.badge { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--amber); color: #111; font: 700 .66rem/16px var(--sans); text-align: center; padding: 0 4px; }
+.me { width: 32px; height: 32px; border-radius: 50%; padding: 0; justify-content: center; background: #4a5563; color: #fff; }
+/* the three ways */
+.s-a .door.here { background: var(--surface-3); color: var(--strong); }
+.s-b .door.here { color: var(--strong); }
+.s-b .door.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+.s-b .door.me.here::after, .s-b .door.gear.here::after { left: 4px; right: 4px; }
+.s-c .door.here { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); border-color: transparent; }
+.today .door.here.k-campaign, .today .door.here.k-cole, .today .door.here.k-party { background: var(--surface-3); color: var(--strong); }
+.today .door.here.k-manage { border-color: var(--brand); color: var(--strong); }
+.today .door.here.k-gear { border-color: var(--blue); }
+.page { background: var(--bg); padding: 14px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; min-width: 1040px; color: var(--muted); font-size: .9rem; }
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Where You Are</h1>
+    <p class="lede">The menu bar should show where you are one way, the same on every door: Campaign, Table, your character, Party, Manage, the Admin gear and your picture (issue 37). Pick a page below to see each way mark it; the first bar is how it looks today. Your picture marks the pages that are yours alone: Notes you sent, Help, the DM guide.</p>
+  </header>
+  <div class="controls"><span class="lbl">You're on</span> <span class="seg" data-ctl><button type="button" data-v="campaign" aria-pressed="true">Campaign</button><button type="button" data-v="cole">Cole's Battle</button><button type="button" data-v="party">Party</button><button type="button" data-v="manage">Manage › Inbox</button><button type="button" data-v="gear">Admin › For you</button><button type="button" data-v="me">Notes you sent</button></span></div>
+  <div id="opts"></div>
+
+  <form class="decide" aria-label="Your picks">
+    <fieldset><legend>Which way shows where you are</legend>
+      <label class="o"><input type="radio" name="shape" value="b"><span>B · A red line under the door <span class="mine">my pick</span></span><small>The same mark as askdnd's tabs (Where it stands, Claude's, Done), so "you're here" reads one way everywhere; the doors' own outlines stay as they are.</small></label>
+      <label class="o"><input type="radio" name="shape" value="a"><span>A · The grey fill on every door</span><small>What Campaign and your character do today, extended to Manage, the gear and your picture.</small></label>
+      <label class="o"><input type="radio" name="shape" value="c"><span>C · The blue chosen ring</span><small>The design system's "this one is chosen" (a switch's choice, a list's row), on the door.</small></label>
+    </fieldset>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  let at = "campaign";
+  const bar = cls => `<div class="tb ${cls}"><span class="brand"></span><span class="camp">The Adventure Begins ▾</span><span class="sep"></span>
+    <span class="door k-campaign${at === "campaign" ? " here" : ""}">Campaign</span><span class="door">Table ↗</span><span class="sep"></span>
+    <span class="door boxed k-cole${at === "cole" ? " here" : ""}"><span class="av"></span>Cole</span><span class="door boxed k-party${at === "party" ? " here" : ""}">Party ▾</span>
+    <span class="search"><span style="overflow:hidden;text-overflow:ellipsis">Search your character, the rules…</span><span>⌘F</span></span><span class="chain">Not connected</span>
+    <span class="door boxed k-manage${at === "manage" ? " here" : ""}">Manage ▾</span><span class="door boxed gear k-gear${at === "gear" ? " here" : ""}">⚙<span class="badge">5</span></span><span class="door me k-me${at === "me" ? " here" : ""}">D</span></div>
+    <div class="page">${{campaign: "Campaign › Previously on…", cole: "Cole › Battle", party: "Party › Everyone at a glance", manage: "Manage › Inbox", gear: "Admin › For you", me: "Notes you sent"}[at]}</div>`;
+  const OPTS = [
+    { k: "today", name: "Today: four ways", why: "Campaign, your character and Party turn grey; Manage gets a red outline; the gear a blue one; your picture shows nothing." },
+    { k: "s-b", name: "B · A red line under the door", mine: true, why: "The mark askdnd's tabs already use for the one you're on, so the menu bar and every page's tabs say \"you're here\" the same way. The doors keep their own outlines (Cole, Party, Manage, the gear), so nothing else changes." },
+    { k: "s-a", name: "A · The grey fill on every door", why: "What Campaign and your character do today, on every door. Quiet; close to the hover look, so it can read as \"the mouse is here\"." },
+    { k: "s-c", name: "C · The blue chosen ring", why: "The design system's \"chosen\" look (a switch's choice, a list's row). Clear, but blue in the menu bar is new, and it's louder than the page's own tabs." },
+  ];
+  const box = document.getElementById("opts");
+  const el = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+  const cards = OPTS.map(o => { const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p><div class="frame"></div></section>`); box.append(c); return { o, frame: c.querySelector(".frame") }; });
+  const draw = () => cards.forEach(c => { c.frame.innerHTML = bar(c.o.k); });
+  document.querySelectorAll("[data-ctl] button").forEach(b => b.addEventListener("click", () => {
+    b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); at = b.dataset.v; draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["shape"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

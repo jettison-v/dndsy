@@ -1,0 +1,199 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Round Heads-Up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The heads-up before Brett stops something (a lighter round, item 3; his pick "All three", Nov 19; his ask: "Maybe it
+   warns when I am going to be stopping something?"). Where: For you's ▶ Start round, and Deploys › Paused in the
+   status bar. It says only when something would be held: a change of Claude's about to go live. Drawn in askdnd's look
+   at a laptop's width. Source: docs/mockups/round-heads-up/index.html. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f;
+  --brand: #d64545; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --selected-bg: rgba(126, 166, 224, .18); --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.05rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 84ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.lbl { color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 12px; min-height: 30px; font: 500 .875rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+#opts { display: grid; gap: 14px; }
+.opt { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+.opt-h { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.opt .why { color: var(--muted); font-size: .9rem; max-width: 92ch; }
+.page { position: relative; background: var(--bg); border: 1px solid #4a4f57; border-radius: 12px; padding: 16px 18px 18px; display: grid; gap: 12px; min-height: 300px; overflow: hidden; }
+.ph { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ph h3 { font-size: 1.5rem; margin: 0; color: var(--strong); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .84rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.note { color: var(--muted); font-size: .84rem; }
+.bar { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-size: .9rem; }
+.bar[data-tone="paused"] { border-color: var(--amber); background: var(--amber-soft); }
+.bar > div { display: flex; align-items: center; gap: 12px; padding: 8px 14px; }
+.bar > div + div { border-top: 1px solid var(--line); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+.pill { margin-left: auto; display: inline-flex; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--line); font: 700 .84rem/1.2 var(--sans); cursor: pointer; border: 0; color: var(--text); }
+.pill .k { color: var(--muted); font-weight: 600; }
+.list i { display: block; height: 44px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-soft); margin-top: 8px; }
+.held { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.held .row { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.tag { font: 700 .72rem/1.2 var(--sans); padding: 2px 8px; border-radius: 999px; background: rgba(126, 166, 224, .16); color: var(--blue); }
+.win { position: absolute; inset: 40px 50% auto 50%; transform: translateX(-50%); width: min(520px, 92%); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); padding: 16px 18px; display: grid; gap: 12px; z-index: 2; }
+.scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); z-index: 1; }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.warnline { display: flex; gap: 8px; align-items: baseline; color: var(--amber); font-size: .84rem; }
+.card { position: absolute; right: 16px; bottom: 16px; width: 330px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; font-size: .88rem; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.menu { position: absolute; right: 18px; top: 116px; width: 340px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; z-index: 2; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+.menu input { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: 16px/1.2 var(--sans); width: 100%; }
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Round Heads-Up</h1>
+    <p class="lede">Before you stop something of Claude's, askdnd says so. Where: <b>For you › ▶ Start round</b> (a round holds Claude's work in the areas you're trying) and <b>Deploys › Paused</b> in the status bar (pausing holds every deploy). It speaks up only when something would be held: a change that's tested and about to go live. With nothing in flight, both work as today, no extra step. Three ways below; press ▶ Start round in each. The second question is about Paused.</p>
+  </header>
+  <div class="controls"><span class="lbl">Claude has</span> <span class="seg" data-ctl><button type="button" data-v="1" aria-pressed="true">1 change about to go live</button><button type="button" data-v="0">Nothing in flight</button></span></div>
+  <div id="opts"></div>
+
+  <form class="decide" aria-label="Your picks">
+    <fieldset><legend>1 · ▶ Start round, when something would be held</legend>
+      <label class="o"><input type="radio" name="shape" value="a"><span>A · A window first <span class="mine">my pick</span></span><small>Says what waits and for how long, with Let it go live first, Start now, or Cancel. Only when something would be held.</small></label>
+      <label class="o"><input type="radio" name="shape" value="b"><span>B · A line under the button</span><small>No window: "Holds 1 change about to go live", and a second button, Start after it's live.</small></label>
+      <label class="o"><input type="radio" name="shape" value="c"><span>C · Start at once, then a corner card</span><small>No step before; a card says what's waiting, with Let it go live first (it ends the round until then).</small></label>
+    </fieldset>
+    <fieldset><legend>2 · Deploys › Paused</legend>
+      <label class="o"><input type="radio" name="paused" value="line"><span>A · A line in the reason box <span class="mine">my pick</span></span><small>"Pausing holds 1 change about to go live: Live UI Audit, batch 4", above Pause deploys.</small></label>
+      <label class="o"><input type="radio" name="paused" value="same"><span>B · As ▶ Start round</span><small>Whatever you picked above.</small></label>
+    </fieldset>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  let busy = 1;
+  const CH = `<div class="held"><div class="row"><b>Live UI Audit, batch 4</b><span class="tag">Feedback and Testing</span></div><span class="note">Tests passed; it goes live in about 5 minutes.</span></div>`;
+  const head = btn => `<div class="ph"><h3>For you</h3>${btn}</div>`;
+  const bar = (tone, extra = "") => `<div class="bar" data-tone="${tone}"><div><span class="dot"></span><span>Claude is listening</span><span class="note">heard 4:48 PM</span><button type="button" class="pill" data-pause><span class="k">Deploys:</span> ${tone === "paused" ? "Paused" : "When tests pass"} ▾</button></div>${extra}</div>`;
+  const list = `<div class="list"><i></i><i></i></div>`;
+  const start = `<button type="button" class="btn primary" data-start>▶ Start round · 2 checks</button>`;
+  const OPTS = [
+    { k: "a", name: "A · A window first", mine: true,
+      why: "Press ▶ Start round. With a change about to go live in an area you're trying, a window says what would wait and offers to let it go live first (your round starts the moment it's live, a corner card says so). With nothing in flight, the round starts at once, as today.",
+      draw: s => `${head(start)}${bar(s.paused ? "paused" : "", s.round ? `<div><span>A round is open</span><span class="note">Claude's work in Feedback and Testing waits</span><button type="button" class="btn">End round</button></div>` : s.after ? `<div><span class="note">Your round starts when “Live UI Audit, batch 4” is live, in about 5 minutes</span><button type="button" class="btn link" data-reset>Cancel</button></div>` : "")}${list}
+        ${s.win ? `<div class="scrim"></div><div class="win" role="dialog" aria-label="Start round"><h2>Start your round?</h2><p class="note">Your round holds Claude's work in the areas you're trying. This one is about to go live there:</p>${CH}<div class="acts"><button type="button" class="btn primary" data-after>Let it go live first</button><button type="button" class="btn" data-now>Start now</button><button type="button" class="btn link" data-reset>Cancel</button></div></div>` : ""}
+        ${s.paused === "ask" ? pauseMenu() : ""}` },
+    { k: "b", name: "B · A line under the button",
+      why: "No window: when something would be held, ▶ Start round shows what under itself, and a second button starts it once that's live. Quicker, but easy to read past.",
+      draw: s => `${head(busy && !s.round && !s.after ? `<span style="display:inline-grid;gap:4px;justify-items:start">${start.replace("▶ Start round · 2 checks", "▶ Start now")}<span class="warnline">⚠ Holds 1 change about to go live: Live UI Audit, batch 4</span></span><button type="button" class="btn" data-after>Start after it's live</button>` : start)}${bar(s.paused ? "paused" : "", s.round ? `<div><span>A round is open</span><span class="note">Claude's work in Feedback and Testing waits</span><button type="button" class="btn">End round</button></div>` : s.after ? `<div><span class="note">Your round starts when “Live UI Audit, batch 4” is live, in about 5 minutes</span><button type="button" class="btn link" data-reset>Cancel</button></div>` : "")}${list}${s.paused === "ask" ? pauseMenu() : ""}` },
+    { k: "c", name: "C · Start at once, then a corner card",
+      why: "The round starts the moment you press, as today; a corner card says what's now waiting, with Let it go live first, which steps the round aside until it's live. Nothing in your way, but the card is easy to miss once it fades.",
+      draw: s => `${head(start)}${bar(s.paused ? "paused" : "", s.round ? `<div><span>A round is open</span><span class="note">Claude's work in Feedback and Testing waits</span><button type="button" class="btn">End round</button></div>` : s.after ? `<div><span class="note">Your round starts when “Live UI Audit, batch 4” is live, in about 5 minutes</span><button type="button" class="btn link" data-reset>Cancel</button></div>` : "")}${list}
+        ${s.card ? `<div class="card"><b>Round started</b><span class="note">“Live UI Audit, batch 4” now waits for it to end.</span><div class="acts"><button type="button" class="btn" data-after>Let it go live first</button><button type="button" class="btn link" data-reset>✕</button></div></div>` : ""}${s.paused === "ask" ? pauseMenu() : ""}` },
+  ];
+  function pauseMenu() {
+    return `<div class="menu"><span class="lbl">Deploys › Paused</span>${busy ? `<span class="warnline">⚠ Pausing holds 1 change about to go live: Live UI Audit, batch 4</span>` : ""}<span class="note">Why pause? (optional)</span><input value="a demo tomorrow"><div class="acts"><button type="button" class="btn primary" data-dopause>Pause deploys</button><button type="button" class="btn link" data-reset>Cancel</button></div></div>`;
+  }
+  const box = document.getElementById("opts");
+  const el = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+  const cards = OPTS.map(o => {
+    const c = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p><div class="page"></div></section>`);
+    box.append(c);
+    return { o, page: c.querySelector(".page"), s: {} };
+  });
+  function draw() {
+    cards.forEach(c => {
+      c.page.innerHTML = c.o.draw(c.s);
+      const on = (sel, fn) => c.page.querySelectorAll(sel).forEach(b => b.addEventListener("click", () => { fn(); draw(); }));
+      on("[data-start]", () => {
+        if (!busy || c.o.k === "b") { c.s = { round: true }; return; }
+        c.s = c.o.k === "a" ? { win: true } : { round: true, card: true };
+      });
+      on("[data-now]", () => { c.s = { round: true }; });
+      on("[data-after]", () => { c.s = { after: true }; });
+      on("[data-reset]", () => { c.s = {}; });
+      on("[data-pause]", () => { c.s = { paused: "ask" }; });
+      on("[data-dopause]", () => { c.s = { paused: true }; });
+    });
+  }
+  document.querySelectorAll("[data-ctl] button").forEach(b => b.addEventListener("click", () => {
+    b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    busy = +b.dataset.v; cards.forEach(c => { c.s = {}; }); draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["shape", "paused"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
