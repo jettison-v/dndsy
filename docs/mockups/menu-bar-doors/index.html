@@ -103,12 +103,12 @@ b { color: var(--strong); }
 <div class="wrap">
   <header style="display:grid;gap:8px">
     <h1>Menu Bar Doors</h1>
-    <p class="lede">Where You Are's two picks, <b>A</b> (mine) and <b>R</b> (the outside review's), with the door question: keep <b>Manage ▾</b> and the <b>⚙</b> as two doors, or make them <b>one door</b> for everything behind the game, and what to call it. Every bar works: Campaign and Cole take you there, a door with ▾ opens its menu. The switches change every bar at once.</p>
+    <p class="lede">Where You Are's two picks, <b>A</b> (mine) and <b>R</b> (the outside review's), with the door question: keep <b>Manage ▾</b> and the <b>⚙</b> as two doors, or make them <b>one door</b> for everything behind the game, and what to call it. Every bar works: Campaign and Cole take you there, a door with ▾ (or your picture) opens its menu. It opens on your picks; the switches still show the others.</p>
   </header>
 
   <div class="controls">
-    <span class="ctl"><span class="lbl">Doors</span><span class="seg" data-ctl="doors"><button type="button" data-v="two" aria-pressed="true">Manage and ⚙ (today)</button><button type="button" data-v="one">One door</button></span></span>
-    <span class="ctl"><span class="lbl">Its name</span><span class="seg" data-ctl="name"><button type="button" data-v="Manage" aria-pressed="true">Manage</button><button type="button" data-v="Backstage">Backstage</button><button type="button" data-v="Workspace">Workspace</button><button type="button" data-v="Behind the screen">Behind the screen</button></span></span>
+    <span class="ctl"><span class="lbl">Doors</span><span class="seg" data-ctl="doors"><button type="button" data-v="two">Manage and ⚙ (today)</button><button type="button" data-v="one" aria-pressed="true">One door</button></span></span>
+    <span class="ctl"><span class="lbl">Its name</span><span class="seg" data-ctl="name"><button type="button" data-v="Manage">Manage</button><button type="button" data-v="Backstage" aria-pressed="true">Backstage</button><button type="button" data-v="Workspace">Workspace</button><button type="button" data-v="Behind the screen">Behind the screen</button></span></span>
     <span class="ctl"><span class="lbl">Seen by</span><span class="seg" data-ctl="who"><button type="button" data-v="admin" aria-pressed="true">Admin</button><button type="button" data-v="dm">DM</button><button type="button" data-v="player">Player</button></span></span>
     <span class="ctl"><span class="lbl">Under your picture</span><span class="seg" data-ctl="pm"><button type="button" data-v="none" aria-pressed="true">No mark</button><button type="button" data-v="line">A line</button><button type="button" data-v="ring">A ring</button></span></span>
   </div>
@@ -125,12 +125,12 @@ b { color: var(--strong); }
   </section>
 
   <section class="view">
-    <h2>One door, and its name: my view</h2>
+    <h2>Your picks (Nov 20)</h2>
     <ul>
-      <li><b>One door, yes.</b> Only an admin sees both today, so only you would notice the change: one door with two halves, <b>This campaign</b> (the DM's week: Needs you, Inbox, Sessions…) and <b>askdnd</b> (For you first, then running askdnd). A DM sees only the first half, a player sees no door. The gear was named for settings, but For you, Feedback and Testing are your daily work with Claude, not settings; as one door its count rides on the door, and the odd-sized gear leaves the bar.</li>
-      <li><b>Call it Backstage.</b> Everything in it is what the table doesn't see while playing: the DM's preparation and review, and running askdnd. One word, plain, in the table's language. <b>Workspace</b> is the safe second (it's what we called the DM's page). <b>Manage</b> reads as account settings and fits the new tools least. <b>Behind the screen</b> is lovely for the DM but long, and wrong for the admin half.</li>
-      <li><b>Manage › Settings stays</b>, as this campaign's settings, inside the door's first half: with the gear gone, “Settings” means one thing.</li>
-      <li><b>Under your picture: no mark.</b> You're right that it's uncommon. On the web an avatar is you, not a place: GitHub, Google, Slack and Notion never mark it when you're on your profile or settings; the page's own title says where you are, and the open menu ticks the page. The one common exception is a phone's bottom tab bar (Instagram rings your picture when your profile tab is open), where the picture is a tab. In a top bar a line under a circle reads like a status badge. So: one mark for places and menus, none for you.</li>
+      <li><b>A</b>: plain doors, a menu ends in ▾, a box is a tool, a red line under where you are.</li>
+      <li><b>One door, Backstage ▾</b>, in place of Manage ▾ and the ⚙. An admin's menu has two halves side by side: <b>This campaign</b> (Your week, Next game, The table) and <b>Global</b>, for every campaign (For you first, then General, People, Tuning). A DM sees only This campaign; a player sees no door. For you's count sits on Backstage.</li>
+      <li><b>Your picture</b>: no ▾ (a picture is known to open its menu) and no mark under it; the page's title and the menu's tick say where you are.</li>
+      <li><b>How the bar wraps and shrinks stays exactly as it is</b>: Backstage takes Manage's place in the same order of giving way as the window narrows.</li>
     </ul>
   </section>
 
@@ -165,10 +165,10 @@ b { color: var(--strong); }
 (() => {
   const GEAR = '<span class="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const st = { doors: "two", name: "Manage", who: "admin", pm: "none", half: "place", door: "campaign", page: "Previously on…" };
+  const st = { doors: "one", name: "Backstage", who: "admin", pm: "none", half: "place", door: "campaign", page: "Previously on…" };
   // The pages, as app/manage.py lists them: this campaign's in the DM's week order, askdnd's in its groups
   const CAMPAIGN = [["Your week", ["Needs you", "Inbox", "Sessions"]], ["Next game", ["Items", "Scene notes", "Places and maps"]], ["The table", ["Table", "House rules", "Settings", "History"]]];
-  const ASKDND = [["Waiting on you", ["For you"]], ["askdnd", ["Overview", "Feedback", "Testing", "Product areas", "Documents", "Usage", "Backups"]], ["People", ["Accounts", "Campaigns"]], ["Tuning", ["Features", "askdnd history", "Tool corrections", "Dice tuning", "D&D Beyond bridge", "Design system"]]];
+  const ASKDND = [["Waiting on you", ["For you"]], ["General", ["Overview", "Feedback", "Testing", "Product areas", "Documents", "Usage", "Backups"]], ["People", ["Accounts", "Campaigns"]], ["Tuning", ["Features", "askdnd history", "Tool corrections", "Dice tuning", "D&D Beyond bridge", "Design system"]]];
   const YOU = [["Your notes", ["Notes you sent", "Send feedback", "Email digest"]], ["Help", ["Take the tour", "Help and FAQ", "DM guide"]], ["", ["Sign out"]]];
   const PARTY = [["Party", ["Everyone at a glance"]], ["Characters", ["Big C", "Trah", "No Name"]]];
   const CAMPS = [["Campaigns", ["The Adventure Begins"]]];
@@ -192,7 +192,7 @@ b { color: var(--strong); }
         if (admin) s += `<span class="d${here("gear")}" data-menu="gear">${GEAR}${named(look, "gear")}<span class="chev"> ▾</span>${count}</span>`;
       }
     }
-    s += `<span class="d me${here("me")}" data-menu="me"><span class="pic">${admin ? "A" : dm ? "D" : "P"}</span>${named(look, "me")}<span class="chev"> ▾</span><span class="badge">2</span></span>`;
+    s += `<span class="d me${here("me")}" data-menu="me"><span class="pic">${admin ? "A" : dm ? "D" : "P"}</span>${named(look, "me")}<span class="badge">2</span></span>`;
     return `<div class="tb look-${look} pm-${st.pm}">${s}</div>`;
   };
   const where = () => {
@@ -211,8 +211,8 @@ b { color: var(--strong); }
     if (key === "camp") return [false, col("", "", CAMPS, "camp")];
     if (key === "party") return [false, col("", "", PARTY, "party")];
     if (key === "me") return [false, col(st.who === "admin" ? "Admin" : st.who === "dm" ? "The DM" : "Cole's player", "You", st.who === "player" ? [YOU[0], [YOU[1][0], YOU[1][1].slice(0, 2)], YOU[2]] : YOU, "me")];
-    if (key === "gear") return [false, col("askdnd", "Every campaign", ASKDND, "askdnd")];
-    if (st.doors === "one" && st.who === "admin") return [true, col("This campaign", "The Adventure Begins", CAMPAIGN, "campaign") + col("askdnd", "Every campaign", ASKDND, "askdnd")];
+    if (key === "gear") return [false, col("Global", "Every campaign", ASKDND, "askdnd")];
+    if (st.doors === "one" && st.who === "admin") return [true, col("This campaign", "The Adventure Begins", CAMPAIGN, "campaign") + col("Global", "Every campaign", ASKDND, "askdnd")];
     return [false, col("This campaign", "The Adventure Begins", CAMPAIGN, "campaign")];
   };
   const closeMenu = () => document.querySelectorAll(".dd").forEach(m => m.remove());
