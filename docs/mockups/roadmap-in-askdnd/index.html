@@ -190,8 +190,8 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   <form class="decide" aria-label="Your picks">
     <div class="row2">
       <fieldset><legend>1 · Where the Roadmap lives</legend>
-        <label class="o"><input type="radio" name="where" value="tab"><span>A tab of Work, first <span class="mine">my pick</span></span><small>Work › Roadmap · Queue · Done · Checks…: the pieces of work, then the plans building them. No new page in the row.</small></label>
-        <label class="o"><input type="radio" name="where" value="page"><span>Its own page</span><small>For you · Roadmap · Work · Feedback across the top.</small></label>
+        <label class="o"><input type="radio" name="where" value="tab"><span>A tab of Work, first <span class="mine">my pick</span></span><small>Work › Roadmap · Queue · Done · Checks…: the pieces of work, then the plans building them. Our work in the side list stays For you, Work, Feedback.</small></label>
+        <label class="o"><input type="radio" name="where" value="page"><span>Its own page</span><small>Its own entry under Our work in the side list: For you, Roadmap, Work, Feedback.</small></label>
       </fieldset>
       <fieldset><legend>2 · An item opens</legend>
         <label class="o"><input type="radio" name="opens" value="win"><span>In the window at the right <span class="mine">my pick</span></span><small>Like any one item: read, tick a step, move it, ↑ ↓ for the next. Its plans link to their pages.</small></label>
@@ -242,11 +242,9 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   const done = x => x.steps.filter(s => s[2]).length;
 
   const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Party ▾</span><span class="sp">Search</span><span class="here">Backstage ▾<span class="b">4</span></span><span class="pic">A</span></div>`;
-  const aside = () => `<nav class="aside"><span class="sec">Waiting on you</span><a data-go="foryou" class="${st.page === "foryou" ? "on" : ""}">For you<span class="n">4</span></a><span class="sec">General</span><a class="off">Overview</a>${st.where === "page" ? `<a data-go="roadmap" class="${st.page === "roadmap" ? "on" : ""}">Roadmap</a>` : ""}<a data-go="roadmap" class="${st.where === "tab" && st.page === "roadmap" ? "on" : ""}">Work</a><a class="off">Feedback</a><a class="off">Product areas</a><a class="off">Documents</a><span class="sec">People</span><a class="off">Accounts</a><a class="off">Campaigns</a></nav>`;
-  const ptabs = () => {
-    const tabs = st.where === "page" ? [["foryou", "For you", 4], ["roadmap", "Roadmap"], ["work", "Work"], ["feedback", "Feedback"]] : [["foryou", "For you", 4], ["roadmap", "Work"], ["feedback", "Feedback"]];
-    return `<div class="ptabs">${tabs.map(([k, w, n]) => `<a data-go="${k}" class="${st.page === k ? "on" : ""}">${w}${n ? `<i>${n}</i>` : ""}</a>`).join("")}<span class="end"><span><span class="dot"></span>Claude is listening</span><span class="pill">Deploys: <b>When tests pass</b> ▾</span></span></div>`;
-  };
+  // (Brett, Nov 20: no tab row across For you, Work and Feedback; they sit together as Our work in the side list, the one way between them)
+  const aside = () => `<nav class="aside"><span class="sec">Our work</span><a data-go="foryou" class="${st.page === "foryou" ? "on" : ""}">For you<span class="n">4</span></a>${st.where === "page" ? `<a data-go="roadmap" class="${st.page === "roadmap" ? "on" : ""}">Roadmap</a><a class="off">Work</a>` : `<a data-go="roadmap" class="${st.page === "roadmap" ? "on" : ""}">Work</a>`}<a class="off">Feedback</a><span class="sec">General</span><a class="off">Overview</a><a class="off">Product areas</a><a class="off">Documents</a><a class="off">Usage</a><a class="off">Backups</a><span class="sec">People</span><a class="off">Accounts</a><a class="off">Campaigns</a></nav>`;
+  const ptabs = () => `<div class="ptabs" style="border:0;justify-content:flex-end"><span class="end"><span><span class="dot"></span>Claude is listening</span><span class="pill">Deploys: <b>When tests pass</b> ▾</span></span></div>`;
 
   // ---------------- the Roadmap: one table, a group row per section, drag to order
   const roadmap = () => {
