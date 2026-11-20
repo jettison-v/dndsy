@@ -1609,6 +1609,9 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .wk-h2 { margin: var(--sp-5) 0 var(--sp-2); }
 /* The Roadmap (app/fft/roadmap_page.py, fft_roadmap.html, fft_roadmap_item.html; The Roadmap in askdnd, Nov 20) */
 .rm-why { margin: 0 0 var(--sp-3); max-width: 80ch; color: var(--text); }
+.rm-result { margin: 0 0 var(--sp-3); max-width: 80ch; display: grid; gap: var(--sp-2); }
+.rm-result .plabel, .rm-result-head, .rm-result ul { margin: 0; }
+.rm-result-head { font-weight: 600; }
 .rm-scope { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
 @media (max-width: 900px) { .rm-scope { grid-template-columns: minmax(0, 1fr); } }
 .rm-doc { display: grid; gap: var(--sp-3); }

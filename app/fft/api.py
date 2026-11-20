@@ -559,7 +559,7 @@ def _roadmap_row(db: Session, it: FftItem) -> dict:
 
     r = roadmap_page.row(db, it)
     return {"id": it.id, "title": it.title, "section": it.section, "stage": r["stage"], "size": it.size, "status": it.status,
-            "next": {"whose": r["next"][0], "step": r["next"][1]}, "steps": [r["done"], r["steps"]],
+            "result": it.result, "next": {"whose": r["next"][0], "step": r["next"][1]}, "steps": [r["done"], r["steps"]],
             "scope_version": r["scope"].version if r["scope"] else None, "agreed": bool(r["scope"] and r["scope"].agreed_at),
             "unanswered": db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id, FftAddition.answer == ""))}
 
@@ -650,9 +650,12 @@ def roadmap_change(item_id: int, body=web.JsonBody, x_fft_key: str | None = Head
         elif do == "move":
             rules.move_item(db, actor.name, it, _str(body, "section", 10, need=True))
         elif do in ("ship", "not_doing"):
-            rules.ship_item(db, actor.name, it, not_doing=do == "not_doing")
+            result = _str(body, "result", 4000)
+            if not result.strip():  # (Brett, Nov 20: every item Claude finishes says what it changed, with its numbers)
+                raise HTTPException(400, "result: what it changed, with its numbers (for Not doing, why not)")
+            rules.ship_item(db, actor.name, it, not_doing=do == "not_doing", result=result)
         elif do == "set":
-            rules.set_item(db, actor.name, it, **{k: _str(body, k, 2000) for k in ("title", "why", "size", "status") if k in body})
+            rules.set_item(db, actor.name, it, **{k: _str(body, k, 4000 if k == "result" else 2000) for k in ("title", "why", "size", "status", "result") if k in body})
         elif do == "agree":
             raise HTTPException(403, "Only Brett says a scope looks right.")
         else:

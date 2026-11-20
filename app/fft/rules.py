@@ -785,8 +785,8 @@ def new_idea(db: Session, actor: str, title: str, words: str = "", section: str 
 
 
 def set_item(db: Session, actor: str, item: FftItem, *, title: str | None = None, why: str | None = None,
-             size: str | None = None, status: str | None = None) -> None:
-    """A Roadmap item's title, why it matters, size (S, M, L) or status line."""
+             size: str | None = None, status: str | None = None, result: str | None = None) -> None:
+    """A Roadmap item's title, why it matters, size (S, M, L), status line or result (what it changed, its numbers)."""
     if title is not None:
         if not title.strip():
             raise RuleError("bad", "Give it a title.")
@@ -799,7 +799,10 @@ def set_item(db: Session, actor: str, item: FftItem, *, title: str | None = None
         item.size = size
     if status is not None:
         item.status = status.strip()[:200]
-    _event(db, actor, "item_set", "item", item.id, **{k: True for k, v in (("title", title), ("why", why), ("size", size), ("status", status)) if v is not None})
+    if result is not None:
+        item.result = result.strip()[:4000]
+    _event(db, actor, "item_set", "item", item.id, **{k: True for k, v in (("title", title), ("why", why), ("size", size), ("status", status),
+                                                                           ("result", result)) if v is not None})
 
 
 def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
@@ -814,11 +817,14 @@ def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
     _event(db, actor, "item_moved", "item", item.id, was=was, section=section)
 
 
-def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False) -> None:
-    """Shipped (or Not doing): off the list, into its History, with the day."""
+def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, result: str | None = None) -> None:
+    """Shipped (or Not doing): off the list, into its History, with the day, and its result (what it changed and its
+    numbers; for Not doing, why not: Brett, Nov 20). A shipped item without one is a gap of Claude's (`views.gaps`)."""
     if item.standing:
         raise RuleError("bad", "Fixes and polish never ships.")
     item.section, item.shipped_at = ("not_doing" if not_doing else "shipped"), now()
+    if result is not None and result.strip():
+        item.result = result.strip()[:4000]
     _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)
 
 
