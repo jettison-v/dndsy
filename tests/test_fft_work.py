@@ -219,3 +219,21 @@ def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
     page = admin.get("/manage/work").text
     assert 'data-item="work"' in page and 'data-item="testing"' not in page
     assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
+
+
+def test_a_roadmap_item_with_no_plan_isnt_developments_and_keeps_its_place(db, admin):
+    """Issue 49 (Brett, Nov 20: "Why do these exist here if they are still open?"): an item with no plan (an idea not
+    built yet, or one finished) waits on the Roadmap, not in Development's Queue; dragging the listed ones keeps it."""
+    item, battle, _ = _plans(db)
+    rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)
+    idea = FftItem(title="String Audit", section="next", place=2)
+    later = FftItem(title="Another build", section="later", place=3)
+    db.add_all([idea, later])
+    db.flush()
+    other = rules.new_area(db, "claude", later, "Its batch")
+    rules.new_issue(db, "claude", "Something", area_id=other.id)
+    db.flush()
+    page = admin.get("/manage/work").text
+    assert f'data-item="{item.id}"' in page and f'data-item="{later.id}"' in page and f'data-item="{idea.id}"' not in page
+    admin.post("/manage/testing/order", data={"column": "items", "keys": [str(later.id), str(item.id)]})
+    assert (later.place, item.place, idea.place) == (1, 2, 3)  # (the one not listed keeps its place after them)
