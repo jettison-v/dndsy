@@ -877,7 +877,7 @@ OVERRIDE_CHOICES = {
     "situ_group": [("situational", "Situational"), ("in_numbers", "Already in your numbers")],
     "item_group": ITEM_GROUPS,
 }
-# Rule-term underlines (set from the term's pop-up, not the regrouping box); here so Manage › Characters can label them.
+# Rule-term underlines (set from the term's pop-up, not the regrouping box); here so Backstage › Characters can label them.
 TERM_CHOICES = {"underline": [("on", "Underlined"), ("off", "Not underlined")]}
 FIELD_LABELS = {"hide": "Show in askdnd", "cost": "Section (what it costs)", "battle": "On Battle",
                 "feature_group": "Features group", "situ_group": "Situational group", "item_group": "Inventory group",

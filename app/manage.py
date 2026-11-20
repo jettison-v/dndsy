@@ -32,7 +32,7 @@ from app.templating import templates
 router = APIRouter()
 
 CAMPAIGN, ASKDND = "campaign", "askdnd"
-# The one list of Manage's and the gear's pages (The Three Menus, Brett approved all six parts, Nov 13,
+# The one list of Backstage's pages (its two halves: this campaign's and Global's) (The Three Menus, Brett approved all six parts, Nov 13,
 # docs/mockups/menus/; The DM's Workspace, Brett chose B, Nov 13, docs/mockups/dm-workspace/): (key, label, address,
 # what it's for, group, section, who may open it, extra addresses that belong to it). Each menu, each page's list down
 # the left and Manage's home are drawn from it: the same groups, names and order. A group shows its most used pages
@@ -41,7 +41,7 @@ CAMPAIGN, ASKDND = "campaign", "askdnd"
 # the permission structure is robust and flexible", since what an admin may see may need narrowing): changing who sees
 # a page is one line there, and the Table's access chart, the menus and the pages' own checks all follow it.
 AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
-PEOPLE, TUNING = "People", "Tuning"
+WAITING, GENERAL, PEOPLE, TUNING = "Waiting on you", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20)
 PAGES = (
     ("needs", "Needs you", "/manage", "What's waiting, and what you're preparing", CAMPAIGN, AFTER, "moderate", ()),
     ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, "moderate", ()),
@@ -55,15 +55,15 @@ PAGES = (
     ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, TABLE, "review", ()),
     # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
-    # (For you: everything waiting on Brett, its count on the Admin gear; Brett, Nov 19, the work flow's slice 2)
-    ("for-you", "For you", "/manage/for-you", "Everything waiting on you: checks to try, questions, notes and ideas", ASKDND, "", "admin", ()),
-    ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
-    ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, "", "admin", ()),
-    ("testing", "Testing", "/manage/testing", "Where each area stands, what's with Claude, what passed", ASKDND, "", "admin", ()),
-    ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, "", "admin", ()),
-    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
-    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
-    ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", "admin", ()),
+    # (For you: everything waiting on Brett, its count on Backstage; Brett, Nov 19, the work flow's slice 2)
+    ("for-you", "For you", "/manage/for-you", "Everything waiting on you: checks to try, questions, notes and ideas", ASKDND, WAITING, "admin", ()),
+    ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, GENERAL, "admin", ()),
+    ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, GENERAL, "admin", ()),
+    ("testing", "Testing", "/manage/testing", "Where each area stands, what's with Claude, what passed", ASKDND, GENERAL, "admin", ()),
+    ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, GENERAL, "admin", ()),
+    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, GENERAL, "admin", ()),
+    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, GENERAL, "admin", ()),
+    ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, GENERAL, "admin", ()),
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, "admin", ()),
     ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, "admin", ()),
     ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, "admin", ()),
@@ -278,7 +278,7 @@ def counts(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/manage/askdnd")
 def overview(request: Request, db: Session = Depends(get_db)):
-    """Manage › askdnd › Overview: how each admin page stands, one card each, so most days none needs opening."""
+    """Backstage › Global › Overview: how each admin page stands, one card each, so most days none needs opening."""
     from app.admin_usage import usage_summary
     from app.models import Campaign, User
     from app.tool_corrections_pages import open_count

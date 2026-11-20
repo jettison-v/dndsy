@@ -3,7 +3,7 @@ table and what their dice did, across the campaign. A Trophies tab on Party, one
 DM; a row opens that person's own view (the mockup's A: the shelf of awards, their numbers, every d20 they rolled, their
 awards newest first). For fun, never a ranking: facts only, no verdicts, rows by name.
 
-What counts (Manage › Settings › Trophy Case, `Campaign.table_settings["trophies"]`): by default only what happened
+What counts (Backstage › Settings › Trophy Case, `Campaign.table_settings["trophies"]`): by default only what happened
 during a published session (`session_story.night`: the recording's own time, or that evening); "all" counts every roll
 the table saw, for a table that doesn't record its sessions. Rolls are the table-visible ones in Table rolls (askdnd's
 own and D&D Beyond's game log): a DM-only or private roll never counts. The DM's are the rolls with no character (the

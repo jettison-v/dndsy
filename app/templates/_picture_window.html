@@ -40,7 +40,7 @@
         {% for r in relatives %}{% with field = "like", on = false %}{% include "_picture_ref.html" %}{% endwith %}{% endfor %}
       </fieldset>
       <p class="note pw-at">Type @ and a name to draw it as it looks in its own picture.</p>
-      <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage.</span></div>
+      <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Backstage › Usage.</span></div>
     </form>
     {# While it draws (feedback 22): a place for each picture, filling, and a bar for the minute it can take #}
     <div class="pw-drawing" role="status" aria-live="polite">

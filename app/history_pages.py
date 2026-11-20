@@ -1,4 +1,4 @@
-"""Manage › History: every recorded change, with Restore; and Undo for an import.
+"""Backstage › History: every recorded change, with Restore; and Undo for an import.
 
 Two views of the same records (Manage layout, 2026-10-23):
 - the campaign's History (/c/<campaign>/manage/history): only that campaign's changes;
@@ -59,7 +59,7 @@ def may_restore(db: Session, user: dict, rev: Revision) -> bool:
 
 
 def recent_imports(db: Session, limit: int = 10) -> list[dict]:
-    """Imports recorded in history, newest first, for Manage › Backups and imports."""
+    """Imports recorded in history, newest first, for Backstage › Backups and imports."""
     rows = db.scalars(select(Revision).where(Revision.source == "import", Revision.batch.is_not(None))
                       .order_by(Revision.id.desc()).limit(5000))
     batches: dict[str, dict] = {}

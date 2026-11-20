@@ -1,6 +1,6 @@
 """The one Picture window (Brett, 2026-11-04, docs/mockups/pictures/ board 2): wherever a picture goes, pressing it (or an
 empty slot) opens this, with Upload, Describe it and From D&D Beyond, for a World entry or one of a character's creatures
-(`for`: app/pictures.py `owner`). And the campaign's art style (Manage › Settings › Art style, board 3)."""
+(`for`: app/pictures.py `owner`). And the campaign's art style (Backstage › Settings › Art style, board 3)."""
 
 import base64
 import json
@@ -182,7 +182,7 @@ def creature_picture(request: Request, character_id: int, creature: str, size: s
     return pictures.serve(db, pic, size)
 
 
-# ------------------------------------------------------------------ the campaign's art style (Manage › Settings)
+# ------------------------------------------------------------------ the campaign's art style (Backstage › Settings)
 
 
 @router.post("/manage/settings/art-style")

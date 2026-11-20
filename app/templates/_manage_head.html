@@ -1,5 +1,5 @@
-{# Top of every Manage and Admin page (Brett, 2026-10-27, docs/mockups/manage-menu.html, round 2 option A): a thin line in
-   its half's colour (red: this campaign's Manage; blue: askdnd admin, the same in every campaign) with the way to the
+{# Top of every Backstage page (Brett, 2026-10-27, docs/mockups/manage-menu.html, round 2 option A): a thin line in
+   its half's colour (red: This campaign; blue: Global, askdnd as a whole, the same in every campaign) with the way to the
    other half, then its pages in a list down the left, in small sections; on narrower screens the same list opens from
    a "jump to" control. Needs you and Inbox get their counts from /manage/counts (app.js "Manage counts"). #}
 {% set on = manage_pages | selectattr("here") | first %}{% set grp = on.group if on else ("campaign" if in_campaign else "askdnd") %}
@@ -11,13 +11,13 @@
   {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}{% if p.planned %}<span class="manage-planned" data-item="{{ p.key }}" title="{{ p.about }}">{{ p.label }} <small>planned</small></span>{% else %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}" data-item="{{ p.key }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endif %}{% endfor %}
 {% endmacro %}
 <div class="manage-band {{ 'camp' if grp == 'campaign' else 'tool' }}">
-  {% if grp == "campaign" %}<span class="sr">{{ camp }}: this campaign's Manage</span>{% if admin_home %}<a class="manage-cross btn" href="{{ admin_home.href }}" title="askdnd admin, the same in every campaign">⚙ Admin</a>{% endif %}
-  {% else %}<span class="sr">askdnd admin: the same in every campaign</span>{% if camp_home %}<a class="manage-cross btn" href="{{ camp_home.href }}" title="{{ camp }}">Manage</a>{% endif %}{% endif %}
+  {% if grp == "campaign" %}<span class="sr">{{ camp }}: this campaign's Backstage</span>{% if admin_home %}<a class="manage-cross btn" href="{{ admin_home.href }}" title="Global: askdnd, the same in every campaign">Global</a>{% endif %}
+  {% else %}<span class="sr">Global: askdnd, the same in every campaign</span>{% if camp_home %}<a class="manage-cross btn" href="{{ camp_home.href }}" title="{{ camp }}">This campaign</a>{% endif %}{% endif %}
 </div>
-<nav class="manage-side" aria-label="{{ (camp + ' · Manage') if grp == 'campaign' else 'askdnd admin' }}"{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
+<nav class="manage-side" aria-label="{{ (camp + ' · Backstage') if grp == 'campaign' else 'Global' }}"{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
   {{ manage_list() }}
 </nav>
 <details class="manage-jump">
-  <summary><b>{{ on.label if on else "Manage" }}</b><span>All pages ▾</span></summary>
-  <nav class="manage-jump-list" aria-label="{{ (camp + ' · Manage') if grp == 'campaign' else 'askdnd admin' }}">{{ manage_list() }}</nav>
+  <summary><b>{{ on.label if on else "Backstage" }}</b><span>All pages ▾</span></summary>
+  <nav class="manage-jump-list" aria-label="{{ (camp + ' · Backstage') if grp == 'campaign' else 'Global' }}">{{ manage_list() }}</nav>
 </details>

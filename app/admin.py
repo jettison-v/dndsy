@@ -1,4 +1,4 @@
-"""Manage › Backups and imports (admins): the nightly backups, then importing campaign data, then the private rules
+"""Backstage › Backups and imports (admins): the nightly backups, then importing campaign data, then the private rules
 books' entries (a file from scripts/book_load.py --export: beta's database has no public address, so a book reaches it
 this way)."""
 

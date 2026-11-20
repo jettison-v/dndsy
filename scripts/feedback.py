@@ -327,6 +327,12 @@ def ask(a) -> None:
     print(f"Asked: question {got['id']}.")
 
 
+def question(a) -> None:
+    """Withdraw a question of Claude's that a later pick replaced: `question 6 withdraw "Answered on Menu Bar Doors"`."""
+    call(a.base, f"/questions/{a.id}/withdraw", {"why": a.why})
+    print(f"Question {a.id} withdrawn.")
+
+
 def questions(a) -> None:
     for q in call(a.base, f"/questions?open={0 if a.all else 1}")["items"]:
         said = (f" → {q['choices'][q['answer_choice']]['label']}" if q["answer_choice"] is not None else "") + (f" {_quote(q['answer'])}" if q["answer"] else "")
@@ -562,6 +568,10 @@ def main() -> None:
     s.add_argument("--choice", action="append", default=[])
     s.add_argument("--mine", type=int, help="your pick: the choice's number, counting from 1")
     s.add_argument("--doc", help="the mockup it asks about (its docs/ path, listed in docs/library.json): For you opens it")
+    s = sub.add_parser("question", help="withdraw a question of yours that a later pick replaced")
+    s.add_argument("id", type=int)
+    s.add_argument("do", choices=["withdraw"])
+    s.add_argument("why")
     s = sub.add_parser("questions")
     s.add_argument("--all", action="store_true")
     sub.add_parser("features")
@@ -608,7 +618,7 @@ def main() -> None:
     if a.cmd == "item":
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
-     "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
+     "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
      "lane": lane, "incident": incident, "freeze": freeze, "available": available, "local": local}[a.cmd](a)
 
 

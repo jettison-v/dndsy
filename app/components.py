@@ -5,7 +5,7 @@ rules).
 By the 2024 rules a Component Pouch or a Spellcasting Focus covers a Material component without a cost, so what matters
 is a component with a cost (Revivify's diamond worth 300+ GP), or any Material component when you have neither. What
 the character carries is matched by name (a significant word of the component, "diamond", in an item's name) and worth
-(D&D Beyond's cost for it, times how many). A table can play it more simply (D, Manage › House rules › Spells):
+(D&D Beyond's cost for it, times how many). A table can play it more simply (D, Backstage › House rules › Spells):
 "costly only" never marks a component without a cost, pouch or not.
 
 `need(spell, sheet, rules)` answers one spell: None (nothing to say), or {"kind": "missing" | "unsure" | "consumes",

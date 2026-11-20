@@ -30,7 +30,7 @@
   {% if tn.dm and backup and unreached and (tn.playing or fight_now()) %}
   {% set names = unreached | map(attribute="name") | join(", ") %}
   {% if dm_here and not ddb_game %}
-  <div class="live-say bad"><span>This campaign isn't linked to its D&amp;D Beyond campaign, so your D&amp;D Beyond can't make closed sheets' changes. Add its D&amp;D Beyond campaign id in Manage › Settings.</span></div>
+  <div class="live-say bad"><span>This campaign isn't linked to its D&amp;D Beyond campaign, so your D&amp;D Beyond can't make closed sheets' changes. Add its D&amp;D Beyond campaign id in Backstage › Settings.</span></div>
   {% elif dm_here %}
   <div class="live-say bad"><span>{% if unreached | length == 1 %}{{ names }} isn't in this campaign's D&amp;D Beyond campaign, so only its own sheet can make its changes.{% else %}{{ names }} aren't in this campaign's D&amp;D Beyond campaign, so only their own sheets can make their changes.{% endif %}</span></div>
   {% else %}

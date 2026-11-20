@@ -412,6 +412,20 @@ def test_r13_a_question_waits_for_brett_and_the_answer_names_it(db):
         rules.answer(db, "user:1", q, choice=0)  # (answered: a second answer can't take it)
 
 
+def test_a_superseded_question_is_withdrawn_with_why_and_its_issue_moves_on(db):
+    """A standing rule (Brett, Nov 19: "if Test or Try is superseded, it should be removed or canceled"): a question a
+    later pick replaced leaves For you, says why, and its issue goes back to Claude as an answer would."""
+    issue = rules.new_issue(db, "claude", "Where you are")
+    q = rules.ask(db, "claude", about="issue", about_id=issue.id, text="Which way?", choices=[{"label": "A"}, {"label": "B"}])
+    with pytest.raises(RuleError):
+        rules.withdraw(db, "claude", q, "  ")  # (it says why)
+    rules.withdraw(db, "claude", q, "Answered on Menu Bar Doors")
+    assert q.answered_at is not None and q.answer_text == "Withdrawn: Answered on Menu Bar Doors" and q.answered_by is None
+    assert issue.state == "to_fix"
+    with pytest.raises(RuleError):
+        rules.answer(db, "user:1", q, choice=0)  # (gone from For you: it can't be answered after)
+
+
 def test_r14_a_stale_page_is_refused_with_what_changed(db):
     issue = rules.new_issue(db, "claude", "x")
     rules.start_fixing(db, "claude", issue)

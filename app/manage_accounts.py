@@ -1,4 +1,4 @@
-"""Manage › Accounts (admins, /manage/accounts): who can sign in to askdnd at all, who's an admin, and which
+"""Backstage › Accounts (admins, /manage/accounts): who can sign in to askdnd at all, who's an admin, and which
 campaigns each person is in (Manage layout, 2026-10-23). Roles in a campaign are set on that campaign's Table
 (app/manage_table.py)."""
 

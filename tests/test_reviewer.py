@@ -35,5 +35,5 @@ def test_reviewer_can_review_but_not_see_admin_pages(dm_client, db):
     for path in ("/c/main/manage/sessions/doc", "/manage/backups", "/manage/usage"):
         assert dm_client.get(path).status_code == 403, path
     home = dm_client.get("/").text
-    assert "Manage" in home and "/manage/sessions" in home
+    assert "Backstage" in home and "/manage/sessions" in home
     assert "/manage/sessions/doc" not in home and "/manage/usage" not in home and "/manage/backups" not in home

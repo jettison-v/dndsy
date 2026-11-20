@@ -244,7 +244,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
 
 def _use_up(db: Session, ch: Character, e: dict, undo: dict) -> str:
     """A component the spell consumes, taken from the inventory on D&D Beyond when the table plays it so (Brett chose C,
-    Nov 13; Manage › House rules › Spells: components, app/components.py). Undo puts it back. What it adds to the corner
+    Nov 13; Backstage › House rules › Spells: components, app/components.py). Undo puts it back. What it adds to the corner
     card's words."""
     need = e.get("need") or {}
     if need.get("kind") != "consumes" or not need.get("item") or not components.rules_for(ch.campaign_id)[components.USE_UP]:

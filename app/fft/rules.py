@@ -1326,7 +1326,7 @@ def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str,
         raise RuleError("bad", "Your pick is one of the answers.")
     if about == "document" and not doc_path:
         raise RuleError("bad", "A decision names its document.")
-    if doc_path:  # (whatever it's about, the mockup it asks on: one Manage › Documents lists, so For you can open it)
+    if doc_path:  # (whatever it's about, the mockup it asks on: one Backstage › Documents lists, so For you can open it)
         from app.documents import doc_id, find
 
         if find(doc_id(doc_path)) is None:
@@ -1359,6 +1359,25 @@ def answer(db: Session, actor: str, q: FftQuestion, *, choice: int | None, text:
     q.answer_choice, q.answer_text, q.answered_at, q.answered_by = choice, text.strip(), now(), user_id
     if picks:
         q.picks = picks
+    _settled(db, actor, q)
+    _event(db, actor, "question_answered", "question", q.id, choice=choice)
+
+
+def withdraw(db: Session, actor: str, q: FftQuestion, why: str) -> None:
+    """Nothing superseded waits on Brett (Nov 19): a question a later pick or mockup has answered or replaced is
+    withdrawn by Claude with why. It leaves For you as an answer would, and its issue or check moves on the same way."""
+    if q.answered_at is not None:
+        raise RuleError("stale", "It's already answered.")
+    if not why.strip():
+        raise RuleError("bad", "Say why it's withdrawn.")
+    q.answer_text, q.answered_at, q.answered_by = "Withdrawn: " + why.strip(), now(), None
+    _settled(db, actor, q)
+    _event(db, actor, "question_withdrawn", "question", q.id)
+
+
+def _settled(db: Session, actor: str, q: FftQuestion) -> None:
+    """A question no longer waits: its issue goes back to where it was when Claude asked, once nothing else waits on it;
+    its check stops asking."""
     if q.about == "issue" and q.about_id:
         issue = db.get(FftIssue, q.about_id)
         if issue is not None and issue.state == "asks":
@@ -1374,7 +1393,6 @@ def answer(db: Session, actor: str, q: FftQuestion, *, choice: int | None, text:
         c = db.get(FftCheck, q.about_id)
         if c is not None:
             c.asks = False
-    _event(db, actor, "question_answered", "question", q.id, choice=choice)
 
 
 # ------------------------------------------------------------------ listeners (T8)

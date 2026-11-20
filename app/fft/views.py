@@ -52,7 +52,7 @@ def local_href(url: str) -> str:
 
 
 def doc_of(path: str) -> dict | None:
-    """The mockup a question asks on, as Manage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
+    """The mockup a question asks on, as Backstage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
     if not path:
         return None
     from app.documents import doc_id, find
@@ -302,6 +302,8 @@ def event_words(ev) -> str:
         return f"Check {d.get('check')}: {ev.kind[4:]} on the {d.get('device')} ({d.get('where')})"
     if ev.kind == "question_answered":
         return f"Brett answered question {ev.thing_id}"
+    if ev.kind == "question_withdrawn":
+        return f"Claude withdrew question {ev.thing_id} (a later pick replaced it)"
     if ev.kind == "line_added":  # (its "to" is who it's for, never a state: the review of PR #417)
         who = "Claude" if ev.actor == "claude" else "askdnd" if ev.actor == "askdnd" else "An admin" if ev.actor.startswith("user:") else "Someone"
         to = {"sender": ", to its senders", "claude": ", to Claude"}.get(d.get("to") or "", "")

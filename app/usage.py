@@ -61,8 +61,8 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/(campaign|admin/suggestions|suggestions|manage/proposals)/", "World and the Inbox"),
     (r"^/questions/", "World and the Inbox"),
     (r"^/manage/sessions/", "Session Story review"),
-    (r"^/manage/table", "Manage › Table"),
-    (r"^/manage/(settings|house-rules)", "Manage › Settings and house rules"),
+    (r"^/manage/table", "Backstage › Table"),
+    (r"^/manage/(settings|house-rules)", "Backstage › Settings and house rules"),
     (r"^/dm/items", "DM Tools: homebrew items"),
     (r"^/manage/", "Admin pages"),
     (r"^/dice$", "Your dice"),
@@ -84,6 +84,9 @@ PAGES: list[tuple[str, str]] = [
 ]
 _FEATURES = [(re.compile(p), f) for p, f in FEATURES]
 _PAGES = [(re.compile(p), n) for p, n in PAGES]
+# What a stored page is called now (the names are kept as recorded, so a day's counts never split): Manage and Admin are
+# Backstage's halves since Nov 20 (Menu Bar Doors)
+SHOWN = {"Manage": "Backstage", "Admin": "Backstage › Global"}
 VERSION = (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "")[:12]
 
 
@@ -167,7 +170,7 @@ class Recorder:
             log.warning("A use wasn't counted", exc_info=True)
 
 
-# ------------------------------------------------------------------ reading them (Admin › Features)
+# ------------------------------------------------------------------ reading them (Backstage › Features)
 
 def counted(db, campaign_id: int | None):
     """The uses that count: the table's (not admins', not test accounts', not in a test campaign)."""
@@ -183,7 +186,7 @@ def counted(db, campaign_id: int | None):
     return [e for e in db.scalars(q) if e.user_id not in left_out and e.campaign_id not in tests]
 
 
-ADMIN_ONLY = {"Admin pages", "View as", "Corrections", "Linking a sheet", "Manage › Table", "Manage › Settings and house rules",
+ADMIN_ONLY = {"Admin pages", "View as", "Corrections", "Linking a sheet", "Backstage › Table", "Backstage › Settings and house rules",
               "Session Story review", "World and the Inbox", "Email settings"}  # (the DM's or an admin's: not "never touched" by players)
 
 
@@ -194,7 +197,7 @@ def _family(feature: str) -> str:
 
 
 def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
-    """Admin › Features: everything the page draws, for the last `days` against the `days` before."""
+    """Backstage › Features: everything the page draws, for the last `days` against the `days` before."""
     from collections import Counter, defaultdict
     from datetime import UTC, datetime, timedelta
 
@@ -243,10 +246,10 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
     used_families = {_family(f) for f in uses}
     never = sorted({f for _, f in FEATURES} - ADMIN_ONLY - {"Rolls"} - used_families)
     unknown = "Not kept (rolls before Nov 9)"
-    pages = Counter(e.page or unknown for e in here)
+    pages = Counter(SHOWN.get(e.page, e.page) or unknown for e in here)
     page_top = defaultdict(Counter)
     for e in here:
-        page_top[e.page or unknown][e.feature] += 1
+        page_top[SHOWN.get(e.page, e.page) or unknown][e.feature] += 1
     grid_features = [r["feature"] for r in sorted(rows, key=lambda r: -r["uses"])[:12]]
     grid = {(e.feature, e.user_id): 0 for e in here}
     for e in here:
@@ -271,7 +274,7 @@ def _left_out(email: str) -> bool:
     return access.level(email) == access.ADMIN
 
 
-# ------------------------------------------------------------------ Admin › Features
+# ------------------------------------------------------------------ Backstage › Features
 
 def chart(daily: list[int], releases: list[tuple[int, str]], start, w: int = 640, h: int = 190) -> dict:
     """One line of uses by day (the admin blue), the days marked where a deploy first ran; each day a hover target.

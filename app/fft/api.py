@@ -384,6 +384,22 @@ def question_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None)
     return _ok({"id": q.id})
 
 
+@router.post("/questions/{question_id}/withdraw")
+def question_withdraw(question_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude withdraws a question of its own that a later pick replaced (rules.withdraw), with why."""
+    actor = keys.require(db, x_fft_key, "ask")
+    body = body if isinstance(body, dict) else {}
+    q = db.get(FftQuestion, question_id)
+    if q is None:
+        raise HTTPException(404, "No such question")
+    try:
+        rules.withdraw(db, actor.name, q, _str(body, "why", 300, need=True))
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"id": q.id})
+
+
 @router.post("/areas")
 def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """new (item_id, title), item (title, section, standing), lock / unlock (area_id, owner), next (item_id, step,

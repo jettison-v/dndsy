@@ -12,7 +12,7 @@ again gives back) or ⌘K opens a box in the middle; results come as you type, g
 - **The story** (A: what everyone shares, not the party's characters): the World's entries a person may see (the
   Campaign page's own rule: published, or any for the DM, reviewers and admins, those marked hidden), and the
   published sessions.
-- **Pages**: Story, Campaign, Party, Your notes, Help and the Manage pages this person can open.
+- **Pages**: Story, Campaign, Party, Your notes, Help and the Backstage pages this person can open.
 """
 
 from urllib.parse import quote

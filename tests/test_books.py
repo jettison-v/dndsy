@@ -100,7 +100,7 @@ def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, pl
     books.save(db, "mm-2024", "monster", made_up_beast(), page=12)
     url = f"/characters/{cole.id}"
     page = player.get(url).text  # Sheet › Wild Shape: every form Cole could learn
-    assert "<b>Glimmer Hound</b>" in page and 'title="From a book this campaign uses (Manage › Settings › Books)">MM 2024</span>' in page
+    assert "<b>Glimmer Hound</b>" in page and 'title="From a book this campaign uses (Backstage › Settings › Books)">MM 2024</span>' in page
     assert 'data-ls-value="MM 2024"' in page  # the Book filter
     panel = player.get(f"{url}/form?name=Glimmer Hound").text
     assert ">MM 2024 p. 12</span>" in panel and "Stat block from the Monster Manual (2024), p. 12, a book this campaign uses" in panel
@@ -110,7 +110,7 @@ def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, pl
     assert r.status_code == 200 and "Glimmer Hound (Wild Shape, CR 1/4)" in player.get(f"{url}/battle").text
     assert "Stat block from the SRD 5.2.1" in player.get(f"{url}/form?name=Polar Bear").text  # the SRD's forms stay the SRD's
 
-    # The campaign's DM switches the book off on Manage › Settings › Books: only the SRD's Beasts
+    # The campaign's DM switches the book off on Backstage › Settings › Books: only the SRD's Beasts
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
     assert player.post("/c/main/manage/settings/books/mm-2024", data={}).status_code == 403  # not a player's
     settings = dm.get("/c/main/manage/settings").text
@@ -241,7 +241,7 @@ class _no_close:
 
 
 def test_beta_gets_a_book_through_its_own_upload(admin, player, db):
-    """Beta's database has no public address, so a book reaches it as a file uploaded on Manage › Backups and imports
+    """Beta's database has no public address, so a book reaches it as a file uploaded on Backstage › Backups and imports
     (scripts/book_load.py --export writes it): written as the loader writes, replacing the book's old entries."""
     import gzip
     import json

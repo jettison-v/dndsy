@@ -1,4 +1,4 @@
-"""Manage › Data: show what an import would change before anything is written.
+"""Backstage › Data: show what an import would change before anything is written.
 
 The upload is applied inside a savepoint, compared with how things were, and rolled
 back. The file waits here (in memory, for this admin, for a while) until they press

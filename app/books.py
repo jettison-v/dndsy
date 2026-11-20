@@ -6,7 +6,7 @@ its books, then the SRD (files in the repo). A book's entries live only in the d
 by scripts/book_load.py from the offline copy in private/books/; never in the repo, test fixtures or docs.
 
 Checked once: each campaign keeps its list of books (Campaign.books), mirroring what the DM shares on D&D Beyond. Its
-DM or an admin switches each on or off on Manage › Settings › Books; every lookup reads that list from the campaign
+DM or an admin switches each on or off on Backstage › Settings › Books; every lookup reads that list from the campaign
 row. Nothing is checked when a game loads and nothing is asked of D&D Beyond.
 
 The first book: the whole 2024 Monster Manual, labelled "MM 2024". Wild Shape reads its Beasts.
@@ -116,7 +116,7 @@ def counts(db) -> dict[str, dict[str, int]]:
 
 
 def rows(db, campaign) -> list[dict]:
-    """Manage › Settings › Books: each book with entries in askdnd, what's in it, and whether it's on here."""
+    """Backstage › Settings › Books: each book with entries in askdnd, what's in it, and whether it's on here."""
     have, mine = counts(db), set(on(campaign))
     out = []
     for b in BOOKS:
@@ -168,7 +168,7 @@ def save(db, book_key: str, kind: str, entry: dict, page: int | None = None, ima
 
 def replace(db, book_key: str, kind: str, rows: list) -> tuple[int, int]:
     """Write a book's entries of one kind, replacing what it had: `rows` are (entry, page, image). Any entry no longer in
-    `rows` is removed. Returns (written, removed). Used by scripts/book_load.py and the upload on Manage › Backups and
+    `rows` is removed. Returns (written, removed). Used by scripts/book_load.py and the upload on Backstage › Backups and
     imports (app/admin.py), so beta, whose database has no public address, gets a book the same way."""
     from sqlalchemy import delete, select
 

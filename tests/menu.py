@@ -1,11 +1,13 @@
 """Reading the menu bar from a page's HTML by what things are, not by their words or classes (Nov 13, the test
-foundations): a door's menu is `[data-door="account" | "manage" | "admin" | "help" | "more" | "party" | "campaign"]`, each
+foundations): a door's menu is `[data-door="account" | "manage" | "more" | "party" | "campaign"]` (Backstage is "manage";
+its two halves, Nov 20, are `[data-half="campaign" | "askdnd"]`: This campaign and Global), each
 of its items `[data-item="<key>"]` (a Manage page's key from app/manage.py PAGES, else notes, dice, email, feedback, help,
 tour, signout, dm-tools…), and the Live pill says how it stands in `data-tone` (step, via, bad, warn, none). A menu's
 wording or order can change without touching the tests that only ask what's in it.
 
     door(html, "account")   the account menu's HTML ("" when the page has none)
     items(html, "manage")   its item keys, in order
+    half(html, "askdnd")    one half of Backstage's menu ("" when the page has none); half_items its keys
     tone(html)              the Live pill's tone
     topbar(html)            the menu bar's HTML
 """
@@ -83,6 +85,20 @@ def has_door(html: str, key: str) -> bool:
 def items(html: str, key: str) -> list[str]:
     """The item keys in a door's menu, in order."""
     return _find(html, "data-door", key).keys
+
+
+def half(html: str, key: str) -> str:
+    """One half of Backstage's menu (campaign: This campaign; askdnd: Global), its inner HTML; "" when it isn't there."""
+    return "".join(_find(html, "data-half", key).parts)
+
+
+def has_half(html: str, key: str) -> bool:
+    return _find(html, "data-half", key).found
+
+
+def half_items(html: str, key: str) -> list[str]:
+    """The item keys in one half of Backstage's menu, in order."""
+    return _find(html, "data-half", key).keys
 
 
 def tone(html: str) -> str:

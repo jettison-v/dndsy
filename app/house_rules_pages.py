@@ -1,4 +1,4 @@
-"""Manage › House rules: the DM's rulings on how askdnd rolls things at this table (app/house_rules.py)."""
+"""Backstage › House rules: the DM's rulings on how askdnd rolls things at this table (app/house_rules.py)."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse

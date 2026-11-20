@@ -1,9 +1,9 @@
-"""Manage › Campaigns (admins, /manage/campaigns): every campaign, creating one, and moving characters between them
-(data organization step 4). And each campaign's Manage › Settings (/c/<campaign>/manage/settings): its name, the
+"""Backstage › Campaigns (admins, /manage/campaigns): every campaign, creating one, and moving characters between them
+(data organization step 4). And each campaign's Backstage › Settings (/c/<campaign>/manage/settings): its name, the
 DM's name and its D&D Beyond campaign id, which its DM can change too (Manage layout, 2026-10-23), its books
 (app/books.py: which private rules books its lookups use; its DM and admins switch each on or off) and its VTT switch
 (app/vtt.py: admins make a campaign a test one; its DM and admins switch finished pieces on). Who plays in a
-campaign, and adding characters to it, are on its Manage › Table (app/manage_table.py)."""
+campaign, and adding characters to it, are on its Backstage › Table (app/manage_table.py)."""
 
 import re
 
@@ -142,7 +142,7 @@ def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(ge
         c.is_test = bool(is_test)
         db.commit()
         access.invalidate()
-        toast = f"{c.name} is {'a test campaign: test copies of characters can be added on Manage › Table' if c.is_test else 'no longer a test campaign'}."
+        toast = f"{c.name} is {'a test campaign: test copies of characters can be added on Backstage › Table' if c.is_test else 'no longer a test campaign'}."
     return web.switched(request, toast, f"{web.base(c)}/manage/settings#test")
 
 

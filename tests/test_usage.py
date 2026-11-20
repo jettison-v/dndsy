@@ -65,3 +65,22 @@ def test_the_features_page_is_the_admins(admin, dm, db, sheet):
     page = admin.get("/manage/features?days=7")
     assert page.status_code == 200 and "Every use, by day" in page.text and "Never touched" in page.text
     assert dm.get("/manage/features").status_code == 403
+
+
+def test_manage_and_admin_pages_count_as_backstage_and_keep_their_history(player, db, sheet):
+    """Menu Bar Doors (Brett, Nov 20): Manage and the Admin gear became Backstage. A use is kept with the page's name as
+    it was recorded, so the Features page shows the old and the new under one name and a day's counts never split."""
+    from tests.table_setup import char
+
+    cole = char(db, "Cole")
+    who = db.scalar(select(UsageEvent.user_id).limit(1))
+    if who is None:
+        player.post("/rolls", data={"character": cole.id, "kind": "check", "label": "Stealth check", "mod": "+2"},
+                    headers={"referer": f"https://askdnd.ai/characters/{cole.id}/battle"})
+        who = db.scalar(select(UsageEvent.user_id).limit(1))
+    for page in ("Manage", "Manage", "Admin"):
+        db.add(UsageEvent(campaign_id=cole.campaign_id, user_id=who, feature="Inbox", page=page))
+    db.commit()
+    pages = {p["page"]: p["uses"] for p in usage.summary(db, cole.campaign_id, 7)["pages"]}
+    assert pages.get("Backstage") == 2 and pages.get("Backstage › Global") == 1 and "Manage" not in pages and "Admin" not in pages
+    assert usage.page_of("https://askdnd.ai/c/main/manage/inbox") == "Manage"  # (recorded as before)

@@ -1,0 +1,295 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Menu Bar Doors</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Where You Are's two picks (A, and the outside review's R), moved here with the door question (Brett, Nov 20: "Any
+   thoughts on changing the word Manage ... recombining Manage and Settings into 1 option? I really want to get this
+   correct"; "Move option A and R to new artifact and add in the new menu options"; "comment on having an indication
+   under a profile image"). Every bar is clickable. Source: docs/mockups/menu-bar-doors/index.html. */
+:root {
+  --bg: #15171a; --chrome: #0f1113; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-strong: #464b53;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f;
+  --brand: #d64545; --amber: #e8b34b; --blue: #7ea6e0; --selected-bg: rgba(126, 166, 224, .18); --green: #5bbf7f;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --icon: 24px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.1rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 88ch; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+/* the switches: what every bar below shows */
+.controls { position: sticky; top: 0; z-index: 6; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.card { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.card-h { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.card .why { color: var(--muted); font-size: .9rem; max-width: 92ch; }
+.view { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+.view ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; display: grid; gap: 4px; }
+.view li b { font-weight: 600; }
+/* the bar */
+.frame { position: relative; border-radius: 10px; }
+.tb { display: flex; align-items: center; gap: 10px; padding: 10px 14px 11px; background: var(--chrome); border-bottom: 2px solid var(--brand); font: 600 .92rem/1 var(--sans); border-radius: 10px 10px 0 0; }
+.brand { width: var(--icon); height: var(--icon); border-radius: 7px; background: var(--brand); flex: none; }
+.sep { width: 1px; height: 22px; background: var(--line); flex: none; }
+.d { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; color: var(--text); background: none; white-space: nowrap; cursor: pointer; }
+.d:hover { background: var(--surface-2); }
+.d .chev { font-size: .7em; color: var(--faint); }
+.d.camp { font-weight: 700; color: var(--strong); }
+.d .av, .d .pic, .d .gear { width: var(--icon); height: var(--icon); flex: none; border-radius: 50%; }
+.d .av { background: #6b7b8c; }
+.d .pic { background: #4a5563; color: #fff; display: grid; place-items: center; font-size: .78rem; }
+.d .gear { display: inline-grid; place-items: center; border-radius: 0; }
+.d .gear svg { width: 20px; height: 20px; }
+.d.me { padding: 0 6px; }
+.d .pg { color: var(--strong); }
+.d .pg i { color: var(--faint); font-style: normal; font-weight: 500; }
+.badge { position: absolute; top: -5px; right: -4px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--brand); color: #fff; font: 700 .66rem/16px var(--sans); text-align: center; padding: 0 4px; }
+.tool { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-weight: 500; white-space: nowrap; }
+.tool.search { flex: 1; min-width: 44px; overflow: hidden; }
+.tool.search span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tool.chain { border-radius: 999px; color: var(--muted); }
+.page { background: var(--bg); padding: 12px 16px; border: 1px solid #4a4f57; border-top: 0; border-radius: 0 0 10px 10px; color: var(--muted); font-size: .9rem; }
+.page b { font-weight: 600; }
+/* A: plain doors; a red line under where you are */
+.look-a .d.here { color: var(--strong); }
+.look-a .d.here::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -11px; height: 3px; border-radius: 3px; background: var(--brand); }
+/* R: quiet at rest; white where you are, the bar's own red line thicker under it */
+.look-r .d, .look-r .d.camp { color: var(--muted); }
+.look-r .d.here { color: var(--strong); }
+.look-r .d.here::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: -13px; height: 5px; border-radius: 3px 3px 0 0; background: var(--brand); }
+/* your picture's mark: none (no line under it), a line like every door, or a ring around the picture */
+.pm-none .d.me.here::after { display: none; }
+.pm-ring .d.me.here::after { display: none; }
+.pm-ring .d.me.here .pic { box-shadow: 0 0 0 2px var(--chrome), 0 0 0 4px var(--brand); }
+/* menus */
+.dd { position: absolute; z-index: 5; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px; padding: 6px; box-shadow: 0 10px 24px rgba(0, 0, 0, .45); display: grid; gap: 6px; min-width: 220px; }
+.dd.two { grid-template-columns: repeat(2, minmax(210px, 1fr)); gap: 6px 10px; }
+.dd .col { display: grid; gap: 1px; align-content: start; }
+.dd .col + .col { border-left: 1px solid var(--line); padding-left: 10px; }
+.dd .head { padding: 8px 10px 6px; color: var(--strong); font-weight: 700; font-size: .86rem; }
+.dd .head small { display: block; color: var(--faint); font-weight: 500; font-size: .76rem; margin-top: 2px; }
+.dd .grp { color: var(--faint); font: 700 .68rem/1 var(--sans); text-transform: uppercase; letter-spacing: .08em; padding: 9px 10px 4px; }
+.dd button { display: flex; justify-content: space-between; gap: 10px; text-align: left; background: none; border: 0; color: var(--text); font: 500 .9rem/1 var(--sans); padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+.dd button:hover, .dd button[aria-current="page"] { background: var(--surface-3); color: var(--strong); }
+.dd button .n { min-width: 18px; height: 18px; border-radius: 999px; background: var(--brand); color: #fff; font: 700 .68rem/18px var(--sans); text-align: center; padding: 0 5px; }
+@media (max-width: 1000px) { .frame { overflow-x: auto; } .tb { min-width: 980px; } .page { min-width: 980px; } .dd.two { grid-template-columns: minmax(0, 1fr); } .dd .col + .col { border-left: 0; padding-left: 0; } }
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Menu Bar Doors</h1>
+    <p class="lede">Where You Are's two picks, <b>A</b> (mine) and <b>R</b> (the outside review's), with the door question: keep <b>Manage ▾</b> and the <b>⚙</b> as two doors, or make them <b>one door</b> for everything behind the game, and what to call it. Every bar works: Campaign and Cole take you there, a door with ▾ (or your picture) opens its menu. It opens on your picks; the switches still show the others.</p>
+  </header>
+
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Doors</span><span class="seg" data-ctl="doors"><button type="button" data-v="two">Manage and ⚙ (today)</button><button type="button" data-v="one" aria-pressed="true">One door</button></span></span>
+    <span class="ctl"><span class="lbl">Its name</span><span class="seg" data-ctl="name"><button type="button" data-v="Manage">Manage</button><button type="button" data-v="Backstage" aria-pressed="true">Backstage</button><button type="button" data-v="Workspace">Workspace</button><button type="button" data-v="Behind the screen">Behind the screen</button></span></span>
+    <span class="ctl"><span class="lbl">Seen by</span><span class="seg" data-ctl="who"><button type="button" data-v="admin" aria-pressed="true">Admin</button><button type="button" data-v="dm">DM</button><button type="button" data-v="player">Player</button></span></span>
+    <span class="ctl"><span class="lbl">Under your picture</span><span class="seg" data-ctl="pm"><button type="button" data-v="none" aria-pressed="true">No mark</button><button type="button" data-v="line">A line</button><button type="button" data-v="ring">A ring</button></span></span>
+  </div>
+
+  <section class="card" data-look="a">
+    <div class="card-h"><h2>A · Plain doors, boxed tools</h2><span class="mine">my pick</span></div>
+    <p class="why">Places are plain words, menus are plain words with ▾, a box is a tool you use right there (Search, the connection). Where you are: a red line under the door.</p>
+    <div class="frame"></div>
+  </section>
+  <section class="card" data-look="r">
+    <div class="card-h"><h2>R · A, quiet at rest, the red line thickens</h2><span class="mine">the review's pick</span></div>
+    <p class="why">A's rules, but doors are quiet grey until you're on one; that one turns white and the bar's own red line grows under it. Inside a menu, its door also names the page.</p>
+    <div class="frame"></div>
+  </section>
+
+  <section class="view">
+    <h2>Your picks (Nov 20)</h2>
+    <ul>
+      <li><b>A</b>: plain doors, a menu ends in ▾, a box is a tool, a red line under where you are.</li>
+      <li><b>One door, Backstage ▾</b>, in place of Manage ▾ and the ⚙. An admin's menu has two halves side by side: <b>This campaign</b> (Your week, Next game, The table) and <b>Global</b>, for every campaign (For you first, then General, People, Tuning). A DM sees only This campaign; a player sees no door. For you's count sits on Backstage.</li>
+      <li><b>Your picture</b>: no ▾ (a picture is known to open its menu) and no mark under it; the page's title and the menu's tick say where you are.</li>
+      <li><b>How the bar wraps and shrinks stays exactly as it is</b>: Backstage takes Manage's place in the same order of giving way as the window narrows.</li>
+    </ul>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>The look</legend>
+        <label class="o"><input type="radio" name="look" value="a"><span>A · Plain doors <span class="mine">my pick</span></span><small>White doors, a red line under where you are.</small></label>
+        <label class="o"><input type="radio" name="look" value="r"><span>R · Quiet at rest <span class="mine">the review's pick</span></span><small>Grey doors, white where you are, the bar's line thicker; menus name their page.</small></label>
+      </fieldset>
+      <fieldset><legend>The doors</legend>
+        <label class="o"><input type="radio" name="doors" value="one"><span>One door, two halves <span class="mine">my pick</span></span><small>This campaign, then askdnd; the gear goes.</small></label>
+        <label class="o"><input type="radio" name="doors" value="two"><span>Two doors, as today</span><small>Manage for this campaign, the gear for askdnd.</small></label>
+      </fieldset>
+      <fieldset><legend>Its name</legend>
+        <label class="o"><input type="radio" name="name" value="backstage"><span>Backstage <span class="mine">my pick</span></span><small>What the table doesn't see while playing.</small></label>
+        <label class="o"><input type="radio" name="name" value="workspace"><span>Workspace</span><small>Where the work happens.</small></label>
+        <label class="o"><input type="radio" name="name" value="manage"><span>Manage</span><small>As today.</small></label>
+        <label class="o"><input type="radio" name="name" value="screen"><span>Behind the screen</span><small>The DM's screen.</small></label>
+      </fieldset>
+      <fieldset><legend>Under your picture</legend>
+        <label class="o"><input type="radio" name="pic" value="none"><span>No mark <span class="mine">my pick</span></span><small>The page's title and the menu's tick say where you are.</small></label>
+        <label class="o"><input type="radio" name="pic" value="line"><span>A line, like every door</span><small>The same mark everywhere.</small></label>
+        <label class="o"><input type="radio" name="pic" value="ring"><span>A ring around the picture</span><small>As a phone's tab bar does.</small></label>
+      </fieldset>
+    </div>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const GEAR = '<span class="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const st = { doors: "one", name: "Backstage", who: "admin", pm: "none", half: "place", door: "campaign", page: "Previously on…" };
+  // The pages, as app/manage.py lists them: this campaign's in the DM's week order, askdnd's in its groups
+  const CAMPAIGN = [["Your week", ["Needs you", "Inbox", "Sessions"]], ["Next game", ["Items", "Scene notes", "Places and maps"]], ["The table", ["Table", "House rules", "Settings", "History"]]];
+  const ASKDND = [["Waiting on you", ["For you"]], ["General", ["Overview", "Feedback", "Testing", "Product areas", "Documents", "Usage", "Backups"]], ["People", ["Accounts", "Campaigns"]], ["Tuning", ["Features", "askdnd history", "Tool corrections", "Dice tuning", "D&D Beyond bridge", "Design system"]]];
+  const YOU = [["Your notes", ["Notes you sent", "Send feedback", "Email digest"]], ["Help", ["Take the tour", "Help and FAQ", "DM guide"]], ["", ["Sign out"]]];
+  const PARTY = [["Party", ["Everyone at a glance"]], ["Characters", ["Big C", "Trah", "No Name"]]];
+  const CAMPS = [["Campaigns", ["The Adventure Begins"]]];
+  const workName = () => st.doors === "one" ? st.name : "Manage";
+  // which door holds a page: in one door, this campaign's and askdnd's pages share it
+  const doorOf = half => half === "campaign" ? "work" : half === "askdnd" ? (st.doors === "one" ? "work" : "gear") : half;
+  const here = d => (doorOf(st.half) === d || (st.half === "place" && st.door === d)) ? " here" : "";
+  const named = (look, d) => look === "r" && here(d) && st.half !== "place" && st.half !== "party" ? `<span class="pg"><i>›</i> ${esc(st.page)}</span>` : "";
+  const bar = look => {
+    const admin = st.who === "admin", dm = st.who === "dm", player = st.who === "player";
+    const count = admin ? '<span class="badge">5</span>' : "";
+    let s = `<span class="brand"></span><span class="d camp" data-menu="camp">The Adventure Begins<span class="chev"> ▾</span></span><span class="sep"></span>
+      <span class="d${here("campaign")}" data-go="campaign">Campaign</span><span class="d" data-go="table">Table ↗</span><span class="sep"></span>`;
+    if (!dm) s += `<span class="d${here("cole")}" data-go="cole"><span class="av"></span>Cole</span>`;
+    s += `<span class="d${here("party")}" data-menu="party">Party${named(look, "party")}<span class="chev"> ▾</span></span>
+      <span class="tool search"><span>Search your character, the rules…</span></span><span class="tool chain">${dm ? "3 of 4 sheets" : "Not connected"}</span>`;
+    if (!player) {
+      if (st.doors === "one") s += `<span class="d${here("work")}" data-menu="work">${esc(workName())}${named(look, "work")}<span class="chev"> ▾</span>${count}</span>`;
+      else {
+        s += `<span class="d${here("work")}" data-menu="work">Manage${named(look, "work")}<span class="chev"> ▾</span></span>`;
+        if (admin) s += `<span class="d${here("gear")}" data-menu="gear">${GEAR}${named(look, "gear")}<span class="chev"> ▾</span>${count}</span>`;
+      }
+    }
+    s += `<span class="d me${here("me")}" data-menu="me"><span class="pic">${admin ? "A" : dm ? "D" : "P"}</span>${named(look, "me")}<span class="badge">2</span></span>`;
+    return `<div class="tb look-${look} pm-${st.pm}">${s}</div>`;
+  };
+  const where = () => {
+    if (st.half === "place") return { campaign: "Campaign › Previously on…", cole: "Cole › Battle" }[st.door];
+    if (st.half === "party") return "Party › " + st.page;
+    if (st.half === "campaign") return `${workName()} › ${st.page}`;
+    if (st.half === "askdnd") return `${st.doors === "one" ? st.name : "Admin"} › ${st.page}`;
+    return st.page;
+  };
+  const cards = [...document.querySelectorAll("[data-look]")];
+  const draw = () => cards.forEach(c => { c.querySelector(".frame").innerHTML = bar(c.dataset.look) + `<div class="page">You're on <b>${esc(where())}</b>${st.half === "me" ? " · the page's title says so; the menu ticks it" : ""}</div>`; });
+  // a menu: one column, or, for one door seen by an admin, two halves side by side
+  const col = (head, sub, groups, half) => `<div class="col">${head ? `<div class="head">${esc(head)}${sub ? `<small>${esc(sub)}</small>` : ""}</div>` : ""}${groups.map(([g, items]) =>
+    (g ? `<span class="grp">${esc(g)}</span>` : "") + items.map(p => `<button type="button" data-half="${half}" data-page="${esc(p)}"${st.half === half && st.page === p ? ' aria-current="page"' : ""}><span>${esc(p)}</span>${p === "For you" ? '<span class="n">5</span>' : ""}</button>`).join("")).join("")}</div>`;
+  const menu = key => {
+    if (key === "camp") return [false, col("", "", CAMPS, "camp")];
+    if (key === "party") return [false, col("", "", PARTY, "party")];
+    if (key === "me") return [false, col(st.who === "admin" ? "Admin" : st.who === "dm" ? "The DM" : "Cole's player", "You", st.who === "player" ? [YOU[0], [YOU[1][0], YOU[1][1].slice(0, 2)], YOU[2]] : YOU, "me")];
+    if (key === "gear") return [false, col("Global", "Every campaign", ASKDND, "askdnd")];
+    if (st.doors === "one" && st.who === "admin") return [true, col("This campaign", "The Adventure Begins", CAMPAIGN, "campaign") + col("Global", "Every campaign", ASKDND, "askdnd")];
+    return [false, col("This campaign", "The Adventure Begins", CAMPAIGN, "campaign")];
+  };
+  const closeMenu = () => document.querySelectorAll(".dd").forEach(m => m.remove());
+  document.addEventListener("click", e => {
+    const pick = e.target.closest(".dd button");
+    if (pick) { const half = pick.dataset.half; if (half !== "camp") { st.half = half; st.page = pick.dataset.page; } closeMenu(); draw(); return; }
+    const d = e.target.closest(".tb .d");
+    if (!d) { if (!e.target.closest(".dd")) closeMenu(); return; }
+    const key = d.dataset.menu, open = key && d.closest(".frame").querySelector(`.dd[data-for="${key}"]`);
+    closeMenu();
+    if (d.dataset.go) { if (d.dataset.go !== "table") { st.half = "place"; st.door = d.dataset.go; st.page = ""; draw(); } return; }
+    if (!key || open) return;
+    const frame = d.closest(".frame"), fr = frame.getBoundingClientRect(), dr = d.getBoundingClientRect();
+    const [two, html] = menu(key);
+    const m = document.createElement("div"); m.className = "dd" + (two ? " two" : ""); m.dataset.for = key; m.setAttribute("role", "menu"); m.innerHTML = html;
+    frame.append(m);
+    m.style.top = (dr.bottom - fr.top + 6) + "px";
+    m.style.left = Math.max(0, Math.min(dr.left - fr.left, frame.clientWidth - m.offsetWidth)) + "px";
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    st[seg.dataset.ctl] = b.dataset.v;
+    // a page the person can't reach goes back to Campaign
+    if ((st.who !== "admin" && st.half === "askdnd") || (st.who === "player" && st.half === "campaign") || (st.who === "dm" && st.half === "place" && st.door === "cole")) { st.half = "place"; st.door = "campaign"; }
+    closeMenu(); draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["look", "doors", "name", "pic"];
+  let db = null, inAskdnd = false, timer = 0;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent + ": " + lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  const store = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); } catch (err) { show("Couldn't save it. Try again."); }
+  };
+  form.addEventListener("input", () => { if (db && !inAskdnd) { show("Saving…"); clearTimeout(timer); timer = setTimeout(store, 1000); } else show("Not saved yet"); });
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true; await store(); btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet · every pick saves by itself"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · every pick saves by itself", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

@@ -1,4 +1,4 @@
-"""Manage › Usage (admins): what askdnd has spent on Claude, and an estimated credit balance."""
+"""Backstage › Usage (admins): what askdnd has spent on Claude, and an estimated credit balance."""
 
 from datetime import UTC, date, datetime
 

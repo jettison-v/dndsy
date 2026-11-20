@@ -1,4 +1,4 @@
-"""Manage › askdnd › Feedback (screens 10–14 of docs/mockups/found-fixed-tried/): the record of every note and issue,
+"""Backstage › Global › Feedback (screens 10–14 of docs/mockups/found-fixed-tried/): the record of every note and issue,
 admins only, as a Reader: the list, and the open thing beside it.
 
 - **To approve**: a player's note, which Claude sees none of until it's approved (T1), from its safe copy (T5). Approve
@@ -496,7 +496,7 @@ templates.env.filters["note_title"] = views.title_of
 
 @router.get("/manage/product-areas")
 def product_areas(request: Request, db: Session = Depends(get_db)):
-    """Manage › askdnd › Product areas (docs/mockups/product-taxonomy/, screen 1): the Product Taxonomy as askdnd keeps
+    """Backstage › Global › Product areas (docs/mockups/product-taxonomy/, screen 1): the Product Taxonomy as askdnd keeps
     it (app/data/taxonomy.json), each Feature with its open issues, a press away from them on Feedback."""
     _, denied = _admin(request)
     if denied:

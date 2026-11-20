@@ -342,7 +342,7 @@ def _leave(request: Request, db: Session, entity_id: int, fn: Callable[[Entity],
 
 @router.post("/{entity_id:int}/delete")
 def delete_entry(request: Request, entity_id: int, db: Session = Depends(get_db)):
-    return _leave(request, db, entity_id, lambda e: (f"Deleted {entities.delete(db, e)}. Manage › History can bring it back.", f"{web.base()}/campaign"))
+    return _leave(request, db, entity_id, lambda e: (f"Deleted {entities.delete(db, e)}. Backstage › History can bring it back.", f"{web.base()}/campaign"))
 
 
 @router.post("/{entity_id:int}/merge")

@@ -15,7 +15,7 @@
   {% include "_fight_band.html" %}
   <div class="title-row"><h1>Party</h1></div>
   <p class="subtitle">{% if here %}{{ here.name }} · {% endif %}{{ rows | length }} character{{ "s" if rows | length != 1 }}{% if oldest %} · from D&amp;D Beyond {{ oldest | ago }}{% endif %}</p>
-  {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Manage › Table.)</p>{% endif %}
+  {% if pick %}<p class="flash warn">You aren't set as playing a character yet, so pick one below. (An admin can set who plays which character on Backstage › Table.)</p>{% endif %}
 
   <div data-tour="party">
   <div class="tabbar" role="tablist">
@@ -64,7 +64,7 @@
       {% endfor %}
       {% if r.creatures %}</div>{% endif %}
       {% endfor %}
-    </div>{% else %}<p class="muted">No characters in this campaign yet. An admin adds them, or moves one here, on Manage › Campaigns.</p>{% endif %}
+    </div>{% else %}<p class="muted">No characters in this campaign yet. An admin adds them, or moves one here, on Backstage › Campaigns.</p>{% endif %}
   </div>
 
   {% macro pool(id, data, noun, nouns, empty, cols) %}

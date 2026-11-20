@@ -226,7 +226,7 @@ app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(check_numbers_router)  # Check your numbers (Show the Math, E)
 app.include_router(digest_router)  # the Inbox digest email and your picture › Email digest
-app.include_router(usage_router)  # Admin › Features: which features get used
+app.include_router(usage_router)  # Backstage › Features: which features get used
 app.include_router(search_router)  # Search, like Spotlight: what the search box can find
 app.include_router(trophies_router)  # Trophy Case: Party's Trophies tab and each person's view
 app.include_router(casting_router)  # (through the bridge: on_for)
@@ -267,7 +267,7 @@ app.include_router(homebrew_router)  # DM Tools: the campaign's homebrew items
 app.include_router(workspace_router)  # the DM's Workspace: Scene notes and Places and maps in Manage
 app.include_router(campaigns_router)
 app.include_router(dice_router)
-app.include_router(documents_router)  # Manage › askdnd › Documents: every page made for askdnd (docs/library.json)
+app.include_router(documents_router)  # Backstage › Global › Documents: every page made for askdnd (docs/library.json)
 app.include_router(narration_router)  # Listen to the recap (Labs): the narration and the motion comic
 app.include_router(realtime_router)
 app.include_router(errors_router)
@@ -286,8 +286,8 @@ app.include_router(areas_router)
 app.include_router(initiative_router)  # the DM changes the fight's order (Labs: Initiative from askdnd)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(fft_sending_router)  # Found, Fixed, Tried: sending a note from any page (\\)
-app.include_router(fft_feedback_router)  # Found, Fixed, Tried: Manage › askdnd › Feedback
-app.include_router(fft_testing_router)  # Found, Fixed, Tried: Manage › askdnd › Testing and the round's card
+app.include_router(fft_feedback_router)  # Found, Fixed, Tried: Backstage › Global › Feedback
+app.include_router(fft_testing_router)  # Found, Fixed, Tried: Backstage › Global › Testing and the round's card
 app.include_router(fft_router)  # Found, Fixed, Tried: Claude's side, the staging relay and the Mac Mini, each by its own key
 app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 

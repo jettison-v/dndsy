@@ -84,7 +84,7 @@ def test_correct_this_shows_to_the_dm_and_admins_and_says_who_it_is_for(admin, d
     ref = f"/characters/{cole.id}/detail?ref=item:{potion(sheet)['id']}"
     assert "Correct this" not in player.get(ref).text
     page = dm.get(ref).text
-    assert "Correct this" in page and "Manage › House rules" in page and 'value="everyone"' not in page
+    assert "Correct this" in page and "Backstage › House rules" in page and 'value="everyone"' not in page
     page = admin.get(ref).text
     assert 'value="campaign"' in page and 'value="everyone"' in page and "Tool corrections" in page
 

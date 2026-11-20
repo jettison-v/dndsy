@@ -197,7 +197,7 @@ def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthrop
     db.add(run)
     db.commit()
     try:
-        spending.check(db)  # the monthly limit set on Manage › Usage
+        spending.check(db)  # the monthly limit set on Backstage › Usage
         client = (client_factory or anthropic.Anthropic)()
         with client.beta.messages.stream(
             model=MODEL,
@@ -407,7 +407,7 @@ def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "
     except ValueError as e:
         raise EntityError("Pick what kind of entry it is.") from e
     if k == EntityKind.PC:
-        raise EntityError("Player characters come from Manage › Characters.")
+        raise EntityError("Player characters come from Backstage › Characters.")
     if (same := find_by_name(db, campaign_id, name)) is not None:
         raise EntityError(f"{same.name} is already in the campaign record.")
     entity = Entity(campaign_id=campaign_id, kind=k, name=name, summary=(summary or "").replace("\r\n", "\n").strip()[:4000],
@@ -425,7 +425,7 @@ def set_details(entity: Entity, kind: str, quest_open: str, published: bool, rac
     except ValueError as e:
         raise EntityError("Pick what kind of entry it is.") from e
     if (k == EntityKind.PC) != (entity.kind == EntityKind.PC):
-        raise EntityError("Player characters stay player characters; link them on Manage › Characters.")
+        raise EntityError("Player characters stay player characters; link them on Backstage › Characters.")
     entity.kind = k
     entity.quest_open = (quest_open != "done") if k == EntityKind.QUEST else None
     entity.status = Status.PUBLISHED if published else Status.DRAFT
@@ -449,7 +449,7 @@ def _not_a_character(db: Session, entity: Entity, verb: str) -> None:
 
 
 def delete(db: Session, entity: Entity) -> str:
-    """Remove an entry. Its facts and relationships go one by one, so Manage › History can bring them back."""
+    """Remove an entry. Its facts and relationships go one by one, so Backstage › History can bring them back."""
     _not_a_character(db, entity, "deleted")
     from app.models import EntityRelation
 

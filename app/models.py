@@ -81,7 +81,7 @@ class User(Timestamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lowercase
     name: Mapped[str] = mapped_column(String(200))
-    # Their tool role, set on Manage › People: member | admin, or "removed" (can't sign in). None = not set in the
+    # Their tool role, set on Backstage › People: member | admin, or "removed" (can't sign in). None = not set in the
     # app (people imported but never invited); the Railway lists decide. Roles at a table are in campaign_members.
     access: Mapped[str | None] = mapped_column(String(20))
     # The campaign they last opened (the switcher in the menu bar, or a /c/<campaign>/ address); see app/access.py
@@ -108,7 +108,7 @@ class Campaign(Timestamped, Base):
     # Features and Labs switched on here (app/vtt.py: feature keys and "labs"); a test campaign switches nothing on by itself
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
-    # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books
+    # Its books (app/books.py): which private rules books its lookups use, set on Backstage › Settings › Books
     books: Mapped[list] = mapped_column(JSONB, default=lambda: list(_books.DEFAULT),
                                         server_default=sql(f"'{_books.DEFAULT_JSON}'::jsonb"))
     # The fight running in its D&D Beyond VTT, as askdnd last heard it (app/fight.py): the order, the round, whose turn
@@ -921,7 +921,7 @@ class Feedback(Timestamped, Base):
     send feedback (the old app/feedback.py;
     Brett, 2026-11-03, docs/mockups/feedback-queue/), with what the page was at that moment: where and when, the screen,
     the browser and the extension's version (`context`), the page as drawn (`html`), its picture and a pasted one. It
-    waits in Manage › askdnd › Feedback until Claude works through the queue: new → question (Claude asked, in
+    waits in Backstage › Global › Feedback until Claude works through the queue: new → question (Claude asked, in
     `thread`) → planned → done (with its PR), or deleted. Its `kind` says what it is: something broken, an idea or a
     question."""
 
@@ -968,7 +968,7 @@ class Check(Timestamped, Base):
     to try in askdnd (Testing, the old app/testing.py; Brett's idea and picks, Nov 16,
     docs/mockups/testing/): what to do and what to expect, on which page and through whose eyes, why it exists (the
     note it came from, the change that made it), and where it stands. Claude writes them (`feedback.py check`); an admin
-    marks them in Manage › askdnd › Testing or on the page itself during a round."""
+    marks them in Backstage › Global › Testing or on the page itself during a round."""
 
     __tablename__ = "checks"
     id: Mapped[int] = mapped_column(primary_key=True)

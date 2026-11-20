@@ -1,7 +1,7 @@
-"""Manage › askdnd › Testing (screens 1–8 of docs/mockups/found-fixed-tried/): everything that's Brett's turn, and
+"""Backstage › Global › Testing (screens 1–8 of docs/mockups/found-fixed-tried/): everything that's Brett's turn, and
 trying what Claude built.
 
-- **For you** (its own page, `/manage/for-you`, since Nov 19, the work flow's slice 2; its count on the Admin gear):
+- **For you** (its own page, `/manage/for-you`, since Nov 19, the work flow's slice 2; its count on Backstage):
   everything that's Brett's turn, grouped by what he does with it: Try (checks on the device he's on or another he must
   use, a group per area in the one order), Decide (Claude's questions and decisions), Look at (fixes waiting for his OK
   to merge, fixes live with no check), From the table (notes to approve, ideas to place), From the Roadmap (steps that
@@ -282,7 +282,7 @@ def page(request: Request, show: str = "", open: str = "", db: Session = Depends
 
 @router.get("/manage/for-you")
 def for_you_page(request: Request, open: str = "", db: Session = Depends(get_db)):
-    """Manage › askdnd › For you: everything that's Brett's turn, by what he does with it (the work flow's slice 2)."""
+    """Backstage › Global › For you: everything that's Brett's turn, by what he does with it (the work flow's slice 2)."""
     user, denied = _admin(request)
     if denied:
         return denied
@@ -291,7 +291,7 @@ def for_you_page(request: Request, open: str = "", db: Session = Depends(get_db)
 
 @router.get("/manage/for-you/count")
 def for_you_count(request: Request, seen: int = 0, db: Session = Depends(get_db)):
-    """For you's count, for the Admin gear's badge on every page an admin opens (fetched after the page shows, and again
+    """For you's count, for Backstage's badge on every page an admin opens (fetched after the page shows, and again
     on a live change). Only reads: R5's due confirmations are moved by the pages that show them (For you, Testing,
     Feedback), so a background fetch never writes or announces a change of its own."""
     user, denied = _admin(request)

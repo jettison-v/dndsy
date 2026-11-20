@@ -9,7 +9,7 @@ on them. Where they're thrown:
   bottom-left corner instead, except on askdnd's table, where every roll is thrown across the screen.
 Everyone sees your rolls in your set; damage dice can take their damage type's look instead (`by_type`).
 
-How the dice move and how long they stay is the same for everyone: admins set it on Manage › askdnd › Dice tuning
+How the dice move and how long they stay is the same for everyone: admins set it on Backstage › Global › Dice tuning
 (Brett, 2026-10-24; docs/mockups/dice-tuning.html), one setting for each of the three places (`tuning()`).
 """
 
@@ -179,7 +179,7 @@ def save(request: Request, set: str = Form(""), material: str = Form(""), by_typ
 # ------------------------------------------------------------------ Dice tuning (admins)
 @router.get("/manage/dice")
 def tuning_page(request: Request, db: Session = Depends(get_db)):
-    """Manage › askdnd › Dice tuning: sliders for each place dice are thrown, a Throw preview, and Save for everyone."""
+    """Backstage › Global › Dice tuning: sliders for each place dice are thrown, a Throw preview, and Save for everyone."""
     _, stop = web.require(request, is_admin, "Dice tuning is for admins.")
     if stop:
         return stop
