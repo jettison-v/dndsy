@@ -46,14 +46,13 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Waiting on you", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' camp"') and "The Lost Mine" in band and 'class="manage-cross btn" href="/manage/askdnd"' in band
+    assert band.startswith(' camp"') and "The Lost Mine" in band and "manage-cross" not in band  # (the way across is Backstage in the bar: issue 23)
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
     assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["After the game", "The next game", "The table"]
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' tool"') and "Global" in band
-    assert 'class="manage-cross btn" href="/c/main/manage" title="The Lost Mine"' in band  # (short both ways, the campaign's name on hover: the UI review, Nov 16)
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
     assert side.index(">Overview<") < side.index(">Usage<") < side.index(">Accounts<") < side.index(">Design system<")  # (the menu is the page list)
@@ -69,7 +68,7 @@ def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     page = reviewer.get("/c/main/manage").text
     assert {"sessions", "inbox"} <= set(items(page, "manage")) and not has_half(page, "askdnd")  # Global is for admins
-    assert 'class="manage-band camp"' in page and 'class="manage-cross' not in page
+    assert 'class="manage-band camp"' in page
     assert not {"table", "settings"} & set(items(page, "manage"))  # those are the DM's and admins'
     assert reviewer.get("/manage/askdnd").status_code == 403
     player = client_for(monkeypatch, db, "mark@example.com")
