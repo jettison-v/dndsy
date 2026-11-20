@@ -46,13 +46,17 @@ p { margin: 0; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--surface-2); align-items: start; }
 .row[data-act="keep"] { background: transparent; }
 .row .now { color: var(--text); }
+/* a row you changed from my suggestion: an amber edge and "Your change" */
+.row[data-mine="1"] { border-color: var(--amber); }
+.row .yours { display: none; color: var(--amber); font-weight: 700; }
+.row[data-mine="1"] .yours { display: inline; }
 .row[data-act="cut"] .now { text-decoration: line-through; color: var(--faint); }
 .row[data-act="hide"] .now { color: var(--muted); font-style: italic; }
 .row .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; font-size: .76rem; color: var(--faint); }
 .chip { font: 700 .66rem/1.2 var(--sans); padding: 2px 7px; border-radius: 999px; background: var(--surface-3); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .why { color: var(--muted); font-size: .8rem; }
 .new { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: 16px/1.3 var(--sans); }
-.new[hidden] { display: none; }
+[hidden] { display: none !important; }
 .kept > summary { cursor: pointer; color: var(--muted); font-size: .86rem; padding: 4px 2px; }
 .kept[open] > summary { margin-bottom: 6px; }
 .kept .grp-rows { display: grid; gap: 6px; }
@@ -86,7 +90,7 @@ p { margin: 0; }
     </div>
   </section>
 
-  <div class="tools"><span class="lbl">Show</span><span class="seg" data-filter><button type="button" data-v="change" aria-pressed="true">Changes</button><button type="button" data-v="cut">Cut</button><button type="button" data-v="hide">Hide</button><button type="button" data-v="shorten">Shorten</button><button type="button" data-v="all">Everything</button></span><span class="count" data-tally></span></div>
+  <div class="tools"><span class="lbl">Show</span><span class="seg" data-filter><button type="button" data-v="change" aria-pressed="true">Changes</button><button type="button" data-v="cut">Cut</button><button type="button" data-v="hide">Hide</button><button type="button" data-v="shorten">Shorten</button><button type="button" data-v="mine">Your changes</button><button type="button" data-v="all">Everything</button></span><span class="count" data-tally></span></div>
   <div id="groups" style="display:grid;gap:22px"></div>
 
   <form class="decide" aria-label="Save your decisions"><textarea name="notes" placeholder="Anything else (optional)"></textarea><button class="go" type="submit">Save my decisions</button><span class="saved" aria-live="polite"></span></form>
@@ -101,7 +105,7 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
   ROWS.forEach(r => { if (!groups.has(r.group)) groups.set(r.group, []); groups.get(r.group).push(r); });
   const ACTS = [["keep", "Keep"], ["cut", "Cut"], ["hide", "Hide"], ["shorten", "Shorten"]];
   const rowHtml = r => `<div class="row" data-id="${r.id}" data-act="${r.act}" data-sug="${r.act}">
-      <div style="display:grid;gap:4px;min-width:0"><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.where)}</span></div>
+      <div style="display:grid;gap:4px;min-width:0"><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.where)}</span><span class="yours">Your change</span></div>
         <div class="now">${esc(r.text)}</div>
         <input class="new" name="w${r.id}" value="${esc(r.new || r.text)}" ${r.act === "shorten" ? "" : "hidden"} aria-label="New words">
         ${r.why ? `<span class="why">${r.act === "keep" ? "" : "Why: "}${esc(r.why)}</span>` : ""}</div>
@@ -118,8 +122,11 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
     box.append(sec);
   });
   document.querySelector("[data-total]").textContent = ROWS.length;
-  const tally = () => { const c = { keep: 0, cut: 0, hide: 0, shorten: 0 }; document.querySelectorAll(".row[data-id]").forEach(r => { c[r.dataset.act]++; });
-    document.querySelector("[data-tally]").textContent = `${c.cut} cut · ${c.hide} hidden · ${c.shorten} shortened · ${c.keep} kept`; };
+  // A row is yours when its choice, or a shortening's words, differ from my suggestion
+  const mark = r => { const w = r.querySelector(".new");
+    r.dataset.mine = r.dataset.act !== r.dataset.sug || (r.dataset.act === "shorten" && w.value.trim() !== w.defaultValue.trim()) ? "1" : ""; };
+  const tally = () => { const c = { keep: 0, cut: 0, hide: 0, shorten: 0, mine: 0 }; document.querySelectorAll(".row[data-id]").forEach(r => { c[r.dataset.act]++; mark(r); if (r.dataset.mine) c.mine++; });
+    document.querySelector("[data-tally]").textContent = `${c.cut} cut · ${c.hide} hidden · ${c.shorten} shortened · ${c.keep} kept · ${c.mine} changed by you`; };
   box.addEventListener("change", e => {
     const row = e.target.closest(".row"); if (!row || e.target.type !== "radio") return;
     row.dataset.act = e.target.value; row.querySelector(".new").hidden = e.target.value !== "shorten"; tally();
@@ -127,9 +134,13 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
   let filter = "change";
   const apply = () => document.querySelectorAll(".grp").forEach(g => {
     let any = false;
-    g.querySelectorAll(".row[data-id]").forEach(r => { const on = filter === "all" || (filter === "change" ? r.dataset.act !== "keep" : r.dataset.act === filter); r.hidden = !on && !r.closest(".kept"); if (on) any = true; });
-    const k = g.querySelector(".kept"); if (k) k.hidden = !(filter === "all" || filter === "change");
-    g.hidden = !any && filter !== "all" && filter !== "change";
+    // Changes and Everything show the kept rows folded; Your changes, Cut, Hide and Shorten show only their rows, kept ones too
+    const narrow = filter !== "all" && filter !== "change";
+    g.querySelectorAll(".row[data-id]").forEach(r => {
+      const on = filter === "all" || (filter === "mine" ? r.dataset.mine === "1" : filter === "change" ? r.dataset.act !== "keep" : r.dataset.act === filter);
+      r.hidden = !on && !(r.closest(".kept") && !narrow); if (on) any = true; });
+    const k = g.querySelector(".kept"); if (k) { k.hidden = narrow && !k.querySelector(".row[data-id]:not([hidden])"); if (narrow && !k.hidden) k.open = true; }
+    g.hidden = !any && narrow;
   });
   document.querySelectorAll("[data-filter] button").forEach(b => b.addEventListener("click", () => {
     document.querySelectorAll("[data-filter] button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); filter = b.dataset.v; apply();
@@ -156,11 +167,28 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
     });
     form.querySelector("textarea").value = notes || ""; tally(); apply();
   };
-  form.addEventListener("input", () => show("Not saved yet")); box.addEventListener("input", () => show("Not saved yet"));
+  // Every change is kept as it happens: a draft on this device always, and on claude.ai the page's store too
+  // (Nov 20: Save failed and a whole evening's choices were lost with the page)
+  const DRAFT = "string-audit-draft";
+  const draft = () => { try { return JSON.parse(localStorage.getItem(DRAFT) || "null"); } catch (e) { return null; } };
+  let timer = 0;
+  const kept = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString();
+    try { localStorage.setItem(DRAFT, JSON.stringify({ picks: list, notes, at })); } catch (e) { /* private window */ }
+    if (db) { try { await db.collection("answers").doc("verdict").set({ picks: list, notes, at }); show("Saved automatically " + when(at) + " · Claude reads it from here", true); return; } catch (err) { /* below */ } }
+    show(inAskdnd ? "Kept on this device · Save sends it to askdnd" : "Kept on this device · not saved yet");
+  };
+  const changed = () => { tally(); show("Saving…"); clearTimeout(timer); timer = setTimeout(kept, 1200); };
+  form.addEventListener("input", changed); box.addEventListener("input", changed); box.addEventListener("change", changed);
+  document.querySelectorAll("input[name=hide]").forEach(i => i.addEventListener("change", changed));
+  const newer = at => { const d = draft(); return d && (!at || d.at > at) ? d : null; };
+  { const d = newer(null); if (d) { fill(d.picks, d.notes); show("Your changes from " + when(d.at) + " are back · not saved yet"); } }
   addEventListener("message", e => {
     const d = e.data; if (e.source !== parent || !d || d.askdnd !== "picks") return;
     inAskdnd = true;
-    if (d.loaded) { if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your decisions", true); } else show("Nothing saved yet"); }
+    if (d.loaded) { const mine = newer(d.picks && d.picks.length ? d.at : null);
+      if (mine) { fill(mine.picks, mine.notes); show("Your changes from " + when(mine.at) + " are back · Save sends them to askdnd"); }
+      else if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your decisions", true); } else show("Nothing saved yet"); }
     else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
     else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
   });
@@ -179,7 +207,8 @@ const ROWS = [{"id": 0, "file": "_account_add.html", "line": 14, "kind": "hint",
   (async () => {
     try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
     if (!db) return;
-    try { const d = await db.collection("answers").doc("verdict").get(); if (d.exists) { const a = d.data(); fill(a.picks, a.notes); show("Saved " + when(a.at) + " · change anything and Save again", true); } } catch (err) { /* nothing yet */ }
+    try { const d = await db.collection("answers").doc("verdict").get(); const a = d.exists ? d.data() : null;
+      if (newer(a && a.at)) kept(); else if (a) { fill(a.picks, a.notes); show("Saved " + when(a.at) + " · every change saves by itself", true); } } catch (err) { /* nothing yet */ }
   })();
 })();
 </script>
