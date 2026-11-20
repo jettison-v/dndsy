@@ -373,7 +373,7 @@ def test_r15_claude_takes_a_blocker_first_then_the_roadmap_from_the_top(db):
         rules.new_issue(db, "claude", f"An issue in {a.title}", area_id=a.id)
     pick = rules.pick_next(db)
     assert pick.area.id == manage.id and ("Feedback and Testing", "its next step is Brett's (your verdict)") not in pick.skipped
-    fixes.place, later.place = 9, 0
+    fixes.place, later.place, later.section = 9, 0, "now"  # (the Roadmap's order is its sections, then Brett's drag in each)
     pick = rules.pick_next(db)
     assert pick.area.id == builder.id
     for i in rules.area_open_issues(db, builder):

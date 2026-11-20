@@ -114,7 +114,7 @@ def queue(db: Session) -> dict:
     skipped = dict(pick.skipped)
     frozen = rules.freeze_state(db)["on"]
     items, held = [], []
-    for it in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
+    for it in db.scalars(select(FftItem).order_by(rules.item_rank(), FftItem.place, FftItem.id)):
         rows = []
         for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
             if rules.area_turn(db, a) == "done" and not rules.area_open_issues(db, a):

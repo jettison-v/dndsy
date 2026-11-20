@@ -308,6 +308,16 @@ def event_words(ev) -> str:
         who = "Claude" if ev.actor == "claude" else "askdnd" if ev.actor == "askdnd" else "An admin" if ev.actor.startswith("user:") else "Someone"
         to = {"sender": ", to its senders", "claude": ", to Claude"}.get(d.get("to") or "", "")
         return f"{who} wrote on {ev.thing} {ev.thing_id}{to}"
+    if ev.thing == "item" and ev.kind.startswith("item_"):  # (a Roadmap item's Updates, and Claude's inbox)
+        said = {"item_new": "Added to the Roadmap", "item_addition": "Brett added to it" + (" (said in chat)" if d.get("where") == "chat" else ""),
+                "item_answered": "Claude answered an addition: " + {"in": "in scope", "later": "later", "question": "a question"}.get(d.get("answer", ""), ""),
+                "item_scope": f"Claude wrote scope version {d.get('version')}", "item_agreed": f"Brett: scope version {d.get('version')} looks right",
+                "item_step": "A step added" + (" for Brett" if d.get("whose") == "brett" else ""), "item_step_done": "A step done",
+                "item_step_open": "A step not done after all", "item_step_removed": "A step taken off", "item_shipped": "Shipped",
+                "item_not_doing": "Not doing", "item_set": "Its " + ", ".join(k for k in ("title", "why", "size", "status") if d.get(k)) + " changed",
+                "item_moved": f"Moved to {str(d.get('section', '')).replace('_', ' ').title()}", "item_next": "Its next step changed"}.get(ev.kind)
+        if said:
+            return f"Roadmap item {ev.thing_id}: {said}"
     if ev.kind == "issue_kind":
         return f"Issue {ev.thing_id} is {'an improvement' if d.get('became') == 'improvement' else 'a fix'}"
     if ev.kind == "issue_feature":

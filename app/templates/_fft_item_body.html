@@ -79,7 +79,7 @@
       {% for k, label in (("fix", "A fix"), ("improvement", "An improvement")) if (k == "fix") == fix_first %}<form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="{{ k }}"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn primary small" type="submit" data-do="{{ k }}">{{ label }}</button></form>{% endfor %}
       {% for k, label in (("fix", "A fix"), ("improvement", "An improvement")) if (k == "fix") != fix_first %}<form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="{{ k }}"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn small" type="submit" data-do="{{ k }}">{{ label }}</button></form>{% endfor %}
       <button class="btn small" type="button" data-modal-url="/manage/feedback/same?note={{ n.id }}" data-do="same">Same as…</button>
-      <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="idea"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn small" type="submit" data-do="idea">An idea</button></form>
+      <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="idea"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn small" type="submit" data-do="idea">A Roadmap idea</button></form>
       <button class="btn small" type="button" data-show="fft-answer-{{ n.id }}" data-do="answer">A question, answered…</button>
       <button class="btn link small" type="button" data-show="fft-decline-{{ n.id }}" data-do="decline">Decline with why…</button>
     </div>
@@ -181,8 +181,22 @@
   {% endcall %}
   {% if picked.notes %}{% call rd_section("Its notes", count=picked.notes | length, attrs=' data-sec="found"') %}{% for nv in picked.notes %}{{ report(nv) }}{% endfor %}{% endcall %}{% endif %}
 </article>
-{% elif picked.kind == "roadmap" %}{% set it = picked.it %}
+{% elif picked.kind == "roadmap" %}{% set it = picked.it %}{% set sc = picked.scope %}
+{# A Roadmap item, a quick look from For you (The Roadmap in askdnd, Nov 20): its scope waiting for your OK, or your
+   steps; the whole item is on its page #}
 <article class="reader-article fb-read" data-fft-roadmap="{{ it.id }}">
-    <h2 class="nt-h">{{ it.title }}</h2>{{ state_line("Yours", "ask", it.next_step or "Its next step is yours.") }}
+  <h2 class="nt-h">{{ it.title }}</h2>
+  {% if sc and not sc.agreed_at %}
+  {% call rd_section("Scope version " ~ sc.version ~ " waits for your OK", tone="ask", attrs=' data-sec="scope"') %}
+  {% if sc.changed %}<p class="note">What changed: {{ sc.changed }}</p>{% endif %}
+  <p>{{ sc.what }}</p><ul class="rm-quick">{% for x in sc.inside %}<li>{{ x }}</li>{% endfor %}</ul>
+  <div class="act-bar"><form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ sc.version }}"><button class="btn primary small" type="submit" data-do="agree">Scope looks right</button></form>
+    <a class="btn small" href="/manage/roadmap/{{ it.id }}" data-no-peek>Read it whole, or add to it</a></div>
+  {% endcall %}
+  {% elif picked.mine %}
+  {% call rd_section("Your steps", tone="ask", attrs=' data-sec="steps"') %}
+  <ul class="rm-quick">{% for s in picked.mine %}<li><form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="tick"><input type="hidden" name="step" value="{{ s.id }}"><button class="btn small" type="submit" data-do="tick">✓ Done</button></form> {{ s.text }}</li>{% endfor %}</ul>
+  {% endcall %}
+  {% else %}{{ state_line("Yours", "ask", it.next_step or "Its next step is yours.") }}{% endif %}
 </article>
 {% endif %}

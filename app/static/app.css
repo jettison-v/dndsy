@@ -1607,6 +1607,35 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .wk-forms { display: grid; gap: var(--sp-2); }
 .wk-forms:empty { display: none; }
 .wk-h2 { margin: var(--sp-5) 0 var(--sp-2); }
+/* The Roadmap (app/fft/roadmap_page.py, fft_roadmap.html, fft_roadmap_item.html; The Roadmap in askdnd, Nov 20) */
+.rm-why { margin: 0 0 var(--sp-3); max-width: 80ch; color: var(--text); }
+.rm-scope { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
+@media (max-width: 900px) { .rm-scope { grid-template-columns: minmax(0, 1fr); } }
+.rm-doc { display: grid; gap: var(--sp-3); }
+.rm-doc ul { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }
+.rm-doc p { margin: 0; }
+.rm-doc .plabel { margin: 0 0 var(--sp-1); }
+.rm-doc-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); align-items: baseline; padding-bottom: var(--sp-2); border-bottom: 1px solid var(--line); }
+.rm-vers { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+.rm-vers a { padding: 1px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--muted); text-decoration: none; font-size: var(--fs-xs); }
+.rm-vers a.on { color: var(--text-strong); border-color: var(--blue); }
+.rm-changed { color: var(--muted); font-size: var(--fs-sm); }
+.rm-adds { display: grid; gap: var(--sp-2); }
+.rm-adds-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.rm-adds-head .plabel { margin: 0; }
+.rm-add { display: grid; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); }
+.rm-add p { margin: 0; }
+.rm-ans { color: var(--muted); font-size: var(--fs-sm); border-top: 1px solid var(--line); padding-top: var(--sp-1); }
+.rm-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-width: 900px; }
+.rm-step { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); background: var(--surface); }
+.rm-step.done .rm-step-text { color: var(--muted); text-decoration: line-through; }
+.rm-step.next { box-shadow: inset 2px 0 0 var(--amber); }
+.rm-step form.inline { display: inline; margin: 0; }
+.rm-box { width: 18px; height: 18px; display: inline-grid; place-items: center; border: 1px solid var(--line-strong); border-radius: var(--r-xs); background: none; color: var(--green); font-size: var(--fs-xs); padding: 0; cursor: default; }
+button.rm-box { cursor: pointer; }
+.rm-step.done .rm-box { border-color: var(--green); }
+.rm-quick { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
+.rm-quick form.inline { display: inline; margin: 0; }
 
 .wk-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-4); }
 .crumb { color: var(--muted); text-decoration: none; font-weight: 600; }

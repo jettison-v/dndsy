@@ -31,6 +31,61 @@ class FftItem(_Stamped, Base):
     standing: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     next_step: Mapped[str] = mapped_column(String(200), default="", server_default="")
     next_whose: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "brett" (skipped by R15), "claude", ""
+    # The Roadmap in askdnd (Brett's picks, Nov 20): why it matters, its size (S, M, L), a status line saying where it
+    # stands in a few words, and when it shipped. Server defaults only, read when used (the carry-over migration writes
+    # items through today's models before these columns exist: as fft_areas' lanes)
+    __mapper_args__: ClassVar[dict] = {"eager_defaults": False}
+    # (deferred: read only when a page asks, together, so a query by today's model works on a database before them)
+    why: Mapped[str] = mapped_column(Text, server_default="", deferred=True, deferred_group="roadmap")
+    size: Mapped[str] = mapped_column(String(2), server_default="", deferred=True, deferred_group="roadmap")
+    status: Mapped[str] = mapped_column(String(200), server_default="", deferred=True, deferred_group="roadmap")
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
+
+
+class FftScope(_Stamped, Base):
+    """A Roadmap item's scope, one version at a time: what it is, what's in, what's not now, open questions, and what
+    changed from the version before. Brett's one OK (`agreed_at`) is on the version he read (The Roadmap in askdnd)."""
+
+    __tablename__ = "fft_scopes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    what: Mapped[str] = mapped_column(Text, default="", server_default="")
+    inside: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    not_now: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    questions: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    changed: Mapped[str] = mapped_column(Text, default="", server_default="")
+    actor: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    agreed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class FftAddition(_Stamped, Base):
+    """Something Brett added to a Roadmap item, in his words (said in chat and written down by Claude, or added in
+    askdnd), and Claude's answer: in scope (and the version it went into), later, or a question back."""
+
+    __tablename__ = "fft_additions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
+    words: Mapped[str] = mapped_column(Text)
+    where: Mapped[str] = mapped_column(String(10), default="askdnd", server_default="askdnd")  # askdnd, chat
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    answer: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", in, later, question
+    answer_words: Mapped[str] = mapped_column(Text, default="", server_default="")
+    scope_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class FftStep(_Stamped, Base):
+    """One step of a Roadmap item, Brett's or Claude's; the first not done is its next step, and one of Brett's waits
+    in For you until he ticks it."""
+
+    __tablename__ = "fft_steps"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
+    place: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    whose: Mapped[str] = mapped_column(String(10), default="claude", server_default="claude")  # brett, claude
+    text: Mapped[str] = mapped_column(String(200))
+    done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class FftArea(_Stamped, Base):

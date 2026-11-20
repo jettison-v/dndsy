@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.fft import taxonomy
 from app.fft.models import (
+    FftAddition,
     FftArea,
     FftCheck,
     FftCheckIssue,
@@ -27,6 +28,8 @@ from app.fft.models import (
     FftNote,
     FftQuestion,
     FftRound,
+    FftScope,
+    FftStep,
     FftTry,
     FftTryIssue,
 )
@@ -224,6 +227,16 @@ def undo_decision(db: Session, actor: str, note: FftNote) -> None:
                 issue.from_player = False
             if said.get("held") and issue.state == "merge_ok":
                 _set_issue(db, actor, issue, "fixing", "issue_unmarked", undone=note.id)
+    if note.filed_as == "idea" and note.idea_id and (idea := db.get(FftIdea, note.idea_id)):
+        others = db.scalar(select(func.count()).select_from(FftNote).where(FftNote.idea_id == idea.id, FftNote.id != note.id))
+        if not others:  # (a Roadmap idea this note made: gone with it, while nothing was added to it since)
+            it = db.get(FftItem, idea.item_id) if idea.item_id else None
+            if it is not None and latest_scope(db, it) is None and not db.scalar(select(func.count()).select_from(FftStep).where(FftStep.item_id == it.id)) \
+                    and db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id)) <= 1:
+                note.idea_id = None
+                db.flush()
+                db.delete(idea)
+                db.delete(it)
     note.state, note.filed_as, note.issue_id, note.idea_id = "waiting", "", None, None
     _event(db, actor, "note_undone", "note", note.id)
 
@@ -720,6 +733,196 @@ def item_next(db: Session, actor: str, item: FftItem, step: str, whose: str) -> 
         raise RuleError("bad", 'whose: "brett", "claude" or ""')
     item.next_step, item.next_whose = step[:200], whose
     _event(db, actor, "item_next", "item", item.id, whose=whose)
+
+
+# ------------------------------------------------------------------ the Roadmap (Brett's picks, Nov 20, docs/mockups/roadmap-in-askdnd/)
+#
+# An idea that needs discussion is a Roadmap item: its scope is worked out as versions (Claude writes each, saying what
+# changed), Brett's additions are kept on it in his words with Claude's answer, he gives one OK (Scope looks right), and
+# its steps, each his or Claude's, carry it out; the plans building it are its areas, in Development. Done (shipped,
+# not doing) leaves the list for its History.
+
+ROADMAP_SECTIONS = ("now", "next", "later", "paused")  # (what's open, in this order; shipped and not_doing are History)
+SIZES = ("", "S", "M", "L")
+ANSWERS = ("in", "later", "question")
+
+
+def item_rank():
+    """The one order: Now, Next, Later, then the rest; Brett's drag within each (R15 and Development follow it)."""
+    from sqlalchemy import case
+
+    return case((FftItem.section == "now", 0), (FftItem.section == "next", 1), (FftItem.section == "later", 2), else_=3)
+
+
+def new_idea(db: Session, actor: str, title: str, words: str = "", section: str = "next", where: str = "askdnd",
+             user_id: int | None = None) -> FftItem:
+    """A Roadmap idea: an item with no scope yet, its first addition the idea in its maker's words."""
+    if section not in ("now", "next", "later"):
+        raise RuleError("bad", "Now, Next or Later.")
+    it = new_item(db, actor, title, section)
+    if words.strip():
+        add_to_item(db, actor, it, words, where=where, user_id=user_id)
+    return it
+
+
+def set_item(db: Session, actor: str, item: FftItem, *, title: str | None = None, why: str | None = None,
+             size: str | None = None, status: str | None = None) -> None:
+    """A Roadmap item's title, why it matters, size (S, M, L) or status line."""
+    if title is not None:
+        if not title.strip():
+            raise RuleError("bad", "Give it a title.")
+        item.title = title.strip()[:120]
+    if why is not None:
+        item.why = why.strip()[:2000]
+    if size is not None:
+        if size not in SIZES:
+            raise RuleError("bad", "S, M or L.")
+        item.size = size
+    if status is not None:
+        item.status = status.strip()[:200]
+    _event(db, actor, "item_set", "item", item.id, **{k: True for k, v in (("title", title), ("why", why), ("size", size), ("status", status)) if v is not None})
+
+
+def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
+    """Now, Next, Later or Paused (a shipped item comes back with this too: Reopen)."""
+    if section not in ROADMAP_SECTIONS:
+        raise RuleError("bad", "Now, Next, Later or Paused.")
+    if item.standing:
+        raise RuleError("bad", "Fixes and polish stays where it is.")
+    was, item.section = item.section, section
+    if section != "shipped":
+        item.shipped_at = None
+    _event(db, actor, "item_moved", "item", item.id, was=was, section=section)
+
+
+def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False) -> None:
+    """Shipped (or Not doing): off the list, into its History, with the day."""
+    if item.standing:
+        raise RuleError("bad", "Fixes and polish never ships.")
+    item.section, item.shipped_at = ("not_doing" if not_doing else "shipped"), now()
+    _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)
+
+
+def add_to_item(db: Session, actor: str, item: FftItem, words: str, where: str = "askdnd", user_id: int | None = None) -> FftAddition:
+    """Brett's addition, in his words: said in chat (Claude writes it down, `where="chat"`) or added in askdnd. It
+    reaches Claude's inbox; Claude answers it on the item and writes the scope's next version."""
+    if not words.strip():
+        raise RuleError("bad", "Say what to add.")
+    if where not in ("askdnd", "chat"):
+        raise RuleError("bad", "In askdnd, or in chat.")
+    a = FftAddition(item_id=item.id, words=words.strip()[:8000], where=where, user_id=user_id)
+    db.add(a)
+    db.flush()
+    _event(db, actor, "item_addition", "item", item.id, addition=a.id, where=where)
+    return a
+
+
+def answer_addition(db: Session, actor: str, addition: FftAddition, answer: str, words: str = "", scope_version: int | None = None) -> None:
+    """Claude's answer to an addition: in scope (in which version), later, or a question back."""
+    if answer not in ANSWERS:
+        raise RuleError("bad", "In scope, later, or a question.")
+    addition.answer, addition.answer_words, addition.scope_version = answer, words.strip()[:2000], scope_version
+    _event(db, actor, "item_answered", "item", addition.item_id, addition=addition.id, answer=answer)
+
+
+def latest_scope(db: Session, item: FftItem) -> FftScope | None:
+    return db.scalar(select(FftScope).where(FftScope.item_id == item.id).order_by(FftScope.version.desc()))
+
+
+def write_scope(db: Session, actor: str, item: FftItem, *, what: str, inside: list[str], not_now: list[str] | None = None,
+                questions: list[str] | None = None, changed: str = "") -> FftScope:
+    """The scope's next version: what it is, what's in, what's not now, open questions, and what changed. Brett's OK
+    is on a version: a new one waits for it again."""
+    if not what.strip() or not [x for x in inside if x.strip()]:
+        raise RuleError("bad", "Say what it is and what's in.")
+    last = latest_scope(db, item)
+    sc = FftScope(item_id=item.id, version=(last.version + 1) if last else 1, what=what.strip()[:4000],
+                  inside=[x.strip()[:400] for x in inside if x.strip()], not_now=[x.strip()[:400] for x in (not_now or []) if x.strip()],
+                  questions=[x.strip()[:400] for x in (questions or []) if x.strip()], changed=changed.strip()[:2000], actor=actor)
+    db.add(sc)
+    db.flush()
+    _event(db, actor, "item_scope", "item", item.id, version=sc.version)
+    return sc
+
+
+def agree_scope(db: Session, actor: str, item: FftItem, user_id: int | None = None, seen: int | None = None) -> FftScope:
+    """Scope looks right: Brett's one OK, on the version he read (R14: a newer one written meanwhile is refused)."""
+    sc = latest_scope(db, item)
+    if sc is None:
+        raise RuleError("bad", "There's no scope yet.")
+    if seen is not None and sc.version != seen:
+        raise RuleError("stale", f"Claude wrote version {sc.version} while you were reading: read it first.")
+    if sc.agreed_at is None:
+        sc.agreed_at, sc.agreed_by = now(), user_id
+        _event(db, actor, "item_agreed", "item", item.id, version=sc.version)
+    return sc
+
+
+def _next_from_steps(db: Session, item: FftItem) -> None:
+    """The item's next step is its first not done (R15 skips an item whose next step is Brett's)."""
+    first = db.scalar(select(FftStep).where(FftStep.item_id == item.id, FftStep.done_at.is_(None)).order_by(FftStep.place, FftStep.id))
+    item.next_step, item.next_whose = (first.text, first.whose) if first else ("", "")
+
+
+def add_step(db: Session, actor: str, item: FftItem, text: str, whose: str = "claude") -> FftStep:
+    if whose not in ("brett", "claude"):
+        raise RuleError("bad", "Brett's or Claude's.")
+    if not text.strip():
+        raise RuleError("bad", "Say what the step is.")
+    place = (db.scalar(select(func.max(FftStep.place)).where(FftStep.item_id == item.id)) or 0) + 1
+    st = FftStep(item_id=item.id, text=text.strip()[:200], whose=whose, place=place)
+    db.add(st)
+    db.flush()
+    _next_from_steps(db, item)
+    _event(db, actor, "item_step", "item", item.id, step=st.id, whose=whose)
+    return st
+
+
+def tick_step(db: Session, actor: str, step: FftStep, done: bool = True) -> None:
+    item = db.get(FftItem, step.item_id)
+    step.done_at = now() if done else None
+    db.flush()
+    _next_from_steps(db, item)
+    _event(db, actor, "item_step_done" if done else "item_step_open", "item", item.id, step=step.id)
+
+
+def remove_step(db: Session, actor: str, step: FftStep) -> None:
+    item = db.get(FftItem, step.item_id)
+    db.delete(step)
+    db.flush()
+    _next_from_steps(db, item)
+    _event(db, actor, "item_step_removed", "item", item.id)
+
+
+def file_roadmap_idea(db: Session, actor: str, note: FftNote, title: str = "") -> FftItem:
+    """A note that needs discussion becomes a Roadmap idea (Brett, Nov 20: the second type of work). Its idea record
+    keeps the note's senders tied to the item, so they hear when it ships."""
+    idea = file_idea(db, actor, note)
+    it = new_idea(db, actor, title or idea.title, note.text, where="askdnd")
+    idea.item_id, idea.state = it.id, "roadmap"
+    return it
+
+
+def idea_to_roadmap(db: Session, actor: str, idea: FftIdea) -> FftItem:
+    """An idea from before the Roadmap was in askdnd, made a Roadmap idea (its notes' words its first additions)."""
+    if idea.item_id:
+        return db.get(FftItem, idea.item_id)
+    notes = list(db.scalars(select(FftNote).where(FftNote.idea_id == idea.id).order_by(FftNote.id)))
+    it = new_idea(db, actor, idea.title, notes[0].text if notes else "")
+    idea.item_id, idea.state = it.id, "roadmap"
+    _event(db, actor, "idea_roadmap", "idea", idea.id, item=it.id)
+    return it
+
+
+def idea_to_issue(db: Session, actor: str, idea: FftIdea, kind: str = "improvement") -> FftIssue:
+    """An idea that's really a change to a Product Area: an issue (an improvement, as a rule) its notes now belong to."""
+    issue = new_issue(db, actor, idea.title, kind=kind)
+    for n in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id)):
+        n.filed_as, n.issue_id, n.idea_id = "issue", issue.id, None
+        issue.from_player = issue.from_player or n.role != "admin"
+    idea.state, idea.reason = "declined", f"Now issue {issue.id}"
+    _event(db, actor, "idea_issue", "idea", idea.id, issue=issue.id)
+    return issue
 
 
 def test_campaign_of(db: Session, path: str) -> str:
@@ -1400,7 +1603,7 @@ def pick_next(db: Session) -> Pick:
         if stop is not None and stop.area_id:
             return Pick(db.get(FftArea, stop.area_id), f"Blocker: “{stop.title}” stops Brett's round.", blocker=True)
     skipped = []
-    items = db.scalars(select(FftItem).where(FftItem.section.in_(("now", "next", "later"))).order_by(FftItem.place, FftItem.id))
+    items = db.scalars(select(FftItem).where(FftItem.section.in_(("now", "next", "later"))).order_by(item_rank(), FftItem.place, FftItem.id))
     for item in items:
         if item.next_whose == "brett":
             skipped.append((item.title, f"its next step is Brett's ({item.next_step})" if item.next_step else "its next step is Brett's"))

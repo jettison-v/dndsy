@@ -6,7 +6,7 @@ names only and never an email (T2); every text says who wrote it and comes quote
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import web
@@ -533,6 +533,154 @@ def deploy(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: 
         live.append(i.id)
     db.commit()
     return _ok({"live": live, "by": actor.name})
+
+
+# ------------------------------------------------------------------ the Roadmap (The Roadmap in askdnd, Nov 20)
+
+
+def _roadmap_row(db: Session, it: FftItem) -> dict:
+    from app.fft import roadmap_page
+    from app.fft.models import FftAddition
+
+    r = roadmap_page.row(db, it)
+    return {"id": it.id, "title": it.title, "section": it.section, "stage": r["stage"], "size": it.size, "status": it.status,
+            "next": {"whose": r["next"][0], "step": r["next"][1]}, "steps": [r["done"], r["steps"]],
+            "scope_version": r["scope"].version if r["scope"] else None, "agreed": bool(r["scope"] and r["scope"].agreed_at),
+            "unanswered": db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id, FftAddition.answer == ""))}
+
+
+@router.get("/roadmap")
+def roadmap_list(history: int = 0, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The Roadmap's items in Brett's order (History: shipped and not doing), each with its stage and next step."""
+    from app.fft import roadmap_page
+
+    keys.require(db, x_fft_key, "read")
+    return _ok({"items": [_roadmap_row(db, r["it"]) for r in roadmap_page.items(db, bool(history))]})
+
+
+@router.get("/roadmap/{item_id:int}")
+def roadmap_item(item_id: int, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """One item whole: why, every scope version, Brett's additions (his words, quoted as his) and their answers, its steps
+    and its plans."""
+    from app.fft.models import FftAddition, FftScope, FftStep
+
+    keys.require(db, x_fft_key, "read")
+    it = db.get(FftItem, item_id) or _missing()
+    return _ok(_roadmap_row(db, it) | {
+        "why": it.why,
+        "scopes": [{"version": s.version, "what": s.what, "inside": s.inside, "not_now": s.not_now, "questions": s.questions, "changed": s.changed,
+                    "agreed": s.agreed_at.isoformat() if s.agreed_at else ""} for s in db.scalars(select(FftScope).where(FftScope.item_id == it.id).order_by(FftScope.version))],
+        "additions": [{"id": a.id, "where": a.where, "at": a.created_at.isoformat() if a.created_at else "", "words": _quoted(a.words, "Brett"),
+                       "answer": a.answer, "answer_words": a.answer_words, "version": a.scope_version}
+                      for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id).order_by(FftAddition.id))],
+        "steps": [{"id": x.id, "whose": x.whose, "text": x.text, "done": bool(x.done_at)} for x in db.scalars(select(FftStep).where(FftStep.item_id == it.id).order_by(FftStep.place, FftStep.id))],
+        "plans": [a.id for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)))]})
+
+
+def _list_of(body: dict, k: str) -> list[str]:
+    v = body.get(k) or []
+    if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+        raise HTTPException(400, f"{k}: a list of lines")
+    return v
+
+
+@router.post("/roadmap")
+def roadmap_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A new Roadmap idea: what Brett outlined in chat, his words its first addition (`where`: chat)."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    try:
+        it = rules.new_idea(db, actor.name, _str(body, "title", 120, need=True), _str(body, "words", 8000), _str(body, "section", 10) or "next", where="chat")
+        if any(body.get(k) for k in ("why", "size", "status")):
+            rules.set_item(db, actor.name, it, why=_str(body, "why", 2000) or None, size=_str(body, "size", 2) or None, status=_str(body, "status", 200) or None)
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok(_roadmap_row(db, it))
+
+
+@router.post("/roadmap/{item_id:int}")
+def roadmap_change(item_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """One change at a time: scope (what, inside, not_now, questions, changed: the next version), add (Brett's words said in
+    chat), answer (addition, answer: in|later|question, words, version), step (text, whose), tick (step, done), unstep
+    (step), move (section), ship, not_doing, set (title, why, size, status). Only Brett says a scope looks right."""
+    from app.fft.models import FftAddition, FftStep
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    it = db.get(FftItem, item_id) or _missing()
+    do = _str(body, "do", 12, need=True)
+    try:
+        if do == "scope":
+            rules.write_scope(db, actor.name, it, what=_str(body, "what", 4000, need=True), inside=_list_of(body, "inside"),
+                              not_now=_list_of(body, "not_now"), questions=_list_of(body, "questions"), changed=_str(body, "changed", 2000))
+        elif do == "add":
+            rules.add_to_item(db, actor.name, it, _str(body, "words", 8000, need=True), where=_str(body, "where", 10) or "chat")
+        elif do == "answer":
+            a = db.get(FftAddition, _int(body.get("addition"), "addition"))
+            if a is None or a.item_id != it.id:
+                _missing()
+            v = body.get("version")
+            rules.answer_addition(db, actor.name, a, _str(body, "answer", 10, need=True), _str(body, "words", 2000), v if isinstance(v, int) else None)
+        elif do in ("step",):
+            rules.add_step(db, actor.name, it, _str(body, "text", 200, need=True), _str(body, "whose", 10) or "claude")
+        elif do in ("tick", "unstep"):
+            st = db.get(FftStep, _int(body.get("step"), "step"))
+            if st is None or st.item_id != it.id:
+                _missing()
+            if do == "tick":
+                rules.tick_step(db, actor.name, st, body.get("done", True) is not False)
+            else:
+                rules.remove_step(db, actor.name, st)
+        elif do == "move":
+            rules.move_item(db, actor.name, it, _str(body, "section", 10, need=True))
+        elif do in ("ship", "not_doing"):
+            rules.ship_item(db, actor.name, it, not_doing=do == "not_doing")
+        elif do == "set":
+            rules.set_item(db, actor.name, it, **{k: _str(body, k, 2000) for k in ("title", "why", "size", "status") if k in body})
+        elif do == "agree":
+            raise HTTPException(403, "Only Brett says a scope looks right.")
+        else:
+            raise HTTPException(400, "scope, add, answer, step, tick, unstep, move, ship, not_doing or set")
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok(_roadmap_row(db, it))
+
+
+@router.get("/ideas")
+def ideas(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Ideas from before the Roadmap was in askdnd, still to place (each with its notes, quoted with who wrote them)."""
+    from app.fft.models import FftIdea
+
+    keys.require(db, x_fft_key, "read")
+    out = []
+    for d in db.scalars(select(FftIdea).where(FftIdea.state == "new").order_by(FftIdea.id)):
+        notes = db.scalars(select(FftNote).where(FftNote.idea_id == d.id, FftNote.state == "filed").order_by(FftNote.id))
+        out.append({"id": d.id, "title": d.title, "notes": [_quoted(n.text, _by(n)) for n in notes]})
+    return _ok({"items": out})
+
+
+@router.post("/ideas/{idea_id:int}")
+def idea_place(idea_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Place an idea: on the Roadmap (do: roadmap), or a change to a Product Area (do: fix | improvement)."""
+    from app.fft.models import FftIdea
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    d = db.get(FftIdea, idea_id) or _missing()
+    do = _str(body, "do", 12, need=True)
+    try:
+        if do == "roadmap":
+            made = {"item": rules.idea_to_roadmap(db, actor.name, d).id}
+        elif do in rules.ISSUE_KINDS:
+            made = {"issue": rules.idea_to_issue(db, actor.name, d, do).id}
+        else:
+            raise HTTPException(400, "roadmap, fix or improvement")
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok(made)
 
 
 MINI_JOBS = ("nightly", "iphone")  # (the jobs the Mac Mini runs: its key may report only these)
