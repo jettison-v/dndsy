@@ -41,3 +41,15 @@ def test_the_bar_gives_way_in_its_order_and_never_wraps(people, server, who):
             assert got["charName"] == (bw > 1200), f"{where}: your character's name gives way at 1200px"
         assert got["key"] == (bw > 999), f"{where}: below 1000px Search is its magnifier alone"
     assert seen == {(step, on) for step in STEPS for on in (True, False)}, f"not every step was seen both ways: {sorted(seen)}"
+
+
+def test_the_way_to_the_other_half_reads_whole(people, server):
+    """Backstage (Nov 20): each half's way to the other ("This campaign" on Global's pages, "Global" on the campaign's)
+    is never cut short with "…", on a laptop or a phone (it was, for a day: its room was the old "Manage"'s)."""
+    admin = people("admin")
+    for width in (1280, 375):
+        admin.page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        for path in ("/manage/usage", "/c/main/manage/inbox"):
+            admin.open(path)
+            cut = admin.page.locator(".manage-cross").evaluate("e => e.scrollWidth - e.clientWidth")
+            assert cut <= 0, f"{path} at {width}px: the way to the other half is cut short by {cut}px"

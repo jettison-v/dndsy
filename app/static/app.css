@@ -51,7 +51,7 @@
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a29d93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");  /* every dropdown's and the Filters control's arrow, one drawing (Nov 16) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
   --bottom-nav-h: 0px;  /* the phone's bottom menu (.bottom-nav, under 900px): what sits at the foot of the screen clears it */
-  --manage-cross-w: 104px;  /* Manage's way to the other half (.manage-cross), and the room kept for it */
+  --manage-cross-w: 120px;  /* Backstage's way to the other half (.manage-cross: "This campaign" or "Global"), and the room kept for it */
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
      leveling, the Spell Book) */
