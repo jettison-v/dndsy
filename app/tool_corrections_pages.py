@@ -4,7 +4,7 @@ askdnd as a whole. A DM's rulings for one table are House rules instead."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import character_views as views
@@ -35,19 +35,27 @@ def page(request: Request, db: Session = Depends(get_db)):
 KINDS = {"spell": "Spell", "item": "Item", "feature": "Feature", "action": "Action", "attack": "Attack", "creature": "Wild Shape form"}
 
 
-def automatic(sheets: list[dict], ref: str, field: str) -> str | None:
+def automatic(sheets: list[dict], ref: str, field: str, seen: dict | None = None) -> str | None:
     """What askdnd chooses on its own for this thing, without any correction: the value the correction would set
     if askdnd got it right. None when no character has the thing (or for "hide", which askdnd never chooses).
-    When a code fix makes this equal a correction's value, the correction is built in (Brett, 2026-10-23)."""
+    When a code fix makes this equal a correction's value, the correction is built in (Brett, 2026-10-23). `seen` keeps
+    each sheet's options across the corrections of one count (Nov 20: rebuilt per correction, it cost every Backstage
+    page's counts half a second)."""
     if field == "underline":
         term = next((t for t in terms.TERMS if f"term:{t.name}" == ref), None)
         return None if term is None else ("off" if term.basic else "on")
-    for raw in sheets:
-        sheet = views.apply_overrides(raw, {})
+    seen = {} if seen is None else seen
+    for n, raw in enumerate(sheets):
+        sheet = seen.get(("sheet", n))
+        if sheet is None:
+            sheet = seen[("sheet", n)] = views.apply_overrides(raw, {})
         if ref.split(":", 1)[-1].isdigit() and (x := views.find(sheet, ref)):  # an older correction, stored by D&D Beyond number
             ref = views.override_ref(x, x["section"])
         if field in ("cost", "battle"):
-            o = next((o for o in views.options(sheet) if o["oref"] == ref), None)
+            opts = seen.get(("options", n))
+            if opts is None:
+                opts = seen[("options", n)] = views.options(sheet)
+            o = next((o for o in opts if o["oref"] == ref), None)
             if o:
                 return o["cost"] if field == "cost" else ("common" if o.get("common") else "normal")
         section, key = {"feature_group": ("features", "use"), "situ_group": ("situational", "in_numbers"),
@@ -67,9 +75,9 @@ def _status(db: Session, overrides: list[ToolCorrection]) -> dict[int, str]:
     """Each correction: "open" (askdnd still gets it wrong), "built_in" (askdnd now chooses the same on its own,
     so the correction can go) or "unseen" (no character has the thing now)."""
     sheets = [sh for sh in (chars.character_summary(c) for c in db.scalars(select(Character))) if sh]
-    out = {}
+    out, seen = {}, {}
     for o in overrides:
-        auto = automatic(sheets, o.ref, o.field)
+        auto = automatic(sheets, o.ref, o.field, seen)
         out[o.id] = "open" if o.field == "hide" or (auto is not None and auto != o.value) else ("built_in" if auto == o.value else "unseen")
     return out
 
@@ -80,10 +88,26 @@ def _split(db: Session, overrides: list[ToolCorrection]) -> dict:
             "unseen": {o.id for o in overrides if status[o.id] == "unseen"}}
 
 
+_OPEN: dict = {}  # (the inputs' fingerprint → the count: one per process)
+
+
 def open_count(db: Session) -> int:
-    """For Needs you: corrections askdnd still needs a code fix for."""
+    """For Needs you: corrections askdnd still needs a code fix for. Working it out builds every character's roll options
+    (about half a second), and Backstage's counts ask on every page, so the answer is kept until a sheet, a character or
+    a correction changes (their row counts and newest change, and this process's code: a deploy starts afresh)."""
     rows = list(db.scalars(select(ToolCorrection).where(ToolCorrection.field != "hide")))
-    return sum(1 for v in _status(db, rows).values() if v == "open") if rows else 0
+    if not rows:
+        return 0
+    from app.models import CharacterSnapshot
+
+    marks = (db.execute(select(func.count(), func.max(CharacterSnapshot.updated_at))).one(),
+             db.execute(select(func.count(), func.max(Character.updated_at)).select_from(Character)).one(),
+             tuple(sorted((o.id, o.value, str(o.updated_at)) for o in rows)))
+    key = repr(marks)
+    if key not in _OPEN:
+        _OPEN.clear()
+        _OPEN[key] = sum(1 for v in _status(db, rows).values() if v == "open")
+    return _OPEN[key]
 
 
 def _names(db: Session, overrides: list[ToolCorrection]) -> dict[str, dict]:

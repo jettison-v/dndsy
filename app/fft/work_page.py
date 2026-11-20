@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.fft import lanes, rules, taxonomy, testing_page, views
-from app.fft.models import FftArea, FftCheck, FftCheckIssue, FftEvent, FftIssue, FftItem, FftQuestion
+from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftQuestion
 from app.models import ToolSetting
 from app.templating import templates
 
@@ -73,7 +73,7 @@ def plan_row(db: Session, a: FftArea, pick: rules.Pick, frozen: bool) -> dict:
     checks = []
     for c in rules.area_checks(db, a):
         st = rules.check_state(db, c)
-        tied = set(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == c.id)))
+        tied = {i.id for i in rules.check_issues(db, c)}
         if st["state"] != "passed" or tied & open_ids:  # (this plan's checks now: a check that passed long ago isn't its progress)
             checks.append((c, st))
     turn = rules.area_turn(db, a)
@@ -156,7 +156,7 @@ def check_rows(db: Session, area: FftArea | None = None) -> tuple[list[dict], li
         if st["state"] in ("preflight", "wrong", "asks"):  # (a state of the check as a whole, on every device)
             devs = {d: (views.check_word(st), CHECK_TONE[st["state"]]) for d in st["devices"]}
         used |= set(devs)
-        tied = list(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == c.id).order_by(FftCheckIssue.issue_id)))
+        tied = [i.id for i in rules.check_issues(db, c)]
         a = db.get(FftArea, c.area_id) if c.area_id else None
         rows.append({"key": f"c{c.id}", "c": c, "area": a, "devices": devs, "issues": tied, "word": views.check_word(st)})
     return rows, [d for d in DEVICES if d in used]
@@ -226,10 +226,16 @@ def how() -> dict:
                        "files": files[k]} for k in rules.LANES], "steps": STEPS}
 
 
-def _who(db: Session, actor: str) -> str:
+def _who(db: Session, actor: str, said: dict | None = None) -> str:
+    if said is not None and actor in said:
+        return said[actor]
     if actor.startswith("user:") and actor[5:].isdigit():
-        return views.first_name_of(db, int(actor[5:])) or "An admin"
-    return {"claude": "Claude", "askdnd": "askdnd", "mini": "Mac Mini"}.get(actor, actor or "Someone")
+        out = views.first_name_of(db, int(actor[5:])) or "An admin"
+    else:
+        out = {"claude": "Claude", "askdnd": "askdnd", "mini": "Mac Mini"}.get(actor, actor or "Someone")
+    if said is not None:
+        said[actor] = out
+    return out
 
 
 # ------------------------------------------------------------------ the pages
@@ -298,13 +304,14 @@ def plan(request: Request, area_id: int, tab: str = "overview", db: Session = De
     events = list(db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200)))
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
                                                           FftQuestion.about_id.in_([i.id for i in issues] or [0]))))
+    who: dict = {}
     order = _above(db)
     at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
         "a": a, "item": db.get(FftItem, a.item_id), "row": row, "tab": tab, "tabs": PLAN_TABS, "issues": issues,
         "open_n": sum(1 for i in issues if i.state != "closed"), "checks": checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
-        "events": [(e, views.event_words(e), _who(db, e.actor)) for e in events], "questions": questions,
+        "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events], "questions": questions,
         "issue_word": views.ISSUE_WORD, "closed_word": views.CLOSED_WORD, "lane_said": rules.LANE_SAID, "lanes": rules.LANES,
         "at": at, "of": len(order), "paths": {i.id: taxonomy.path(i.feature) for i in issues},
         "turns": {i.id: views.turn_pill(*views.issue_turn(db, i)) for i in issues if i.state != "closed"},
