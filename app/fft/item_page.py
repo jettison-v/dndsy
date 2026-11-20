@@ -1,6 +1,6 @@
 """The one item window (Brett, Nov 20: issue 44 and The Work Pages, docs/mockups/work-pages/): any single item (a check,
 a question or decision, a change to try on your Mac, a note, an issue, an idea, a Roadmap step) opens in a panel at the
-page's right, from any of For you, Feedback and Testing, read and acted on there. ↑ ↓ walk the list it was opened from
+page's right, from any of For you, Feedback and Work, read and acted on there. ↑ ↓ walk the list it was opened from
 (`?from=`); after a press it moves on to the next one, or stays for a conversation (app.js "the item window"). A link
 to a group (a plan, a Product Area) goes to its page instead. Admins only, as the pages it opens from."""
 
@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.fft import feedback_page, taxonomy, testing_page, views
+from app.fft import feedback_page, taxonomy, testing_page, views, work_page
 from app.templating import templates
 
 router = APIRouter()
@@ -19,8 +19,10 @@ KINDS = {"c": "Check", "q": "Question", "l": "On your Mac", "n": "Note", "i": "I
 def _list(db: Session, frm: str, device: str) -> list[str]:
     """The keys of the list an item was opened from, in its order (empty when unknown: no ↑ ↓)."""
     parts = frm.split(":")
-    if parts[0] in ("foryou", "claudes", "done"):
-        return testing_page.listed_keys(db, parts[0], device)
+    if parts[0] == "foryou":
+        return testing_page.listed_keys(db, "foryou", device)
+    if parts[0] in ("checks", "round", "plan"):  # (Work's Checks, a plan's Test round and Issues)
+        return work_page.listed_keys(db, frm)
     if parts[0] == "feedback" and len(parts) == 6:
         tab, chip, area, pa, feature = parts[1:]
         if tab in dict(feedback_page.TABS):
@@ -33,8 +35,12 @@ def _home(picked: dict, frm: str) -> tuple[str, str]:
     k = picked["kind"]
     if k in ("note", "issue", "idea"):
         return "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
-    if k in ("check",) and frm.startswith(("claudes", "done")):
-        return "Testing", f"/manage/testing?show={frm.split(':')[0]}&open={picked['key']}"
+    if k == "issue" and frm.startswith("plan:"):
+        return "its plan", f"/manage/work/{frm[5:]}?tab=issues"
+    if k == "check" and frm.startswith("round:"):
+        return "its plan", f"/manage/work/{frm[6:]}?tab=round"
+    if k == "check" and frm == "checks":
+        return "Work", f"/manage/work?tab=checks&open={picked['key']}"
     return "For you", f"/manage/for-you?open={picked['key']}"
 
 

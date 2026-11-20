@@ -35,17 +35,17 @@ def test_deploys_choice_redraws_in_place(people, server, browser_db):
     assert page.evaluate("window.__stayed === true") and page.url.endswith("/manage/for-you")
 
 
-def test_where_it_stands_redraws_in_place(people, server, browser_db):
-    """Where it stands (issue 40's page): the answer is a redirect to the same page with its query, drawn in place, the
+def test_work_redraws_in_place(people, server, browser_db):
+    """Work (issue 40's page, Where it stands then): the answer is a redirect to the same page, drawn in place, the
     address kept."""
     admin = people("admin")
-    page = admin.open("/manage/testing?show=stands")
+    page = admin.open("/manage/work")
     page.evaluate("window.__stayed = true")
     page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="frozen"]').click()
     page.locator('#fft-pause-why [data-do="pause"]').click()
     page.locator('.fft-status[data-mode="frozen"]').wait_for()
-    assert page.evaluate("window.__stayed === true") and "show=stands" in page.url
+    assert page.evaluate("window.__stayed === true") and page.url.endswith("/manage/work")
     page.locator(".fft-deploys > summary").click()
     page.locator('[data-mode-pick="independent"]').click()
     page.locator('.fft-status[data-mode="independent"]').wait_for()
@@ -120,7 +120,7 @@ def test_a_count_never_blinks_through_a_press(people, server, browser_db):
         conn.execute(text("INSERT INTO fft_check_versions (check_id, version, path, steps, expect, why, workspace_id) VALUES (:c, 1, '/party', CAST(:s AS jsonb), 'It shows.', '', 1)"), {"c": cid, "s": json.dumps(["Look."])})
     engine.dispose()
     admin = people("admin")
-    page = admin.open("/manage/testing?show=stands")
+    page = admin.open("/manage/work")
     page.wait_for_function("() => { const c = document.querySelector('.manage-side [data-manage-count=\"for-you\"]'); return c && !c.hidden && c.textContent.trim(); }")
     page.evaluate("""() => { window.__blinks = 0; const look = () => { const c = document.querySelector('.manage-side [data-manage-count="for-you"]');
       if (!c || c.hidden || !c.textContent.trim()) window.__blinks++; window.__frames = requestAnimationFrame(look); }; look(); }""")

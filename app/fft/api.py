@@ -500,6 +500,29 @@ def deploy(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: 
     return _ok({"live": live, "by": actor.name})
 
 
+MINI_JOBS = ("nightly", "iphone")  # (the jobs the Mac Mini runs: its key may report only these)
+
+
+@router.post("/jobs/{key}")
+def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A scheduled job's run (Work › Scheduled; The Work Pages, Nov 20): {"result": "ok"|"failed", "words": "…"}. Claude's
+    key reports any; the Mac Mini's only its own."""
+    from app.fft import work_page
+
+    actor = keys.actor_for(db, x_fft_key)
+    if actor is None:
+        raise HTTPException(404)
+    if not (actor.may("write") or (actor.may("mini") and key in MINI_JOBS)):
+        raise HTTPException(403, "This key can't report that job.")
+    body = body if isinstance(body, dict) else {}
+    try:
+        work_page.report_job(db, actor.name, key, _str(body, "result", 10, need=True), _str(body, "words", 200))
+    except rules.RuleError as e:
+        raise _rule(e) from e
+    db.commit()
+    return _ok({"job": key})
+
+
 @router.post("/relay")
 def relay(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """A note sent on staging, relayed here: it always waits for an admin (T6), whoever it says sent it."""

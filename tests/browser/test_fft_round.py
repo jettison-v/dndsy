@@ -89,7 +89,7 @@ def test_testing_holds_together_at_every_width(people, server, browser_db):
     page, found = admin.page, []
     for width in (375, 768, 1280):
         page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
-        for path, said in (("/manage/for-you", "For you"), ("/manage/testing", "Testing")):
+        for path, said in (("/manage/for-you", "For you"), ("/manage/work", "Work")):
             admin.open(path)
             found += problems(page, f"{said} at {width}px", hard_only=width < POLISH_FROM)  # (admin pages: polish is the weekly sweep's)
     assert not found, "\n".join(found)
@@ -267,10 +267,10 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
     page = admin.page
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
-        admin.open("/manage/testing?show=stands")
-        row = page.locator(f'[data-area="{area}"]')
-        menu, opener = row.locator("> .act-more:not(.fft-lane) summary"), row.locator('[data-do="open-area"]')
-        m, o = menu.bounding_box(), opener.bounding_box()
+        admin.open("/manage/work")
+        row = page.locator(f'tr[data-area="{area}"]')
+        menu, lane = row.locator(".act-more:not(.fft-lane) summary"), row.locator(".fft-lane > summary")
+        m, o = menu.bounding_box(), lane.bounding_box()
         assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
         bar = [x for x in page.evaluate(CHECK, {}) if "fft-status" in x["where"]]  # (Nov 19: squeezed, off baseline)
         assert not bar, f"the status bar at {width}px: {bar}"
@@ -307,7 +307,7 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
     page = admin.page
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
-        admin.open("/manage/testing?show=stands")
+        admin.open("/manage/work")
         def where():  # (the pill against its bar, not the window: a scrollbar coming or going shifts both alike on Linux)
             p, b = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status").bounding_box()
             return {"x": p["x"] - b["x"], "y": p["y"] - b["y"], "height": p["height"], "top": p["y"]}
@@ -316,7 +316,7 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
         with engine.begin() as conn:
             conn.execute(text("INSERT INTO fft_rounds (workspace_id) VALUES (1)"))
         engine.dispose()
-        admin.open("/manage/testing?show=stands")
+        admin.open("/manage/work")
         after, row = where(), page.locator(".fft-status-round").bounding_box()
         assert abs(after["y"] - before["y"]) < 2 and abs(after["x"] - before["x"]) < 2, f"the top row moved at {width}px"
         assert row["y"] >= after["top"] + after["height"] and page.locator('.fft-status-round [data-do="end-round"]').is_visible()
@@ -359,7 +359,7 @@ def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browse
     admin = people("admin")
     page = admin.page
     page.set_viewport_size({"width": 375, "height": 812})
-    admin.open("/manage/testing?show=stands")
+    admin.open("/manage/work")
     said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
     assert pill["y"] >= said["y"] + said["height"] - 1, "Deploys sits over Claude listening on a phone"
     assert pill["x"] + pill["width"] <= 375 and page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)

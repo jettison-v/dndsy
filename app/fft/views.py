@@ -310,9 +310,18 @@ def event_words(ev) -> str:
         return f"{who} wrote on {ev.thing} {ev.thing_id}{to}"
     if ev.kind == "issue_feature":
         return f"Issue {ev.thing_id} is about {taxonomy.path(d.get('feature', '')) or d.get('feature')}" + (f" (was {taxonomy.path(d['was'])})" if d.get("was") else "")
+    if ev.kind == "area_lane":
+        said = rules.LANE_SAID
+        return f"Lane: {said.get(d.get('from') or '', d.get('from')) or 'none'} → {said.get(d.get('to') or '', d.get('to'))}"
+    if ev.kind in ("area_held", "area_let_go"):
+        return "Held below Work's line" if ev.kind == "area_held" else "Let go: back above Work's line"
+    if ev.kind == "check_moved":
+        return f"Check {ev.thing_id} followed issue {d.get('issue')} into this plan"
     if "to" in d:
-        return f"{ev.thing.title()} {ev.thing_id}: {d.get('from')} → {d.get('to')}"
-    return f"{ev.thing.title()} {ev.thing_id}: {ev.kind.replace('_', ' ')}"
+        words = ISSUE_WORD if ev.thing == "issue" else {}
+        return f"{ev.thing.title()} {ev.thing_id}: {words.get(d.get('from'), d.get('from'))} → {words.get(d.get('to'), d.get('to'))}"
+    what = ev.kind.removeprefix(ev.thing + "_").replace("_", " ")  # ("check_restored" on check 21: "Check 21: restored")
+    return f"{ev.thing.title()} {ev.thing_id}: {what}"
 
 
 # ------------------------------------------------------------------ what Claude left half done
@@ -323,7 +332,7 @@ def gaps(db: Session) -> list[dict]:
     not miss something?"): a fix with no check to try it; a check Claude hasn't tried itself (R18); something said on an
     open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue with no Feature; a
     question sent to Claude and not yet answered; a fix in a pull request whose plan has no lane (Nov 19).
-    `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Where it stands
+    `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Work
     shows them as Claude missed. Nothing waiting on Brett is a gap."""
     from app.fft.models import FftTry, FftTryIssue
 
@@ -396,7 +405,7 @@ def _since(db: Session, out: list[dict]) -> list[dict]:
 
 
 def missed(db: Session) -> list[dict]:
-    """Claude missed, as Brett sees it on Where it stands: only what has waited longer than GAP_GRACE (Claude's own
+    """Claude missed, as Brett sees it on Work: only what has waited longer than GAP_GRACE (Claude's own
     end-of-turn check still sees every gap at once)."""
     cut = rules.now() - GAP_GRACE
     return [g for g in gaps(db) if g["since"] <= cut]

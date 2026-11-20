@@ -856,6 +856,17 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const t = e.target.closest && e.target.closest('[data-panel-url][tabindex], [data-modal-url][tabindex]');
     if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
   });
+  // A table's row that stands for a group (a plan on Work) goes to its page, as its name's link does: anywhere on the
+  // row but its own controls (its lane, ⋯, a form, a link, the grip).
+  document.addEventListener('click', e => {
+    const row = e.target.closest('tr[data-href]');
+    if (!row || e.target.closest('a, button, form, details, input, select, .grip') || e.defaultPrevented) return;
+    location.href = row.dataset.href;
+  });
+  document.addEventListener('keydown', e => {
+    const row = e.target.closest && e.target.closest('tr[data-href]');
+    if (row && e.target === row && e.key === 'Enter') { e.preventDefault(); location.href = row.dataset.href; }
+  });
 
   // Tabs (Character page): buttons with data-tab show #id and hide their siblings' panels.
   function selectTab(b) {

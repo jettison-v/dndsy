@@ -47,6 +47,7 @@ from app.fft.feedback_page import router as fft_feedback_router
 from app.fft.item_page import router as fft_item_router
 from app.fft.sending import router as fft_sending_router
 from app.fft.testing_page import router as fft_testing_router
+from app.fft.work_page import router as fft_work_router
 from app.fog import router as fog_router
 from app.giving import router as giving_router
 from app.heals import router as heals_router
@@ -289,7 +290,8 @@ app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(fft_sending_router)  # Found, Fixed, Tried: sending a note from any page (\\)
 app.include_router(fft_feedback_router)  # Found, Fixed, Tried: Backstage › Global › Feedback
 app.include_router(fft_testing_router)  # Found, Fixed, Tried: Backstage › Global › Testing and the round's card
-app.include_router(fft_item_router)  # Found, Fixed, Tried: the one item window, from For you, Feedback and Testing
+app.include_router(fft_item_router)  # Found, Fixed, Tried: the one item window, from For you, Feedback and Work
+app.include_router(fft_work_router)  # Found, Fixed, Tried: Work, the plans in Brett's order, and each plan's page
 app.include_router(fft_router)  # Found, Fixed, Tried: Claude's side, the staging relay and the Mac Mini, each by its own key
 app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 
