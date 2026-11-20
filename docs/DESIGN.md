@@ -101,6 +101,15 @@ The serif quoted answers used (Iowan Old Style, Palatino) was hard to read and i
 
 - **Key-moment types** are colored words, not boxes: Event (muted), Reveal (lavender), Decision (blue), Loot (amber), Theory (italic, muted) so speculation never looks like fact.
 
+## Modes: Table and Backstage (Nov 20)
+
+One design system, two modes (Brett's picks on Backstage Mode, `docs/mockups/backstage-mode/`: "too playful for a tool used by engineering, QA and product people"). The pieces are the same; a mode only changes the tokens' values and how lists lay out.
+
+- **Table mode** is everything the table sees (players' and the DM's pages): as the rest of this document describes.
+- **Backstage mode** is every Backstage page (`main.manage-page`) and the windows opened over it, on a laptop and wider (901px+; a phone or tablet keeps Table mode's touch sizes and 16px boxes): type 11.5 · 12.5 · 13.5 · 15 · 19 · 22px, tighter space and controls (28px), tabular numbers, one font with labels in plain words (no gold, no condensed capitals), and the whole window's width up to 2,200px, a paragraph still stopping at about 75 characters. app.css › "Backstage mode"; tests/browser/test_backstage_mode.py.
+- **Lists in Backstage mode are tables** (`.dtable` in a `.table-scroll`, Backstage › Global › Design system › Table): a header row, columns sized by their header, the title the one cell that wraps, groups as divider rows; a row of one item opens it in the one item window.
+- **Short titles** for issues and checks: the part of askdnd first, then what's wrong ("Check buttons: Passed looks already chosen"), about 45 characters; the reporter's words stay whole on the issue.
+
 ## Rules for every page (Brett's reviews, 2026-10-23)
 
 Read these before designing or building any page; sessions that skipped them produced rework.

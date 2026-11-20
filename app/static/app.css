@@ -1565,6 +1565,46 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
+/* ===== Backstage mode (Brett's picks on Backstage Mode, Nov 20, docs/mockups/backstage-mode/): one design system, two
+   modes. Every Backstage page (main.manage-page) and the windows opened over it read denser and plainer for the people
+   who run askdnd: smaller steps of type and space, one font with no gold capitals, tighter controls, the whole window's
+   width (a paragraph still stops at about 75 characters). The table's own pages keep Table mode. On a laptop and wider
+   only: a phone or tablet keeps Table mode's sizes, its 44px touch targets and its 16px boxes. docs/DESIGN.md › Modes */
+@media (min-width: 901px) {
+  main.manage-page, body:has(main.manage-page) :is(.peek, .modal) {
+    --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 13.5px; --fs-lg: 15px; --fs-xl: 19px; --fs-2xl: 22px;
+    --sp-2: 6px; --sp-3: 10px; --sp-4: 12px; --sp-5: 18px; --sp-6: 24px;
+    --control-h: 28px; --control-h-sm: 24px; --chip-h: 24px;
+    font-size: var(--fs-md); line-height: 1.45; font-variant-numeric: tabular-nums;
+  }
+  main.manage-page .subtitle { margin: var(--sp-1) 0 var(--sp-5); max-width: 75ch; }
+  main.manage-page :is(p.hint, .prose, .notes-read p) { max-width: 75ch; }
+  main.manage-page .panel { padding: var(--sp-4) var(--sp-5); border-radius: var(--r-md); }
+  main.manage-page h1 { font-weight: 600; letter-spacing: 0; }
+  /* labels plain: no gold, no condensed capitals */
+  main.manage-page :is(.manage-sec, .ls-grouphead, .fft-group-name, h3.divider, .access-group th, .menu-group, .rd-sec-label, .tn-group h3, .scene-sect h3),
+  body:has(main.manage-page) :is(.peek-body h3:not(.divider), .ep h3:not(.divider), .rd-sec-label) { font-family: var(--sans); text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--muted); }
+}
+@media (min-width: 1240px) {
+  .page.manage-page { max-width: 2200px; }  /* the whole window (Backstage mode): lists and tables use the width; centred past 2200px */
+}
+/* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
+   which wraps; columns sized by their header (<th style="width:…">), the title taking the rest; a row with data-open
+   opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
+.dtable { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; font-size: var(--fs-md); }
+.dtable th { text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); padding: var(--sp-2) var(--sp-2); background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dtable td { padding: var(--sp-1) var(--sp-2); height: 32px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.dtable tr:last-child td { border-bottom: 0; }
+.dtable td.dt-title { white-space: normal; color: var(--text-strong); line-height: 1.3; padding-block: var(--sp-2); }
+.dtable td.dt-title .dt-why { display: block; color: var(--muted); font-size: var(--fs-xs); }
+.dtable :is(td, th).num { text-align: right; }
+.dtable td .dt-id { color: var(--muted); }
+.dtable tbody tr:is([data-open], [data-href]) { cursor: pointer; }
+.dtable tbody tr:is([data-open], [data-href]):hover td { background: var(--row-hover); }
+.dtable tbody tr[aria-current] td { background: var(--selected-bg); }
+.dtable tr.dt-group td { height: 26px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.dtable tr.dt-cut td { height: 24px; background: transparent; color: var(--muted); font-size: var(--fs-xs); text-align: center; border-top: 2px dashed var(--line-strong); border-bottom: 2px dashed var(--line-strong); }
+@media (max-width: 900px) { .table-scroll > .dtable { min-width: 760px; } }  /* (in its .table-scroll, as every table: a phone scrolls a wide one inside its frame, never the page) */
 /* Backstage › Global › Overview: a card per admin page */
 .ov-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-3); }
 .ov-card { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); text-decoration: none; }
