@@ -137,7 +137,8 @@ def test_claude_writes_the_roadmap_from_chat_and_never_agrees(db, api):
     assert api.post(f"/api/fft/roadmap/{iid}", headers=H, json={"do": "tick", "step": step["id"]}).json()["steps"] == [1, 1]
     assert [x["id"] for x in api.get("/api/fft/roadmap", headers=H).json()["items"]] == [iid]
     assert api.post(f"/api/fft/roadmap/{iid}", headers=H, json={"do": "move", "section": "sideways"}).status_code == 400
-    api.post(f"/api/fft/roadmap/{iid}", headers=H, json={"do": "ship"})
+    assert api.post(f"/api/fft/roadmap/{iid}", headers=H, json={"do": "ship"}).status_code == 400  # (no result: Brett, Nov 20)
+    api.post(f"/api/fft/roadmap/{iid}", headers=H, json={"do": "ship", "result": "Every job reports its run.\nBackups too."})
     assert api.get("/api/fft/roadmap", headers=H).json()["items"] == [] and api.get("/api/fft/roadmap?history=1", headers=H).json()["items"]
     assert api.get("/api/fft/roadmap").status_code == 404  # (no key)
 
@@ -172,3 +173,28 @@ def test_a_standing_rule_the_roadmap_is_for_admins_only(db, dm, player):
         who.post(f"/manage/roadmap/{it.id}", data={"do": "agree", "seen": 1})
         who.post("/manage/roadmap", data={"title": "Theirs", "section": "next"})
     assert rules.latest_scope(db, it).agreed_at is None and db.scalar(select(FftItem).where(FftItem.title == "Theirs")) is None
+
+
+def test_a_shipped_item_says_what_it_changed_with_its_numbers(db, admin, api):
+    """Brett, Nov 20: "do you write a result after each item is completed? It should include results, such as how much
+    performance improved": the first line the headline, a line per result; on its page and in History; a shipped item
+    without one is a gap of Claude's (Claude missed)."""
+    from app.fft import views
+
+    it = rules.new_idea(db, "claude", "Performance: the whole tool", section="now")
+    db.flush()
+    api.post(f"/api/fft/roadmap/{it.id}", headers=H, json={"do": "set", "result": "Pages about 74% quicker\nTool corrections 5.8 s → 0.8 s"})
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-result="so-far"' in page and "Tool corrections 5.8 s → 0.8 s" in page
+    other = rules.new_idea(db, "claude", "The menu bar")
+    rules.ship_item(db, "user:1", other)  # (Brett's own Shipped press: no result yet)
+    db.flush()
+    assert any(g["kind"] == "no_result" and g["id"] == other.id for g in views.gaps(db))
+    assert 'data-result="none"' in admin.get(f"/manage/roadmap/{other.id}").text
+    api.post(f"/api/fft/roadmap/{other.id}", headers=H, json={"do": "set", "result": "One bar, one way to show where you are"})
+    rules.ship_item(db, "claude", it, result="Pages about 74% quicker\nTool corrections 5.8 s → 0.8 s")
+    db.flush()
+    assert not any(g["kind"] == "no_result" for g in views.gaps(db))
+    hist = admin.get("/manage/roadmap?history=1").text
+    assert "Pages about 74% quicker" in hist and "One bar, one way to show where you are" in hist
+    assert 'data-result="done"' in admin.get(f"/manage/roadmap/{it.id}").text

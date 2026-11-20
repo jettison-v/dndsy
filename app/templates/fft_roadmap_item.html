@@ -17,9 +17,17 @@
     {% endcall %}
     {% else %}<form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="move"><input type="hidden" name="section" value="next"><button class="btn title-action" type="submit" data-do="reopen">Back on the Roadmap</button></form>{% endif %}</div>
   <p class="subtitle wk-facts" data-facts>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}
-    <span>{{ section_said[it.section] }}</span>{% if it.size %}<span>Size {{ it.size }}</span>{% endif %}{% if r.status %}<span>{{ r.status }}</span>{% endif %}
+    {% if it.section not in ("shipped", "not_doing") %}<span>{{ section_said[it.section] }}</span>{% endif %}{% if it.size %}<span>Size {{ it.size }}</span>{% endif %}{% if r.status %}<span>{{ r.status }}</span>{% endif %}
     {% if r.next[1] %}<span>Next: {{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude") }} {{ r.next[1] }}</span>{% endif %}</p>
   {% if it.why %}<p class="rm-why" data-why>{{ it.why }}</p>{% endif %}
+  {% set lines = (it.result or "").splitlines() | map("trim") | select | list %}
+  {% if lines %}{# (what it changed, with its numbers: Brett, Nov 20; its first line the headline) #}
+  <section class="rm-result panel" data-result="{{ 'done' if it.section in ('shipped', 'not_doing') else 'so-far' }}">
+    <h2 class="plabel">{{ "Result" if it.section in ("shipped", "not_doing") else "Result so far" }}</h2>
+    <p class="rm-result-head">{{ lines[0] }}</p>
+    {% if lines | length > 1 %}<ul>{% for x in lines[1:] %}<li>{{ x | trim("-• ") }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+  {% elif it.section == "shipped" %}<p class="note" data-result="none">Claude hasn't written its result yet.</p>{% endif %}
 
   <nav class="sub-tabs" aria-label="{{ it.title }}">
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "steps" %}{{ count_pill(steps | rejectattr("done_at") | list | length) }}{% elif key == "plans" %}{{ count_pill(plans | length) }}{% endif %}</a>{% endfor %}

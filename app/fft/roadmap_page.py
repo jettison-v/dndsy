@@ -64,7 +64,7 @@ def row(db: Session, it: FftItem) -> dict:
     for ev_at in db.scalars(select(FftEvent.at).where(FftEvent.thing == "item", FftEvent.thing_id == it.id).order_by(FftEvent.at.desc()).limit(1)):
         last = ev_at
     return {"it": it, "stage": s, "stage_said": STAGE[s], "scope": scope, "steps": len(steps), "done": sum(1 for x in steps if x.done_at),
-            "next": nxt, "last": last, "status": it.status or (SECTION_SAID.get(it.section, "") if s in ("shipped", "not_doing") else "")}
+            "next": nxt, "last": last, "status": it.status}
 
 
 def items(db: Session, history: bool = False) -> list[dict]:

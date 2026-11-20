@@ -522,7 +522,9 @@ def roadmap(a) -> None:
     elif a.do == "move":
         body["section"] = w[0]
     elif a.do == "set":
-        body |= {k: v for k, v in (("title", a.title), ("why", a.why), ("size", a.size), ("status", a.status)) if v is not None}
+        body |= {k: v for k, v in (("title", a.title), ("why", a.why), ("size", a.size), ("status", a.status), ("result", a.result)) if v is not None}
+    elif a.do in ("ship", "not_doing"):
+        body["result"] = a.result or ""  # (what it changed, with its numbers: Brett, Nov 20)
     got = call(a.base, f"/roadmap/{a.id}", body)
     print(f"Roadmap item {got['id']} · {got['stage']}: {got['title']}" + (f"  (next, {got['next']['whose']}: {got['next']['step']})" if got["next"]["step"] else ""))
 
@@ -747,6 +749,7 @@ def main() -> None:
     s.add_argument("--why")
     s.add_argument("--size")
     s.add_argument("--status")
+    s.add_argument("--result", default=None, help="ship/not_doing/set: what it changed, with its numbers (first line the headline)")
     s = sub.add_parser("ideas", help="ideas from before the Roadmap: list, or place one: ideas <id> roadmap|fix|improvement")
     s.add_argument("id", nargs="?")
     s.add_argument("do", nargs="?", choices=[None, "roadmap", "fix", "improvement"])

@@ -40,6 +40,8 @@ class FftItem(_Stamped, Base):
     size: Mapped[str] = mapped_column(String(2), server_default="", deferred=True, deferred_group="roadmap")
     status: Mapped[str] = mapped_column(String(200), server_default="", deferred=True, deferred_group="roadmap")
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
+    # What it changed, with its numbers (Brett, Nov 20): its first line the headline, each line after it one result
+    result: Mapped[str] = mapped_column(Text, server_default="", deferred=True, deferred_group="roadmap")
 
 
 class FftCheckWait(_Stamped, Base):

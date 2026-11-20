@@ -392,6 +392,9 @@ def gaps(db: Session) -> list[dict]:
         if not rules.lane_of(a) and any(i.pr and i.area_id == a.id for i in issues):  # goes without its lane)
             out.append({"kind": "no_lane", "thing": "area", "id": a.id, "title": a.title,
                         "says": "A fix in a pull request with no lane: feedback.py lane --area <id> (or attach its pull request again)."})
+    for it in db.scalars(select(FftItem).where(FftItem.section == "shipped", FftItem.result == "").order_by(FftItem.id)):  # (Brett, Nov 20)
+        out.append({"kind": "no_result", "thing": "item", "id": it.id, "title": it.title,
+                    "says": "Shipped with no result: write what it changed, with its numbers (feedback.py roadmap <id> set --result \"…\")."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
@@ -411,7 +414,7 @@ def _since(db: Session, out: list[dict]) -> list[dict]:
         at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == g["thing"], FftEvent.thing_id == g["id"]))
         if g["thing"] == "area":
             at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.kind == "issue_pr", FftEvent.area_id == g["id"])) or at
-        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea}[g["thing"]]
+        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea, "item": FftItem}[g["thing"]]
         g["since"] = at or getattr(db.get(row, g["id"]), "created_at", None) or rules.now()
     return out
 

@@ -53,7 +53,7 @@
   {% if missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
     <h3 class="plabel" id="fft-missed-h">Claude missed · {{ missed | length }}</h3>
     <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
-    <ul class="fft-missed-list">{% for g in missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/work' if g.thing == 'area' else '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+    <ul class="fft-missed-list">{% for g in missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/work' if g.thing == 'area' else '/manage/roadmap/' ~ g.id if g.thing == 'item' else '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
       <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane"}[g.kind] }}</span></li>{% endfor %}</ul>
   </section>{% endif %}
 
