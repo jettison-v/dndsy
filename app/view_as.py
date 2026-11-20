@@ -1,6 +1,6 @@
 """View as: an admin sees askdnd exactly as someone else does (Brett, 2026-10-23: "test as a DM").
 
-Starting it (Backstage › Accounts or a campaign's Table) stores who in the admin's own session. On every request
+Starting it (Manage › Accounts or a campaign's Table) stores who in the admin's own session. On every request
 while it's on, `ViewAs` hands the pages a copy of the session in which that person is the one signed in, so every
 permission, campaign and menu follows from the same rules as for them. The real session is never changed except
 to start or stop.
