@@ -30,7 +30,7 @@
     </tr>
     {% endmacro %}
     {% if history %}<tbody>{% for r in rows %}{{ item_row(r, drag=False) }}{% endfor %}</tbody>
-    {% else %}{% for key, said, rs in groups %}
+    {% else %}{% for key, said, rs in groups if rs %}
     <tbody class="rm-section" data-section="{{ key }}" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tr.rm-row" data-sort-handle=".wk-grip .grip">
       <tr class="dt-group"><td colspan="7">{{ said }} · {{ rs | length }}</td></tr>
       {% for r in rs %}{{ item_row(r) }}{% endfor %}

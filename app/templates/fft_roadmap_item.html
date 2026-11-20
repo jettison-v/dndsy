@@ -38,7 +38,7 @@
       {% if shown.not_now %}<div><h3 class="plabel">Not now</h3><ul>{% for x in shown.not_now %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
       {% if shown.questions %}<div><h3 class="plabel">Open questions</h3><ul>{% for x in shown.questions %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
       {% if shown.version == latest.version and not shown.agreed_at and it.section not in ("shipped", "not_doing") %}
-      <form method="post" action="/manage/roadmap/{{ it.id }}" class="row tight"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ shown.version }}"><button class="btn primary" type="submit" data-do="agree">Scope looks right</button></form>{% endif %}
+      <form method="post" action="/manage/roadmap/{{ it.id }}" class="act-bar"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ shown.version }}"><button class="btn primary" type="submit" data-do="agree">Scope looks right</button></form>{% endif %}
       {% endif %}
     </section>
     <section class="rm-adds" data-additions aria-labelledby="rm-adds-h">
