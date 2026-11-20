@@ -256,7 +256,7 @@ def sort(a) -> None:
     """Sort an issue in one go (Nov 20: one command, not one per change): its short title, its Feature, a reply to
     whoever wrote it, and the fix's pull request, each only when given."""
     got = None
-    for do, body in (("title", {"title": a.title}), ("feature", {"feature": a.feature}), ("pr", {"pr": a.pr})):
+    for do, body in (("title", {"title": a.title}), ("feature", {"feature": a.feature}), ("kind", {"kind": a.kind}), ("pr", {"pr": a.pr})):
         if body[do]:
             got = call(a.base, f"/issues/{a.id}", {"do": do, **body})
     if a.tell:
@@ -577,10 +577,11 @@ def main() -> None:
     s.add_argument("--kind", choices=["fix", "improvement"], help="new: a fix (it's broken) or an improvement (make it better)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
-    s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --tell (a reply), --pr")
+    s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --kind, --tell (a reply), --pr")
     s.add_argument("id")
     s.add_argument("--title", default="")
     s.add_argument("--feature", default="")
+    s.add_argument("--kind", default="", choices=["", "fix", "improvement"], help="a fix (it's broken) or an improvement (make it better)")
     s.add_argument("--tell", default="")
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
     s.add_argument("--pr", default="")
