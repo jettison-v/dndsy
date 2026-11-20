@@ -169,7 +169,7 @@ def next_(a) -> None:
     for s in got["skipped"]:
         print(f"  skipped {s['what']}: {s['why']}")
     if got["round_open"]:
-        print("Brett's round is open: build on a branch; nothing merges until it ends (R11).")
+        print("Brett's round is open: work in the areas he's trying waits on a branch (R11; `issue <id>` says whether its fix may merge).")
     for w in got["waiting_on_brett"]:
         if "notes_to_approve" in w:
             print(f"  waits on Brett: {w['notes_to_approve']} notes to approve")

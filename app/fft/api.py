@@ -149,7 +149,7 @@ def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depend
     db.commit()  # (the three days' hand-off, R5)
     return _ok({"next": {"area_id": pick.area.id, "title": pick.why} if pick.area else None, "blocker": pick.blocker,
                 "skipped": [{"what": w, "why": y} for w, y in pick.skipped], "waiting_on_brett": waiting,
-                "round_open": rules.round_open(db) is not None})
+                "round_open": rules.holding_round(db) is not None})  # (a sitting that holds; ▶ Try it's never does)
 
 
 @router.get("/notes")
