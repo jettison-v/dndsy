@@ -1467,9 +1467,18 @@
   "link": "https://claude.ai/artifact/EKyJvsUXt4iqEP19TkpLCK"
  },
  {
-  "title": "The Work Pages",
+  "title": "The Roadmap in askdnd",
   "kind": "design",
   "status": "Waiting on your picks",
+  "date": "Nov 20",
+  "what": "A first Roadmap inside askdnd, for you and Claude only: items in Now, Next, Later and Paused, each with its steps and whose each one is, the plans building it, and what changed; a step of yours shows in For you. Four picks.",
+  "source": "docs/mockups/roadmap-in-askdnd/index.html",
+  "link": "https://claude.ai/artifact/TQZVVTJZGyLCNFoXUqb4Rz"
+ },
+ {
+  "title": "The Work Pages",
+  "kind": "design",
+  "status": "Picked; built (slice 4)",
   "date": "Nov 20",
   "what": "For you, Work and Feedback rebuilt in Backstage mode from how Linear, Jira, GitHub, TestRail and Productboard organize the same work: an inbox that says why, a queue of plans that own their issues and test rounds, triage, and one window for any item. Four picks.",
   "source": "docs/mockups/work-pages/index.html",

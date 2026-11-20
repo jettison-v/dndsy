@@ -106,3 +106,21 @@ def test_viewing_as_a_player_shows_their_notes_only_and_marks_nothing_seen(setup
     assert admin.get("/your-notes/seen?tab=askdnd").json()["count"] == 1  # (opening his tab clears nothing for him)
     db.expire_all()
     assert db.scalar(select(FftNote).where(FftNote.user_id == mark.id)).seen == ""  # (nothing marked seen for him)
+
+
+def test_for_yous_item_window_and_work_stay_the_admins_while_viewing_as_someone(setup, monkeypatch):
+    """A standing rule (Brett, Nov 16: a check is the admin's own, tried while viewing as a test account): For you's rows
+    open in the item window (The Work Pages, Nov 20), and Work is Testing's page, so both stay the admin's own while
+    viewing as a player; the player's own Backstage stays shut."""
+    from app.fft import rules
+
+    db = setup
+    c = rules.write_check(db, "claude", title="Rest stays on one line", steps=["Press [Rest]."], expect="One line.", path="/party")
+    rules.preflight(db, "claude", c, True)
+    db.flush()
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    admin.post("/view-as", data={"email": "mark@example.com"})
+    assert "Viewing as <b>Mark</b>" in admin.get("/").text
+    win = admin.get(f"/manage/item/c{c.id}?from=foryou")
+    assert win.status_code == 200 and "Rest stays on one line" in win.text
+    assert admin.get("/manage/usage", follow_redirects=False).status_code == 403  # (the rest of Backstage: as Mark)
