@@ -51,7 +51,6 @@
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a29d93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");  /* every dropdown's and the Filters control's arrow, one drawing (Nov 16) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
   --bottom-nav-h: 0px;  /* the phone's bottom menu (.bottom-nav, under 900px): what sits at the foot of the screen clears it */
-  --manage-cross-w: 104px;  /* Manage's way to the other half (.manage-cross), and the room kept for it */
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
      leveling, the Spell Book) */
@@ -1550,13 +1549,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Which half of Manage you're in: a band in its colour, red for this campaign, blue for askdnd admin */
 .manage-band { position: relative; height: 3px; margin: 0 0 var(--sp-5); border-radius: var(--r-xs); background: var(--red); }  /* the half's colour, as a line (Brett, 2026-10-31) */
 .manage-band.tool { background: var(--blue); }
-/* The way to the other half (.manage-cross: "⚙ Admin" or "Manage", the campaign's name on hover), one width both ways.
-   Narrower than 1240px it sits beside the "All pages" control, which keeps room for it; from 1240px (no jump control)
-   beside the page's title, which keeps room for it only when it's there: a DM has no ⚙ Admin (the UI review, Nov 16:
-   room kept for nothing broke Manage titles one letter per line on a phone and pushed the DM's title button in) */
-.manage-band .manage-cross { display: block; position: absolute; right: 0; top: calc(var(--sp-5) + 3px); width: var(--manage-cross-w); padding-inline: var(--sp-2); line-height: calc(var(--control-h) - 2px); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* a block, since a flex button centres its text and cuts both ends (feedback 10) */
-.manage-band:has(.manage-cross) ~ .manage-jump { margin-right: calc(var(--manage-cross-w) + var(--sp-2)); }
-@media (max-width: 640px) { .manage-band .manage-cross { min-height: var(--control-h-sm); line-height: calc(var(--control-h-sm) - 2px); } }  /* (the "All pages" control's height beside it, as every summary on a phone) */
 .menu .menu-head { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 0; margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
 .menu .menu-head b { display: block; max-width: 100%; color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* (a long campaign name ends in … rather than widening the menu) */
@@ -1570,7 +1562,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
   .page.manage-page > .manage-band { margin-left: -228px; }
-  .manage-band:has(.manage-cross) ~ .title-row, .manage-band:has(.manage-cross) ~ .dm-main > .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
