@@ -1467,9 +1467,18 @@
   "link": "https://claude.ai/artifact/EKyJvsUXt4iqEP19TkpLCK"
  },
  {
-  "title": "Backstage Mode",
+  "title": "The Work Pages",
   "kind": "design",
   "status": "Waiting on your picks",
+  "date": "Nov 20",
+  "what": "For you, Work and Feedback rebuilt in Backstage mode from how Linear, Jira, GitHub, TestRail and Productboard organize the same work: an inbox that says why, a queue of plans that own their issues and test rounds, triage, and one window for any item. Four picks.",
+  "source": "docs/mockups/work-pages/index.html",
+  "link": "https://claude.ai/artifact/SVw8N2c3o3saRDpr2WZfna"
+ },
+ {
+  "title": "Backstage Mode",
+  "kind": "design",
+  "status": "Picked: all five as recommended",
   "date": "Nov 20",
   "what": "One design system, two modes: Backstage pages dense, neutral and full width (tables with columns, the facts in a line, a reader beside the list), drawn beside today on For you, Feedback, Work, a plan, Usage and Accounts; short issue and check titles. Five picks.",
   "source": "docs/mockups/backstage-mode/index.html",
@@ -1478,7 +1487,7 @@
  {
   "title": "The Work Page",
   "kind": "design",
-  "status": "Waiting on your picks",
+  "status": "Replaced by The Work Pages, Nov 20",
   "date": "Nov 20",
   "what": "Slice 4 drawn before it's built: Work as its own page with the cut line, Scheduled work and How we work; how For you, Work and Feedback connect; a link to one item opens it in a window (issue 44); issues 45 and 46 drawn fixed. Four picks.",
   "source": "docs/mockups/work-page/index.html",
