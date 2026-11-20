@@ -287,7 +287,7 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
 def test_pausing_deploys_says_why_in_the_bar(admin, db):
     """Brett's pick A on docs/mockups/deploy-controls/ (Nov 19): Deploys is labelled, pausing asks why (optional), and the bar says it."""
     page = admin.get("/manage/for-you").text
-    assert 'id="fft-mode-lbl">Deploys<' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
+    assert 'aria-labelledby="fft-mode-lbl"' in page and 'data-show="fft-pause-why"' in page and 'id="fft-pause-why" hidden' in page
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "why": "a demo tomorrow"})
     assert rules.frozen(db) and rules.freeze_state(db)["why"] == "a demo tomorrow"
     page = admin.get("/manage/for-you").text

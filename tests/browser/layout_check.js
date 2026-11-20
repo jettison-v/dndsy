@@ -226,8 +226,8 @@ ask => {
       Object.assign(copy.style, { position: 'absolute', visibility: 'hidden', width: 'max-content', maxWidth: 'none', flex: 'none' });
       copy.removeAttribute('id');
       row.appendChild(copy);
-      const ccs = getComputedStyle(c);
-      need += copy.getBoundingClientRect().width + parseFloat(ccs.marginLeft) + parseFloat(ccs.marginRight);
+      const ccs = getComputedStyle(c), own = parseFloat(ccs.flexShrink) === 0 ? c.getBoundingClientRect().width : 0;  // (a part that never shrinks keeps its set width: a clock's 3rem)
+      need += Math.max(copy.getBoundingClientRect().width, own) + parseFloat(ccs.marginLeft) + parseFloat(ccs.marginRight);
       copy.remove();
     }
     let items = parts.length;
