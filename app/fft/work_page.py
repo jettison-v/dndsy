@@ -253,7 +253,7 @@ def page(request: Request, tab: str = "queue", open: str = "", history: int = 0,
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
-    ctx = {"tab": tab, "tabs": TABS, "q": q, "status": testing_page.status(db), "missed": views.missed(db), "lanes": rules.LANES,
+    ctx = {"tab": tab, "tabs": TABS, "q": q, "status": testing_page.status(db), "missed": views.missed(db), "gap_words": views.GAP_WORDS, "lanes": rules.LANES,
            "lane_said": rules.LANE_SAID, "stages": STAGES, "device_name": DEVICE_NAME, "history": bool(history),
            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
