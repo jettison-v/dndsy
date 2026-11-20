@@ -42,6 +42,16 @@ class FftItem(_Stamped, Base):
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
 
 
+class FftCheckWait(_Stamped, Base):
+    """A check waiting for its deploy: the pull request its change is in. Until a deploy carrying it is live, the check
+    stays Claude's and never reaches For you (Brett, Nov 20)."""
+
+    __tablename__ = "fft_check_waits"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    check_id: Mapped[int] = mapped_column(ForeignKey("fft_checks.id", ondelete="CASCADE"), index=True)
+    pr: Mapped[str] = mapped_column(String(300))
+
+
 class FftScope(_Stamped, Base):
     """A Roadmap item's scope, one version at a time: what it is, what's in, what's not now, open questions, and what
     changed from the version before. Brett's one OK (`agreed_at`) is on the version he read (The Roadmap in askdnd)."""

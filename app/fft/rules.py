@@ -18,6 +18,7 @@ from app.fft.models import (
     FftCheck,
     FftCheckIssue,
     FftCheckVersion,
+    FftCheckWait,
     FftEvent,
     FftIdea,
     FftIssue,
@@ -593,6 +594,24 @@ def answer_local_try(db: Session, actor: str, lt: FftLocalTry, answer: str, word
     _event(db, actor, "local_" + answer, "local", lt.id, area_id=lt.area_id, **({"words": lt.words} if lt.words else {}))
 
 
+def wait_for_deploy(db: Session, actor: str, check: FftCheck, pr: str) -> None:
+    """The check reaches For you only once a deploy carrying this pull request is live (Brett, Nov 20)."""
+    if not pr.strip():
+        raise RuleError("bad", "Which pull request is its change in?")
+    db.add(FftCheckWait(check_id=check.id, pr=pr.strip()[:300]))
+    _event(db, actor, "check_waits", "check", check.id, area_id=check.area_id, pr=pr.strip()[:300])
+
+
+def deployed(db: Session, actor: str, prs: list[str]) -> list[int]:
+    """A deploy is live with these pull requests: the checks waiting for them are let through (to For you)."""
+    out = []
+    for w in db.scalars(select(FftCheckWait).where(FftCheckWait.pr.in_(prs))):
+        out.append(w.check_id)
+        db.delete(w)
+        _event(db, actor, "check_deployed", "check", w.check_id, pr=w.pr)
+    return out
+
+
 def fix_live(db: Session, actor: str, issue: FftIssue, commit: str) -> None:
     """R4: merged and live: ready to try. A player who reported it confirms it (R5)."""
     if issue.state not in ("fixing", "to_fix"):
@@ -1052,7 +1071,8 @@ def _facts(db: Session) -> dict:
         named.setdefault(t_id, []).append((i, b))
     issues = {i.id: i for i in db.scalars(select(FftIssue))}
     versions = {(v.check_id, v.version): v for v in db.scalars(select(FftCheckVersion))}
-    f = {"links": links, "last": last, "by_check": by_check, "named": named, "issues": issues, "versions": versions, "memo": {}}
+    waiting = set(db.scalars(select(FftCheckWait.check_id)))
+    f = {"waiting": waiting, "links": links, "last": last, "by_check": by_check, "named": named, "issues": issues, "versions": versions, "memo": {}}
     db.info[FACTS] = f
     return f
 
@@ -1337,6 +1357,8 @@ def check_state(db: Session, check: FftCheck) -> dict:
         turn = "claude"  # (only the Mac Mini runs it: Claude's, never Brett's)
     if state == "to_try" and check.preflight != "passed":  # (R18: it never reaches Brett until it passes its own try)
         state, turn = ("wrong" if check.preflight == "failed" else "preflight"), "claude"
+    if turn == "brett" and check.id in f["waiting"]:  # (its change isn't live yet: it waits for its deploy, Nov 20)
+        state, turn = "deploying", "claude"
     return {"state": state, "turn": turn, "devices": devices, "again": again}
 
 

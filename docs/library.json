@@ -2,10 +2,19 @@
  {
   "title": "askdnd Roadmap",
   "kind": "guide",
-  "status": "Current",
+  "status": "Moved into askdnd, Nov 20",
   "date": "Nov 2",
-  "what": "The one page to read: one list of what's left, then what's done.",
+  "what": "Points to the Roadmap in askdnd (Backstage › Global › Roadmap), where it lives since Nov 20.",
   "source": "docs/roadmap.html",
+  "link": ""
+ },
+ {
+  "title": "askdnd Roadmap, before askdnd",
+  "kind": "earlier",
+  "status": "Kept as it was, Nov 20",
+  "date": "Nov 20",
+  "what": "The Roadmap page as it stood when the Roadmap moved into askdnd: what was left, ideas, askdnd's own table, and everything done before.",
+  "source": "docs/artifacts/roadmap-before-askdnd.html",
   "link": ""
  },
  {
@@ -1469,7 +1478,7 @@
  {
   "title": "The Roadmap in askdnd",
   "kind": "design",
-  "status": "Waiting on your picks",
+  "status": "Picked; built",
   "date": "Nov 20",
   "what": "A first Roadmap inside askdnd, for you and Claude only: items in Now, Next, Later and Paused, each with its steps and whose each one is, the plans building it, and what changed; a step of yours shows in For you. Four picks.",
   "source": "docs/mockups/roadmap-in-askdnd/index.html",

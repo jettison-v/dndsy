@@ -74,18 +74,6 @@ def test_the_frame_serves_only_its_own_folder_for_an_hour(admin, monkeypatch):
     assert admin.get(url).status_code == 403
 
 
-def test_the_roadmaps_table_is_written_from_the_library():
-    """The roadmap's table of documents and Manage › askdnd › Documents are one list (docs/library.json): run
-    scripts/library.py after changing it."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("library", ROOT / "scripts" / "library.py")
-    lib = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(lib)
-    page = (ROOT / "docs" / "roadmap.html").read_text()
-    assert lib.written(page) == page, "docs/roadmap.html's table differs from docs/library.json: run scripts/library.py"
-
-
 def test_the_roadmaps_tags_all_close():
     """Nov 9: one missing </div> in a step nested every step after it, and the published roadmap's columns overlapped."""
     from html.parser import HTMLParser

@@ -38,7 +38,7 @@ STAGES = {"blocker": ("Blocker: Claude's now", "failed"), "held": ("Held", "quie
           "try": ("Live: try it", "ask"), "yours": ("Waiting on you", "ask"), "building": ("Building", "claude"),
           "next": ("Claude's next", "claude"), "waiting": ("Waiting its turn", "quiet"), "done": ("Done", "passed")}
 CHECK_TONE = {"to_try": "ask", "later": "ask", "asks": "ask", "failed": "failed", "fixing": "claude", "wrong": "claude",
-              "blocked": "claude", "preflight": "claude", "passed": "passed", "retired": "quiet"}
+              "blocked": "claude", "preflight": "claude", "deploying": "claude", "passed": "passed", "retired": "quiet"}
 DEVICES = ("laptop", "iphone", "ipad", "mac_mini")
 DEVICE_NAME = {"laptop": "Laptop", "iphone": "iPhone", "ipad": "iPad", "mac_mini": "Mac Mini"}
 JOBS_FILE = Path(__file__).resolve().parent.parent / "data" / "jobs.json"
@@ -155,7 +155,7 @@ def check_rows(db: Session, area: FftArea | None = None) -> tuple[list[dict], li
     for c in db.scalars(q.order_by(FftCheck.area_id.nulls_last(), FftCheck.place, FftCheck.id)):
         st = rules.check_state(db, c)
         devs = {d: (views.CHECK_WORD.get(s, s), CHECK_TONE.get(s, "quiet")) for d, s in st["devices"].items()}
-        if st["state"] in ("preflight", "wrong", "asks"):  # (a state of the check as a whole, on every device)
+        if st["state"] in ("preflight", "wrong", "asks", "deploying"):  # (a state of the check as a whole, on every device)
             devs = {d: (views.check_word(st), CHECK_TONE[st["state"]]) for d in st["devices"]}
         used |= set(devs)
         tied = [i.id for i in rules.check_issues(db, c)]

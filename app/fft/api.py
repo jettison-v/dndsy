@@ -246,6 +246,16 @@ def checks(area: int = 0, x_fft_key: str | None = Header(default=None), db: Sess
     return _ok({"items": [check_view(db, c) for c in db.scalars(q)]})
 
 
+@router.get("/checks/waiting")
+def checks_waiting(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The pull requests checks wait on (Nov 20): `feedback.py live` asks after each deploy, so a check whose change no
+    open issue names still reaches For you once its pull request is live."""
+    from app.fft.models import FftCheckWait
+
+    keys.require(db, x_fft_key, "read")
+    return _ok({"prs": sorted(set(db.scalars(select(FftCheckWait.pr))))})
+
+
 @router.get("/areas")
 def areas(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     keys.require(db, x_fft_key, "read")
@@ -367,6 +377,8 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
                               path=_str(body, "path", 500), why=_str(body, "why"), area_id=body.get("area_id"), devices=devices,
                               issue_ids=issue_ids, minutes=body.get("minutes") if type(body.get("minutes")) is int else 2,
                               makes=body.get("makes") is True, as_character=who)
+        if _str(body, "pr", 300):  # (its change's pull request: it reaches For you once that's live, Nov 20)
+            rules.wait_for_deploy(db, actor.name, c, _str(body, "pr", 300))
     except rules.RuleError as e:
         _rule(e)
     db.commit()
@@ -531,8 +543,9 @@ def deploy(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: 
     for i in db.scalars(select(FftIssue).where(FftIssue.pr.in_(prs), FftIssue.state.in_(("fixing", "to_fix")))):
         rules.fix_live(db, "askdnd", i, commit)
         live.append(i.id)
+    checks = rules.deployed(db, "askdnd", prs)  # (checks that waited for this deploy reach For you now)
     db.commit()
-    return _ok({"live": live, "by": actor.name})
+    return _ok({"live": live, "checks": checks, "by": actor.name})
 
 
 # ------------------------------------------------------------------ the Roadmap (The Roadmap in askdnd, Nov 20)
