@@ -100,7 +100,7 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     assert f'data-group="a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
     assert f"{a.title} · Claude asks" in page
     assert 'data-fft-page="for-you"' in page and 'data-tab="stands"' not in page and 'data-do="start-round"' in page
-    assert 'class="on" data-tab="foryou" aria-current="page"' in page  # (For you · Work · Feedback across the top, The Work Pages)
+    assert 'data-fft-tabs' not in page and 'data-item="for-you" aria-current="page"' in page  # (one way between them: the side list's Our work, Nov 20)
     for old in ("/manage/testing?show=foryou", f"/manage/testing?open=c{c.id}"):
         r = admin.get(old, follow_redirects=False)
         assert r.status_code == 303 and r.headers["location"].startswith("/manage/for-you")
@@ -109,7 +109,7 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
         r = admin.get(old, follow_redirects=False)
         assert r.status_code == 303 and r.headers["location"] == to, old
     work = admin.get("/manage/work").text
-    assert 'class="on" data-tab="queue"' in work and 'class="on" data-tab="work"' in work and 'data-do="start-round"' not in work
+    assert 'class="on" data-tab="queue"' in work and 'data-item="work" aria-current="page"' in work and 'data-do="start-round"' not in work
     assert admin.get("/manage/for-you/count").json() == {"n": 4}
     assert "data-for-you-count" in admin.get("/party").text  # (the badge's place on the Admin gear, on every page)
     assert "4 waiting on you: " in admin.get("/manage/askdnd").text  # (its card on Overview says how much)

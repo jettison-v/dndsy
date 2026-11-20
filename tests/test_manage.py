@@ -26,7 +26,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     a whole, every page listing its half down the left under a line in its half's colour; since Nov 13 (The Three Menus,
     docs/mockups/menus/) each in fixed groups, the campaign's by the DM's week with DM Tools inside, the DM guide in the
     account menu instead, the rarely opened pages on Tuning's line; since Nov 20 (Menu Bar Doors) one door, Backstage,
-    its two halves side by side: This campaign and Global (its groups Waiting on you, General, People, Tuning)."""
+    its two halves side by side: This campaign and Global (its groups Our work, General, People, Tuning)."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
     import_bundle(db, {"campaign": {"slug": "second", "name": "Second Wind"}})
     admin = client_for(monkeypatch, db, "brett@example.com")
@@ -41,9 +41,9 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "Global" in half(page, "askdnd")
-    assert half_items(page, "askdnd") == ["for-you", "overview", "work", "feedback", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
+    assert half_items(page, "askdnd") == ["for-you", "work", "feedback", "overview", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
-    assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Waiting on you", "General", "People", "Tuning"]
+    assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' camp"') and "The Lost Mine" in band and "manage-cross" not in band  # (the way across is Backstage in the bar: issue 23)

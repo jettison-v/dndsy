@@ -47,7 +47,6 @@
 {% endmacro %}
 <main class="page manage-page" data-fft-page="work">
   {% include "_manage_head.html" %}
-  {% with fft_here = "work" %}{% include "_fft_tabs.html" %}{% endwith %}
   <div class="title-row"><h1>Work</h1></div>
   <p class="subtitle">The plans in your order and what's being built: Claude takes the ones above the line. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}

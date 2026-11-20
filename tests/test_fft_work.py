@@ -218,4 +218,4 @@ def test_a_standing_rule_work_is_for_admins_only(db, dm, player):
 def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
     page = admin.get("/manage/work").text
     assert 'data-item="work"' in page and 'data-item="testing"' not in page
-    assert 'data-tab="work"' in page and 'data-tab="testing"' not in page and "data-held" in page  # (For you · Work · Feedback)
+    assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
