@@ -806,6 +806,8 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .tick.on { background: var(--green); border-color: var(--green); }
 .checklist small { color: var(--muted); margin-left: auto; font-size: var(--fs-sm); }
 .panel .btn.primary { width: 100%; min-height: 48px; font-size: var(--fs-md); }
+/* (alone in a panel it spans it; beside other buttons in a row it's their size: issue 57, a Roadmap scope's two answers) */
+.panel .row .btn.primary, .panel .act-bar .btn.primary { width: auto; min-height: var(--control-h); font-size: inherit; }
 .btn.primary.is-done, .btn.primary.is-done:hover { background: var(--green-soft); border-color: transparent; color: var(--green); cursor: default; }
 .panel .note { margin: 12px 0 0; }
 .next { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
@@ -1636,7 +1638,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .rm-lines .rm-line::before, .rm-lines .rm-q::before { content: "•"; position: absolute; left: var(--sp-2); top: 2px; color: var(--muted); }
 .rm-line:hover { background: var(--surface-2); }
 .rm-line.has { box-shadow: inset 2px 0 0 var(--amber); }
-.rm-cbtn { visibility: hidden; }
+.rm-cbtn { visibility: hidden; padding: 0 var(--sp-1); }  /* (no taller than the line's words: issue 57) */
 .rm-line:hover .rm-cbtn, .rm-line:focus-within .rm-cbtn, .rm-line.has .rm-cbtn { visibility: visible; }
 @media (hover: none) { .rm-cbtn { visibility: visible; } }
 .rm-line .rm-cform, .rm-q .rm-answer, .rm-q > p { grid-column: 1 / -1; }

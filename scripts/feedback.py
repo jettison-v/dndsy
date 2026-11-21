@@ -486,7 +486,8 @@ def roadmap(a) -> None:
                   + (f"\n       next ({n['whose']}): {n['step']}" if n["step"] else ""))
         return
     if a.id == "new":
-        got = call(a.base, "/roadmap", {"title": a.do or "", "words": a.words_opt, "section": a.section, "why": a.why, "size": a.size, "status": a.status})
+        got = call(a.base, "/roadmap", {k: v for k, v in {"title": a.do or "", "words": a.words_opt, "section": a.section, "why": a.why, "size": a.size,
+                                                           "status": a.status}.items() if v is not None})  # (an option not given isn't sent)
         print(f"Roadmap item {got['id']}: {got['title']} ({got['stage']})")
         return
     if not a.do:
