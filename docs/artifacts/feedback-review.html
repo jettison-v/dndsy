@@ -1,0 +1,228 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Open Feedback, Reviewed</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --soft: #23272c; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0; --sel: rgba(126, 166, 224, .13);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.1rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 98ch; }
+/* the map of the pages */
+.map { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.map > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .88rem; color: var(--muted); display: grid; gap: 6px; align-content: start; }
+.map h3 { margin: 0; font-size: 1rem; color: var(--strong); display: flex; justify-content: space-between; align-items: baseline; }
+.map h3 small { color: var(--faint); font-weight: 500; font-size: .76rem; }
+.map ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; }
+.map .q { color: var(--text); font-style: italic; }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rules div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
+.rules b { display: block; }
+@media (max-width: 900px) { .map, .rules { grid-template-columns: minmax(0, 1fr); } }
+/* switches */
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: rgba(126, 166, 224, .18); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ===== the drawn app, in Backstage mode ===== */
+.app { background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.45; font-variant-numeric: tabular-nums; min-height: 900px; position: relative; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--red); font: 600 14px/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { position: relative; color: #fff; }
+.abar .here::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -19px; height: 3px; border-radius: 3px; background: var(--red); }
+.abar .b { display: inline-block; min-width: 16px; height: 16px; border-radius: 999px; background: var(--amber); color: #111; font: 700 10.5px/16px var(--sans); text-align: center; padding: 0 4px; margin-left: 4px; }
+.abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; display: grid; place-items: center; color: #fff; font-size: 12px; }
+.abody { padding: 14px 24px 32px; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 22px; }
+.band { grid-column: 1 / -1; height: 2px; background: var(--blue); opacity: .7; }
+.aside { display: grid; align-content: start; font-size: 13px; }
+.aside .sec { font-size: 11px; font-weight: 600; color: var(--faint); padding: 12px 8px 4px; }
+.aside a { padding: 5px 8px; border-radius: 6px; color: var(--text); display: flex; justify-content: space-between; cursor: pointer; }
+.aside a.on { background: var(--panel-2); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--blue); }
+.aside .n { font-size: 11px; color: var(--amber); font-weight: 600; }
+.aside .off { color: var(--faint); cursor: default; }
+/* the pages' shared top: tabs across the three, then the page's facts */
+.ptabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); }
+.ptabs a { padding: 8px 14px; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.ptabs a.on { color: #fff; border-color: var(--red); }
+.ptabs a i { font-style: normal; font-size: 11px; color: var(--amber); margin-left: 6px; }
+.ptabs .end { margin-left: auto; display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--muted); font-weight: 500; padding-bottom: 6px; }
+.ptabs .end .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+.ptabs .end .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.head { display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; margin-top: 12px; }
+.head h3 { margin: 0; font-size: 20px; font-weight: 600; color: #fff; }
+.head .crumb { color: var(--faint); cursor: pointer; font-weight: 400; }
+.facts { display: flex; gap: 4px 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.facts b { font-weight: 600; }
+.vtabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 10px; }
+.vtabs span { padding: 6px 11px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-size: 13px; }
+.vtabs span.on { color: #fff; border-color: var(--blue); font-weight: 600; }
+.vtabs i { font-style: normal; font-size: 11px; color: var(--faint); margin-left: 5px; }
+.tool { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 0; }
+.chip { border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; font-size: 12px; color: var(--muted); background: var(--panel); cursor: pointer; }
+.chip.on { color: #fff; border-color: var(--blue); background: rgba(126, 166, 224, .12); }
+.find { flex: 1; max-width: 300px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; color: var(--faint); font-size: 12.5px; background: var(--panel); }
+.btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 3px 10px; font: 500 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.p { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+/* tables */
+table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--faint); padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--panel-2); white-space: nowrap; overflow: hidden; }
+td { padding: 0 8px; height: 32px; border-bottom: 1px solid var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+td.t { color: #fff; white-space: normal; line-height: 1.3; padding-block: 6px; }
+td.num, th.num { text-align: right; }
+td .id { color: var(--faint); }
+td .why { display: block; color: var(--faint); font-size: 12px; }
+tr:last-child td { border-bottom: 0; }
+tbody tr[data-open], tbody tr[data-plan] { cursor: pointer; }
+tbody tr[data-open]:hover td, tbody tr[data-plan]:hover td { background: #20242a; }
+tr.grp td { height: 26px; background: var(--panel-2); color: var(--muted); font-size: 11.5px; font-weight: 600; }
+tr.cut td { height: 22px; background: transparent; color: var(--faint); font-size: 11.5px; text-align: center; border-top: 2px dashed #3b4047; border-bottom: 2px dashed #3b4047; }
+.st { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.st.you { color: var(--amber); background: rgba(232, 179, 75, .12); }
+.st.cl { color: var(--violet); background: rgba(179, 157, 219, .12); }
+.st.ok { color: var(--green); background: rgba(91, 191, 127, .12); }
+.st.bad { color: #f07272; background: rgba(214, 69, 69, .14); }
+.st.q { color: var(--muted); background: #262a30; }
+.lane { font-size: 11.5px; color: var(--blue); } .lane.c { color: #f07272; }
+.prog { display: inline-flex; width: 64px; height: 6px; border-radius: 3px; background: #2c3036; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+.prog i { background: var(--green); }
+.h2 { font-size: 13px; font-weight: 600; color: #fff; margin: 16px 0 6px; display: flex; gap: 10px; align-items: baseline; }
+.h2 span { font-weight: 400; color: var(--faint); font-size: 12px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin-top: 10px; }
+.stats div { padding: 9px 14px; border-left: 1px solid var(--line); }
+.stats div:first-child { border-left: 0; }
+.stats b { display: block; font-size: 17px; font-weight: 600; }
+.stats span { font-size: 12px; color: var(--faint); }
+.prose { max-width: 75ch; color: var(--text); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(620px, 1fr)); gap: 0 16px; }
+/* the one item window: over the page, next and previous through the list it came from */
+.veil { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); z-index: 10; display: flex; justify-content: flex-end; }
+.win { width: 620px; max-width: 92%; height: 100%; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -18px 0 40px rgba(0, 0, 0, .45); display: grid; grid-template-rows: auto 1fr auto; }
+.veil.center { justify-content: center; align-items: flex-start; padding-top: 80px; }
+.veil.center .win { height: auto; max-height: 760px; border: 1px solid var(--line); border-radius: 10px; }
+.w-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--faint); }
+.w-h .tools { display: flex; gap: 6px; align-items: center; }
+.w-b { overflow: auto; padding: 14px 18px; display: grid; gap: 10px; align-content: start; }
+.w-b h4 { margin: 0; font-size: 16px; font-weight: 600; color: #fff; }
+.kv { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 4px 12px; font-size: 12.5px; margin: 0; }
+.kv dt { color: var(--faint); }
+.kv dd { margin: 0; }
+.kv a, .link { color: #9fbbe6; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.sect { font-size: 11.5px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+.quote { border-left: 2px solid var(--line); padding-left: 10px; }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
+.tl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 3px 10px; font-size: 12.5px; }
+.tl span:nth-child(odd) { color: var(--faint); }
+.w-f { border-top: 1px solid var(--line); padding: 10px 14px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.w-f .sp { flex: 1; }
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+<style>
+.row1 { border: 1px solid var(--line) !important; border-radius: 10px; padding: 12px 14px !important; background: var(--panel-2); }
+.row1 legend { float: left; width: 100%; padding: 0; margin-bottom: 4px; font-size: .95rem; }
+.row1 .into { color: var(--blue); font-weight: 600; }
+.row1 .why { color: var(--muted); font-size: .9rem; clear: both; }
+.opts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.opts label.o { grid-template-columns: auto auto; padding: 6px 10px; }
+.list { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; table-layout: auto; }
+.list td { padding: 7px 10px; border-bottom: 1px solid var(--soft); white-space: normal; height: auto; font-size: .92rem; }
+.list td.num { color: var(--faint); width: 48px; } .list td.muted { color: var(--muted); white-space: nowrap; }
+@media (max-width: 640px) { .list td.muted { white-space: normal; } }
+.sum { display: flex; gap: 10px 22px; flex-wrap: wrap; color: var(--muted); } .sum b { font-size: 1.2rem; }
+h2 { margin-top: 8px; }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:8px"><h1>Open Feedback, reviewed</h1>
+  <p class="lede">Your ask (Nov 20): review all Feedback to make sure it's still relevant. I read all 34 open issues against what's been built since each was sent. Nothing closes without your pick: a closed issue is closed with the reason below, and anyone who sent it is told. Source: docs/artifacts/feedback-review.html.</p>
+  <div class="sum"><span><b>9</b> fixed or gone, I believe</span><span><b>6</b> belong in a Roadmap item</span><span><b>14</b> still needed as written</span><span><b>5</b> fixed, waiting for your try</span></div></header>
+  <form class="decide" aria-label="Your picks">
+    <h2>Fixed or gone, I believe: close them?</h2>
+    <fieldset class="row1"><legend>#3 · Note screenshot: doesn&#x27;t match the screen</legend><p class="why">The same bug as issue 29 (a wide page drawn against the left edge), fixed in PR 418; you passed its check on Nov 19.</p><div class="opts"><label class="o"><input type="radio" name="i3" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i3" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#9 · Notes you sent: &quot;new&quot; stays until a reload</legend><p class="why">The Live UI Audit made every press redraw in place and counts stop blinking (PRs 426, 431); I believe &quot;new&quot; now clears by itself. Close if it does for you.</p><div class="opts"><label class="o"><input type="radio" name="i9" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i9" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#10 · Notes you sent tabs: count open only, shorter names</legend><p class="why">Built in the Found, Fixed, Tried rebuild: the tabs are The Story and Product Feedback, and they count only what&#x27;s open.</p><div class="opts"><label class="o"><input type="radio" name="i10" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i10" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#12 · Write to: the words beside Send don&#x27;t change</legend><p class="why">The note window was rebuilt: the line beside Send now says where your note goes for each choice. I believe it&#x27;s fixed.</p><div class="opts"><label class="o"><input type="radio" name="i12" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i12" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#13 · A note&#x27;s ⋯ menu: unclear and oddly placed</legend><p class="why">That note reader was replaced by the one item window (PR 437); its ⋯ and where it sat are gone.</p><div class="opts"><label class="o"><input type="radio" name="i13" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i13" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#14 · A note says Done twice</legend><p class="why">Same: the old note reader with its Done word and Done pill was replaced by the item window (PR 437).</p><div class="opts"><label class="o"><input type="radio" name="i14" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i14" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#15 · Write back box: four problems</legend><p class="why">It held the four problems you logged in one note; they were split into issues 12, 13, 14 and 16. Nothing is left in it on its own.</p><div class="opts"><label class="o"><input type="radio" name="i15" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i15" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#17 · Check results: try Undo again</legend><p class="why">A try of the old Testing page&#x27;s Undo; the rebuild replaced it. Nothing to fix.</p><div class="opts"><label class="o"><input type="radio" name="i17" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i17" value="keep"><span>Keep: I still see it</span></label></div></fieldset><fieldset class="row1"><legend>#34 · End round: hard to find during a round</legend><p class="why">End round now sits in the status bar on every Our work page and on the round&#x27;s card (PR 442, issue 51, whose check is in your For you).</p><div class="opts"><label class="o"><input type="radio" name="i34" value="close"><span>Close it <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i34" value="keep"><span>Keep: I still see it</span></label></div></fieldset>
+    <h2>Belongs in a Roadmap item: fold it in?</h2>
+    <fieldset class="row1"><legend>#36 · Checks: unclear what&#x27;s tested and expected <span class="into">→ Roadmap: Clearer checks</span></legend><p class="why">It&#x27;s exactly what Clearer checks does (goal first, what you should see). Tracked there; this issue closes.</p><div class="opts"><label class="o"><input type="radio" name="i36" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i36" value="keep"><span>Keep it separate</span></label></div></fieldset><fieldset class="row1"><legend>#33 · Checks: keep laptop and phone apart <span class="into">→ Roadmap: Clearer checks</span></legend><p class="why">Which device a check needs belongs in the check&#x27;s shape (its open question: say so at the top). Fold it in.</p><div class="opts"><label class="o"><input type="radio" name="i33" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i33" value="keep"><span>Keep it separate</span></label></div></fieldset><fieldset class="row1"><legend>#5 · Overview notes: no filters to explain them <span class="into">→ Roadmap: Design review</span></legend><p class="why">The design review takes Documents and Overview first, page by page; these two are its first findings.</p><div class="opts"><label class="o"><input type="radio" name="i5" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i5" value="keep"><span>Keep it separate</span></label></div></fieldset><fieldset class="row1"><legend>#6 · Large pills: wrong corner radius <span class="into">→ Roadmap: Design review</span></legend><p class="why">A design-system fix (one radius for a large pill), which the design review makes once for every page.</p><div class="opts"><label class="o"><input type="radio" name="i6" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i6" value="keep"><span>Keep it separate</span></label></div></fieldset><fieldset class="row1"><legend>#19 · Where it stands: start a chat per area <span class="into">→ Discuss with Claude</span></legend><p class="why">Discuss with Claude (built today for Roadmap items) is that idea; this becomes: the same button on a plan&#x27;s page in Development, for a Product Area&#x27;s batch.</p><div class="opts"><label class="o"><input type="radio" name="i19" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i19" value="keep"><span>Keep it separate</span></label></div></fieldset><fieldset class="row1"><legend>#24 · Mockups: one place from made to decided <span class="into">→ Smaller, kept</span></legend><p class="why">Half done: picks save in askdnd and a question carries its mockup. Left: commenting on a part of a mockup inside askdnd. Retitled to that.</p><div class="opts"><label class="o"><input type="radio" name="i24" value="fold"><span>Agreed <span class="mine">my pick</span></span></label><label class="o"><input type="radio" name="i24" value="keep"><span>Keep it separate</span></label></div></fieldset>
+    <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="Any issue you'd treat differently"></textarea></label>
+    <div class="sendline"><button type="submit" class="go">Save my picks</button><span class="saved">Not saved yet</span></div>
+  </form>
+  <h2>Still needed as written</h2>
+  <table class="list"><tbody><tr><td class="num">#16</td><td>Failed: asks for an issue after + Note sent one</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#18</td><td>Check history: a failed try never shows in it</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#21</td><td>Claude missed: reads as a problem, not a queue (your pick 1A, not built yet)</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#22</td><td>A note with several problems: Split… (your pick 2A, not built yet)</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#27</td><td>Round card folded left: floats off the edge</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#55</td><td>Scheduled jobs: a description of each, and an audit</td><td class="muted">Feedback and Testing</td></tr><tr><td class="num">#8</td><td>Live pill on a phone: say the sheet must be open on a computer</td><td class="muted">The table</td></tr><tr><td class="num">#1</td><td>Charge field: How many spills out of its box</td><td class="muted">Manage › Item builder</td></tr><tr><td class="num">#2</td><td>Item builder: accepts a typed roll that isn&#x27;t dice</td><td class="muted">Manage › Item builder</td></tr><tr><td class="num">#4</td><td>Item builder: unclear choices need help text</td><td class="muted">Manage › Item builder</td></tr><tr><td class="num">#20</td><td>Item builder: takes a nonsense value, no error</td><td class="muted">Manage › Item builder</td></tr><tr><td class="num">#52</td><td>All items on Battle: fold into See all, or rows in place</td><td class="muted">Battle</td></tr><tr><td class="num">#53</td><td>One filter group: show it open, fold only when there are several</td><td class="muted">Battle</td></tr><tr><td class="num">#54</td><td>Roadmap scope: comment, answer, needs changes</td><td class="muted">In PR 452, merging now</td></tr></tbody></table>
+  <h2>Fixed, waiting for your try (their checks are in For you)</h2>
+  <table class="list"><tbody><tr><td class="num">#40</td><td>Where it stands: flashes, lanes, ⋯ placement</td></tr><tr><td class="num">#47</td><td>Development&#x27;s table: menus open behind the next row</td></tr><tr><td class="num">#48</td><td>Development: the status bar sits too close to its tabs</td></tr><tr><td class="num">#49</td><td>Development: Roadmap items with no plan show as nothing open</td></tr><tr><td class="num">#51</td><td>For you: End round shown twice</td></tr></tbody></table>
+</div>
+<script>
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["i3", "i9", "i10", "i12", "i13", "i14", "i15", "i17", "i34", "i36", "i33", "i5", "i6", "i19", "i24"];
+  let db = null, inAskdnd = false, timer = 0;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent + ": " + lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  const store = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); } catch (err) { show("Couldn't save it. Try again."); }
+  };
+  form.addEventListener("input", () => { if (db && !inAskdnd) { show("Saving…"); clearTimeout(timer); timer = setTimeout(store, 1000); } else show("Not saved yet"); });
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Global › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true; await store(); btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet · every pick saves by itself"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · every pick saves by itself", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

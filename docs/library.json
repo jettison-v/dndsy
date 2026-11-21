@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "Open Feedback, reviewed",
+  "kind": "plan",
+  "status": "Your picks",
+  "date": "Nov 20",
+  "what": "All 34 open Feedback issues read against what's been built since: 9 fixed or gone (close them?), 6 that belong in a Roadmap item (fold them in?), 14 still needed, 5 fixed and waiting for your try. A pick for each.",
+  "source": "docs/artifacts/feedback-review.html",
+  "link": "https://claude.ai/artifact/MMiDMahZw5Ai4GEGu2o8WC"
+ },
+ {
   "title": "askdnd Roadmap, before askdnd",
   "kind": "earlier",
   "status": "Kept as it was, Nov 20",
