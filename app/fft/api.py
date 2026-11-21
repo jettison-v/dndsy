@@ -730,19 +730,16 @@ def idea_place(idea_id: int, body=web.JsonBody, x_fft_key: str | None = Header(d
     return _ok(made)
 
 
-MINI_JOBS = ("nightly", "iphone")  # (the jobs the Mac Mini runs: its key may report only these)
-
-
 @router.post("/jobs/{key}")
 def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """A scheduled job's run (Work › Scheduled; The Work Pages, Nov 20): {"result": "ok"|"failed", "words": "…"}. Claude's
-    key reports any; the Mac Mini's only its own."""
+    key reports any; the Mac Mini's and GitHub's only their own (keys.JOBS_OF)."""
     from app.fft import work_page
 
     actor = keys.actor_for(db, x_fft_key)
     if actor is None:
         raise HTTPException(404)
-    if not (actor.may("write") or (actor.may("mini") and key in MINI_JOBS)):
+    if not (actor.may("write") or key in keys.JOBS_OF.get(actor.name, ())):
         raise HTTPException(403, "This key can't report that job.")
     body = body if isinstance(body, dict) else {}
     try:
@@ -751,6 +748,26 @@ def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=
         raise _rule(e) from e
     db.commit()
     return _ok({"job": key})
+
+
+@router.post("/keys")
+def key_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A key for a reporter that isn't Claude ({"actor": "github" | "mini", "name": "…"}): made with Claude's key, shown
+    once, kept only as its hash; it may only report its own jobs (the jobs audit, Brett's pick 1, Nov 21)."""
+    import secrets
+
+    from app.fft.models import FftKey
+
+    keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    actor = _str(body, "actor", 20, need=True)
+    if actor not in keys.JOBS_OF:
+        raise HTTPException(400, f"actor: one of {', '.join(keys.JOBS_OF)}")
+    raw = secrets.token_urlsafe(32)
+    db.add(FftKey(name=_str(body, "name", 60) or actor, key_hash=keys.digest(raw), actor=actor, scopes=sorted(keys.SCOPES[actor])))
+    rules._event(db, "claude", "key_made", "key", 0, for_=actor)
+    db.commit()
+    return _ok({"actor": actor, "key": raw})
 
 
 @router.post("/relay")

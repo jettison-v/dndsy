@@ -403,7 +403,8 @@ td { min-width: 0; }
         <tr><td><code>OPENAI_API_KEY</code></td><td>website (Railway) and your <code>.env</code>: the Picture window's Describe it (app/drawing.py) and Listen to the recap (app/narration.py)</td><td>OpenAI Platform › API keys (<code>askdnd-v2</code>)</td><td>Brett, with <code>scripts/set-secret.sh --clipboard</code></td></tr>
         <tr><td><code>FEEDBACK_KEY</code></td><td>website, and your <code>.env</code> for Claude's <code>scripts/feedback.py</code> (Found, Fixed, Tried: Claude's key)</td><td>Random, generated on the Mac</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>FFT_RELAY_KEY</code></td><td>website and staging: staging's notes reach askdnd.ai with it, and only notes (they always wait for an admin)</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> (and <code>--staging</code>)</td></tr>
-        <tr><td><code>FFT_MINI_KEY</code></td><td>website and the Mac Mini: the Mini records its own runs of checks with it, and nothing else</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> and on the Mini</td></tr>
+        <tr><td><code>FFT_MINI_KEY</code></td><td>website and the Mac Mini: the Mini records its own runs of checks with it, and reports its own scheduled jobs (the live test, iPhone Safari, After each deploy), nothing else</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> and on the Mini</td></tr>
+        <tr><td><code>FFT_GITHUB_KEY</code></td><td>GitHub's D&amp;D Beyond drift run: reports that one job to askdnd.ai's Development › Scheduled, nothing else</td><td>Made by askdnd (<code>POST /api/fft/keys</code> with Claude's key), kept there only as its hash</td><td>Claude: a GitHub repository secret, set with <code>gh secret set</code></td></tr>
         <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
       </tbody>
     </table></div>
@@ -428,5 +429,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-18 (Found, Fixed, Tried live on askdnd.ai: Claude's FEEDBACK_KEY, staging's FFT_RELAY_KEY that may only relay notes, the Mac Mini's FFT_MINI_KEY that may only record its runs).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-21 (the jobs audit: GitHub's FFT_GITHUB_KEY, which may only report the drift run; the Mac Mini's key also reports After each deploy).</p>
 </main>

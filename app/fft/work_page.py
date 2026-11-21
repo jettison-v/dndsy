@@ -229,7 +229,7 @@ def jobs(db: Session) -> list[dict]:
             if run is not None:
                 last = {"at": run.finished_at.isoformat(), "result": "ok" if run.status == "ok" else "failed", "words": run.detail[:200] if run.status != "ok" else ""}
         at = datetime.fromisoformat(last["at"]) if last.get("at") else None
-        late = at is not None and (rules.now() - at).total_seconds() > j["every_hours"] * 3600 * 1.5
+        late = at is not None and j.get("reads") != "elsewhere" and (rules.now() - at).total_seconds() > j["every_hours"] * 3600 * 1.5
         out.append({**j, "at": at, "result": last.get("result", ""), "words": last.get("words", ""), "late": late})
     return out
 

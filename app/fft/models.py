@@ -422,7 +422,7 @@ class FftKey(_Stamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(60))
     key_hash: Mapped[str] = mapped_column(String(64), unique=True)
-    actor: Mapped[str] = mapped_column(String(20))  # claude, relay, mini
+    actor: Mapped[str] = mapped_column(String(20))  # claude, relay, mini, github
     scopes: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 

@@ -14,6 +14,8 @@ jobs:
     name: D&D Beyond drift
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      FFT_GITHUB_KEY: ${{ secrets.FFT_GITHUB_KEY }}  # (reports its run to askdnd.ai; unset, the report step is skipped)
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -21,6 +23,17 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-      - run: uv run python scripts/ddb_drift.py
+      - id: drift
+        run: uv run python scripts/ddb_drift.py
         env:
           FIXTURES_KEY: ${{ secrets.FIXTURES_KEY }}  # (the saved sheets are locked: scripts/fixtures.py)
+      # Its run on askdnd.ai's Development › Scheduled (the jobs audit, Brett's pick 1, Nov 21): FFT_GITHUB_KEY may report
+      # only this job (app/fft/keys.py JOBS_OF). Never fails the run itself.
+      - name: Report the run to askdnd
+        if: always() && env.FFT_GITHUB_KEY != ''
+        env:
+          RESULT: ${{ steps.drift.outcome == 'success' && 'ok' || 'failed' }}
+        run: |
+          words=$([ "$RESULT" = ok ] && echo "Today's sheets match the tests' copies" || echo "A sheet changed shape: see the run on GitHub")
+          curl -s -m 20 -o /dev/null -X POST "https://askdnd.ai/api/fft/jobs/drift" -H "X-Fft-Key: $FFT_GITHUB_KEY" \
+            -H "Content-Type: application/json" -H "User-Agent: askdnd-github" -d "{\"result\": \"$RESULT\", \"words\": \"$words\"}" || true
