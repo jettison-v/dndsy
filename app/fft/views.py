@@ -316,7 +316,8 @@ def event_words(ev) -> str:
                 "item_comments": f"Brett's {d.get('n')} comment{'s' if d.get('n') != 1 else ''} on its scope" + (f" (answers to {d.get('answers')} question{'s' if d.get('answers') != 1 else ''})" if d.get("answers") else ""),
                 "item_step": "A step added" + (" for Brett" if d.get("whose") == "brett" else ""), "item_step_done": "A step done",
                 "item_step_open": "A step not done after all", "item_step_removed": "A step taken off", "item_shipped": "Shipped",
-                "item_not_doing": "Not doing", "item_set": "Its " + ", ".join(k for k in ("title", "why", "size", "status") if d.get(k)) + " changed",
+                "item_not_doing": "Not doing", "item_set": "Its " + ", ".join(k for k in ("title", "why", "size", "status", "result") if d.get(k) or (k == "why" and d.get("why_from"))) + " changed",
+                "item_scope_asked": "Brett pressed Scope it: first in Claude's queue", "item_scope_unasked": "Brett: not now (back in its place)",
                 "item_moved": f"Moved to {str(d.get('section', '')).replace('_', ' ').title()}", "item_next": "Its next step changed"}.get(ev.kind)
         if said:
             return f"Roadmap item {ev.thing_id}: {said}"
@@ -399,6 +400,9 @@ def gaps(db: Session) -> list[dict]:
         if sc is not None and sc.agreed_at is None and sc.changes_at is not None:
             out.append({"kind": "scope_changes", "thing": "item", "id": it.id, "title": it.title, "since": sc.changes_at,
                         "says": f"Brett asked for changes to scope v{sc.version}: answer each comment (feedback.py roadmap {it.id} answer …) and write v{sc.version + 1} (scope … --changed)."})
+    for it in rules.scope_asked(db):  # (Scope it, Brett's pick Nov 21: first in the queue, so in Claude's hands now)
+        out.append({"kind": "scope_asked", "thing": "item", "id": it.id, "title": it.title, "since": it.scope_asked_at,
+                    "says": f"Brett pressed Scope it: write its first version (feedback.py roadmap {it.id} scope --what … --in …)."})
     for it in db.scalars(select(FftItem).where(FftItem.section == "shipped", FftItem.result == "").order_by(FftItem.id)):  # (Brett, Nov 20)
         out.append({"kind": "no_result", "thing": "item", "id": it.id, "title": it.title,
                     "says": "Shipped with no result: write what it changed, with its numbers (feedback.py roadmap <id> set --result \"…\")."})
@@ -411,7 +415,8 @@ def gaps(db: Session) -> list[dict]:
 GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself",
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
-             "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope"}  # (each kind of gap, as Development says it)
+             "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
+             "scope_asked": "you asked for its scope"}  # (each kind of gap, as Development says it)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 

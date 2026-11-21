@@ -96,3 +96,25 @@ def test_a_roadmap_items_more_menu_opens_toward_the_page(people, server, browser
         box = page.locator(".title-row .act-menu").bounding_box()
         assert box["x"] >= 0 and box["x"] + box["width"] <= width, f"⋯ runs off the window at {width}"
     assert not admin.errors, admin.errors
+
+
+def test_scope_it_on_a_roadmap_item_and_its_tabs(people, server, browser_db):
+    """Issue 60 (Brett's picks Nov 21): an item with no scope offers Scope it; the press shows Claude scopes it next with
+    Not now, and the tab bar shows each tab in place, keeping the open one in the address."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        item = conn.execute(text("INSERT INTO fft_items (title, place, section, standing, next_whose, next_step, workspace_id) VALUES ('Another idea', 2, 'next', false, '', '', 1) RETURNING id")).scalar()
+    engine.dispose()
+    admin = people("admin")
+    admin.page.set_viewport_size({"width": 1280, "height": 800})
+    page = admin.open(f"/manage/roadmap/{item}")
+    page.locator('[data-do="scope-it"]').click()
+    page.locator("[data-scope-asked]").wait_for()
+    assert page.locator('[data-stage-word="asked"]').count() == 1
+    page.locator('[role=tab][data-tab="t-updates"]').click()
+    assert page.locator("#t-updates").is_visible() and not page.locator("#t-scope").is_visible()
+    assert "tab=updates" in page.url
+    page.locator('[role=tab][data-tab="t-scope"]').click()
+    page.locator('[data-do="not-now"]').click()
+    page.locator("[data-scope-none]").wait_for()
+    assert not admin.errors, admin.errors

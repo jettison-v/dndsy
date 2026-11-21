@@ -1610,11 +1610,41 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .wk-forms:empty { display: none; }
 .wk-h2 { margin: var(--sp-5) 0 var(--sp-2); }
 /* The Roadmap (app/fft/roadmap_page.py, fft_roadmap.html, fft_roadmap_item.html; The Roadmap in askdnd, Nov 20) */
-.rm-why { margin: 0 0 var(--sp-3); max-width: 80ch; color: var(--text); }
+/* A Roadmap item's page, laid out for a laptop (issues 60, 61, Brett's picks Nov 21, docs/mockups/roadmap-item-page/): a
+   labelled strip of its facts, the why as a line and points, the scope and comments side by side at reading size */
+.rm-facts { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; margin: var(--sp-3) 0 var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.rm-facts > div { display: grid; gap: 2px; align-content: start; padding: var(--sp-2) var(--sp-4); border-left: 1px solid var(--line); min-width: 0; }
+.rm-facts > div:first-child { border-left: 0; }
+.rm-facts dt { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+.rm-facts dd { margin: 0; display: flex; flex-wrap: wrap; gap: 2px var(--sp-2); align-items: baseline; font-size: var(--fs-lg); color: var(--text-strong); }
+.rm-facts dd > span:not(.state-word), .rm-facts .rm-fact-words { font-size: var(--fs-md); color: var(--muted); }
+@media (max-width: 640px) {
+  .rm-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .rm-facts > div { border-left: 0; border-top: 1px solid var(--line); }
+  .rm-facts > div:nth-child(-n+2) { border-top: 0; }
+  .rm-facts > div:nth-child(2n) { border-left: 1px solid var(--line); }
+}
+.rm-why { margin: 0 0 var(--sp-4); max-width: 72ch; display: grid; gap: var(--sp-1); }
+.rm-why .plabel, .rm-why p, .rm-why ul { margin: 0; }
+.rm-why ul { padding-left: 1.2em; display: grid; gap: 2px; }
+.rm-why .rm-why-from { margin-top: var(--sp-1); }
+@media (min-width: 901px) {  /* (reading size on a laptop, 15px; a phone's own type is already 16px) */
+  main.rm-item :is(.rm-why, .rm-doc, .rm-adds) { font-size: var(--fs-lg); line-height: 1.6; }
+  main.rm-item :is(.rm-why-from, .rm-changed, .rm-on, .rm-ans, .rm-doc-bar .note, .rm-add > .note, .rm-general .note) { font-size: var(--fs-md); }
+  main.rm-item .rm-doc { padding: var(--sp-5) var(--sp-6); gap: var(--sp-5); }
+  main.rm-item .rm-none-head { font-size: var(--fs-xl); }
+}
+.rm-item .rm-adds { gap: var(--sp-3); }
+.rm-item .rm-add { padding: var(--sp-3) var(--sp-4); }
+.rm-side-h { margin: 0; font-size: var(--fs-lg); font-weight: 600; color: var(--text-strong); }
+.rm-side-h .note { font-weight: 400; }
+.rm-none { display: grid; gap: var(--sp-2); justify-items: start; }
+.rm-none p { max-width: 60ch; color: var(--muted); }
+.rm-none .rm-none-head { font-size: var(--fs-lg); font-weight: 600; color: var(--text-strong); }
 .rm-result { margin: 0 0 var(--sp-3); max-width: 80ch; display: grid; gap: var(--sp-2); }
 .rm-result .plabel, .rm-result-head, .rm-result ul { margin: 0; }
 .rm-result-head { font-weight: 600; }
-.rm-scope { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
+.rm-scope { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
 @media (max-width: 900px) { .rm-scope { grid-template-columns: minmax(0, 1fr); } }
 .rm-doc { display: grid; gap: var(--sp-3); }
 .rm-doc ul { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }

@@ -476,7 +476,7 @@ def roadmap(a) -> None:
     """The Roadmap in askdnd (Nov 20). No id: the items in Brett's order (--history: shipped and not doing). An id: the
     item whole, or one change: scope (--what, --in …, --not …, --question …, --changed), add "his words" (said in
     chat), answer <addition> in|later|question "words" [--version N], step "text" [--whose brett], tick <step>
-    [--undo], unstep <step>, move now|next|later|paused, ship, not_doing, set [--title --why --size --status].
+    [--undo], unstep <step>, move now|next|later|paused, ship, not_doing, set [--title --why --why-from --size --status].
     New: roadmap new "title" [--words "his words"] [--section next] [--why …] [--size M] [--status …]."""
     if a.id is None:
         for it in call(a.base, "/roadmap" + ("?history=1" if a.history else ""))["items"]:
@@ -496,6 +496,10 @@ def roadmap(a) -> None:
         print(f"Roadmap item {it['id']} · {it['section']} · {it['stage']} · {it['size'] or '-'}: {it['title']}")
         if it["why"]:
             print(f"  Why: {it['why']}")
+        if it.get("why_from"):
+            print(f"  From: {it['why_from']}")
+        if it.get("scope_asked"):
+            print("  Brett pressed Scope it: write its first version (scope --what … --in …).")
         for sc in it["scopes"][-1:]:
             print(f"  Scope v{sc['version']}{' (agreed)' if sc['agreed'] else ' (he asked for changes: answer each comment, write the next)' if sc.get('changes_asked') else ' (waits for his OK)'}: {sc['what']}")
             for x in sc["inside"]:
@@ -525,7 +529,8 @@ def roadmap(a) -> None:
     elif a.do == "move":
         body["section"] = w[0]
     elif a.do == "set":
-        body |= {k: v for k, v in (("title", a.title), ("why", a.why), ("size", a.size), ("status", a.status), ("result", a.result)) if v is not None}
+        body |= {k: v for k, v in (("title", a.title), ("why", a.why), ("size", a.size), ("status", a.status), ("result", a.result),
+                                   ("why_from", a.why_from)) if v is not None}
     elif a.do in ("ship", "not_doing"):
         body["result"] = a.result or ""  # (what it changed, with its numbers: Brett, Nov 20)
     got = call(a.base, f"/roadmap/{a.id}", body)
@@ -749,7 +754,8 @@ def main() -> None:
     s.add_argument("--words", dest="words_opt", default="")
     s.add_argument("--section", default="next")
     s.add_argument("--title")
-    s.add_argument("--why")
+    s.add_argument("--why", help="set: its first line the headline, each line after it a point (up to four)")
+    s.add_argument("--why-from", dest="why_from", default=None, help="set: the decisions behind the why, one quiet line")
     s.add_argument("--size")
     s.add_argument("--status")
     s.add_argument("--result", default=None, help="ship/not_doing/set: what it changed, with its numbers (first line the headline)")
