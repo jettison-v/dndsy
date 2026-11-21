@@ -492,3 +492,36 @@ def test_a_check_reads_goal_first_and_a_round_keeps_to_one_need(admin, db):
     admin.post("/manage/testing/round/end")
     admin.post("/manage/testing/round", data={"need": "people"})
     assert f'data-check-card="{duo.id}"' in admin.get("/manage/testing/card?at=/party").text
+
+
+def test_comments_on_a_mockup_wait_for_an_open_question_and_go_with_the_picks(admin, db):
+    """Issue 24 (Brett's picks, Nov 21): a comment pinned to a mockup needs its open question (it goes with the picks),
+    is his alone to take back while held, and Save my picks sends it with his answer; the layer is on every mockup."""
+    from app.fft.models import FftDocComment
+
+    doc = "docs/mockups/fft-round-2/index.html"
+    pin = {"doc": doc, "x": 0.4, "y": 120, "near": "Split into 3", "words": "Say the count first."}
+    assert admin.post("/manage/testing/comments", json=pin).status_code == 409  # (no open question: nothing to go with)
+    q = rules.ask(db, "claude", about="document", about_id=None, text="Which?", doc_path=doc)
+    db.flush()
+    assert admin.post("/manage/testing/comments", json=pin | {"words": " "}).status_code == 400
+    rail = admin.post("/manage/testing/comments", json=pin).text
+    assert 'data-open="yes"' in rail and "Say the count first." in rail and "data-comment-drop" in rail
+    c = db.scalar(select(FftDocComment))
+    assert (c.n, c.near, c.sent_at) == (1, "Split into 3", None)
+    other = FftDocComment(doc=doc, n=2, x=0.1, y=10, words="Someone else's", user_id=None)
+    db.add(other)
+    db.flush()
+    assert admin.post(f"/manage/testing/comments/{other.id}/drop").status_code == 404  # (only your own, while held)
+    r = admin.post("/manage/testing/picks", json={"doc": doc, "picks": [{"name": "queue", "value": "quiet", "label": "1 A"}], "notes": ""})
+    assert r.status_code == 200 and r.json()["comments"] == 1
+    db.refresh(q)
+    db.refresh(c)
+    assert "Comments on the mockup:" in q.answer_text and "Pin 1 (near “Split into 3”): Say the count first." in q.answer_text
+    assert c.sent_at is not None and c.question_id == q.id
+    assert admin.post(f"/manage/testing/comments/{c.id}/drop").status_code == 404  # (sent: it's in the answer now)
+    from app.documents import doc_id
+
+    frame = admin.get(f"/manage/documents/{doc_id(doc)}").text
+    url = frame.split('class="doc-frame" src="')[1].split('"')[0]
+    assert "doc-layer.js" in admin.get(url).text  # (the layer on every mockup, older ones too)

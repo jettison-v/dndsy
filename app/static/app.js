@@ -5206,7 +5206,96 @@ document.addEventListener('click', e => {
         body: JSON.stringify({ doc: f.dataset.doc, picks: Array.isArray(d.picks) ? d.picks : [], notes: String(d.notes || '') }) });
       const j = await r.json().catch(() => ({}));
       reply(r.ok ? { saved: true, at: j.at, picks: d.picks, notes: d.notes } : { saved: false, said: j.detail || "Couldn't save them. Try again." });
+      if (r.ok) document.dispatchEvent(new CustomEvent('doc:picks-saved', { detail: { doc: f.dataset.doc } }));  // (its comments went with them)
     } catch (err) { reply({ saved: false, said: "Couldn't reach askdnd. Try again." }); }
+  });
+})();
+
+// ---------------------------------------------------------------- comments on a mockup
+// (issue 24, Brett's picks Nov 21, docs/mockups/mockup-comments/) Beside a mockup in its sealed frame (For you's Open
+// mockup, a Documents page), a column of its pinned comments (_doc_comments.html). Comment turns the mockup into a pin
+// board: the frame's layer (app/static/doc-layer.js, which askdnd adds to every mockup) says where a click landed and the
+// words nearest it; the comment is written here, kept as his until Save my picks sends it with his answer. The frame is
+// answered only when it's one of this page's own (as the picks are), and pins go back to it to draw.
+(() => {
+  const frameOf = src => [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(f => f.contentWindow === src);
+  const boxOf = f => (f.closest('.doc-with-comments') || document).querySelector('[data-comments-slot]');
+  const buttonOf = f => (f.closest('.peek, main') || document).querySelector('[data-comment-mode]');
+  const pageOf = f => { try { return new URL(f.src, location.href).pathname.split('/').slice(5).join('/'); } catch (err) { return ''; } };  // (/manage/documents/f/<key>/<page>)
+  const pending = new WeakMap();  // (a frame's click waiting for its words)
+  const send = (f, msg) => { try { f.contentWindow.postMessage(msg, '*'); } catch (err) { /* frame gone */ } };
+  const pinsOf = f => { const rail = boxOf(f) && boxOf(f).querySelector('[data-pins]'); try { return rail ? JSON.parse(rail.dataset.pins) : []; } catch (err) { return []; } };
+  const sendPins = f => send(f, { askdnd: 'pins', pins: pinsOf(f).filter(p => !p.page || p.page === pageOf(f)) });
+  const mode = (f, on) => {
+    const b = buttonOf(f);
+    if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Commenting · Esc to stop' : 'Comment'; }
+    send(f, { askdnd: 'comment-mode', on });
+  };
+  async function load(f, html) {
+    const slot = boxOf(f);
+    if (!slot) return;
+    if (html === undefined) {
+      const r = await fetch('/manage/testing/comments?doc=' + encodeURIComponent(f.dataset.doc)).catch(() => null);
+      if (!r || !r.ok) return;
+      html = await r.text();
+    }
+    slot.innerHTML = html;
+    const open = slot.querySelector('[data-doc-comments]') && slot.querySelector('[data-doc-comments]').dataset.open === 'yes';
+    const b = buttonOf(f);
+    if (b) b.hidden = !open;
+    sendPins(f);
+  }
+  async function post(f, url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).catch(() => null);
+    if (!r) { window.askdndCard("Couldn't reach askdnd. Try again.", { kind: 'warn' }); return; }
+    if (!r.ok) { const j = await r.json().catch(() => ({})); window.askdndCard(j.detail || "Couldn't save it. Try again.", { kind: 'warn' }); return; }
+    await load(f, await r.text());
+  }
+  const start = root => root.querySelectorAll('iframe.doc-frame[data-doc]').forEach(f => { if (boxOf(f) && !f.dataset.commentsOn) { f.dataset.commentsOn = '1'; load(f); } });
+  start(document);
+  document.addEventListener('panel:loaded', e => start(e.target));
+  document.addEventListener('doc:picks-saved', e => document.querySelectorAll('iframe.doc-frame[data-doc]').forEach(f => { if (f.dataset.doc === e.detail.doc) load(f); }));
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-comment-mode]');
+    const f = b && [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(x => buttonOf(x) === b);
+    if (f) { mode(f, b.getAttribute('aria-pressed') !== 'true'); return; }
+    const drop = e.target.closest('[data-comment-drop]');
+    const row = e.target.closest('[data-comment]');
+    const rail = e.target.closest('[data-comments-slot]');
+    const frame = rail && rail.closest('.doc-with-comments') && rail.closest('.doc-with-comments').querySelector('iframe.doc-frame');
+    if (!frame) return;
+    if (drop) { post(frame, `/manage/testing/comments/${drop.dataset.commentDrop}/drop`); return; }
+    if (e.target.closest('[data-comment-cancel]')) { const form = rail.querySelector('[data-comment-composer]'); if (form) form.hidden = true; pending.delete(frame); return; }
+    if (row) send(frame, { askdnd: 'show-pin', n: Number(row.dataset.pin) });
+  });
+  document.addEventListener('submit', e => {
+    const form = e.target.closest('[data-comment-composer]');
+    if (!form) return;
+    e.preventDefault();
+    const frame = form.closest('.doc-with-comments') && form.closest('.doc-with-comments').querySelector('iframe.doc-frame');
+    const at = frame && pending.get(frame);
+    if (!at) return;
+    pending.delete(frame);
+    post(frame, '/manage/testing/comments', { doc: frame.dataset.doc, page: pageOf(frame), ...at, words: form.elements.words.value });
+  });
+  addEventListener('message', e => {
+    const d = e.data, f = frameOf(e.source);
+    if (!f || !d || typeof d !== 'object') return;
+    if (d.askdnd === 'comments-ready') sendPins(f);
+    else if (d.askdnd === 'comment-stop') mode(f, false);
+    else if (d.askdnd === 'pin-click') {
+      const row = boxOf(f) && boxOf(f).querySelector(`[data-pin="${Number(d.n)}"]`);
+      if (row) { row.scrollIntoView({ block: 'nearest' }); row.classList.add('lit'); setTimeout(() => row.classList.remove('lit'), 1200); }
+    } else if (d.askdnd === 'comment-at') {
+      const form = boxOf(f) && boxOf(f).querySelector('[data-comment-composer]');
+      if (!form) return;
+      const near = String(d.near || '').slice(0, 200);
+      pending.set(f, { x: Number(d.x) || 0, y: Number(d.y) || 0, near });
+      form.querySelector('[data-comment-where]').textContent = near ? `Near “${near}”` : 'Where you clicked';
+      form.hidden = false;
+      form.elements.words.focus();
+      mode(f, false);
+    }
   });
 })();
 

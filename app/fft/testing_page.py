@@ -31,6 +31,7 @@ from app.fft.models import (
     FftCheck,
     FftCheckIssue,
     FftCheckVersion,
+    FftDocComment,
     FftEvent,
     FftIdea,
     FftIssue,
@@ -970,12 +971,90 @@ def picks_save(request: Request, body=web.JsonBody, db: Session = Depends(get_db
     if q is None:
         raise HTTPException(409, "There's no open question about this mockup: its picks are already in. Send a note to change one.")
     me = views.person(db, user)
+    held = _held_comments(db, doc, me["id"])  # (his comments on the mockup go with his picks: issue 24, Brett's pick 3)
+    said = _picks_said(picks) + (f"\n\n{notes}" if notes else "") + _comments_said(held)
     try:
-        rules.answer(db, f"user:{me['id']}", q, choice=None, text=_picks_said(picks) + (f"\n\n{notes}" if notes else ""), user_id=me["id"], picks=picks)
+        rules.answer(db, f"user:{me['id']}", q, choice=None, text=said[:8000], user_id=me["id"], picks=picks)
     except rules.RuleError as e:
         raise HTTPException(409 if e.code == "stale" else 400, e.words) from e
+    for c in held:
+        c.question_id, c.sent_at = q.id, rules.now()
     db.commit()
-    return {"ok": True, "at": q.answered_at.isoformat()}
+    return {"ok": True, "at": q.answered_at.isoformat(), "comments": len(held)}
+
+
+# ------------------------------------------------------------------ comments pinned to a mockup (issue 24)
+# Brett's picks, Nov 21 (docs/mockups/mockup-comments/): a pin wherever he clicks on any mockup askdnd opens (its layer,
+# app/static/doc-layer.js, added as askdnd serves the page: app/documents.py), the comments in a column beside it, held
+# as his until Save my picks, which sends them with his answer to its question (and so into its issue's conversation).
+
+
+def _held_comments(db: Session, doc: str, user_id: int | None) -> list[FftDocComment]:
+    return list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, FftDocComment.sent_at.is_(None),
+                                                       FftDocComment.user_id == user_id).order_by(FftDocComment.n)))
+
+
+def _comments_said(comments: list[FftDocComment]) -> str:
+    if not comments:
+        return ""
+    return "\n\nComments on the mockup:\n" + "\n".join(f"Pin {c.n}" + (f" (near “{c.near}”)" if c.near else "") + f": {c.words}" for c in comments)
+
+
+def _comments_rail(request: Request, db: Session, doc: str, user_id: int | None):
+    asked = _doc_question(db, doc, open_only=True)
+    rows = list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, (FftDocComment.sent_at.is_not(None)) | (FftDocComment.user_id == user_id))
+                           .order_by(FftDocComment.sent_at.is_(None), FftDocComment.n)))
+    return templates.TemplateResponse(request, "_doc_comments.html", {"doc": doc, "comments": rows, "open": asked is not None,
+                                                                      "pins": [{"n": c.n, "x": c.x, "y": c.y, "page": c.page, "held": c.sent_at is None} for c in rows]})
+
+
+@router.get("/manage/testing/comments")
+def comments_rail(request: Request, doc: str = "", db: Session = Depends(get_db)):
+    """The column beside a mockup: its pinned comments, yours held until you save your picks, and those sent with them."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    return _comments_rail(request, db, doc[:300], views.person(db, user)["id"])
+
+
+@router.post("/manage/testing/comments")
+def comment_add(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
+    """A comment pinned where he clicked: only while the mockup's question is open, since it goes with his picks."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    body = body if isinstance(body, dict) else {}
+    doc, words = str(body.get("doc", ""))[:300], str(body.get("words", "")).strip()[:2000]
+    if not words:
+        raise HTTPException(400, "Write your comment first.")
+    if _doc_question(db, doc, open_only=True) is None:
+        raise HTTPException(409, "This mockup has no open question: a comment goes with your picks, and they're in.")
+    try:
+        x, y = min(max(float(body.get("x", 0)), 0.0), 1.0), max(float(body.get("y", 0)), 0.0)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Where on the page?") from None
+    me = views.person(db, user)
+    n = (db.scalar(select(func.max(FftDocComment.n)).where(FftDocComment.doc == doc)) or 0) + 1
+    db.add(FftDocComment(doc=doc, page=str(body.get("page", ""))[:300], n=n, x=x, y=min(y, 100000.0), near=str(body.get("near", "")).strip()[:200],
+                         words=words, user_id=me["id"]))
+    db.commit()
+    return _comments_rail(request, db, doc, me["id"])
+
+
+@router.post("/manage/testing/comments/{comment_id:int}/drop")
+def comment_drop(request: Request, comment_id: int, db: Session = Depends(get_db)):
+    """Take back a comment of yours not sent yet."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    c = db.get(FftDocComment, comment_id)
+    if c is None or c.user_id != me["id"] or c.sent_at is not None:
+        raise HTTPException(404)
+    doc = c.doc
+    db.delete(c)
+    db.commit()
+    return _comments_rail(request, db, doc, me["id"])
 
 
 # ------------------------------------------------------------------ the card (on every page while a round is open)

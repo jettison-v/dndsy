@@ -6,7 +6,7 @@ they can be erased without breaking the record (T7)."""
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false, func, true
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, false, func, true
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -297,6 +297,25 @@ class FftNoteIssue(Base):
     __tablename__ = "fft_note_issues"
     note_id: Mapped[int] = mapped_column(ForeignKey("fft_notes.id", ondelete="CASCADE"), primary_key=True)
     issue_id: Mapped[int] = mapped_column(ForeignKey("fft_issues.id", ondelete="CASCADE"), primary_key=True, index=True)
+
+
+class FftDocComment(_Stamped, Base):
+    """A comment pinned to a spot on a mockup (issue 24, Brett's picks Nov 21, docs/mockups/mockup-comments/): where he
+    clicked (x as a share of the page's width, y in pixels from its top), the words nearest it, and his words. Held,
+    his own, until Save my picks answers the mockup's question; then it goes with the answer (`question_id`, `sent_at`)."""
+
+    __tablename__ = "fft_doc_comments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    doc: Mapped[str] = mapped_column(String(300), index=True)  # its docs/ path, as docs/library.json lists it
+    page: Mapped[str] = mapped_column(String(300), default="", server_default="")  # the board it's on, for a design of several
+    n: Mapped[int] = mapped_column(Integer)  # the pin's number on this mockup
+    x: Mapped[float] = mapped_column(Float)
+    y: Mapped[float] = mapped_column(Float)
+    near: Mapped[str] = mapped_column(String(200), default="", server_default="")  # the words nearest the pin, as the page shows them
+    words: Mapped[str] = mapped_column(Text)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    question_id: Mapped[int | None] = mapped_column(ForeignKey("fft_questions.id", ondelete="SET NULL"), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class FftRound(_Stamped, Base):
