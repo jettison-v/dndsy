@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "Built vs. planned",
+  "kind": "plan",
+  "status": "Your picks",
+  "date": "Nov 20",
+  "what": "Roadmap item 38: every planned piece of Found, Fixed, Tried and the work flow (rules R1–R18, T1–T8, its screens, the build plans, every picked mockup) read against what askdnd does today; 28 differences for your pick, the rest for reference.",
+  "source": "docs/artifacts/built-vs-planned.html",
+  "link": "https://claude.ai/artifact/JkprmFcMtkR1XzvmFa2EJF"
+ },
+ {
   "title": "One Development queue",
   "kind": "design",
   "status": "Your picks",
