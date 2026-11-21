@@ -61,3 +61,38 @@ def test_a_scopes_two_answers_are_one_height(people, server, browser_db):
         if width >= 1000:  # (on a phone the Comment link keeps a tap target's height, as every small link does)
             assert line["height"] - words["height"] <= 12, f"a scope line is {line['height']} px for {words['height']} px of words at {width}"
     assert not admin.errors, admin.errors
+
+
+def test_whats_in_claudes_hands_is_a_quiet_line_that_opens(people, server, browser_db):
+    """Issue 21 (Brett's pick 1A on docs/mockups/fft-round-2/): "Claude missed" read as a problem. What's in Claude's
+    hands is a quiet line under the status bar's top row, opening to the list; nothing is amber while it's fresh."""
+    _plans(browser_db[0], n=2)  # (issues with no Feature yet: in Claude's hands)
+    admin = people("admin")
+    page = admin.open("/manage/work")
+    line = page.locator('[data-stat="hands"]')
+    assert line.locator("summary").bounding_box()["height"] < 30, "the line wraps"
+    assert page.locator("[data-missed]").count() == 0  # (fresh: not late)
+    line.locator("summary").click()
+    assert line.locator('li[data-gap="no_feature"]').count() >= 2  # (this file's other tests may have left theirs)
+    for li in line.locator("li").all():
+        box = li.bounding_box()
+        assert box["x"] + box["width"] <= page.viewport_size["width"], "a row spills past the window"
+    if __import__("os").environ.get("SHOT"):
+        page.screenshot(path="private/visual/hands-line.png")
+    assert not admin.errors, admin.errors
+
+
+def test_a_roadmap_items_more_menu_opens_toward_the_page(people, server, browser_db):
+    """Issue 59 (Brett, Nov 20: "This menu is off the page"): a page's own ⋯ at its right end opens toward the page."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        item = conn.execute(text("INSERT INTO fft_items (title, place, section, standing, next_whose, next_step, workspace_id) VALUES ('An idea', 1, 'next', false, '', '', 1) RETURNING id")).scalar()
+    engine.dispose()
+    admin = people("admin")
+    for width in (1280, 1728):
+        admin.page.set_viewport_size({"width": width, "height": 900})
+        page = admin.open(f"/manage/roadmap/{item}")
+        page.locator(".title-row .act-more > summary").click()
+        box = page.locator(".title-row .act-menu").bounding_box()
+        assert box["x"] >= 0 and box["x"] + box["width"] <= width, f"⋯ runs off the window at {width}"
+    assert not admin.errors, admin.errors

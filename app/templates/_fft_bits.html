@@ -57,3 +57,10 @@
 {% macro its_checks(checks) -%}
 {% if checks %}<p class="note fft-its-checks" data-its-checks>{{ "Its check" if checks | length == 1 else "Its checks" }}: {% for x in checks %}<a href="/manage/for-you?open=c{{ x.c.id }}" data-check="{{ x.c.id }}">{{ x.c.title }}</a> · {{ x.word }}{{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
 {%- endmacro %}
+
+{# What's in Claude's hands, as a list (views.hands; Brett's pick 1A, issue 21): each gap, how long it has waited, and
+   what Claude does next. The status bar's quiet line and Development's late panel both draw it. #}
+{% macro hands_list(gaps, gap_words) -%}
+<ul class="fft-missed-list">{% for g in gaps %}<li data-gap="{{ g.kind }}"{% if g.late %} data-late{% endif %}><a href="{{ '/manage/work/' ~ g.id if g.thing == 'area' else '/manage/roadmap/' ~ g.id if g.thing == 'item' else '/manage/work?tab=checks&open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+  <span class="note">· {{ gap_words[g.kind] }} · since <time datetime="{{ g.since.isoformat() }}" data-clock="when">{{ g.since | ago }}</time></span></li>{% endfor %}</ul>
+{%- endmacro %}

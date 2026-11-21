@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from app import config
 from app.db import get_db
 from app.fft import rules, views
-from app.fft.models import FftIssue
+from app.fft.models import FftIssue, FftListener
 from app.importer import import_bundle
 from app.main import app
 from tests.table_setup import BUNDLE
@@ -59,24 +59,27 @@ def test_a_fix_with_no_lane_is_a_gap(db):
     assert not [g for g in views.gaps(db) if g["kind"] == "no_lane"]
 
 
-def test_brett_sees_a_gap_only_once_it_has_waited(db):
-    """Issue 39 (Brett, Nov 19): what just happened isn't missed yet. Where it stands shows a gap only once it has
-    waited GAP_GRACE; Claude's own end-of-turn check sees it at once."""
+def _listening(db, at):
+    db.merge(FftListener(name="main", heard_at=at))
+    db.flush()
+
+
+def test_brett_sees_a_gap_only_once_it_has_waited(db, monkeypatch):
+    """Issue 39 (Brett, Nov 19): what just happened isn't late yet. Issue 21 (his pick 1A): everything in Claude's hands
+    is a quiet line; a gap turns late (Development's amber panel) only once it has waited GAP_GRACE while a Claude
+    session listens. Claude's own end-of-turn check sees it at once."""
     issue = rules.new_issue(db, "claude", "Fresh", feature="feedback")
     rules.fix_ready(db, "claude", issue, "https://github.com/jettison-v/dndsy/pull/421")
     db.flush()
     assert any(g["thing"] == "issue" and g["id"] == issue.id for g in views.gaps(db))
-    assert not views.missed(db)
+    assert not views.missed(db) and any(g["id"] == issue.id and not g["late"] for g in views.hands(db))
     for g in views.gaps(db):
         assert g["since"] is not None
     later = rules.now() + views.GAP_GRACE + timedelta(minutes=1)
-    import app.fft.rules as r
-    real = r.now
-    r.now = lambda: later
-    try:
-        assert {(g["kind"], g["id"]) for g in views.missed(db) if g["thing"] == "issue"} == {("no_check", issue.id)}
-    finally:
-        r.now = real
+    monkeypatch.setattr(rules, "now", lambda: later)
+    assert not views.missed(db)  # (no session listening: it waits for the next one, nothing late)
+    _listening(db, later)
+    assert {(g["kind"], g["id"]) for g in views.missed(db) if g["thing"] == "issue"} == {("no_check", issue.id)}
 
 
 def test_whatever_is_said_to_claude_waits_for_its_reply(db):
@@ -129,7 +132,8 @@ def test_claude_reads_its_gaps_and_brett_sees_them_on_where_it_stands(db, admin,
     finally:
         app.dependency_overrides[get_db] = before
     page = admin.get("/manage/work").text
-    assert "data-missed" not in page  # (just made: not missed yet, issue 39)
+    assert "data-missed" not in page and 'data-stat="hands"' in page  # (just made: in Claude's hands, not late yet, issues 39 and 21)
+    _listening(db, rules.now())
     from sqlalchemy import update
 
     from app.fft.models import FftEvent
@@ -137,6 +141,9 @@ def test_claude_reads_its_gaps_and_brett_sees_them_on_where_it_stands(db, admin,
     db.flush()
     page = admin.get("/manage/work").text
     assert "data-missed" in page and 'data-gap="no_feature"' in page and f"open=i{issue.id}" in page
+    foryou = admin.get("/manage/for-you").text  # (no amber panel there: the line says it's late, issue 21)
+    assert "data-missed" not in foryou and "data-late-count" in foryou and f"open=i{issue.id}" in foryou
+    assert "data-late-count" not in page  # (Development has its panel instead)
 
 
 def _hook(monkeypatch, tmp_path, items, active=False, env=None):

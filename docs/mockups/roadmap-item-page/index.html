@@ -1,0 +1,296 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Roadmap Item Page</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --soft: #23272c; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 98ch; }
+.ideas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ideas div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
+.ideas b { display: block; }
+@media (max-width: 900px) { .ideas { grid-template-columns: minmax(0, 1fr); } }
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: rgba(126, 166, 224, .18); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ===== the drawn app, Backstage ===== */
+.app { background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.45; min-height: 860px; position: relative; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--red); font: 600 14px/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { color: #fff; }
+.abar .b { display: inline-block; min-width: 16px; height: 16px; border-radius: 999px; background: var(--amber); color: #111; font: 700 10.5px/16px var(--sans); text-align: center; padding: 0 4px; margin-left: 4px; }
+.abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; }
+.abody { padding: 14px 24px 32px; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 22px; }
+.band { grid-column: 1 / -1; height: 2px; background: var(--blue); opacity: .7; }
+.aside { display: grid; align-content: start; font-size: 13px; }
+.aside .sec { font-size: 11px; font-weight: 600; color: var(--faint); padding: 12px 8px 4px; }
+.aside a { padding: 5px 8px; border-radius: 6px; color: var(--text); display: flex; justify-content: space-between; }
+.aside a.on { background: var(--panel-2); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--blue); }
+.aside .n { font-size: 11px; color: var(--amber); font-weight: 600; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 3px 10px; font: 500 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.p { background: var(--red); border-color: var(--red); color: #fff; }
+.pill { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; }
+.pill.q { background: #2a2e34; color: var(--muted); } .pill.cl { background: rgba(179,157,219,.16); color: var(--violet); } .pill.you { background: rgba(232,179,75,.14); color: var(--amber); }
+.mark { outline: 2px dashed var(--amber); outline-offset: 4px; border-radius: 4px; }
+
+/* today's page (before) */
+.b-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.b-head h3 { margin: 0; font-size: 20px; color: #fff; font-weight: 600; } .b-head h3 span { color: var(--muted); font-weight: 500; }
+.b-facts { display: flex; gap: 4px 12px; align-items: center; color: var(--muted); font-size: 13px; margin-top: 4px; }
+.b-why { max-width: 80ch; margin: 14px 0 10px; font-size: 13.5px; }
+.b-tabs { display: flex; gap: 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.b-tabs span { padding-bottom: 6px; } .b-tabs span.on { color: #fff; border-bottom: 2px solid var(--red); }
+.b-cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 14px; margin-top: 12px; }
+.b-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; color: var(--muted); }
+
+/* the page as it would be (after) */
+.a-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.a-head .crumb { color: var(--muted); font-size: 14px; font-weight: 500; }
+.a-head h3 { margin: 2px 0 0; font-size: 24px; line-height: 1.25; color: #fff; font-weight: 600; max-width: 34ch; text-wrap: balance; }
+.a-tools { display: flex; gap: 8px; align-items: center; position: relative; }
+.a-tools .btn { font-size: 14px; padding: 6px 12px; }
+.dots { width: 34px; text-align: center; }
+.menu { position: absolute; top: 40px; right: 0; width: 230px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 28px rgba(0,0,0,.45); padding: 6px; display: grid; font-size: 14px; z-index: 5; }
+.menu span { padding: 7px 10px; border-radius: 6px; } .menu span:hover { background: var(--soft); }
+.menu .sep { height: 1px; background: var(--line); padding: 0; margin: 4px 0; }
+.facts { display: grid; grid-template-columns: repeat(4, auto) 1fr; gap: 0; margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); width: fit-content; max-width: 100%; }
+.facts div { padding: 8px 18px; border-left: 1px solid var(--line); display: grid; gap: 2px; }
+.facts div:first-child { border-left: 0; }
+.facts dt { font-size: 12px; color: var(--faint); font-weight: 600; }
+.facts dd { margin: 0; font-size: 15px; color: var(--strong); display: flex; gap: 8px; align-items: center; }
+.facts dd small { color: var(--muted); font-size: 14px; }
+.why { margin-top: 18px; max-width: 72ch; font-size: 15px; line-height: 1.6; }
+.why h4, .sec-h { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.why ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+.why .from { color: var(--faint); font-size: 13.5px; margin-top: 8px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 22px; }
+.tabs span { padding: 10px 16px; font-size: 15px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs span.on { color: #fff; border-color: var(--red); }
+.tabs i { font-style: normal; font-size: 12px; color: var(--faint); margin-left: 6px; font-weight: 500; }
+.cols { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; margin-top: 18px; align-items: start; }
+.cols.stack { grid-template-columns: minmax(0, 1fr); max-width: 820px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 24px; font-size: 15px; line-height: 1.6; display: grid; gap: 18px; }
+.card .ver { display: flex; justify-content: space-between; align-items: center; color: var(--faint); font-size: 13.5px; }
+.card .ver .v { display: inline-flex; gap: 4px; } .card .ver .v span { border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; } .card .ver .v span.on { color: #fff; border-color: var(--blue); }
+.card ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.card .changed { background: var(--soft); border-radius: 8px; padding: 10px 14px; color: var(--muted); font-size: 14px; }
+.card .acts { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.card .acts .btn { font-size: 14.5px; padding: 8px 16px; }
+.card .acts small { color: var(--faint); font-size: 13.5px; }
+.empty { text-align: left; }
+.empty p { color: var(--muted); max-width: 60ch; }
+.empty .big { font-size: 17px; color: var(--strong); font-weight: 600; }
+.side { display: grid; gap: 12px; }
+.side h4 { margin: 0; font-size: 15px; color: #fff; font-weight: 600; } .side h4 i { font-style: normal; color: var(--faint); font-weight: 500; }
+.add { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+.add .box { height: 70px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--faint); padding: 10px 12px; font-size: 15px; }
+.add .row { display: flex; gap: 10px; align-items: center; } .add .row .btn { font-size: 14px; padding: 6px 14px; } .add small { color: var(--faint); font-size: 13px; }
+.cm { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; font-size: 15px; line-height: 1.5; }
+.cm .meta { color: var(--faint); font-size: 13px; }
+.cm .on { border-left: 2px solid var(--amber); padding-left: 10px; color: var(--muted); font-size: 14px; }
+.cm q { color: var(--strong); }
+.cm .ans { color: var(--muted); font-size: 14px; }
+.hint { color: var(--faint); font-size: 13px; margin-top: 10px; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+<!-- A Roadmap item's page, laid out for a laptop (issues 59, 60, 61; Brett, Nov 20: "We have space; why is this so cramped
+     and difficult to read? How do I get you to scope an unscoped roadmap item?"). Drawn with two real items. Source:
+     docs/mockups/roadmap-item-page/index.html. -->
+<div class="wrap">
+  <header style="display:grid;gap:8px"><h1>A Roadmap item's page</h1>
+  <p class="lede">Issues 59, 60 and 61, from your notes on Homebrew items. Today the page is set in small type at the top left of a wide screen: the facts say Next twice, the why is one dense paragraph, the tabs are small and close together, an item with no scope offers nothing to press, and ⋯ opens off the page. Below is the page as it would be, with two of your real items. Switch to Today to compare.</p></header>
+  <div class="ideas">
+    <div><b>Reading size</b>The why, the scope and the comments in 15px type with room between lines, the title 24px; Backstage's lists stay compact.</div>
+    <div><b>Facts you can read</b>Four labelled facts: Section, Size, Stage, and Next step with whose it is. Next once, never twice.</div>
+    <div><b>Scope it</b>An item with no scope says so, with one button that asks me to write it.</div>
+    <div><b>The tab bar</b>The design system's tab bar (as on Campaign), with counts: bigger, spaced, easy to hit.</div>
+  </div>
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Item</span><span class="seg" data-ctl="item"><button type="button" data-v="brew" aria-pressed="true">Homebrew items (no scope)</button><button type="button" data-v="checks">Clearer checks (scope v3)</button></span></span>
+    <span class="ctl"><span class="lbl">Show</span><span class="seg" data-ctl="when"><button type="button" data-v="after" aria-pressed="true">As it would be</button><button type="button" data-v="before">Today</button></span></span>
+    <span class="ctl"><span class="lbl">1 · Facts</span><span class="seg" data-ctl="facts"><button type="button" data-v="line" aria-pressed="true">A labelled strip</button><button type="button" data-v="side">In the right column</button></span></span>
+    <span class="ctl"><span class="lbl">2 · Why</span><span class="seg" data-ctl="why"><button type="button" data-v="short" aria-pressed="true">A line, then points</button><button type="button" data-v="asis">As written</button></span></span>
+    <span class="ctl"><span class="lbl">3 · Scope it</span><span class="seg" data-ctl="scope"><button type="button" data-v="queue" aria-pressed="true">Puts it first for me</button><button type="button" data-v="talk">Talk first</button></span></span>
+    <span class="ctl"><span class="lbl">4 · Columns</span><span class="seg" data-ctl="cols"><button type="button" data-v="two" aria-pressed="true">Scope and comments side by side</button><button type="button" data-v="one">Comments under the scope</button></span></span>
+  </div>
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+  <p class="note-under" id="scale-note"></p>
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · The facts at the top</legend>
+        <label class="o"><input type="radio" name="facts" value="line"><span>A labelled strip under the title <span class="mine">my pick</span></span><small>Section · Size · Stage · Next step (whose, what). The first thing you read, each with its name, so nothing says Next twice.</small></label>
+        <label class="o"><input type="radio" name="facts" value="side"><span>In the right column, above the comments</span><small>A small card of the same four facts beside the scope. The title and why get the whole width.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · The why</legend>
+        <label class="o"><input type="radio" name="why" value="short"><span>One line, then up to four points <span class="mine">my pick</span></span><small>I rewrite each long why this way (the ones copied from the old Roadmap first); the decisions behind it in a quiet line below.</small></label>
+        <label class="o"><input type="radio" name="why" value="asis"><span>As written, at reading size</span><small>The same words, set at 15px and 72 characters wide. Nothing rewritten.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · Scope it on an item with no scope</legend>
+        <label class="o"><input type="radio" name="scope" value="queue"><span>Puts it first in my queue <span class="mine">my pick</span></span><small>One press: I write its first version next and it comes to For you for your OK. Add a comment first if you want to steer it.</small></label>
+        <label class="o"><input type="radio" name="scope" value="talk"><span>Talk first</span><small>Opens Discuss with Claude with the item ready, and I write the scope at the end of that talk.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · The scope and the comments</legend>
+        <label class="o"><input type="radio" name="cols" value="two"><span>Side by side, the scope wider <span class="mine">my pick</span></span><small>A laptop has room for both: you read a line of the scope and its comment together.</small></label>
+        <label class="o"><input type="radio" name="cols" value="one"><span>Comments under the scope</span><small>One column 820px wide, like a document; comments follow it.</small></label>
+      </fieldset>
+    </div>
+    <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="What's missing, or what you'd change"></textarea></label>
+    <div class="sendline"><button type="submit" class="go">Save my picks</button><span class="saved">Not saved yet</span></div>
+  </form>
+</div>
+<script>
+(() => {
+  const st = { item: "brew", when: "after", facts: "line", why: "short", scope: "queue", cols: "two", menu: false, pressed: false };
+  const ITEMS = {
+    brew: { title: "Homebrew items: an easier builder, giving one to a character, then the other kinds", section: "Next", size: "M", stage: ["Idea", "q"],
+      next: ["Claude's", "cl", "Scope it"],
+      whyAsIs: "You chose 1A, 2B, 3A, 4A on Item Builder (Nov 16; your idea 72 folded in). Slice A built (PR 400, on askdnd.ai): what an item does in play added a piece at a time, each a sentence, opened with chips, − + and the dice picker (new in the design system's Forms). Next: start from a weapon or armor or a copy (2B); a spell it casts and charges a roll spends (askdnd keeps the count, since a custom item on D&D Beyond has none); then Give to a character (4A), after recording D&D Beyond's add-custom-item request on a test seat. The other kinds (shops, creatures, encounters, loot, handouts) come after, as the table needs them.",
+      whyLine: "Make homebrew items easy to build and give to a character; the other kinds come later.",
+      whyPoints: ["Built: what an item does in play, a piece at a time (PR 400, on askdnd.ai)", "Next: start from a weapon, armor or a copy", "Then: a spell it casts, and charges a roll spends (askdnd keeps the count)", "Then: Give to a character, once D&D Beyond's request is recorded on a test seat"],
+      whyFrom: "From your picks on Item Builder (1A, 2B, 3A, 4A, Nov 16) and your idea 72.",
+      tabs: [["Scope", ""], ["Steps", "0"], ["Plans", "0"], ["Updates", "1"]], comments: [] },
+    checks: { title: "Clearer checks: the goal first, then the steps", section: "Now", size: "M", stage: ["Scope: your OK", "you"],
+      next: ["Yours", "you", "OK its scope (version 3)"],
+      whyAsIs: "Checks are still hard to follow (issue 36 too): what's being tested and what you should see come first.",
+      whyLine: "Checks are still hard to follow: what's being tested and what you should see should come first.",
+      whyPoints: [], whyFrom: "From issue 36 and your notes on checks.",
+      tabs: [["Scope", "v3"], ["Steps", "0"], ["Plans", "0"], ["Updates", "6"]],
+      comments: [["In askdnd · Yesterday 4:30 PM · on v1", "", "Keep the shape short.", "In v2"], ["In askdnd · Yesterday 4:30 PM · on v1", "A check you can't try right away (another device, a second person): say so at the top?", "Yes: a line at the top, “Needs: your iPhone”", "Changed in v3: rounds of their own instead"]] },
+  };
+  const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Cole</span><span>Party ▾</span><span class="sp">Search your character, the rules…</span><span class="here">Backstage ▾<span class="b">4</span></span><span class="pic"></span></div>`;
+  const aside = () => `<nav class="aside"><span class="sec">Our work</span><a>For you <span class="n">4</span></a><a>Feedback</a><a class="on">Roadmap</a><a>Development</a><span class="sec">General</span><a>Overview</a><a>Product areas</a><a>Documents</a><a>Usage</a><a>Backups</a></nav>`;
+  const before = it => `<div class="b-head"><div><h3><span>Roadmap ›</span> ${it.title}</h3>
+      <div class="b-facts mark"><span class="pill ${it.stage[1]}">${it.stage[0]}</span><span>${it.section}</span><span>Size ${it.size}</span>${it.item === "brew" ? "<span>In progress</span>" : ""}<span>Next:</span><span class="pill ${it.next[1]}">${it.next[0]}</span><span>${it.next[2]}</span></div></div>
+      <div style="display:flex;gap:8px;position:relative"><span class="btn">Discuss with Claude ↗</span><span class="btn">⋯</span><div class="menu" style="right:-120px;width:200px" ${st.menu ? "" : "hidden"}><span>Move to Now</span><span>Move to Later</span><span>Pause</span><span class="sep"></span><span>Remove from the Roadmap</span></div></div></div>
+    <p class="b-why">${it.whyAsIs}</p>
+    <div class="b-tabs mark">${it.tabs.map(([t], i) => `<span class="${i ? "" : "on"}">${t}</span>`).join("")}</div>
+    <div class="b-cols"><div class="b-card">${it.comments.length ? "Version 3 · What it is · In scope · …" : "No scope yet: Claude writes its first version when it's next, or when you say so in chat."}</div>
+    <div><b style="font-size:13px">Comments and additions · ${it.comments.length}</b><div class="b-card" style="margin-top:8px;height:70px"></div></div></div>
+    <p class="hint">Today, at your screen's width (shown here at 1280). Dashed: where your notes pointed. ⋯ opens past the right edge.</p>`;
+  const factsHTML = it => `<dl class="facts"><div><dt>Section</dt><dd>${it.section}</dd></div><div><dt>Size</dt><dd>${it.size}</dd></div><div><dt>Stage</dt><dd><span class="pill ${it.stage[1]}">${st.pressed ? "Scoping" : it.stage[0]}</span></dd></div><div><dt>Next step</dt><dd><span class="pill ${it.next[1]}">${it.next[0]}</span> <small>${st.pressed ? "Write its scope · first in Claude's queue" : it.next[2]}</small></dd></div></dl>`;
+  const whyHTML = it => st.why === "asis" ? `<div class="why"><h4>Why</h4><p>${it.whyAsIs}</p></div>`
+    : `<div class="why"><h4>Why</h4><p>${it.whyLine}</p>${it.whyPoints.length ? `<ul>${it.whyPoints.map(p => `<li>${p}</li>`).join("")}</ul>` : ""}<p class="from">${it.whyFrom}</p></div>`;
+  const scopeCard = it => {
+    if (it.comments.length) return `<div class="card"><div class="ver"><span class="v"><span>v1</span><span>v2</span><span class="on">v3</span></span><span>Latest · waits for your OK</span></div>
+      <div class="changed"><b>What changed in v3:</b> From your answer: no line at the top; checks that need a phone or more than one person get rounds of their own (Just phone, Multi-user).</div>
+      <div><p class="sec-h">What it is</p><p>Every check reads goal first: what it tests and what you should see, then the steps. Written the same way every time, checked by Claude before it reaches you, and grouped by what it needs to try.</p></div>
+      <div><p class="sec-h">In scope</p><ul><li>One shape for every check: Goal (before → now), Where, Steps, You should see</li><li>askdnd refuses a check without a goal and an expected result</li><li>Each check says what it needs: your laptop, your phone, or more than one person; For you groups them that way</li><li>Rounds of one kind: a laptop round, Just phone, and Multi-user, each started on its own</li><li>The open checks rewritten in that shape</li></ul></div>
+      <div><p class="sec-h">Not now</p><ul><li>Automation (later, your call): a test of its own for each check that can be automated, and Claude running each check end to end on staging first</li></ul></div>
+      <div class="acts"><span class="btn p">Scope looks right</span><span class="btn">Needs changes…</span><small>Comment on a line first if you like: it goes with your answer.</small></div></div>`;
+    if (st.pressed) return `<div class="card empty"><p class="big">Claude scopes it next</p><p>It's first in Claude's queue. Its first version comes to For you for your OK; anything you add here goes into it.</p><div class="acts"><span class="btn">Not now</span></div></div>`;
+    return `<div class="card empty"><p class="big">No scope yet</p><p>${st.scope === "queue" ? "Scope it puts this first in Claude's queue: its first version comes to For you for your OK. Add a comment first to steer it." : "Talk it through with Claude first; the scope is written at the end of the talk and comes to For you for your OK."}</p>
+      <div class="acts">${st.scope === "queue" ? `<button type="button" class="btn p" data-press>Scope it</button><span class="btn">Discuss with Claude ↗</span>` : `<span class="btn p">Discuss with Claude ↗</span>`}</div></div>`;
+  };
+  const sideHTML = it => `<div class="side">${st.facts === "side" ? factsHTML(it).replace('class="facts"', 'class="facts" style="grid-template-columns:1fr 1fr;width:100%;margin-top:0"') : ""}
+      <h4>Comments and additions <i>· ${it.comments.length}</i></h4>
+      <div class="add"><div class="box">${it.comments.length ? "A comment on the whole scope, or something to add" : "Something to add, or how you'd like it scoped"}</div><div class="row"><span class="btn">Add</span><small>It reaches Claude now.</small></div></div>
+      ${it.comments.map(([m, on, q, a]) => `<div class="cm"><span class="meta">${m}</span>${on ? `<span class="on">${on}</span>` : ""}<q>${q}</q><span class="ans">Claude: ${a}</span></div>`).join("") || `<p style="color:var(--faint)">Nothing yet.</p>`}</div>`;
+  const after = it => `<div class="a-head"><div><span class="crumb">Roadmap ›</span><h3>${it.title}</h3></div>
+      <div class="a-tools"><span class="btn">Discuss with Claude ↗</span><button type="button" class="btn dots" data-menu>⋯</button>
+      <div class="menu" ${st.menu ? "" : "hidden"}><span>Move to Now</span><span>Move to Later</span><span>Pause</span><span class="sep"></span><span>Remove from the Roadmap</span></div></div></div>
+    ${st.facts === "line" ? factsHTML(it) : ""}
+    ${whyHTML(it)}
+    <div class="tabs">${it.tabs.map(([t, n], i) => `<span class="${i ? "" : "on"}">${t}${n ? `<i>${n}</i>` : ""}</span>`).join("")}</div>
+    <div class="cols ${st.cols === "one" ? "stack" : ""}">${scopeCard(it)}${sideHTML(it)}</div>
+    <p class="hint">${st.menu ? "⋯ opens toward the page, under its button, never past the edge." : "Press ⋯ to see its menu" + (it.comments.length ? "." : "; press Scope it to see what follows.")}</p>`;
+  const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note"), W = 1280;
+  const draw = () => {
+    const it = { ...ITEMS[st.item], item: st.item };
+    stage.innerHTML = `<div class="app" style="width:${W}px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div>${st.when === "before" ? before(it) : after(it)}</div></div></div>`;
+    const s = Math.min(1, wrapEl.clientWidth / W);
+    stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
+    note.textContent = s < 1 ? `Drawn at ${W}px wide (a 13–14" laptop), shown at ${Math.round(s * 100)}% to fit this page.` : `Drawn at ${W}px wide (a 13–14" laptop).`;
+  };
+  addEventListener("resize", draw);
+  stage.addEventListener("click", e => {
+    if (e.target.closest("[data-menu]")) { st.menu = !st.menu; draw(); return; }
+    if (e.target.closest("[data-press]")) { st.pressed = true; draw(); return; }
+    if (st.menu) { st.menu = false; draw(); }
+  });
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    st[seg.dataset.ctl] = b.dataset.v; st.menu = false; st.pressed = false; draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["facts", "why", "scope", "cols"];
+  let db = null, inAskdnd = false, timer = 0;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent + ": " + lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  const store = async () => {
+    const list = picks(), notes = form.querySelector("textarea").value.trim(), at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); } catch (err) { show("Couldn't save it. Try again."); }
+  };
+  form.addEventListener("input", () => { if (db && !inAskdnd) { show("Saving…"); clearTimeout(timer); timer = setTimeout(store, 1000); } else show("Not saved yet"); });
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Global › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true; await store(); btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet · every pick saves by itself"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · every pick saves by itself", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

@@ -5,6 +5,7 @@
    (for any reason; it asks why, optional). Each choice says what it does in the menu, so the bar needs no Help. Under
    the top row, only when there is one: a pause's reason, whole on its own line (his comment); why local tries ended by
    themselves; an open round with End round (issue 41), saying what it holds: its own area, or nothing for ▶ Try it (a lighter round, Nov 19). `bar` is testing_page.status(), `back` the page it's on. #}
+{% from "_fft_bits.html" import hands_list %}
 {% set mode = bar.mode %}
 {% set said = {"available": "After my local try", "independent": "When tests pass", "frozen": "Paused"} %}
 {% set does = {"available": "Visible changes wait for your try on your Mac. Back to When tests pass after 2 hours, or when you're quiet in askdnd 30 minutes or a try waits 30 minutes.",
@@ -31,6 +32,12 @@
       </div>
     </details>
   </div>
+  {# (what's in Claude's hands: a quiet line that opens to them, Brett's pick 1A, issue 21; on Development the late ones
+     are its amber panel instead, `late_panel`; elsewhere the line says how many are late, in amber) #}
+  {% set waiting = bar.hands | rejectattr("late") | list if late_panel else bar.hands %}
+  {% set late_here = [] if late_panel else bar.late %}
+  {% if waiting %}
+  <details class="fold fft-hands fft-status-line" data-stat="hands"><summary class="note">{{ waiting | length }} thing{{ "s" if waiting | length != 1 }} in Claude's hands now{% if late_here %} · <span class="fft-late" data-late-count>{{ late_here | length }} waiting too long</span>{% endif %}</summary>{{ hands_list(waiting, bar.gap_words) }}</details>{% endif %}
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span></div>
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
   {% if bar.after.on and not bar.round %}<div class="fft-status-line" data-stat="after"><span>Your round starts when {{ bar.after.prs | length }} change{{ "s" if bar.after.prs | length != 1 }} of Claude's {{ "is" if bar.after.prs | length == 1 else "are" }} live</span>

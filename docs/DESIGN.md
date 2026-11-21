@@ -89,6 +89,8 @@ The serif quoted answers used (Iowan Old Style, Palatino) was hard to read and i
 
 **Shadows:** `--lift` for anything that floats over the page (a menu, a window, a card); the test fails on a near-copy of it. A side panel's shadow falls to the left; a coloured glow belongs to its component.
 
+**A ⋯ menu** (`_admin_bits.html` `more_menu`) opens toward the page: from a page title's right end it opens leftward, and anywhere it would pass the window's right edge app.js turns it (issue 59); in a table's row it floats over the page by its button (issue 47). A choice in it, a click elsewhere, Escape or ⋯ again closes it.
+
 **Controls:** search boxes, every text, number and date field, selects and regular buttons are `--control-h` tall (32px on desktop, 44px on phones; Brett, 2026-10-22), so a field and the button beside it always match; small buttons `--control-h-sm` (26 / 36px); chips `--chip-h` (28 / 36px); everything in the menu bar `--bar-h` (36 / 44px). A file picker's button looks like a regular button. Fields use 16px text on phones so iPhones don't zoom in.
 
 **The page's scrollbar** (a computer): a 12px lane that's always there, so a page never shifts sideways, drawn as part of the page: the menu bar and its red line run through it to the window's edge (Brett, 2026-10-31). Phones keep their own.

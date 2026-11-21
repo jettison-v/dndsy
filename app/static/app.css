@@ -4357,7 +4357,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .act-more > summary { list-style: none; cursor: pointer; display: inline-grid; place-items: center; min-width: var(--control-h-sm); min-height: var(--control-h-sm); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); }
 .act-more > summary::-webkit-details-marker { display: none; }
 .act-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; min-width: 180px; display: grid; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); padding: var(--sp-1); }
-.act-menu.end { left: auto; right: 0; }
+.act-menu.end, .title-row .act-menu { left: auto; right: 0; }  /* (a page's own ⋯ sits at its right end: it opens toward the page; issue 59) */
 .act-menu.floats { position: fixed; z-index: 60; right: auto; }
 .table-scroll details.act-more[open] > .act-menu:not(.floats) { visibility: hidden; }  /* (until it's placed: never a frame in the wrong place) */  /* (a menu in a table's row: over the page, placed by app.js "A ⋯ or a lane's menu in a table's row"; issue 47) */  /* (from a button at a row's right end: it opens toward the page, not off it; Deploys, Nov 19) */
 .act-menu button { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; }
@@ -4415,6 +4415,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
 .check-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: var(--r-lg); box-shadow: var(--lift); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
 .check-card.folded { background: none; border: 0; box-shadow: none; padding: 0; justify-items: end; }
+.check-card.folded:is([data-corner="bl"], [data-corner="tl"]) { justify-items: start; }  /* (folded in a left corner, its pill sits against that edge, not where the open card would end; issue 27) */
 .cc-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .cc-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); display: inline-flex; align-items: center; gap: var(--sp-2); }
 .cc-body { display: grid; gap: var(--sp-2); }
@@ -4589,6 +4590,9 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-status-round { display: flex; align-items: center; gap: var(--sp-3); }  /* (an open round: its own row, issue 41) */
 .fft-status-round form { margin: 0; }
 .fft-status-line .fft-inline { margin: 0; }
+.fft-status-line.fft-hands { display: block; }  /* (its list opens under its line, not beside it: issue 21) */
+.fft-hands > .fft-missed-list { margin-top: var(--sp-2); }
+.fft-hands .fft-late, .fft-hands li[data-late] .note { color: var(--amber); }  /* (late, where there's no amber panel) */
 .fft-holds { margin: 0; color: var(--amber); font-size: var(--fs-xs); line-height: 1.4; }  /* (what pausing would hold: the heads-up, Brett's pick A) */
 .fft-flight { display: grid; gap: var(--sp-2); }
 .fft-flight-row { display: grid; gap: 2px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }

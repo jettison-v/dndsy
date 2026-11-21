@@ -492,7 +492,13 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   document.addEventListener('toggle', e => {
     const d = e.target;
-    if (!(d instanceof HTMLDetailsElement) || !d.matches('details.act-more') || !d.closest('.table-scroll')) return;
+    if (!(d instanceof HTMLDetailsElement) || !d.matches('details.act-more')) return;
+    if (!d.closest('.table-scroll')) {  // (any other ⋯: open toward the page when it would pass the window's right edge; issue 59)
+      const m = d.querySelector(':scope > .act-menu');
+      if (d.open && m && !m.classList.contains('end') && m.getBoundingClientRect().right > innerWidth - 8) m.classList.add('end', 'turned');
+      else if (!d.open && m && m.classList.contains('turned')) m.classList.remove('end', 'turned');
+      return;
+    }
     if (d.open) { placeMenu(d); return; }
     const m = d.querySelector(':scope > .act-menu');
     if (m) { m.classList.remove('floats'); m.style.left = m.style.top = ''; }
@@ -1381,7 +1387,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (t === 'fft') {  // (Found, Fixed, Tried changed: Feedback, Testing and Notes you sent show their new copy; a round's card too)
       // (never over something half done: words typed but not sent, a fold opened, a row being dragged; the next change catches up)
       const drafting = [...document.querySelectorAll('main textarea, main input[type=text], main input[type=search]')].some(el => el.value !== el.defaultValue)
-        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open]');
+        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open], main details.fft-hands[open]');
       if (document.querySelector('[data-fft-page], [data-fft-yours]') && !drafting) showInPlace();
       const slot = document.getElementById('check-card');
       if (slot && window.htmx && !slot.contains(document.activeElement)) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
@@ -5252,7 +5258,7 @@ document.addEventListener('click', e => {
         l.append(i, Object.assign(document.createElement('span'), { textContent: label }), Object.assign(document.createElement('small'), { className: 'note', textContent: small }));
         stillBox.append(l);
       };
-      j.issues.forEach(i => opt(String(i.id), i.title, i.said + ' · still happening'));
+      j.issues.forEach(i => opt(String(i.id), i.title, i.said));  // (fixed since and still happening, or sent from this check already: issue 16)
       if (j.issues.length) opt('', 'Something new', 'describe it below');
     }).catch(() => { /* the window works without the list: it's something new */ });
   }
@@ -5706,11 +5712,12 @@ document.addEventListener('click', e => {
     const text = form.text.value.trim();
     if (checking && blocking === null) return say('Say whether it stops this check passing.');
     if (!checking && !kind) return say('Say what it is first: a problem, an idea or a question.');
-    if (!text) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
+    const already = checking && (stillBox.querySelector('input:checked') || {}).value;  // (an issue it named already: no words needed again, issue 16)
+    if (!text && !(already && blocking && !pics.some(p => p.kind !== 'page'))) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
     send.disabled = true; say('');
-    if (taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
+    if (text && taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
     try {
-      const pictures = await outgoing();
+      const pictures = text ? await outgoing() : [];  // (no words, an issue named already: nothing new to show with it)
       const common = { text, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })) };
       const still = checking && stillBox.querySelector('input:checked');
       const r = await fetch(checking ? '/manage/testing/checks/' + checking.id + '/wrong' : '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

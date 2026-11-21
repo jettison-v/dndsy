@@ -5,7 +5,7 @@ wrong…, Can't try… and Change result go through the rules."""
 import re
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.fft import rules, testing_page
 from app.fft.models import FftArea, FftCheck, FftEvent, FftIdea, FftIssue, FftItem, FftNote, FftRound, FftTry
@@ -67,7 +67,7 @@ def test_a_standing_rule_testing_is_for_admins_only(player, dm, admin, db):
 def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
     a = _area(db)
     mine = _check(db, area=a)
-    _check(db, title="Not tried by Claude yet", area=a, preflight=False)  # (R18: Claude's try first)
+    untried = _check(db, title="Not tried by Claude yet", area=a, preflight=False)  # (R18: Claude's try first)
     phone = _check(db, title="On a phone", area=a, devices=["iphone"])
     _check(db, title="The Mini runs this", area=a, devices=["mac_mini"])  # (Claude's own: never in your list)
     rules.ask(db, "claude", about="area", about_id=a.id, text="Should the card start on the left?", choices=[{"label": "Left"}, {"label": "Right"}], mine=0)
@@ -77,7 +77,7 @@ def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
     db.add(road)
     db.flush()
     page = admin.get("/manage/for-you").text
-    assert f'data-row="c{mine.id}"' in page and f'data-row="c{phone.id}"' in page and "Not tried by Claude yet" not in page
+    assert f'data-row="c{mine.id}"' in page and f'data-row="c{phone.id}"' in page and f'data-row="c{untried.id}"' not in page  # (it's in Claude's hands, the bar's quiet line)
     assert "The Mini runs this" not in page and "The Mini runs this" in admin.get("/manage/work?tab=checks").text
     assert "on your iPhone" in page and f'data-row="n{n.id}"' in page and f'data-row="r{road.id}"' in page and 'data-kind="question"' in page
     assert f'data-row="d{db.scalar(select(FftIdea.id))}"' in page
@@ -228,6 +228,23 @@ def test_an_issue_that_doesnt_stop_it_is_sent_on_its_own(admin, db):
     c = _check(db)
     r = wrong(admin, c, text="A typo in the heading.", blocking=False)
     assert not r.json()["failed"] and rules.check_state(db, c)["state"] == "to_try" and db.get(FftIssue, r.json()["issue"]).state == "to_fix"
+
+
+def test_failing_with_an_issue_sent_from_the_check_needs_no_second_note(admin, db):
+    """Issue 16 (Brett, Nov 17): "I had already added issues … Should I be allowed to skip logging the last issue?"
+    Something's wrong… offers what was sent from this check and didn't stop it; failing with one writes nothing again."""
+    c = _check(db)
+    sent = wrong(admin, c, text="A typo in the heading.", blocking=False).json()["issue"]
+    asked = admin.get(f"/manage/testing/checks/{c.id}/wrong").json()
+    assert [(i["id"], i.get("sent")) for i in asked["issues"]] == [(sent, True)]
+    notes = db.scalar(select(func.count()).select_from(FftNote))
+    assert wrong(admin, c, text="", issue=sent + 99).status_code == 400  # (not one of this check's)
+    assert wrong(admin, c, text="").status_code == 400  # (something new needs its words)
+    assert wrong(admin, c, text="", issue=sent, blocking=False).status_code == 400  # (named again but not failing it: say what's new)
+    r = wrong(admin, c, text="", issue=sent)
+    assert r.json()["failed"] and r.json()["issue"] == sent and rules.check_state(db, c)["state"] == "failed"
+    assert db.scalar(select(func.count()).select_from(FftNote)) == notes  # (no second note)
+    assert not admin.get(f"/manage/testing/checks/{c.id}/wrong").json()["issues"]  # (it stops the check now: not offered again)
 
 
 def test_still_happening_sends_a_fixed_issue_back(admin, db):
