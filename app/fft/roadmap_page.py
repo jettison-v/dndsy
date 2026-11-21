@@ -227,6 +227,10 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
             rules.tick_step(db, actor, st, do == "tick")
             said = "Done" if do == "tick" else "Not done after all"
             back += "?tab=steps"
+        elif do in ("hold", "unhold"):  # (Development's line, issue 62)
+            rules.hold_item(db, actor, it, do == "hold")
+            said = "Held below Development's line" if do == "hold" else "Back above Development's line"
+            back = "/manage/work"
         elif do == "move":
             rules.move_item(db, actor, it, section)
             said = f"Moved to {SECTION_SAID[section]}"

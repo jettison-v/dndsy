@@ -33,9 +33,9 @@
 {% endif %}
 {% endmacro %}
 {% macro plan_row(r, drag=True) %}
-<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
-  <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
-  <td class="dt-title"><a href="/manage/work/{{ r.a.id }}" class="wk-name">{{ r.a.title }}</a>
+<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}{{ ' wk-sub' if r.sub else ' wk-top' }}" data-key="a{{ r.a.id }}"{% if r.sub %} data-under="i{{ r.a.item_id }}"{% endif %} data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
+  <td class="wk-grip">{% if drag and not r.sub %}{{ grip() }}{% endif %}</td>
+  <td class="dt-title"><a href="/manage/work/{{ r.a.id }}" class="wk-name">{% if r.sub %}› {% endif %}{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.a.title }}</a>
     <span class="dt-why">{{ r.kind }}{% for t, n in r.features[:3] %} · {{ t }}{% if n > 1 %} {{ n }}{% endif %}{% endfor %}{% if r.features | length > 3 %} · …{% endif %}{% if r.locked %} · building ({{ r.locked }}){% endif %}</span></td>
   <td>{{ lane_menu(r) }}</td>
   <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
@@ -45,10 +45,23 @@
   <td>{{ plan_more(r) }}</td>
 </tr>
 {% endmacro %}
+{% macro build_row(r, drag=True) %}{# A Roadmap build in the one queue (issue 62): its steps as progress; it opens the item on the Roadmap #}
+<tr class="wk-plan wk-build wk-top{{ ' is-next' if r.stage == 'next' }}" data-key="i{{ r.it.id }}" data-build="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
+  <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
+  <td class="dt-title"><a href="/manage/roadmap/{{ r.it.id }}" class="wk-name">{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.it.title }}</a>
+    <span class="dt-why">Roadmap build · {{ r.section }}{% if r.size %} · Size {{ r.size }}{% endif %}</span></td>
+  <td><span class="dt-id">—</span></td>
+  <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
+  <td class="num" data-steps title="Its steps done">{% if r.steps %}{{ r.done }} of {{ r.steps }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+  <td class="num" data-passed>{% if r.checks %}{{ r.passed }} of {{ r.checks }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+  <td class="dt-wrap wk-waits">{{ r.waits }}</td>
+  <td>{% call more_menu("More for " ~ r.it.title) %}<form method="post" action="/manage/roadmap/{{ r.it.id }}"><input type="hidden" name="do" value="{{ 'unhold' if r.it.held else 'hold' }}"><button type="submit" data-do="{{ 'unhold' if r.it.held else 'hold' }}">{{ "Let it go: back above the line" if r.it.held else "Hold: below the line" }}</button></form>{% endcall %}</td>
+</tr>
+{% endmacro %}
 <main class="page manage-page" data-fft-page="work">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Development</h1></div>
-  <p class="subtitle">The plans in your order and what's being built: Claude takes the ones above the line. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
+  <p class="subtitle">Everything being built, in your order: the Roadmap's builds (once you've agreed their scope) and each Product Area's fixes. Claude takes the rows above the line, top first. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
   {% if missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
     <h3 class="plabel" id="fft-missed-h">Claude missed · {{ missed | length }}</h3>
@@ -62,26 +75,23 @@
   </nav>
 
   {% if tab == "queue" %}
-  <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.pick.area %} · Claude's next: <b>{{ q.pick.area.title }}</b>{% endif %} · drag to reorder</p>
+  <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.next %} · Claude's next: <b>{{ q.next }}</b>{% endif %} · drag to reorder</p>
   <div class="table-scroll" id="wk-queue">
-  <table class="dtable dt-wide fft-table wk-queue" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tbody.wk-item" data-sort-handle=".wk-item-head .grip">
-    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w2" title="Open issues with a fix">Fixed</th><th class="num dt-w2" title="This plan's checks that passed">Passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
-    {% for x in q.rows %}
-    <tbody class="wk-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-plan" data-sort-handle=".wk-grip .grip">
-      <tr class="dt-group wk-item-head"><td colspan="8">{{ grip() }} <span data-sort-n>{{ x.n }}</span> · {{ x.it.title }}{% if x.it.standing %} <span class="tag">standing</span>{% endif %}
-        {% if x.it.next_whose == "brett" %} · {{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %} · {{ x.why }}{% elif not x.plans %} · its plans are held{% endif %}</td></tr>
-      {% for r in x.plans %}{{ plan_row(r) }}{% endfor %}
-    </tbody>
-    {% else %}<tbody><tr><td colspan="8">{{ empty_state("Nothing on the Roadmap yet: Claude adds items as work comes in.") }}</td></tr></tbody>
+  <table class="dtable dt-wide fft-table wk-queue">
+    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w2" title="A batch's open issues with a fix; a build's steps done">Progress</th><th class="num dt-w2" title="Its checks that passed">Passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
+    <tbody class="wk-rows" data-queue data-sort-column="queue" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-top" data-sort-handle=".wk-grip .grip">
+    {% for r in q.rows %}{% if r.kind_key == "i" %}{{ build_row(r) }}{% else %}{{ plan_row(r) }}{% endif %}
+    {% else %}<tr><td colspan="8" class="dt-wrap">{{ empty_state("Nothing being built: a Roadmap item joins when you say its scope looks right, and a Product Area's fixes when they come in.") }}</td></tr>
     {% endfor %}
+    </tbody>
     <tbody class="wk-held" data-held>
       <tr class="dt-cut"><td colspan="8">Claude takes the plans above this line{% if q.held %} · held below it{% else %} · Hold a plan (⋯) to put it below{% endif %}</td></tr>
-      {% for r in q.held %}{{ plan_row(r, drag=False) }}{% endfor %}
+      {% for r in q.held %}{% if r.kind_key == "i" %}{{ build_row(r, drag=False) }}{% else %}{{ plan_row(r, drag=False) }}{% endif %}{% endfor %}
     </tbody>
   </table>
   </div>
   {{ history_link("?tab=done") }}
-  <div class="wk-forms">{% for x in q.rows %}{% for r in x.plans %}{{ plan_forms(r) }}{% endfor %}{% endfor %}{% for r in q.held %}{{ plan_forms(r) }}{% endfor %}</div>
+  <div class="wk-forms">{% for r in q.rows + q.held if r.kind_key == "a" %}{{ plan_forms(r) }}{% endfor %}</div>
 
   {% elif tab == "done" %}
   {{ history_head("finished plans", "?tab=queue") }}

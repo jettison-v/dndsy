@@ -229,22 +229,37 @@ def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
     assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
 
 
-def test_a_roadmap_item_with_no_plan_isnt_developments_and_keeps_its_place(db, admin):
-    """Issue 49 (Brett, Nov 20: "Why do these exist here if they are still open?"): an item with no plan (an idea not
-    built yet, or one finished) waits on the Roadmap, not in Development's Queue; dragging the listed ones keeps it."""
-    item, battle, _ = _plans(db)
-    rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)
+def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admin):
+    """Issue 62 (Brett, Nov 20: "I thought we had one consolidated development queue in the plan"; his picks on
+    docs/mockups/one-development-queue/): every Product Area batch and every Roadmap build whose scope he agreed are rows of
+    one queue he drags; an idea still being discussed stays on the Roadmap; Claude takes the top row that's its turn, a
+    build without a plan as itself; Hold puts a build below the line."""
+    fixes = FftItem(title="Fixes and polish", section="now", place=1, standing=True)
     idea = FftItem(title="String Audit", section="next", place=2)
-    later = FftItem(title="Another build", section="later", place=3)
-    db.add_all([idea, later])
+    build = FftItem(title="Performance: the whole tool", section="now", place=3)
+    db.add_all([fixes, idea, build])
     db.flush()
-    other = rules.new_area(db, "claude", later, "Its batch")
-    rules.new_issue(db, "claude", "Something", area_id=other.id)
+    batch = rules.new_issue(db, "claude", "The Count wraps", feature="hp").area_id
+    rules.write_scope(db, "claude", build, what="Find what's slow.", inside=["Time every page"])
     db.flush()
     page = admin.get("/manage/work").text
-    assert f'data-item="{item.id}"' in page and f'data-item="{later.id}"' in page and f'data-item="{idea.id}"' not in page
-    admin.post("/manage/testing/order", data={"column": "items", "keys": [str(later.id), str(item.id)]})
-    assert (later.place, item.place, idea.place) == (1, 2, 3)  # (the one not listed keeps its place after them)
+    assert f'data-build="{build.id}"' not in page  # (its scope waits for his OK: still the Roadmap's)
+    rules.agree_scope(db, "user:1", build)
+    rules.add_step(db, "claude", build, "Time every page")
+    db.flush()
+    page = admin.get("/manage/work").text
+    assert f'data-build="{build.id}"' in page and f'data-build="{idea.id}"' not in page and f'data-area="{batch}"' in page
+    assert page.index(f'data-area="{batch}"') < page.index(f'data-build="{build.id}"')  # (not placed yet: batches first)
+    admin.post("/manage/testing/order", data={"column": "queue", "keys": [f"i{build.id}", f"a{batch}"]})
+    page = admin.get("/manage/work").text
+    assert page.index(f'data-build="{build.id}"') < page.index(f'data-area="{batch}"') and 'data-steps' in page
+    pick = rules.pick_next(db)
+    assert pick.item is not None and pick.item.id == build.id and pick.area is None  # (a build without a plan: as itself)
+    assert f'data-build="{build.id}" data-href="/manage/roadmap/{build.id}" data-stage="next"' in page
+    admin.post(f"/manage/roadmap/{build.id}", data={"do": "hold"})
+    assert build.held and rules.pick_next(db).area.id == batch
+    held = admin.get("/manage/work").text
+    assert f'data-build="{build.id}"' in held[held.index("data-held"):]
 
 
 def test_done_leaves_feedbacks_list_for_its_history(db, admin):

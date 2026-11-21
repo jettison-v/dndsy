@@ -361,7 +361,7 @@ def test_r11_one_area_is_claudes_at_a_time(db):
     rules.lock_area(db, "claude:area", b)
 
 
-def test_r15_claude_takes_a_blocker_first_then_the_roadmap_from_the_top(db):
+def test_r15_claude_takes_a_blocker_first_then_the_queue_from_the_top(db):
     fixes = FftItem(title="Fixes and polish", standing=True, section="now", place=1)
     feature = FftItem(title="Feedback and Testing", section="now", place=2, next_whose="brett", next_step="your verdict")
     later = FftItem(title="Homebrew", section="next", place=3)
@@ -373,7 +373,8 @@ def test_r15_claude_takes_a_blocker_first_then_the_roadmap_from_the_top(db):
         rules.new_issue(db, "claude", f"An issue in {a.title}", area_id=a.id)
     pick = rules.pick_next(db)
     assert pick.area.id == manage.id and ("Feedback and Testing", "its next step is Brett's (your verdict)") not in pick.skipped
-    fixes.place, later.place, later.section = 9, 0, "now"  # (the Roadmap's order is its sections, then Brett's drag in each)
+    # Development's one queue (issue 62): Brett drags a build above the batches, and the build in Brett's turn before them
+    rules.order_queue(db, "user:1", [f"i{later.id}", f"i{feature.id}", f"a{manage.id}", f"a{menu.id}"])
     pick = rules.pick_next(db)
     assert pick.area.id == builder.id
     for i in rules.area_open_issues(db, builder):
