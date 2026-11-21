@@ -776,7 +776,7 @@ def main() -> None:
     s.add_argument("--pr", action="append", default=[])
     s.add_argument("--rollback", action="store_true")
     a = p.parse_args()
-    known = {"issue": ("title", "feature", "kind", "move", "start", "pr", "close", "reopen", "tell"), "check": ("version", "preflight", "retire", "link")}
+    known = {"issue": ("title", "feature", "kind", "move", "start", "pr", "close", "reopen", "split", "tell"), "check": ("version", "preflight", "retire", "link")}
     if a.cmd in known and a.id != "new" and a.do and a.do not in known[a.cmd]:
         p.error(f"{a.cmd} {a.id}: one of {', '.join(known[a.cmd])}")
     if a.cmd == "item":
