@@ -227,6 +227,9 @@ def test_next_follows_the_one_order_and_says_what_it_skipped(api, db):
     r = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "new", "item_id": second.id, "title": "Manage"})
     assert r.status_code == 400 and "Product Area" in r.text  # (fixes are batched by Product Area, Nov 18: none made by hand)
     area = rules.new_issue(db, "claude", "Wraps badly", feature="hp").area_id  # (Battle's batch, under Fixes and polish)
+    rules.write_scope(db, "claude", first, what="A design.", inside=["Pick it"])  # (a Roadmap build: its scope agreed, issue 62)
+    rules.agree_scope(db, "user:1", first)
+    rules.order_queue(db, "user:1", [f"i{first.id}", f"a{area}"])  # (Brett's drag: the build above the batch)
     db.flush()
     got = api.get("/api/fft/next", headers=_as(CLAUDE)).json()
     assert got["next"]["area_id"] == area and got["skipped"][0]["what"] == "Waiting on Brett"

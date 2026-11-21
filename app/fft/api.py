@@ -181,7 +181,11 @@ def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depend
     waiting += [{"item": it.id, "title": it.title, "why": it.next_step} for it in db.scalars(select(FftItem).where(FftItem.next_whose == "brett"))]
     waiting += [{"notes_to_approve": n} for n in [len(list(db.scalars(select(FftNote.id).where(FftNote.state == "waiting"))))] if n]
     db.commit()  # (the three days' hand-off, R5)
-    return _ok({"next": {"area_id": pick.area.id, "title": pick.why} if pick.area else None, "blocker": pick.blocker,
+    nxt = ({"area_id": pick.area.id, "title": pick.why} if pick.area else  # (a Roadmap build with no plan of its own: itself, issue 62)
+           {"item_id": pick.item.id, "title": pick.why} if pick.item else None)
+    if nxt and pick.item:
+        nxt["item_id"] = pick.item.id
+    return _ok({"next": nxt, "blocker": pick.blocker,
                 "skipped": [{"what": w, "why": y} for w, y in pick.skipped], "waiting_on_brett": waiting,
                 "round_open": rules.holding_round(db) is not None})  # (a sitting that holds; ▶ Try it's never does)
 

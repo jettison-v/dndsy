@@ -1683,6 +1683,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         draggable: list.dataset.sortItem || '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
         ...(list.dataset.sortHandle ? { handle: list.dataset.sortHandle } : {}),
         onEnd: () => {
+          // (a row's own rows, data-under its key, follow it: a Roadmap build's plans under it in Development's queue)
+          [...list.querySelectorAll(':scope > [data-under]')].reverse().forEach(sub => {
+            const top = list.querySelector(`:scope > [data-key="${CSS.escape(sub.dataset.under)}"]`);
+            if (top) top.after(sub);
+          });
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
           rows().forEach(m => { const k = m.dataset.key || (m.querySelector('[data-key]') || m).dataset.key; if (k) body.append('keys', k); });
           rows().forEach((m, i) => { const n = m.querySelector('[data-sort-n]'); if (n) n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Where it stands' items)

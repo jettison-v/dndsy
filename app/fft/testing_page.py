@@ -393,7 +393,9 @@ def order(request: Request, column: str = Form(...), keys: list[str] = Form(defa
         return denied
     actor = f"user:{views.person(db, user)['id']}"
     ids = [int(k) for k in keys if k.isdigit()]
-    if column == "items":
+    if column == "queue":  # (Development's one queue: batches "a<id>" and builds "i<id>", issue 62)
+        rules.order_queue(db, actor, keys)
+    elif column == "items":
         rules.order_items(db, actor, ids)
     elif column.startswith("item-") and column[5:].isdigit() and (it := db.get(FftItem, int(column[5:]))):
         rules.order_areas(db, actor, it, ids)

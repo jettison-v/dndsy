@@ -174,7 +174,8 @@ def wait(a) -> None:
 def next_(a) -> None:
     got = call(a.base, "/next")
     n = got["next"]
-    print(("Blocker first: " if got["blocker"] else "Next: ") + (f"{n['title']} (area {n['area_id']})" if n else "nothing is Claude's turn."))
+    where = (f"area {n['area_id']}" if n.get("area_id") else f"Roadmap item {n['item_id']}") if n else ""
+    print(("Blocker first: " if got["blocker"] else "Next: ") + (f"{n['title']} ({where})" if n else "nothing is Claude's turn."))
     for s in got["skipped"]:
         print(f"  skipped {s['what']}: {s['why']}")
     if got["round_open"]:

@@ -106,28 +106,62 @@ def plan_row(db: Session, a: FftArea, pick: rules.Pick, frozen: bool) -> dict:
             "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else "", "check_ids": {c.id for c, _ in checks}}
 
 
+def build_row(db: Session, it: FftItem, pick: rules.Pick, frozen: bool) -> dict:
+    """A Roadmap build as a row of the queue (issue 62, Brett's pick: one row, its steps as progress): its stage, steps
+    done of all, its plans' checks, whose turn; it opens the item on the Roadmap, where its steps are."""
+    from app.fft import roadmap_page
+    from app.fft.models import FftStep
+
+    steps = list(db.scalars(select(FftStep).where(FftStep.item_id == it.id)))
+    plans = list(db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False))))
+    checks = [rules.check_state(db, c) for a in plans for c in rules.area_checks(db, a)]
+    done = sum(1 for x in steps if x.done_at)
+    if it.held:
+        s = "held"
+    elif frozen:
+        s = "frozen"
+    elif it.next_whose == "brett":
+        s = "yours"
+    elif pick.item is not None and pick.item.id == it.id and pick.area is None:
+        s = "next"
+    elif done or any(rules.area_turn(db, a) == "brett" or any(i.state == "fixing" for i in rules.area_open_issues(db, a)) for a in plans):
+        s = "building"
+    else:
+        s = "waiting"
+    sc = rules.latest_scope(db, it)
+    waits = ("Held: Claude doesn't take it" if s == "held" else f"You: {it.next_step}" if s == "yours"
+             else "Claude" + (f": {it.next_step}" if it.next_step else ": write its steps" if sc and sc.agreed_at and not steps else ""))
+    return {"it": it, "kind": "i", "key": f"i{it.id}", "stage": s, "stage_said": STAGES[s], "steps": len(steps), "done": done,
+            "checks": len(checks), "passed": sum(1 for c in checks if c["state"] == "passed"), "waits": waits,
+            "turn": "brett" if s == "yours" else "claude", "section": roadmap_page.SECTION_SAID.get(it.section, ""), "size": it.size}
+
+
 def queue(db: Session) -> dict:
-    """The Queue: the Roadmap's items that have plans, in Brett's order, each with its plans in his order; held plans below
-    the cut line. An item with no plan (an idea not built yet, or one finished) isn't Development's: it waits on the
-    Roadmap (issue 49, Nov 20: "Why do these exist here if they are still open?")."""
+    """The Queue: Development's one queue (issue 62, Brett's picks Nov 20: "I thought we had one consolidated development
+    queue in the plan"): every Product Area batch and every Roadmap build whose scope he agreed, in his one drag order
+    (`rules.queue_entries`), held rows below the cut line. Ideas still being discussed wait on the Roadmap."""
     pick = rules.pick_next(db)
-    skipped = dict(pick.skipped)
     frozen = rules.freeze_state(db)["on"]
-    items, held = [], []
-    for it in db.scalars(select(FftItem).order_by(rules.item_rank(), FftItem.place, FftItem.id)):
-        rows = []
-        for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
-            if rules.area_turn(db, a) == "done" and not rules.area_open_issues(db, a):
-                continue  # (on Done)
-            row = plan_row(db, a, pick, frozen)
-            row["item"] = it
-            (held if a.held else rows).append(row)
-        if not rows and not any(h["item"].id == it.id for h in held):
-            continue
-        why = skipped.get(it.title, "")
-        items.append({"it": it, "n": len(items) + 1, "plans": rows, "why": f"skipped: {why}" if why else ""})
-    return {"rows": items, "held": held, "pick": pick, "above": sum(len(x["plans"]) for x in items),
-            "yours": sum(1 for x in items for r in x["plans"] if r["turn"] == "brett")}
+    rows, held = [], []
+    for kind, x in rules.queue_entries(db):
+        if kind == "a":
+            if rules.area_turn(db, x) == "done" and not rules.area_open_issues(db, x):
+                continue  # (its History)
+            row = plan_row(db, x, pick, frozen) | {"kind_key": "a", "key": f"a{x.id}"}
+            (held if x.held else rows).append(row)
+        else:
+            row = build_row(db, x, pick, frozen) | {"kind_key": "i"}
+            (held if x.held else rows).append(row)
+            for a in db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
+                if rules.area_turn(db, a) == "done" and not rules.area_open_issues(db, a):
+                    continue  # (a build's plan of its own, under its row; done, in History)
+                sub = plan_row(db, a, pick, frozen) | {"kind_key": "a", "key": f"a{a.id}", "sub": True}
+                (held if (a.held or x.held) else rows).append(sub)
+    for n, r in enumerate(r for r in rows if not r.get("sub")):
+        r["n"] = n + 1
+    nxt = pick.item.title if pick.item is not None and pick.area is None else (pick.area.title if pick.area is not None else "")
+    return {"rows": rows, "held": held, "pick": pick, "above": len(rows), "next": nxt,
+            "yours": sum(1 for r in rows if r["turn"] == "brett")}
 
 
 def done(db: Session) -> list[dict]:

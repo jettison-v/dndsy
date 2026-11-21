@@ -1715,34 +1715,97 @@ class Pick:
     why: str
     skipped: list[tuple[str, str]] = field(default_factory=list)  # (what, why)
     blocker: bool = False
+    item: FftItem | None = None  # (a Roadmap build that's next and has no plan of its own: its next step is Claude's)
+
+
+def is_build(db: Session, it: FftItem) -> bool:
+    """A Roadmap item in Development's queue (issue 62): its scope agreed (Brett's one OK) and not shipped, or a plan of
+    its own still open (a build from before the Roadmap's scopes)."""
+    if it.standing or it.section not in ("now", "next", "later"):  # (paused waits on the Roadmap)
+        return False
+    sc = latest_scope(db, it)
+    if sc is not None and sc.agreed_at is not None:
+        return True
+    return any(area_turn(db, a) != "done" or area_open_issues(db, a)
+               for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False))))
+
+
+def queue_entries(db: Session) -> list[tuple[str, FftItem | FftArea]]:
+    """Development's one queue (issue 62, Brett's picks Nov 20, docs/mockups/one-development-queue/): every Product Area
+    batch ("a", Fixes and polish's areas) and every Roadmap build ("i", `is_build`) in his one drag order (`queue_place`);
+    any not placed yet after those, in the order they had: the batches, then the builds by the Roadmap's order."""
+    rows: list[tuple[tuple, str, FftItem | FftArea]] = []
+    standing = db.scalar(select(FftItem).where(FftItem.standing.is_(True)))
+    if standing is not None:
+        for n, a in enumerate(db.scalars(select(FftArea).where(FftArea.item_id == standing.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))):
+            rows.append(((a.queue_place is None, a.queue_place or 0, 0, n), "a", a))
+    builds = db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next", "later")))
+                        .order_by(item_rank(), FftItem.place, FftItem.id))
+    for n, it in enumerate(x for x in builds if is_build(db, x)):
+        rows.append(((it.queue_place is None, it.queue_place or 0, 1, n), "i", it))
+    return [(k, x) for _, k, x in sorted(rows, key=lambda r: r[0])]
+
+
+def order_queue(db: Session, actor: str, keys: list[str]) -> None:
+    """Brett's drag on Development's queue: "a<id>" a batch, "i<id>" a build, in his order (issue 62)."""
+    n = 0
+    for k in keys:
+        thing = db.get(FftArea if k[:1] == "a" else FftItem, int(k[1:])) if k[:1] in ("a", "i") and k[1:].isdigit() else None
+        if thing is not None:
+            n += 1
+            thing.queue_place = n
+    _event(db, actor, "queue_ordered", "queue", 0, order=keys[:100])
+
+
+def hold_item(db: Session, actor: str, item: FftItem, held: bool = True) -> None:
+    """A Roadmap build below Development's line (or back above it): Claude doesn't take it (issue 62)."""
+    if item.held != held:
+        item.held = held
+        _event(db, actor, "item_held" if held else "item_let_go", "item", item.id)
 
 
 def pick_next(db: Session) -> Pick:
-    """R15: a blocker first (an issue that stops Brett's round); otherwise the Roadmap from the top, each item's areas
-    in his order, skipping an item whose next step is his and an area in his open round; the first that's Claude's."""
+    """R15: a blocker first (an issue that stops Brett's round); otherwise Development's one queue from the top (issue 62:
+    the Product Area batches and the Roadmap builds in his order), skipping a held row, a build whose next step is his and a
+    plan in his open round; the first that's Claude's. A build with plans of its own is taken by its plan; one without, as
+    itself (its next step)."""
     r = round_open(db)
     if r is not None:
         stop = db.scalar(select(FftIssue).join(FftTryIssue, FftTryIssue.issue_id == FftIssue.id)
                          .where(FftTryIssue.stops_round.is_(True), FftIssue.state.in_(("to_fix", "fixing"))))
         if stop is not None and stop.area_id:
             return Pick(db.get(FftArea, stop.area_id), f"Blocker: “{stop.title}” stops Brett's round.", blocker=True)
-    skipped = []
-    items = db.scalars(select(FftItem).where(FftItem.section.in_(("now", "next", "later"))).order_by(item_rank(), FftItem.place, FftItem.id))
-    for item in items:
-        if item.next_whose == "brett":
-            skipped.append((item.title, f"its next step is Brett's ({item.next_step})" if item.next_step else "its next step is Brett's"))
+    skipped: list[tuple[str, str]] = []
+
+    def plan_ok(area: FftArea, name: str) -> bool:
+        if area_turn(db, area) != "claude":
+            return False
+        if area.held:  # (below Development's line: Brett holds it)
+            skipped.append((name, "held below the line"))
+            return False
+        if in_open_round(db, area):
+            skipped.append((name, "in Brett's open round"))
+            return False
+        return True
+
+    for kind, x in queue_entries(db):
+        if kind == "a":
+            if plan_ok(x, x.title):
+                return Pick(x, x.title, skipped)
             continue
-        for area in db.scalars(select(FftArea).where(FftArea.item_id == item.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
-            turn = area_turn(db, area)
-            if turn != "claude":
-                continue
-            if area.held:  # (below Work's cut line: Brett holds it)
-                skipped.append((f"{item.title} › {area.title}", "held below the line"))
-                continue
-            if in_open_round(db, area):
-                skipped.append((f"{item.title} › {area.title}", "in Brett's open round"))
-                continue
-            return Pick(area, f"{item.title} › {area.title}", skipped)
+        if x.held:
+            skipped.append((x.title, "held below the line"))
+            continue
+        if x.next_whose == "brett":
+            skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
+            continue
+        plans = list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))
+        for a in plans:
+            if plan_ok(a, f"{x.title} › {a.title}"):
+                return Pick(a, f"{x.title} › {a.title}", skipped, item=x)
+        sc = latest_scope(db, x)
+        if sc is not None and sc.agreed_at is not None:
+            return Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", skipped, item=x)
     return Pick(None, "Nothing is Claude's turn.", skipped)
 
 

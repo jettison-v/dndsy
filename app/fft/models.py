@@ -40,6 +40,10 @@ class FftItem(_Stamped, Base):
     size: Mapped[str] = mapped_column(String(2), server_default="", deferred=True, deferred_group="roadmap")
     status: Mapped[str] = mapped_column(String(200), server_default="", deferred=True, deferred_group="roadmap")
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
+    # Development's one queue (issue 62, Brett's picks Nov 20): a Roadmap build's place among the builds and the Product Area
+    # batches (his drag; none yet: after those placed, in the order they had), and held below the line
+    queue_place: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
+    held: Mapped[bool] = mapped_column(Boolean, server_default=false(), deferred=True, deferred_group="roadmap")
     # What it changed, with its numbers (Brett, Nov 20): its first line the headline, each line after it one result
     result: Mapped[str] = mapped_column(Text, server_default="", deferred=True, deferred_group="roadmap")
 
@@ -138,6 +142,8 @@ class FftArea(_Stamped, Base):
     careful_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"))
     # Below Work's cut line (Brett's picks on The Work Pages, Nov 20): Claude takes only the plans above it
     held: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    # A Product Area batch's place in Development's one queue (issue 62), beside the Roadmap builds
+    queue_place: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default=sa_text("NULL"))
 
 
 class FftIdea(_Stamped, Base):
