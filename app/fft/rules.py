@@ -846,6 +846,7 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     if item.standing:
         raise RuleError("bad", "Fixes and polish never ships.")
     item.section, item.shipped_at = ("not_doing" if not_doing else "shipped"), now()
+    item.scope_asked_at = None  # (done: a Scope it press doesn't come back with it)
     if result is not None and result.strip():
         item.result = result.strip()[:4000]
     _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)

@@ -1628,16 +1628,19 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .rm-why .plabel, .rm-why p, .rm-why ul { margin: 0; }
 .rm-why ul { padding-left: 1.2em; display: grid; gap: 2px; }
 .rm-why .rm-why-from { margin-top: var(--sp-1); }
-.rm-item :is(.rm-why, .rm-doc, .rm-adds) { font-size: var(--fs-lg); line-height: 1.6; }  /* (reading size: 15px on a laptop) */
-.rm-item :is(.rm-why-from, .rm-changed, .rm-on, .rm-ans, .rm-doc-bar .note, .rm-add > .note, .rm-general .note) { font-size: var(--fs-md); }
-.rm-item .rm-doc { padding: var(--sp-5) var(--sp-6); gap: var(--sp-5); }
+@media (min-width: 901px) {  /* (reading size on a laptop, 15px; a phone's own type is already 16px) */
+  main.rm-item :is(.rm-why, .rm-doc, .rm-adds) { font-size: var(--fs-lg); line-height: 1.6; }
+  main.rm-item :is(.rm-why-from, .rm-changed, .rm-on, .rm-ans, .rm-doc-bar .note, .rm-add > .note, .rm-general .note) { font-size: var(--fs-md); }
+  main.rm-item .rm-doc { padding: var(--sp-5) var(--sp-6); gap: var(--sp-5); }
+  main.rm-item .rm-none-head { font-size: var(--fs-xl); }
+}
 .rm-item .rm-adds { gap: var(--sp-3); }
 .rm-item .rm-add { padding: var(--sp-3) var(--sp-4); }
 .rm-side-h { margin: 0; font-size: var(--fs-lg); font-weight: 600; color: var(--text-strong); }
 .rm-side-h .note { font-weight: 400; }
 .rm-none { display: grid; gap: var(--sp-2); justify-items: start; }
 .rm-none p { max-width: 60ch; color: var(--muted); }
-.rm-none .rm-none-head { font-size: var(--fs-xl); font-weight: 600; color: var(--text-strong); }
+.rm-none .rm-none-head { font-size: var(--fs-lg); font-weight: 600; color: var(--text-strong); }
 .rm-result { margin: 0 0 var(--sp-3); max-width: 80ch; display: grid; gap: var(--sp-2); }
 .rm-result .plabel, .rm-result-head, .rm-result ul { margin: 0; }
 .rm-result-head { font-weight: 600; }
