@@ -17,6 +17,7 @@ from app.fft.models import FftCheck, FftEvent, FftIssue, FftItem, FftKey, FftLin
 from app.main import app
 
 CLAUDE, RELAY, MINI = "c" * 40, "r" * 40, "m" * 40
+GOAL = {"before": "It didn't.", "now": "It does."}  # (Clearer checks: askdnd refuses a check without its goal)
 
 
 @pytest.fixture
@@ -203,12 +204,12 @@ def test_the_freeze_answers_anyone_with_only_whether_its_on(api, db):
 
 
 def test_a_check_must_follow_the_walkthroughs_rules(api, db):
-    bad = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": ["Type lots, then press Save."], "expect": "y"})
+    bad = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": ["Type lots, then press Save."], "expect": "y"})
     assert bad.status_code == 400 and "two things" in bad.text
-    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "devices": ["toaster"]}).status_code == 400
-    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "area_id": 999}).status_code == 400
-    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "issues": [999]}).status_code == 400
-    ok = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "Saves", "steps": ["Press [Save]."], "expect": "It saves.", "devices": ["laptop", "iphone"]})
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": "Press [Save].", "expect": "y", "devices": ["toaster"]}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": "Press [Save].", "expect": "y", "area_id": 999}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": "Press [Save].", "expect": "y", "issues": [999]}).status_code == 400
+    ok = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "Saves", "steps": ["Press [Save]."], "expect": "It saves.", "devices": ["laptop", "iphone"]})
     assert ok.status_code == 200 and ok.json()["steps"] == ["Press [Save]."] and ok.json()["state"] == "preflight"  # (R18: Claude tries it first)
     cid = ok.json()["id"]
     assert api.post(f"/api/fft/checks/{cid}", headers=_as(CLAUDE), json={"do": "version", "steps": ["Press [Save]."], "expect": "Saved."}).status_code == 400  # (a version says why)
@@ -306,10 +307,10 @@ def test_a_new_check_can_be_tried_through_a_characters_eyes(api, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     db.flush()
-    r = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "Cole's Battle", "steps": ["Look."], "expect": "It shows.",
+    r = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "Cole's Battle", "steps": ["Look."], "expect": "It shows.",
                                                                 "path": f"/characters/{cole.id}/battle", "as_character": cole.id})
     assert r.status_code == 200 and db.get(FftCheck, r.json()["id"]).as_character == cole.id
-    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": ["Look."], "expect": "x", "as_character": 999999}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": ["Look."], "expect": "x", "as_character": 999999}).status_code == 400
 
 
 def test_claudes_lines_go_to_the_senders_or_only_to_brett_and_questions_are_checked(api, db):
@@ -430,7 +431,7 @@ def test_a_check_waits_for_its_deploy_before_it_reaches_brett(api, db):
     from app.fft import testing_page
 
     pr = "https://github.com/jettison-v/dndsy/pull/9999"
-    made = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "The page's new list", "steps": ["Open the page."], "expect": "It lists.",
+    made = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "The page's new list", "steps": ["Open the page."], "expect": "It lists.",
                                                                  "path": "/party", "pr": pr}).json()
     c = db.get(FftCheck, made["id"])
     rules.preflight(db, "claude", c, True)
@@ -448,8 +449,21 @@ def test_the_pull_requests_checks_wait_on_are_listed_for_the_deploy_step(api, db
     """Nov 20: `feedback.py live` asks for these after each deploy, so a check whose change no open issue names still
     reaches For you once its pull request is live."""
     pr = "https://github.com/jettison-v/dndsy/pull/9998"
-    api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "A page", "steps": ["Open it."], "expect": "It opens.", "path": "/party", "pr": pr})
+    api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "A page", "steps": ["Open it."], "expect": "It opens.", "path": "/party", "pr": pr})
     assert api.get("/api/fft/checks/waiting", headers=_as(CLAUDE)).json()["prs"] == [pr]
     api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "c" * 40, "prs": [pr]})
     assert api.get("/api/fft/checks/waiting", headers=_as(CLAUDE)).json()["prs"] == []
     assert api.get("/api/fft/checks/waiting").status_code == 404  # (no key)
+
+
+def test_a_check_needs_its_goal_and_what_you_should_see(api, db):
+    """Clearer checks (Roadmap item 6, scope v3): askdnd refuses a check of Claude's without its goal (before, now) or what
+    you should see; a version keeps the goal unless it changes it, and a check can need more than one person."""
+    base = {"title": "Saves", "steps": ["Press [Save]."], "expect": "It saves."}
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json=base).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json=base | {"before": "It didn't."}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, **base, "expect": ""}).status_code == 400
+    ok = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, **base, "people": True}).json()
+    assert (ok["before"], ok["now"], ok["people"]) == ("It didn't.", "It does.", True)
+    v2 = api.post(f"/api/fft/checks/{ok['id']}", headers=_as(CLAUDE), json={"do": "version", "steps": ["Press [Save]."], "expect": "Saved.", "why": "clearer"}).json()
+    assert (v2["before"], v2["now"]) == ("It didn't.", "It does.")

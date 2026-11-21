@@ -15,6 +15,6 @@
 </div>
 <div class="peek-foot row">
   {% if flight %}<form method="post" action="/manage/testing/round/after"><input type="hidden" name="area" value="{{ area }}"><button class="btn primary" type="submit" data-do="round-after">Let it go live first</button></form>{% endif %}
-  <form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ area }}"><button class="btn{{ '' if flight else ' primary' }}" type="submit" data-do="round-now">Start now</button></form>
+  <form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ area }}"><input type="hidden" name="need" value="{{ need }}"><button class="btn{{ '' if flight else ' primary' }}" type="submit" data-do="round-now">Start now</button></form>
   <button class="btn link peek-close" type="button">Cancel</button>
 </div>

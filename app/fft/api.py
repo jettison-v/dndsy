@@ -116,6 +116,7 @@ def check_view(db: Session, check: FftCheck) -> dict:
     v = db.scalar(select(FftCheckVersion).where(FftCheckVersion.check_id == check.id, FftCheckVersion.version == check.version))
     return {"id": check.id, "title": check.title, "area_id": check.area_id, "version": check.version, "devices": check.devices,
             "path": v.path if v else "", "steps": v.steps if v else [], "expect": v.expect if v else "", "why": v.why if v else "",
+            "before": v.before if v else "", "now": v.now if v else "", "people": check.people,
             "preflight": check.preflight, "retired": check.retired, **rules.check_state(db, check),
             "issues": list(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == check.id)))}
 
@@ -398,7 +399,8 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
         c = rules.write_check(db, actor.name, title=_str(body, "title", 160, need=True), steps=_steps(body), expect=_str(body, "expect", need=True),
                               path=_str(body, "path", 500), why=_str(body, "why"), area_id=body.get("area_id"), devices=devices,
                               issue_ids=issue_ids, minutes=body.get("minutes") if type(body.get("minutes")) is int else 2,
-                              makes=body.get("makes") is True, as_character=who)
+                              makes=body.get("makes") is True, as_character=who, before=_str(body, "before", 600), now=_str(body, "now", 600),
+                              people=body.get("people") is True, need_goal=True)  # (Clearer checks: never without its goal)
         if _str(body, "pr", 300):  # (its change's pull request: it reaches For you once that's live, Nov 20)
             rules.wait_for_deploy(db, actor.name, c, _str(body, "pr", 300))
     except rules.RuleError as e:
@@ -409,14 +411,16 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
 
 @router.post("/checks/{check_id:int}")
 def check_change(check_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """version (steps, expect, path, why), preflight (passed, why), retire (why), link (issue)."""
+    """version (steps, expect, path, why; before and now, the goal; people), preflight (passed, why), retire (why), link (issue)."""
     actor = keys.require(db, x_fft_key, "check")
     body = body if isinstance(body, dict) else {}
     c = db.get(FftCheck, check_id) or _missing()
     do = _str(body, "do", 20, need=True)
     try:
         if do == "version":
-            rules.new_version(db, actor.name, c, steps=_steps(body), expect=_str(body, "expect", need=True), path=_str(body, "path", 500), why=_str(body, "why"))
+            rules.new_version(db, actor.name, c, steps=_steps(body), expect=_str(body, "expect", need=True), path=_str(body, "path", 500), why=_str(body, "why"),
+                              before=_str(body, "before", 600) if "before" in body else None, now=_str(body, "now", 600) if "now" in body else None,
+                              people=body["people"] if isinstance(body.get("people"), bool) else None)
         elif do == "preflight":
             if type(body.get("passed")) is not bool:
                 raise HTTPException(400, "passed: true or false")

@@ -1136,10 +1136,15 @@ def test_campaign_of(db: Session, path: str) -> str:
 
 def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect: str, path: str = "", why: str = "",
                 area_id: int | None = None, devices: list[str] | None = None, issue_ids: list[int] | None = None,
-                minutes: int = 2, makes: bool = False, as_character: int | None = None) -> FftCheck:
+                minutes: int = 2, makes: bool = False, as_character: int | None = None, before: str = "", now: str = "",
+                people: bool = False, need_goal: bool = False) -> FftCheck:
     """A check: what to try, version 1. One that `makes` something runs in a test campaign, never the table's
     (docs/testing-guide.md; the old tool refused it, and the review of PR #417 found the new one didn't).
-    `as_character`: tried through that character's player's eyes (View as)."""
+    `as_character`: tried through that character's player's eyes (View as). Its goal first (Clearer checks, Roadmap
+    item 6): what was wrong `before`, what's true `now`; `need_goal` refuses one without them or without what you should
+    see (Claude's checks, through the API). `people`: it needs more than one person, so it's tried in a round of its own."""
+    if need_goal and not (before.strip() and now.strip() and expect.strip()):
+        raise RuleError("bad", "A check needs its goal (what was wrong before, what's true now) and what you should see.")
     if not title.strip() or not steps:
         raise RuleError("bad", "A check needs its title and steps.")
     if makes and not test_campaign_of(db, path):
@@ -1148,25 +1153,33 @@ def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect
     if area_id is None and issue_ids:  # (a check is tried with the batch its issues are in)
         area_id = db.scalar(select(FftIssue.area_id).where(FftIssue.id.in_(issue_ids), FftIssue.area_id.is_not(None)).order_by(FftIssue.id))
     check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)), makes=makes,
-                     as_character=as_character)
+                     as_character=as_character, people=people)
     db.add(check)
     db.flush()
-    db.add(FftCheckVersion(check_id=check.id, version=1, path=path[:500], steps=steps, expect=expect, why=why))
+    db.add(FftCheckVersion(check_id=check.id, version=1, path=path[:500], steps=steps, expect=expect, why=why,
+                           before=before.strip()[:600], now=now.strip()[:600]))
     for iid in issue_ids or []:
         db.add(FftCheckIssue(check_id=check.id, issue_id=iid))
     _event(db, actor, "check_written", "check", check.id, area_id=area_id, issues=issue_ids or [])
     return check
 
 
-def new_version(db: Session, actor: str, check: FftCheck, *, steps: list[str], expect: str, path: str = "", why: str) -> int:
-    """R7: every edit is a new version; earlier tries keep theirs. Its pre-flight starts again (R18)."""
+def new_version(db: Session, actor: str, check: FftCheck, *, steps: list[str], expect: str, path: str = "", why: str,
+                before: str | None = None, now: str | None = None, people: bool | None = None) -> int:
+    """R7: every edit is a new version; earlier tries keep theirs. Its pre-flight starts again (R18). Its goal carries
+    over unless given; `people` changes what it needs."""
     if not why.strip():
         raise RuleError("bad", "Say why it changed.")
+    last = db.scalar(select(FftCheckVersion).where(FftCheckVersion.check_id == check.id, FftCheckVersion.version == check.version))
+    before = (last.before if last else "") if before is None else before.strip()[:600]
+    now = (last.now if last else "") if now is None else now.strip()[:600]
+    if people is not None:
+        check.people = people
     if check.makes and not test_campaign_of(db, path):
         raise RuleError("bad", "A check that makes something runs in a test campaign: give it a page in one (/c/<test campaign>/…).")
     check.version += 1
     check.preflight = ""
-    db.add(FftCheckVersion(check_id=check.id, version=check.version, path=path[:500], steps=steps, expect=expect, why=why))
+    db.add(FftCheckVersion(check_id=check.id, version=check.version, path=path[:500], steps=steps, expect=expect, why=why, before=before, now=now))
     _event(db, actor, "check_version", "check", check.id, area_id=check.area_id, version=check.version)
     return check.version
 

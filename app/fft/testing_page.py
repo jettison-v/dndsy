@@ -51,6 +51,15 @@ MINE = (BACK, FOR_YOU)
 LOCAL = "http://localhost:8004"  # (Claude's local server on Brett's Mac: preview "web-claude"; a local try opens there)
 ROUND = "fft_round"  # the session's open round: {"id", "checks", "i", "device", "home"}
 PEOPLES = ("laptop", "iphone", "ipad")  # (Brett's devices; the Mac Mini's runs are Claude's)
+# What a check needs, For you's groups in Try (Clearer checks, Brett's pick 3: a group per need, each its own round): a
+# device of his, or more than one person (`FftCheck.people`, tried on the laptop with someone else)
+NEEDS = (("laptop", "On your laptop"), ("iphone", "On your iPhone"), ("ipad", "On your iPad"), ("people", "With more than one person"))
+NEED_DEVICE = {"laptop": "laptop", "iphone": "iphone", "ipad": "ipad", "people": "laptop"}
+
+
+def needs_of(c: FftCheck, mine: list[str]) -> list[str]:
+    """The groups a check of Brett's is in: more than one person, or each device it's still to try on."""
+    return ["people"] if c.people else (mine or ["laptop"])
 DEVICE_SAID = {"laptop": "your laptop", "iphone": "your iPhone", "ipad": "your iPad", "mac_mini": "the Mac Mini"}
 
 
@@ -167,6 +176,9 @@ SECTION_OF = {"local": "local", "check": "try", "question": "decide", "decision"
               "roadmap": "roadmap", "scope": "roadmap"}
 
 
+NEED_ORDER = {k: n for n, (k, _) in enumerate(NEEDS)}
+
+
 def for_you(db: Session, device: str) -> list[dict]:
     """Groups of rows by what Brett does with them (the Work Flow Map's For you, Nov 19): Try (checks, a group per area
     in the one order), Decide (Claude's questions and decisions), Look at (fixes to OK, fixes live with no check), From
@@ -196,9 +208,11 @@ def for_you(db: Session, device: str) -> list[dict]:
         cv = check_view(db, c, device)
         if cv["turn"] != "yours" or cv["state"]["state"] == "asks":
             continue
-        where = "" if cv["here"] or not cv["mine"] else f" · on {DEVICE_SAID[cv['mine'][0]]}"
-        rows.append((area_key(c.area_id), c.area_id, {"key": f"c{c.id}", "title": c.title, "kind": "check", "here": cv["here"],
-                                                       "sub": f"{cv['word']}{where}", "minutes": c.minutes}))
+        v = cv["v"]
+        goal = f"Now: {v.now}" if v is not None and v.now else cv["word"]  # (its goal on the row: what it's for, Brett's picks Nov 21)
+        for need in needs_of(c, cv["mine"]):
+            rows.append(((NEED_ORDER[need], *area_key(c.area_id)), c.area_id, {"key": f"c{c.id}", "title": c.title, "kind": "check", "need": need,
+                                                                               "here": NEED_DEVICE[need] == device, "sub": goal, "minutes": c.minutes}))
     for q in db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None)).order_by(FftQuestion.id)):
         aid = None
         if q.about == "issue" and q.about_id and (i := db.get(FftIssue, q.about_id)):
@@ -217,10 +231,11 @@ def for_you(db: Session, device: str) -> list[dict]:
             rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "ready", "sub": "Fixed and live, with no check: does it work?"}))
     for lt in db.scalars(select(FftLocalTry).where(FftLocalTry.answer == "").order_by(FftLocalTry.id)):  # (while he's Available)
         rows.append((area_key(lt.area_id), lt.area_id, {"key": f"l{lt.id}", "title": lt.title, "kind": "local", "sub": "Ready on your Mac"}))
-    for _, aid, row in sorted(rows, key=lambda r: (SECTION_ORDER[SECTION_OF[r[2]["kind"]]], r[0])):
+    for _, aid, row in sorted(rows, key=lambda r: (SECTION_ORDER[SECTION_OF[r[2]["kind"]]], r[0] if r[2]["kind"] == "check" else (0, *r[0]))):
         a = areas.get(aid) if aid else None
-        if row["kind"] == "check":  # (a group per area: ▶ Just this area starts a round of its checks)
-            put(f"a{aid or 0}", a.title if a else "In no area yet", row, aid)
+        if row["kind"] == "check":  # (a group per need, then per area: ▶ Start round and ▶ Just this area)
+            put(f"{row['need']}:a{aid or 0}", a.title if a else "In no area yet", row, aid)
+            groups[f"{row['need']}:a{aid or 0}"]["need"] = row["need"]
         else:  # (one group each, the area named on the row)
             put(SECTION_OF[row["kind"]], dict(SECTIONS)[SECTION_OF[row["kind"]]], row | {"sub": f"{a.title} · {row['sub']}" if a else row["sub"]})
     for n in db.scalars(select(FftNote).where(FftNote.state == "waiting").order_by(FftNote.id)):
@@ -239,7 +254,8 @@ def for_you(db: Session, device: str) -> list[dict]:
 
 
 def summary(groups: list[dict]) -> dict:
-    rows = [r for g in groups for r in g["rows"]]
+    every = [r for g in groups for r in g["rows"]]
+    rows = list({r["key"]: r for r in every}.values())  # (a check to try on two devices is one check, in two groups)
     count = lambda kind: sum(1 for r in rows if r["kind"] == kind)
     checks = [r for r in rows if r["kind"] == "check"]
     bits = [(count("local"), "change to try on your Mac", "changes to try on your Mac", ""),
@@ -330,13 +346,25 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
         "flight_areas": set().union(*[g["area_ids"] for g in flight]) if flight else set(),
         "show": show, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "summary": summary(groups), "from_": show,
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
+        "need_said": dict(NEEDS), "need_device": NEED_DEVICE, "need_counts": need_counts(groups),
         "me_id": me["id"], "listening": views.listening(db), "here_path": FOR_YOU, "status": status(db),
         "toast": request.session.pop("toast", None)})
 
 
+def need_counts(groups: list[dict]) -> dict:
+    """Each need's checks and minutes, for its heading in Try."""
+    out = {k: {"n": 0, "minutes": 0} for k, _ in NEEDS}
+    for g in groups:
+        for r in g["rows"]:
+            if r["kind"] == "check":
+                out[r["need"]]["n"] += 1
+                out[r["need"]]["minutes"] += r.get("minutes") or 0
+    return out
+
+
 def listed_keys(db: Session, show: str, device: str) -> list[str]:
     """For you's rows, in their order: the item window's ↑ ↓ follow it."""
-    return [r["key"] for g in for_you(db, device) for r in g["rows"]] if show == "foryou" else []
+    return list(dict.fromkeys(r["key"] for g in for_you(db, device) for r in g["rows"])) if show == "foryou" else []
 
 
 def _picked(db: Session, pick: str, device: str) -> dict | None:
@@ -563,14 +591,20 @@ def leave(request: Request, back: str) -> str:
 
 
 @router.post("/manage/testing/round")
-def round_start(request: Request, area: int = Form(0), db: Session = Depends(get_db)):
-    """▶ Start round (or ▶ Just this area): the checks that are yours on this device, in For you's order."""
+def round_start(request: Request, area: int = Form(0), need: str = Form(""), db: Session = Depends(get_db)):
+    """▶ Start round (or ▶ Just this area): the checks of one need, yours on this device, in For you's order (Clearer
+    checks, Brett's pick 3: a round never mixes laptop, phone and more than one person)."""
     user, denied = _admin(request)
     if denied:
         return denied
     device = device_of(request)
+    need = need if need in NEED_DEVICE else device
+    if NEED_DEVICE.get(need) != device:
+        request.session["toast"] = web.notice(f"Start this round {DEVICE_SAID.get(NEED_DEVICE.get(need, ''), 'on that device').replace('your ', 'on your ')}.", "info")
+        return RedirectResponse(FOR_YOU, status_code=303)
     groups = for_you(db, device)
-    ids = [int(r["key"][1:]) for g in groups if not area or g["area_id"] == area for r in g["rows"] if r["kind"] == "check" and r.get("here")]
+    ids = list(dict.fromkeys(int(r["key"][1:]) for g in groups if not area or g["area_id"] == area for r in g["rows"]
+                             if r["kind"] == "check" and r.get("here") and r.get("need") == need))
     if not ids:
         request.session["toast"] = web.notice("Nothing to try on this device right now.", "info")
         return RedirectResponse(FOR_YOU, status_code=303)
@@ -580,21 +614,21 @@ def round_start(request: Request, area: int = Form(0), db: Session = Depends(get
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
     here = access.current_campaign(me["email"])
-    request.session[ROUND] = {"id": r.id, "checks": ids, "i": 0, "device": device, "home": here["id"] if here else None}
+    request.session[ROUND] = {"id": r.id, "checks": ids, "i": 0, "device": device, "need": need, "home": here["id"] if here else None}
     to = _next_page(db, request)
     db.commit()
     return RedirectResponse(to, status_code=303)
 
 
 @router.get("/manage/testing/round/heads-up")
-def round_heads_up(request: Request, area: int = 0, db: Session = Depends(get_db)):
+def round_heads_up(request: Request, area: int = 0, need: str = "", db: Session = Depends(get_db)):
     """Before ▶ Start round holds a change of Claude's about to go live there (Brett's pick A on
     docs/mockups/round-heads-up/, Nov 19): what would wait, with Let it go live first, Start now, Cancel."""
     _, denied = _admin(request)
     if denied:
         return denied
     flight = rules.in_flight(db, rules.round_areas(db, area or None), whole=not area)
-    return templates.TemplateResponse(request, "_round_heads_up.html", {"flight": flight, "area": area})
+    return templates.TemplateResponse(request, "_round_heads_up.html", {"flight": flight, "area": area, "need": need if need in NEED_DEVICE else ""})
 
 
 @router.post("/manage/testing/round/after")

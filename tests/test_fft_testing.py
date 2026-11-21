@@ -81,8 +81,10 @@ def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
     assert "The Mini runs this" not in page and "The Mini runs this" in admin.get("/manage/work?tab=checks").text
     assert "on your iPhone" in page and f'data-row="n{n.id}"' in page and f'data-row="r{road.id}"' in page and 'data-kind="question"' in page
     assert f'data-row="d{db.scalar(select(FftIdea.id))}"' in page
-    assert "▶ Start round · 1 check" in page  # (only what this device can try)
-    assert "▶ Start round · 1 check" in admin.get("/manage/for-you", headers=IPHONE).text
+    assert 'data-need="laptop"' in page and 'data-need="iphone"' in page  # (a group per need, each its own round: Clearer checks)
+    assert page.count('name="need" value="laptop"') >= 1 and 'name="need" value="iphone"' not in page  # (only what this device can try starts here)
+    on_phone = admin.get("/manage/for-you", headers=IPHONE).text
+    assert 'name="need" value="iphone"' in on_phone and 'name="need" value="laptop"' not in on_phone
 
 
 def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
@@ -97,7 +99,7 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     page = admin.get("/manage/for-you").text
     sections = re.findall(r'data-section="(\w+)"', page)
     assert sections == ["try", "decide", "table", "roadmap"]  # (in that order; Look at only when there's something)
-    assert f'data-group="a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
+    assert f'data-group="laptop:a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
     assert f"{a.title} · Claude asks" in page
     assert 'data-fft-page="for-you"' in page and 'data-tab="stands"' not in page and 'data-do="start-round"' in page
     assert 'data-fft-tabs' not in page and 'data-item="for-you" aria-current="page"' in page  # (one way between them: the side list's Our work, Nov 20)
@@ -418,7 +420,7 @@ def test_the_heads_up_before_a_round_holds_a_change_about_to_go_live(admin, play
     db.flush()
     assert [g["n"] for g in rules.in_flight(db, rules.round_areas(db), whole=True)] == ["431"]
     page = admin.get("/manage/for-you").text
-    assert 'data-modal-url="/manage/testing/round/heads-up" data-do="start-round"' in page
+    assert 'data-modal-url="/manage/testing/round/heads-up?need=laptop" data-do="start-round"' in page
     window = admin.get("/manage/testing/round/heads-up").text
     assert 'data-pr="431"' in window and 'data-do="round-after"' in window and 'data-do="round-now"' in window
     assert player.post("/manage/testing/round/after").status_code in (303, 403) and not rules.after_state(db)["on"]  # (admins only)
@@ -469,3 +471,24 @@ def test_one_item_opens_in_its_window_with_the_next_and_the_old_link_opens_it_th
     page = admin.get(f"/manage/feedback?tab=ready&open=i{first.id}").text  # (an old link: its page, the item over it)
     assert f'data-open-item="/manage/item/i{first.id}?from=feedback%3Aready%3A%3A%3A%3A"' in page
     assert f'data-panel-url="/manage/item/{keys[0]}?from=foryou"' in admin.get("/manage/for-you").text
+
+
+def test_a_check_reads_goal_first_and_a_round_keeps_to_one_need(admin, db):
+    """Clearer checks (Roadmap item 6, Brett's picks Nov 21): a check's goal (before, now) sits above its steps in its
+    window and a tap away on the round's card; For you's Try is a group per need, and a round keeps to one: a check that
+    needs more than one person is never in a laptop round."""
+    a = _area(db)
+    solo = _check(db, title="Alone", path="/party", area=a, before="It wrapped.", now="It fits on one line.")
+    duo = _check(db, title="Two of us", path="/party", area=a, before="Only one saw it.", now="Both see it.", people=True)
+    window = admin.get(f"/manage/item/c{solo.id}?from=foryou").text
+    assert "data-goal" in window and "It fits on one line." in window and window.index("data-goal") < window.index('class="walk"')
+    page = admin.get("/manage/for-you").text
+    assert 'data-need="laptop"' in page and 'data-need="people"' in page and "Now: It fits on one line." in page
+    admin.post("/manage/testing/round", data={"need": "laptop"})
+    card = admin.get("/manage/testing/card?at=/party").text
+    assert f'data-check-card="{solo.id}"' in card and '<details class="cc-goal" data-goal>' in card
+    admin.post(f"/manage/testing/checks/{solo.id}/try", data={"result": "passed", "seen": "to_try"})
+    assert f'data-check-card="{duo.id}"' not in admin.get("/manage/testing/card?at=/party").text  # (the laptop round is done: never the two-person check)
+    admin.post("/manage/testing/round/end")
+    admin.post("/manage/testing/round", data={"need": "people"})
+    assert f'data-check-card="{duo.id}"' in admin.get("/manage/testing/card?at=/party").text
