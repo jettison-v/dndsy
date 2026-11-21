@@ -198,7 +198,7 @@
   {% endcall %}
   {% elif picked.mine %}
   {% call rd_section("Your next step", tone="ask", attrs=' data-sec="steps"') %}
-  <p class="note">Its scope is agreed; this step is yours, and Claude waits for it. Do it, then tick it here or on the item.</p>
+  <p class="note">{% if r.stage in ("agreed", "building") %}Its scope is agreed; this{% else %}This{% endif %} step is yours, and Claude waits for it. Do it, then tick it here or on the item.</p>
   <ul class="rm-quick">{% for s in picked.mine %}<li><form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="tick"><input type="hidden" name="step" value="{{ s.id }}"><button class="btn small" type="submit" data-do="tick">✓ Done</button></form> {{ s.text }}</li>{% endfor %}</ul>
   {% endcall %}
   {% else %}{{ state_line("Yours", "ask", it.next_step or "Its next step is yours.") }}{% endif %}
