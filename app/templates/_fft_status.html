@@ -32,9 +32,12 @@
       </div>
     </details>
   </div>
-  {% set waiting = bar.hands | rejectattr("late") | list %}
-  {% if waiting %}{# (what's in Claude's hands and not late: a quiet line that opens to them; Brett's pick 1A, issue 21) #}
-  <details class="fold fft-hands fft-status-line" data-stat="hands"><summary class="note">{{ waiting | length }} thing{{ "s" if waiting | length != 1 }} in Claude's hands now</summary>{{ hands_list(waiting, bar.gap_words) }}</details>{% endif %}
+  {# (what's in Claude's hands: a quiet line that opens to them, Brett's pick 1A, issue 21; on Development the late ones
+     are its amber panel instead, `late_panel`; elsewhere the line says how many are late, in amber) #}
+  {% set waiting = bar.hands | rejectattr("late") | list if late_panel else bar.hands %}
+  {% set late_here = [] if late_panel else bar.late %}
+  {% if waiting %}
+  <details class="fold fft-hands fft-status-line" data-stat="hands"><summary class="note">{{ waiting | length }} thing{{ "s" if waiting | length != 1 }} in Claude's hands now{% if late_here %} · <span class="fft-late" data-late-count>{{ late_here | length }} waiting too long</span>{% endif %}</summary>{{ hands_list(waiting, bar.gap_words) }}</details>{% endif %}
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span></div>
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
   {% if bar.after.on and not bar.round %}<div class="fft-status-line" data-stat="after"><span>Your round starts when {{ bar.after.prs | length }} change{{ "s" if bar.after.prs | length != 1 }} of Claude's {{ "is" if bar.after.prs | length == 1 else "are" }} live</span>

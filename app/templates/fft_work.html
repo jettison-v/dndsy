@@ -63,7 +63,7 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Development</h1></div>
   <p class="subtitle">Everything being built, in your order: the Roadmap's builds (once you've agreed their scope) and each Product Area's fixes. Claude takes the rows above the line, top first. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
-  {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
+  {% with bar = status, back = "work", late_panel = True %}{% include "_fft_status.html" %}{% endwith %}
   {% if status.late %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
     <h3 class="plabel" id="fft-missed-h">Waiting on Claude too long · {{ status.late | length }}</h3>
     {{ hands_list(status.late, gap_words) }}

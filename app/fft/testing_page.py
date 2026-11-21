@@ -790,7 +790,7 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
     if issue_id is not None and issue_id not in [i.id for i in rules._blocking_issues(db, c) + _sent_from(db, c)]:
         raise HTTPException(400, "That isn't one of this check's issues.")
     pics = sending._pictures(body)
-    if not text and (issue_id is None or pics):  # (an issue already sent needs no words again: issue 16)
+    if not text and (issue_id is None or pics or not blocking):  # (an issue named again to fail the check needs no words: issue 16)
         raise HTTPException(400, "Say what's wrong.")
     me = views.person(db, request.session.get("real_user") or user)
     actor = f"user:{me['id']}"

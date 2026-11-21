@@ -141,6 +141,9 @@ def test_claude_reads_its_gaps_and_brett_sees_them_on_where_it_stands(db, admin,
     db.flush()
     page = admin.get("/manage/work").text
     assert "data-missed" in page and 'data-gap="no_feature"' in page and f"open=i{issue.id}" in page
+    foryou = admin.get("/manage/for-you").text  # (no amber panel there: the line says it's late, issue 21)
+    assert "data-missed" not in foryou and "data-late-count" in foryou and f"open=i{issue.id}" in foryou
+    assert "data-late-count" not in page  # (Development has its panel instead)
 
 
 def _hook(monkeypatch, tmp_path, items, active=False, env=None):

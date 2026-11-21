@@ -1387,7 +1387,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (t === 'fft') {  // (Found, Fixed, Tried changed: Feedback, Testing and Notes you sent show their new copy; a round's card too)
       // (never over something half done: words typed but not sent, a fold opened, a row being dragged; the next change catches up)
       const drafting = [...document.querySelectorAll('main textarea, main input[type=text], main input[type=search]')].some(el => el.value !== el.defaultValue)
-        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open]');
+        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open], main details.fft-hands[open]');
       if (document.querySelector('[data-fft-page], [data-fft-yours]') && !drafting) showInPlace();
       const slot = document.getElementById('check-card');
       if (slot && window.htmx && !slot.contains(document.activeElement)) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
@@ -5713,7 +5713,7 @@ document.addEventListener('click', e => {
     if (checking && blocking === null) return say('Say whether it stops this check passing.');
     if (!checking && !kind) return say('Say what it is first: a problem, an idea or a question.');
     const already = checking && (stillBox.querySelector('input:checked') || {}).value;  // (an issue it named already: no words needed again, issue 16)
-    if (!text && !(already && !pics.some(p => p.kind !== 'page'))) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
+    if (!text && !(already && blocking && !pics.some(p => p.kind !== 'page'))) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
     send.disabled = true; say('');
     if (text && taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
     try {

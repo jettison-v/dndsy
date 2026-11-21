@@ -240,6 +240,7 @@ def test_failing_with_an_issue_sent_from_the_check_needs_no_second_note(admin, d
     notes = db.scalar(select(func.count()).select_from(FftNote))
     assert wrong(admin, c, text="", issue=sent + 99).status_code == 400  # (not one of this check's)
     assert wrong(admin, c, text="").status_code == 400  # (something new needs its words)
+    assert wrong(admin, c, text="", issue=sent, blocking=False).status_code == 400  # (named again but not failing it: say what's new)
     r = wrong(admin, c, text="", issue=sent)
     assert r.json()["failed"] and r.json()["issue"] == sent and rules.check_state(db, c)["state"] == "failed"
     assert db.scalar(select(func.count()).select_from(FftNote)) == notes  # (no second note)
