@@ -58,6 +58,10 @@ DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
 FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
 # Prod's address: staging relays its notes there (app/fft/sending.py relay; Brett, Nov 6: one place for Feedback)
 PROD_URL = os.getenv("PROD_URL", "https://askdnd.ai").rstrip("/")
+# Discuss with Claude (issue 54): where a new Claude Code session opens. The folder this project is in on the Mac that
+# runs Claude's sessions (claude://code/new's folder; unset, the app asks), and its GitHub repo (claude.ai/code/new's)
+DISCUSS_FOLDER = os.getenv("DISCUSS_FOLDER", "").strip()
+DISCUSS_REPO = os.getenv("DISCUSS_REPO", "jettison-v/dndsy").strip()
 # The Inbox digest (app/digest.py): Resend's key, the address it's sent from (askdnd.ai's, verified at Resend) and the
 # hour of the table's day it goes out (America/Los_Angeles, 0-23). No key: no email (locally, and on staging anyway).
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")

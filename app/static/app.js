@@ -568,6 +568,14 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       const field = target.querySelector('textarea, input[type=text]') || target.querySelector('select');  // (else its picker: then Escape, inside it, is its Cancel)
       if (field) field.focus();
     }
+    // A copy button (data-copy="the words"; Discuss with Claude's message, issue 54): onto the clipboard, a corner card says so
+    const copy = e.target.closest('button[data-copy]');
+    if (copy) {
+      e.preventDefault();
+      const said = () => toast('Copied');
+      const cant = () => toast('Couldn\'t copy it: select the words instead.', null, 'warn');
+      if (navigator.clipboard) navigator.clipboard.writeText(copy.dataset.copy).then(said, cant); else cant();
+    }
     const cancel = e.target.closest('[data-cancel]');
     if (cancel) {
       e.preventDefault();

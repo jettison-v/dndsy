@@ -198,3 +198,108 @@ def test_a_shipped_item_says_what_it_changed_with_its_numbers(db, admin, api):
     hist = admin.get("/manage/roadmap?history=1").text
     assert "Pages about 74% quicker" in hist and "One bar, one way to show where you are" in hist
     assert 'data-result="done"' in admin.get(f"/manage/roadmap/{it.id}").text
+
+
+def test_comments_on_a_scope_wait_for_bretts_answer_then_needs_changes_is_claudes_turn(db, admin, api):
+    """Issue 54 (Brett, Nov 20: "There is no place for me to say the scope isn't OK or to add additional comments"; his
+    picks on docs/mockups/roadmap-scope-review/): a comment on a line or the whole is his own until he answers the
+    scope; Needs changes… sends them and it's Claude's turn to answer each one and write the next version."""
+    from app.fft import views
+
+    it = _scoped(db)
+    db.flush()
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-line="in:0"' in page and 'data-do="changes"' in page and 'data-do="agree"' in page and "data-general" in page
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "in:0", "words": "Sections, or one long list?"})
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "words": "Keep it small."})
+    held = list(db.scalars(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.held.is_(True))))
+    assert len(held) == 2 and {a.on_line for a in held} == {"in:0", ""} and held[0].on_version == 1
+    assert all(a["words"]["quoted"] != "Keep it small." for a in api.get(f"/api/fft/roadmap/{it.id}", headers=H).json()["additions"])  # (not Claude's yet)
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-held="2"' in page and 'data-line="in:0"' in page and 'class="rm-line has"' in page
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "changes", "seen": 1, "words": "And drop players."})
+    assert not db.scalar(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.held.is_(True)))
+    assert rules.latest_scope(db, it).changes_at is not None
+    whole = api.get(f"/api/fft/roadmap/{it.id}", headers=H).json()
+    assert whole["stage"] == "revising" and whole["changes_asked"] and {a["on"] for a in whole["additions"]} >= {"in:0", ""}
+    rows = [r for g in testing_page.for_you(db, "laptop") for r in g["rows"]]
+    assert not any(r["key"] == f"r{it.id}" for r in rows)  # (Claude's turn: off his For you)
+    assert any(g["kind"] == "scope_changes" and g["id"] == it.id for g in views.gaps(db))
+    assert "data-changes-asked" in admin.get(f"/manage/roadmap/{it.id}").text
+    rules.write_scope(db, "claude", it, what="Smaller.", inside=["Items by section"], changed="From your comments")
+    db.flush()
+    assert not any(g["kind"] == "scope_changes" for g in views.gaps(db)) and 'data-do="changes"' in admin.get(f"/manage/roadmap/{it.id}").text
+
+
+def test_open_questions_are_answered_in_place_and_go_with_the_ok(db, admin, api):
+    """Issue 54: an answer under each open question, Claude's suggestion a press away; a second answer replaces the first,
+    an empty one takes it back, and Scope looks right sends it."""
+    it = rules.new_idea(db, "claude", "Usage limits", section="now")
+    api.post(f"/api/fft/roadmap/{it.id}", headers=H, json={"do": "scope", "what": "Stop before a limit.", "inside": ["A setting"],
+                                                           "questions": ["Which limit?", "Pause or stop?"], "suggest": ["85% of the week", ""]})
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-question="1"' in page and 'value="85% of the week"' in page and page.count('data-do="use-suggestion"') == 1
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "q:0", "words": "85% of the week"})
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "q:0", "words": "80% of the week"})
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "q:1", "words": "Pause"})
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "q:1", "words": ""})
+    answers = list(db.scalars(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.on_line.like("q:%"))))
+    assert [(a.on_line, a.words, a.held) for a in answers] == [("q:0", "80% of the week", True)]
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "agree", "seen": 1})
+    assert rules.latest_scope(db, it).agreed_at is not None and not answers[0].held
+    got = api.get(f"/api/fft/roadmap/{it.id}", headers=H).json()
+    assert got["scopes"][0]["suggested"] == ["85% of the week", ""] and any(a["on"] == "q:0" for a in got["additions"])
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "words": "One more thing."})  # (after his OK: straight to Claude)
+    assert not db.scalar(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.held.is_(True)))
+
+
+def test_needs_changes_says_what_and_a_comment_can_be_taken_back(db, admin):
+    it = _scoped(db)
+    db.flush()
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "changes", "seen": 1})  # (nothing said: refused)
+    assert rules.latest_scope(db, it).changes_at is None
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "what", "words": "Too broad."})
+    a = db.scalar(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.on_line == "what"))
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "drop", "addition": a.id})
+    assert db.get(FftAddition, a.id) is None
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "comment", "on": "in:9", "words": "No such line."})
+    assert not db.scalar(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.on_line == "in:9"))
+    rules.write_scope(db, "claude", it, what="v2", inside=["One"])
+    db.flush()
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "agree", "seen": 1})  # (read v1 while v2 came: refused, R14)
+    assert rules.latest_scope(db, it).agreed_at is None
+
+
+def test_discuss_with_claude_opens_a_new_session_about_the_item(db, admin, api, monkeypatch):
+    """Issue 54 (Brett's pick 4): a new Claude Code session with a message about the item filled in, on this Mac
+    (claude://code/new, in the project's folder) or on claude.ai/code with its repo; it writes back as a discussion."""
+    from urllib.parse import parse_qs, urlparse
+
+    monkeypatch.setattr(config, "DISCUSS_FOLDER", "/Users/someone/Code/project")
+    it = _scoped(db)
+    db.flush()
+    assert 'data-do="discuss"' in admin.get(f"/manage/roadmap/{it.id}").text
+    win = admin.get(f"/manage/roadmap/{it.id}/discuss").text
+    import html
+    mac = html.unescape(win.split('data-open="mac"')[0].rsplit('href="', 1)[1].split('"')[0])
+    web = html.unescape(win.split('data-open="web"')[0].rsplit('href="', 1)[1].split('"')[0])
+    q = parse_qs(urlparse(mac).query)
+    assert mac.startswith("claude://code/new?") and q["folder"] == ["/Users/someone/Code/project"] and f"roadmap {it.id}" in q["q"][0]
+    assert "--where discussion" in q["q"][0] and "Never say the scope looks right" in q["q"][0]
+    w = parse_qs(urlparse(web).query)
+    assert web.startswith("https://claude.ai/code/new?") and w["repo"] == [config.DISCUSS_REPO] and w["q"] == q["q"]
+    api.post(f"/api/fft/roadmap/{it.id}", headers=H, json={"do": "add", "words": "Sections, not a list.", "where": "discussion"})
+    assert db.scalar(select(FftAddition.where).where(FftAddition.item_id == it.id).order_by(FftAddition.id.desc())) == "discussion"
+
+
+def test_a_roadmap_row_in_for_you_says_why_it_is_yours_and_opens_the_item(db, admin):
+    """Brett, Nov 20: "I don't understand why roadmap items that have confirmed scope remain in For You table and what the
+    actual next steps are. The navigation is also circular and you never actually get to the roadmap item." Its window
+    says where it stands and why the step is his, and its links go to the item on the Roadmap, never back to For you."""
+    it = _scoped(db)
+    rules.agree_scope(db, "user:1", it)
+    rules.add_step(db, "claude", it, "Audit the roll card", whose="brett")
+    db.flush()
+    win = admin.get(f"/manage/item/r{it.id}?from=foryou").text
+    assert 'data-stage-word="agreed"' in win and 'data-sec="steps"' in win and 'data-do="open-page"' in win
+    assert f'href="/manage/roadmap/{it.id}"' in win and "/manage/for-you?open=" not in win

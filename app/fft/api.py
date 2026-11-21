@@ -561,7 +561,8 @@ def _roadmap_row(db: Session, it: FftItem) -> dict:
     return {"id": it.id, "title": it.title, "section": it.section, "stage": r["stage"], "size": it.size, "status": it.status,
             "result": it.result, "next": {"whose": r["next"][0], "step": r["next"][1]}, "steps": [r["done"], r["steps"]],
             "scope_version": r["scope"].version if r["scope"] else None, "agreed": bool(r["scope"] and r["scope"].agreed_at),
-            "unanswered": db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id, FftAddition.answer == ""))}
+            "unanswered": db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id, FftAddition.answer == "", FftAddition.held.is_(False))),
+            "changes_asked": r["stage"] == "revising"}
 
 
 @router.get("/roadmap")
@@ -584,10 +585,12 @@ def roadmap_item(item_id: int, x_fft_key: str | None = Header(default=None), db:
     return _ok(_roadmap_row(db, it) | {
         "why": it.why,
         "scopes": [{"version": s.version, "what": s.what, "inside": s.inside, "not_now": s.not_now, "questions": s.questions, "changed": s.changed,
-                    "agreed": s.agreed_at.isoformat() if s.agreed_at else ""} for s in db.scalars(select(FftScope).where(FftScope.item_id == it.id).order_by(FftScope.version))],
+                    "suggested": s.suggested, "agreed": s.agreed_at.isoformat() if s.agreed_at else "",
+                    "changes_asked": s.changes_at.isoformat() if s.changes_at else ""} for s in db.scalars(select(FftScope).where(FftScope.item_id == it.id).order_by(FftScope.version))],
         "additions": [{"id": a.id, "where": a.where, "at": a.created_at.isoformat() if a.created_at else "", "words": _quoted(a.words, "Brett"),
-                       "answer": a.answer, "answer_words": a.answer_words, "version": a.scope_version}
-                      for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id).order_by(FftAddition.id))],
+                       "answer": a.answer, "answer_words": a.answer_words, "version": a.scope_version,
+                       "on": a.on_line, "line": a.line_text, "on_version": a.on_version}  # (issue 54: a comment on a line; "q:<n>" answers a question)
+                      for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id, FftAddition.held.is_(False)).order_by(FftAddition.id))],
         "steps": [{"id": x.id, "whose": x.whose, "text": x.text, "done": bool(x.done_at)} for x in db.scalars(select(FftStep).where(FftStep.item_id == it.id).order_by(FftStep.place, FftStep.id))],
         "plans": [a.id for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)))]})
 
@@ -628,7 +631,8 @@ def roadmap_change(item_id: int, body=web.JsonBody, x_fft_key: str | None = Head
     try:
         if do == "scope":
             rules.write_scope(db, actor.name, it, what=_str(body, "what", 4000, need=True), inside=_list_of(body, "inside"),
-                              not_now=_list_of(body, "not_now"), questions=_list_of(body, "questions"), changed=_str(body, "changed", 2000))
+                              not_now=_list_of(body, "not_now"), questions=_list_of(body, "questions"), changed=_str(body, "changed", 2000),
+                              suggested=_list_of(body, "suggest"))
         elif do == "add":
             rules.add_to_item(db, actor.name, it, _str(body, "words", 8000, need=True), where=_str(body, "where", 10) or "chat")
         elif do == "answer":

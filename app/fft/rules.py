@@ -833,8 +833,8 @@ def add_to_item(db: Session, actor: str, item: FftItem, words: str, where: str =
     reaches Claude's inbox; Claude answers it on the item and writes the scope's next version."""
     if not words.strip():
         raise RuleError("bad", "Say what to add.")
-    if where not in ("askdnd", "chat"):
-        raise RuleError("bad", "In askdnd, or in chat.")
+    if where not in ("askdnd", "chat", "discussion"):
+        raise RuleError("bad", "In askdnd, in chat, or in a discussion with Claude.")
     a = FftAddition(item_id=item.id, words=words.strip()[:8000], where=where, user_id=user_id)
     db.add(a)
     db.flush()
@@ -855,15 +855,17 @@ def latest_scope(db: Session, item: FftItem) -> FftScope | None:
 
 
 def write_scope(db: Session, actor: str, item: FftItem, *, what: str, inside: list[str], not_now: list[str] | None = None,
-                questions: list[str] | None = None, changed: str = "") -> FftScope:
-    """The scope's next version: what it is, what's in, what's not now, open questions, and what changed. Brett's OK
-    is on a version: a new one waits for it again."""
+                questions: list[str] | None = None, changed: str = "", suggested: list[str] | None = None) -> FftScope:
+    """The scope's next version: what it is, what's in, what's not now, open questions (with Claude's suggested answer
+    to each, in their order), and what changed. Brett's OK is on a version: a new one waits for it again."""
     if not what.strip() or not [x for x in inside if x.strip()]:
         raise RuleError("bad", "Say what it is and what's in.")
     last = latest_scope(db, item)
     sc = FftScope(item_id=item.id, version=(last.version + 1) if last else 1, what=what.strip()[:4000],
                   inside=[x.strip()[:400] for x in inside if x.strip()], not_now=[x.strip()[:400] for x in (not_now or []) if x.strip()],
                   questions=[x.strip()[:400] for x in (questions or []) if x.strip()], changed=changed.strip()[:2000], actor=actor)
+    qs = [x for x in (questions or []) if x.strip()]
+    sc.suggested = [(x or "").strip()[:400] for x in (suggested or [])][:len(qs)]
     db.add(sc)
     db.flush()
     _event(db, actor, "item_scope", "item", item.id, version=sc.version)
@@ -871,15 +873,109 @@ def write_scope(db: Session, actor: str, item: FftItem, *, what: str, inside: li
 
 
 def agree_scope(db: Session, actor: str, item: FftItem, user_id: int | None = None, seen: int | None = None) -> FftScope:
-    """Scope looks right: Brett's one OK, on the version he read (R14: a newer one written meanwhile is refused)."""
+    """Scope looks right: Brett's one OK, on the version he read (R14: a newer one written meanwhile is refused). His
+    comments and answers on it go with it."""
     sc = latest_scope(db, item)
     if sc is None:
         raise RuleError("bad", "There's no scope yet.")
     if seen is not None and sc.version != seen:
         raise RuleError("stale", f"Claude wrote version {sc.version} while you were reading: read it first.")
     if sc.agreed_at is None:
+        _send_held(db, actor, item)
         sc.agreed_at, sc.agreed_by = now(), user_id
         _event(db, actor, "item_agreed", "item", item.id, version=sc.version)
+    return sc
+
+
+# Reviewing a scope (issue 54, Brett's picks on docs/mockups/roadmap-scope-review/, Nov 20): comments on a line or the
+# whole of it and answers to its open questions are held, his own, until he answers the scope: Scope looks right, or
+# Needs changes…, which makes it Claude's turn to answer each one and write the next version.
+
+def scope_line(sc: FftScope, key: str) -> str | None:
+    """A line of a scope by its key: "what", "in:2", "not:0", "q:1"; None if it has no such line."""
+    if key == "what":
+        return sc.what
+    kind, _, n = key.partition(":")
+    rows = {"in": sc.inside, "not": sc.not_now, "q": sc.questions}.get(kind)
+    return rows[int(n)] if rows is not None and n.isdigit() and int(n) < len(rows) else None
+
+
+def waits_on_brett(sc: FftScope | None) -> bool:
+    """A scope waiting for his answer: not agreed, and no changes asked of it."""
+    return sc is not None and sc.agreed_at is None and sc.changes_at is None
+
+
+def comment_on_scope(db: Session, actor: str, item: FftItem, words: str, on_line: str = "", user_id: int | None = None) -> FftAddition | None:
+    """Brett's comment on the latest scope (a line of it, or the whole), or his answer to one of its open questions
+    ("q:<n>", one per question: a second replaces the first, empty takes it back). Held until he answers the scope;
+    once he has, it reaches Claude at once, as an addition does."""
+    sc = latest_scope(db, item)
+    if sc is None:
+        raise RuleError("bad", "There's no scope yet.")
+    text = None
+    if on_line:
+        text = scope_line(sc, on_line)
+        if text is None:
+            raise RuleError("bad", "That line isn't in this version.")
+    held = waits_on_brett(sc)
+    if on_line.startswith("q:") and held:
+        old = db.scalar(select(FftAddition).where(FftAddition.item_id == item.id, FftAddition.held.is_(True), FftAddition.on_line == on_line,
+                                                  FftAddition.on_version == sc.version))
+        if old is not None:
+            if words.strip():
+                old.words = words.strip()[:8000]
+            else:
+                db.delete(old)
+            db.flush()
+            return old if words.strip() else None
+    if not words.strip():
+        if on_line.startswith("q:"):
+            return None  # (an empty answer: nothing to keep)
+        raise RuleError("bad", "Say what to change, or what's missing.")
+    a = FftAddition(item_id=item.id, words=words.strip()[:8000], where="askdnd", user_id=user_id, on_line=on_line[:12],
+                    line_text=(text or "")[:2000], on_version=sc.version, held=held)
+    db.add(a)
+    db.flush()
+    if not held:
+        _event(db, actor, "item_addition", "item", item.id, addition=a.id, where="askdnd", on=on_line)
+    return a
+
+
+def drop_held(db: Session, addition: FftAddition) -> None:
+    """Take back a comment not sent yet."""
+    if not addition.held:
+        raise RuleError("bad", "It's been sent to Claude already.")
+    db.delete(addition)
+    db.flush()
+
+
+def _send_held(db: Session, actor: str, item: FftItem) -> int:
+    rows = list(db.scalars(select(FftAddition).where(FftAddition.item_id == item.id, FftAddition.held.is_(True))))
+    for a in rows:
+        a.held = False
+    if rows:
+        _event(db, actor, "item_comments", "item", item.id, n=len(rows), answers=sum(1 for a in rows if a.on_line.startswith("q:")))
+    return len(rows)
+
+
+def ask_changes(db: Session, actor: str, item: FftItem, words: str = "", user_id: int | None = None, seen: int | None = None) -> FftScope:
+    """Needs changes…: his comments and answers on the version he read reach Claude, with anything more he writes, and
+    it's Claude's turn to answer each one and write the next version (R14: a newer one written meanwhile is refused)."""
+    sc = latest_scope(db, item)
+    if sc is None:
+        raise RuleError("bad", "There's no scope yet.")
+    if seen is not None and sc.version != seen:
+        raise RuleError("stale", f"Claude wrote version {sc.version} while you were reading: read it first.")
+    if sc.agreed_at is not None:
+        raise RuleError("bad", f"You said version {sc.version} looks right: add to the item instead.")
+    if words.strip():
+        a = FftAddition(item_id=item.id, words=words.strip()[:8000], where="askdnd", user_id=user_id, on_version=sc.version, held=True)
+        db.add(a)
+        db.flush()
+    if not _send_held(db, actor, item) and sc.changes_at is None:
+        raise RuleError("bad", "Say what to change: comment on a line, or write it here.")
+    sc.changes_at = now()
+    _event(db, actor, "item_changes", "item", item.id, version=sc.version)
     return sc
 
 

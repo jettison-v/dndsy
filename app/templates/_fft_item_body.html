@@ -186,15 +186,19 @@
    steps; the whole item is on its page #}
 <article class="reader-article fb-read" data-fft-roadmap="{{ it.id }}">
   <h2 class="nt-h">{{ it.title }}</h2>
-  {% if sc and not sc.agreed_at %}
+  {% set r = picked.row %}
+  <p class="wk-facts" data-facts>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}{% if it.size %}<span>Size {{ it.size }}</span>{% endif %}{% if it.status %}<span>{{ it.status }}</span>{% endif %}</p>
+  {% if it.why %}<p class="note">{{ it.why }}</p>{% endif %}
+  {% if sc and not sc.agreed_at and not sc.changes_at %}
   {% call rd_section("Scope version " ~ sc.version ~ " waits for your OK", tone="ask", attrs=' data-sec="scope"') %}
   {% if sc.changed %}<p class="note">What changed: {{ sc.changed }}</p>{% endif %}
   <p>{{ sc.what }}</p><ul class="rm-quick">{% for x in sc.inside %}<li>{{ x }}</li>{% endfor %}</ul>
   <div class="act-bar"><form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ sc.version }}"><button class="btn primary small" type="submit" data-do="agree">Scope looks right</button></form>
-    <a class="btn small" href="/manage/roadmap/{{ it.id }}" data-no-peek>Read it whole, or add to it</a></div>
+    <a class="btn small" href="/manage/roadmap/{{ it.id }}" data-no-peek>Read it whole: comment, or ask for changes</a></div>
   {% endcall %}
   {% elif picked.mine %}
-  {% call rd_section("Your steps", tone="ask", attrs=' data-sec="steps"') %}
+  {% call rd_section("Your next step", tone="ask", attrs=' data-sec="steps"') %}
+  <p class="note">{% if r.stage in ("agreed", "building") %}Its scope is agreed; this{% else %}This{% endif %} step is yours, and Claude waits for it. Do it, then tick it here or on the item.</p>
   <ul class="rm-quick">{% for s in picked.mine %}<li><form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="tick"><input type="hidden" name="step" value="{{ s.id }}"><button class="btn small" type="submit" data-do="tick">✓ Done</button></form> {{ s.text }}</li>{% endfor %}</ul>
   {% endcall %}
   {% else %}{{ state_line("Yours", "ask", it.next_step or "Its next step is yours.") }}{% endif %}

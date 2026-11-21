@@ -1487,9 +1487,9 @@
  {
   "title": "Reviewing a scope",
   "kind": "design",
-  "status": "Your picks",
+  "status": "Picked: all four of Claude's",
   "date": "Nov 20",
-  "what": "Issue 54: how you answer a Roadmap item's scope. Scope looks right or Needs changes…, comments on any line, answers to its open questions in place, and Claude answering every comment in the next version. Drawn on Clearer checks; three picks.",
+  "what": "Issue 54: how you answer a Roadmap item's scope. Scope looks right or Needs changes…, comments on any line, answers to its open questions in place, Claude answering every comment in the next version, and Discuss with Claude (a new Claude Code session that writes the outcome back). Drawn on Clearer checks; four picks.",
   "source": "docs/mockups/roadmap-scope-review/index.html",
   "link": "https://claude.ai/artifact/WBNuMU1YxvoaW3wRQhkrJZ"
  },

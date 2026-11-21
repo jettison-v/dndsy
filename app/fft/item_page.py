@@ -13,7 +13,7 @@ from app.fft import feedback_page, taxonomy, testing_page, views, work_page
 from app.templating import templates
 
 router = APIRouter()
-KINDS = {"c": "Check", "q": "Question", "l": "On your Mac", "n": "Note", "i": "Issue", "d": "Idea", "r": "Roadmap step"}
+KINDS = {"c": "Check", "q": "Question", "l": "On your Mac", "n": "Note", "i": "Issue", "d": "Idea", "r": "Roadmap item"}
 
 
 def _list(db: Session, frm: str, device: str) -> list[str]:
@@ -39,6 +39,8 @@ def _home(picked: dict, frm: str) -> tuple[str, str]:
         return "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
     if k == "check" and frm.startswith("round:"):
         return "its plan", f"/manage/work/{frm[6:]}?tab=round"
+    if k == "roadmap":  # (Brett, Nov 20: "the navigation is circular and you never actually get to the roadmap item")
+        return "the Roadmap", f"/manage/roadmap/{picked['it'].id}"
     if k == "check" and frm == "checks":
         return "Development", f"/manage/work?tab=checks&open={picked['key']}"
     return "For you", f"/manage/for-you?open={picked['key']}"

@@ -495,7 +495,7 @@ def roadmap(a) -> None:
         if it["why"]:
             print(f"  Why: {it['why']}")
         for sc in it["scopes"][-1:]:
-            print(f"  Scope v{sc['version']}{' (agreed)' if sc['agreed'] else ' (waits for his OK)'}: {sc['what']}")
+            print(f"  Scope v{sc['version']}{' (agreed)' if sc['agreed'] else ' (he asked for changes: answer each comment, write the next)' if sc.get('changes_asked') else ' (waits for his OK)'}: {sc['what']}")
             for x in sc["inside"]:
                 print(f"    in: {x}")
             for x in sc["not_now"]:
@@ -503,16 +503,17 @@ def roadmap(a) -> None:
             for x in sc["questions"]:
                 print(f"    question: {x}")
         for ad in it["additions"]:
-            print(f"  addition {ad['id']} ({ad['where']}): {_quote(ad['words'])}  → {ad['answer'] or 'to answer'} {ad['answer_words']}")
+            on = f" on v{ad.get('on_version')} {ad['on']}: «{ad.get('line', '')[:70]}»" if ad.get("on") else ""
+            print(f"  addition {ad['id']} ({ad['where']}){on}: {_quote(ad['words'])}  → {ad['answer'] or 'to answer'} {ad['answer_words']}")
         for st in it["steps"]:
             print(f"  step {st['id']} [{'x' if st['done'] else ' '}] ({st['whose']}) {st['text']}")
         return
     w = a.words
     body: dict = {"do": a.do}
     if a.do == "scope":
-        body |= {"what": a.what, "inside": a.inside, "not_now": a.not_now, "questions": a.question, "changed": a.changed}
+        body |= {"what": a.what, "inside": a.inside, "not_now": a.not_now, "questions": a.question, "changed": a.changed, "suggest": a.suggest}
     elif a.do == "add":
-        body |= {"words": w[0], "where": "chat"}
+        body |= {"words": w[0], "where": a.where or "chat"}  # (--where discussion: from a Discuss with Claude session, issue 54)
     elif a.do == "answer":
         body |= {"addition": int(w[0]), "answer": w[1], "words": w[2] if len(w) > 2 else "", "version": a.version}
     elif a.do == "step":
@@ -750,6 +751,8 @@ def main() -> None:
     s.add_argument("--size")
     s.add_argument("--status")
     s.add_argument("--result", default=None, help="ship/not_doing/set: what it changed, with its numbers (first line the headline)")
+    s.add_argument("--suggest", action="append", default=[], help="scope: your suggested answer to each --question, in order (\"\" for none)")
+    s.add_argument("--where", default=None, choices=["chat", "discussion"], help="add: said in chat (default), or in a Discuss with Claude session")
     s = sub.add_parser("ideas", help="ideas from before the Roadmap: list, or place one: ideas <id> roadmap|fix|improvement")
     s.add_argument("id", nargs="?")
     s.add_argument("do", nargs="?", choices=[None, "roadmap", "fix", "improvement"])
