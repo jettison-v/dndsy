@@ -1,0 +1,259 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clearer Checks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --soft: #23272c; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 98ch; }
+.ideas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ideas div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
+.ideas b { display: block; }
+@media (max-width: 900px) { .ideas { grid-template-columns: minmax(0, 1fr); } }
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: rgba(126, 166, 224, .18); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ===== the drawn app, Backstage ===== */
+.app { background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.45; height: 800px; position: relative; overflow: hidden; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--red); font: 600 14px/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { color: #fff; } .abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; margin-left: auto; }
+.abody { padding: 14px 24px; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 20px; }
+.band { grid-column: 1 / -1; height: 2px; background: var(--blue); opacity: .7; }
+.aside { display: grid; align-content: start; font-size: 13px; gap: 2px; }
+.aside .sec { font-size: 11px; font-weight: 600; color: var(--faint); padding: 10px 8px 4px; }
+.aside a { padding: 5px 8px; border-radius: 6px; color: var(--text); display: flex; justify-content: space-between; }
+.aside a.on { background: var(--panel-2); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--blue); }
+.aside .n { font-size: 11px; background: var(--red); color: #fff; border-radius: 999px; padding: 0 6px; font-weight: 700; }
+h2.pg { margin: 0; font-size: 22px; color: #fff; font-weight: 600; }
+.sub { color: var(--muted); margin: 4px 0 12px; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 3px 10px; font: 500 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.p { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); padding-inline: 4px; }
+.pill { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.pill.ck { background: rgba(232,179,75,.14); color: var(--amber); } .pill.you { background: rgba(232,179,75,.14); color: var(--amber); } .pill.q { background: #2a2e34; color: var(--muted); }
+.need { display: inline-flex; gap: 5px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11.5px; color: var(--faint); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td small { display: block; color: var(--faint); font-size: 12px; }
+tr.grp td { background: #16181b; padding: 7px 8px; }
+tr.grp b { font-size: 13px; } tr.grp .cnt { color: var(--faint); margin: 0 8px; }
+.tbl { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.chips { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; color: var(--muted); }
+.chip.on { border-color: var(--blue); color: #fff; background: rgba(126,166,224,.12); }
+/* the check's window at the right */
+.peek { position: absolute; top: 58px; right: 0; bottom: 0; width: 520px; background: var(--panel); border-left: 1px solid var(--line); padding: 14px 22px; display: grid; align-content: start; gap: 12px; overflow: hidden; box-shadow: -14px 0 30px rgba(0,0,0,.35); }
+.peek .top { display: flex; justify-content: space-between; color: var(--faint); font-size: 12px; }
+.peek h3 { margin: 0; font-size: 17px; color: #fff; }
+.goal { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 12px 14px; display: grid; gap: 6px; }
+.goal .gl { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.goal .bn { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; font-size: 13.5px; }
+.goal .bn span:nth-child(odd) { color: var(--faint); }
+.goal .one { font-size: 14px; }
+.where { color: var(--muted); font-size: 13px; } .where u { color: var(--blue); text-decoration: none; }
+.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.steps li { display: grid; grid-template-columns: 18px 14px minmax(0, 1fr); gap: 8px; align-items: start; }
+.steps li i { font-style: normal; color: var(--faint); text-align: right; }
+.steps li .bx { width: 14px; height: 14px; border: 1px solid var(--line); border-radius: 3px; margin-top: 2px; }
+.see { border-left: 3px solid var(--green); background: rgba(91,191,127,.07); padding: 8px 12px; border-radius: 0 8px 8px 0; display: grid; gap: 2px; }
+.see b { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+.acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.quiet { color: var(--faint); font-size: 12.5px; }
+.mark { outline: 2px dashed var(--blue); outline-offset: 3px; border-radius: 8px; }
+/* the round's card */
+.card { position: absolute; left: 24px; bottom: 24px; width: 380px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.5); display: grid; gap: 10px; padding: 12px 14px; }
+.card .ct { display: flex; justify-content: space-between; color: var(--faint); font-size: 12px; }
+.card .ttl { font-weight: 600; color: #fff; font-size: 14px; }
+.card .why { color: var(--blue); font-size: 12.5px; }
+.page-under { opacity: .45; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+<!-- Clearer checks (Roadmap item 6, scope v3 agreed Nov 21; issue 36, Brett Nov 18: "the number of steps isn't the
+     problem; it's knowing what you're testing and what the result should be"). Drawn with real checks from For you.
+     Source: docs/mockups/clearer-checks/index.html. -->
+<div class="wrap">
+  <header style="display:grid;gap:8px"><h1>Clearer checks: the goal first, then the steps</h1>
+  <p class="lede">Roadmap item 6, from the scope you OK'd. Today a check's window starts with its steps, and what it's for (its Why: before and now) sits at the bottom, under them. Below, every check has the same shape: <b>Goal</b> (what was wrong before, what's true now), <b>Where</b>, <b>Steps</b>, <b>You should see</b>. askdnd won't take a check from me without a goal and what you should see. Each check says what it needs (your laptop, your iPhone, or more than one person), and For you groups them that way, each kind its own round. Drawn with three checks in your For you now; the iPhone and more-than-one-person checks are made up to show those groups.</p></header>
+  <div class="ideas">
+    <div><b>Goal first</b>Before and Now, in two short lines, above the steps, in the window and on the round's card.</div>
+    <div><b>Always complete</b>askdnd refuses a check with no goal or nothing to see, so a half-written one never reaches you.</div>
+    <div><b>What it needs</b>Laptop, iPhone, or more than one person, on each check: a round never mixes them.</div>
+    <div><b>Every open check</b>The checks in For you now are rewritten in this shape when it ships.</div>
+  </div>
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Show</span><span class="seg" data-ctl="screen"><button type="button" data-v="window" aria-pressed="true">A check's window</button><button type="button" data-v="card">The round's card</button><button type="button" data-v="foryou">For you's Try</button></span></span>
+    <span class="ctl"><span class="lbl">1 · Goal</span><span class="seg" data-ctl="goal"><button type="button" data-v="two" aria-pressed="true">Before / Now</button><button type="button" data-v="one">One sentence</button></span></span>
+    <span class="ctl"><span class="lbl">2 · On the card</span><span class="seg" data-ctl="card"><button type="button" data-v="top" aria-pressed="true">Goal on top</button><button type="button" data-v="fold">Goal a tap away</button></span></span>
+    <span class="ctl"><span class="lbl">3 · Try</span><span class="seg" data-ctl="group"><button type="button" data-v="groups" aria-pressed="true">A group per need</button><button type="button" data-v="chips">Chips over one list</button></span></span>
+  </div>
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+  <p class="note-under" id="scale-note"></p>
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · How the goal reads</legend>
+        <label class="o"><input type="radio" name="goal" value="two"><span>Before / Now, two short lines <span class="mine">my pick</span></span><small>"Before: a job's row said only its name. Now: a window says what it does, what it checks, when it fails." The change, at a glance.</small></label>
+        <label class="o"><input type="radio" name="goal" value="one"><span>One sentence: what it tests</span><small>"Tests that each scheduled job explains itself in a window." Shorter, but says less about what changed.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · The goal on the round's card</legend>
+        <label class="o"><input type="radio" name="card" value="top"><span>On top, above the steps <span class="mine">my pick</span></span><small>You read why before you start; the card is a little taller and its steps scroll if they must.</small></label>
+        <label class="o"><input type="radio" name="card" value="fold"><span>A tap away (Goal ▸)</span><small>The card stays as short as today; the goal opens under its title.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · For you's Try</legend>
+        <label class="o"><input type="radio" name="group" value="groups"><span>A group per need, each with its own Start round <span class="mine">my pick</span></span><small>On your laptop · On your iPhone · With more than one person, each a heading with its count and ▶ Start round; inside each, the Product Areas as today.</small></label>
+        <label class="o"><input type="radio" name="group" value="chips"><span>Chips over one list</span><small>Laptop · iPhone · More than one person as chips; ▶ Start round starts the chip you're on.</small></label>
+      </fieldset>
+    </div>
+    <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="What's missing, or what you'd change"></textarea></label>
+    <div class="sendline"><button type="submit" class="go">Save my picks</button><span class="saved">Not saved yet</span></div>
+  </form>
+</div>
+<script>
+(() => {
+  const st = { screen: "window", goal: "two", card: "top", group: "groups" };
+  const CHECK = { title: "Each scheduled job explains itself", before: "A job's row said only its name and when it runs.", now: "Its window says what it does, what it checks, what happens when it fails, and its latest runs.",
+    one: "Tests that each scheduled job explains itself in the window at the right.", where: "Backstage › Development › Scheduled",
+    steps: ["Click The live test.", "Read the window at the right.", "Click Backups."], see: "The window says what the job does, what it checks, what happens when it fails, and its latest runs. Backups shows its last nights instead of Not reported yet." };
+  const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Cole</span><span>Party ▾</span><span class="sp">Search your character, the rules…</span><span class="here">Backstage ▾</span><span class="pic"></span></div>`;
+  const aside = () => `<nav class="aside"><span class="sec">Our work</span><a class="on">For you <span class="n">18</span></a><a>Feedback</a><a>Roadmap</a><a>Development</a><span class="sec">General</span><a>Overview</a><a>Product areas</a><a>Documents</a></nav>`;
+  const goal = (cls = "") => st.goal === "two"
+    ? `<div class="goal ${cls}"><span class="gl">Goal</span><div class="bn"><span>Before</span><span>${CHECK.before}</span><span>Now</span><span>${CHECK.now}</span></div></div>`
+    : `<div class="goal ${cls}"><span class="gl">Goal</span><span class="one">${CHECK.one}</span></div>`;
+  const steps = () => `<ol class="steps">${CHECK.steps.map((s, i) => `<li><i>${i + 1}</i><span class="bx"></span><span>${s}</span></li>`).join("")}</ol>`;
+  const see = () => `<div class="see"><b>You should see</b><span>${CHECK.see}</span></div>`;
+  const rows = [
+    ["laptop", "Feedback and Testing", [["Each scheduled job explains itself", "Before: a job's row said only its name. Now: a window says what it does…"], ["Split… an issue into parts", "Before: a note with several problems stayed one issue. Now: Split… on any open issue."], ["A Roadmap item reads on a laptop, and Scope it asks for its scope", "Before: small type and nothing to press. Now: a labelled strip and Scope it."]]],
+    ["iphone", "Getting around", [["The menu fits a small iPhone", "Before: Backstage ran off the edge. Now: it wraps under the logo."]]],
+    ["people", "The table", [["A roll shows on the DM's table at once", "Before: a player's roll reached the DM after a reload. Now: it shows as it's rolled."]]],
+  ];
+  const NEED = { laptop: ["On your laptop"], iphone: ["On your iPhone"], people: ["With more than one person"] };
+  const forYou = () => {
+    const body = st.group === "groups"
+      ? rows.map(([k, area, list]) => `<tr class="grp mark"><td colspan="3"><b>${NEED[k][0]}</b><span class="cnt">${list.length} check${list.length > 1 ? "s" : ""} · about ${list.length * 2} min</span><span class="btn">▶ Start round</span></td></tr>
+          <tr class="grp"><td colspan="3" style="background:none"><span class="quiet">${area}</span> <span class="btn link">▶ Just this area</span></td></tr>
+          ${list.map(([t, g]) => `<tr><td><span class="pill ck">Check</span></td><td>${t}<small>${g}</small></td><td style="text-align:right"><span class="btn p">▶ Try it</span></td></tr>`).join("")}`).join("")
+      : `<tr><td colspan="3" style="padding:0"><div class="chips mark"><span class="chip on">Laptop · 3</span><span class="chip">iPhone · 1</span><span class="chip">More than one person · 1</span><span style="flex:1"></span><span class="btn">▶ Start round · laptop</span></div></td></tr>` +
+        rows[0][2].map(([t, g]) => `<tr><td><span class="pill ck">Check</span></td><td>${t}<small>${g}</small></td><td style="text-align:right"><span class="btn p">▶ Try it</span></td></tr>`).join("");
+    return `<h2 class="pg">For you</h2><p class="sub">Everything waiting on you, and nothing else.</p>
+      <div class="tbl"><table><thead><tr><th style="width:80px">Kind</th><th>What, and its goal</th><th style="width:110px"></th></tr></thead><tbody>
+      <tr class="grp"><td colspan="3"><b>Try</b><span class="cnt">5 checks</span></td></tr>${body}</tbody></table></div>
+      <p class="quiet" style="margin-top:8px">Each row's second line is its goal, so you know what a check is for before opening it. Dashed: what's new.</p>`;
+  };
+  const windowView = () => `<div class="page-under">${forYou()}</div>
+    <div class="peek"><div class="top"><span>Check 65 · 11 of 18</span><span>↑ ↓ ✕</span></div>
+      <span class="quiet">Feedback and Testing · its page · v2 · <span class="need">Needs your laptop</span></span>
+      <h3>${CHECK.title}</h3>
+      <div class="acts"><span class="pill you">Yours</span><span class="quiet">To try: Claude built it and tried it first.</span></div>
+      ${goal("mark")}
+      <p class="where"><b>Where</b> · <u>${CHECK.where}</u></p>
+      <div><b style="font-size:12px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase">Steps</b>${steps()}</div>
+      ${see()}
+      <div class="acts"><span class="btn p">▶ Try it</span><span class="btn">✓ Passed</span><span class="btn">✗ Something's wrong…</span><span class="btn link">Can't try…</span></div>
+      <span class="quiet">▸ History · every try, fix and change</span></div>`;
+  const cardView = () => `<div class="page-under"><h2 class="pg">Development</h2><p class="sub">The page the check is on, under the card.</p><div class="tbl" style="height:420px"></div></div>
+    <div class="card"><div class="ct"><span>⋮⋮ Check 1 of 3 · Feedback and Testing · laptop</span><span>—</span></div>
+      <span class="ttl">${CHECK.title}</span>
+      ${st.card === "top" ? goal("mark") : `<span class="why mark">Goal ▸</span>`}
+      ${steps()}${see()}
+      <div class="acts"><span class="btn">✓ Passed</span><span class="btn">✗ Something's wrong…</span><span class="btn link">Can't try…</span></div></div>`;
+  const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note"), W = 1280;
+  const draw = () => {
+    const main = st.screen === "window" ? windowView() : st.screen === "card" ? cardView() : forYou();
+    stage.innerHTML = `<div class="app" style="width:${W}px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div>${main}</div></div></div>`;
+    const s = Math.min(1, wrapEl.clientWidth / W);
+    stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
+    note.textContent = (s < 1 ? `Drawn at ${W}px wide (a 13–14" laptop), shown at ${Math.round(s * 100)}% to fit this page.` : `Drawn at ${W}px wide (a 13–14" laptop).`) + " Dashed: what's new.";
+  };
+  addEventListener("resize", draw);
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    st[seg.dataset.ctl] = b.dataset.v;
+    if (seg.dataset.ctl === "card") st.screen = "card";
+    if (seg.dataset.ctl === "group") st.screen = "foryou";
+    document.querySelectorAll('[data-ctl="screen"] button').forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === st.screen)));
+    draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["goal", "card", "group"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

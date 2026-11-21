@@ -1600,5 +1600,14 @@
   "what": "Issue 55's second half: each scheduled job against what actually ran (two never report here, two haven't had their first Monday, three that run aren't listed), with what to keep, change or add. Five picks.",
   "source": "docs/mockups/jobs-audit/index.html",
   "link": "https://claude.ai/artifact/KQnbahX384PkwPdmVEGZPt"
+ },
+ {
+  "title": "Clearer checks",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 21",
+  "what": "Roadmap item 6, from scope v3: every check goal first (before and now), then where, steps and what you should see; askdnd refusing a check without them; For you's Try grouped by what each needs (laptop, iPhone, more than one person), each its own round. Drawn with real checks. Three picks.",
+  "source": "docs/mockups/clearer-checks/index.html",
+  "link": "https://claude.ai/artifact/VszpUUrLLRj2Nk63Bwa6JP"
  }
 ]
