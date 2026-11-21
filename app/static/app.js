@@ -573,7 +573,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (copy) {
       e.preventDefault();
       const said = () => toast('Copied');
-      if (navigator.clipboard) navigator.clipboard.writeText(copy.dataset.copy).then(said, () => toast('Couldn\'t copy it: select the words instead.', null, 'warn'));
+      const cant = () => toast('Couldn\'t copy it: select the words instead.', null, 'warn');
+      if (navigator.clipboard) navigator.clipboard.writeText(copy.dataset.copy).then(said, cant); else cant();
     }
     const cancel = e.target.closest('[data-cancel]');
     if (cancel) {
