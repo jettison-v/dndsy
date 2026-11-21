@@ -1,0 +1,160 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Scheduled Jobs Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.1rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 90ch; }
+.sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.sum div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.sum .n { font-size: 1.6rem; font-weight: 700; color: var(--strong); line-height: 1.1; }
+.sum small { color: var(--muted); font-size: .84rem; }
+@media (max-width: 800px) { .sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 980px; font-size: .9rem; }
+th { text-align: left; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); font-weight: 700; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td b { display: block; }
+td small { color: var(--muted); font-size: .82rem; }
+.pill { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.ok { background: rgba(91,191,127,.15); color: var(--green); } .warn { background: rgba(232,179,75,.15); color: var(--amber); } .bad { background: rgba(214,69,69,.15); color: #ef8a8a; } .q { background: #2a2e34; color: var(--muted); } .new { background: rgba(126,166,224,.16); color: var(--blue); }
+.rec { color: var(--text); }
+.grp td { background: #16181b; color: var(--faint); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; padding: 6px 12px; }
+.note { color: var(--muted); font-size: .88rem; }
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+</style>
+<!-- The scheduled jobs' audit (issue 55, second half; Brett, Nov 20: "We should also audit whether these are the right
+     steps and the right frequency to run them"). From each job's record on Nov 21: Development › Scheduled, GitHub's
+     runs, the Mac Mini's launchd jobs and Claude's scheduled sessions. Source: docs/mockups/jobs-audit/index.html. -->
+<div class="wrap">
+  <header style="display:grid;gap:8px"><h1>The scheduled jobs: an audit</h1>
+  <p class="lede">Issue 55's second half. I checked each job on Development › Scheduled against what actually ran: GitHub's runs, the Mac Mini's own schedule, the scheduled Claude sessions, and what askdnd keeps. Each runs as often as it needs to. Two that run never say so here, two haven't had their first Monday, and three jobs that run aren't on the list. Nothing changes until you pick.</p></header>
+  <div class="sum">
+    <div><span class="n">3</span><small>run and report: the live test, iPhone Safari, Backups</small></div>
+    <div><span class="n">2</span><small>run but never report: D&amp;D Beyond drift, New notes</small></div>
+    <div><span class="n">2</span><small>not run yet: their first Monday is Nov 23</small></div>
+    <div><span class="n">3</span><small>run but aren't on the list</small></div>
+  </div>
+
+  <h2>Each job, what the record shows, and what I'd do</h2>
+  <div class="tw"><table>
+    <thead><tr><th style="width:22%">Job</th><th style="width:12%">How often</th><th style="width:30%">What the record shows</th><th>What I'd do</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">On the list</td></tr>
+      <tr><td><b>The live test</b><small>Mac Mini · part 1 on the real D&amp;D Beyond</small></td><td>Nightly, 4:00</td><td><span class="pill ok">OK</span> Reported OK last night. It started reporting here this week, so there's one run so far.</td><td class="rec">Keep nightly: it's the only check against the real D&amp;D Beyond, and it costs nothing but the Mini's night.</td></tr>
+      <tr><td><b>iPhone Safari</b><small>Mac Mini · after the live test</small></td><td>Nightly</td><td><span class="pill ok">OK</span> Reported OK last night (one run so far).</td><td class="rec">Keep nightly while the seats are already open; weekly would save nothing you pay for. <b>Pick 4.</b></td></tr>
+      <tr><td><b>D&amp;D Beyond drift</b><small>GitHub · today's sheets against the tests' copies</small></td><td>Daily (set for 12:30 UTC; GitHub starts it 8 to 10 hours late)</td><td><span class="pill warn">Not reported yet</span> It passed every day this week on GitHub, but it never tells askdnd, so here it looks like it never ran.</td><td class="rec">Have it report each run here, with a key of its own on GitHub that may only report jobs. <b>Pick 1.</b></td></tr>
+      <tr><td><b>Backups</b><small>Railway · the database to S3</small></td><td>Nightly</td><td><span class="pill ok">OK</span> Nine of the last ten nights OK; Nov 16 failed (S3 refused the upload) and the next night was fine.</td><td class="rec">Keep nightly, and say in its description that it also sweeps unused files (its run line already counts what it removed). A backup is only proven when it's restored: add a monthly restore drill that loads the newest backup into staging, which is what refreshing staging already does. <b>Pick 2.</b></td></tr>
+      <tr><td><b>New notes</b><small>Claude · a session each morning</small></td><td>Daily, 6:00</td><td><span class="pill warn">Not reported yet</span> It ran this morning at 6:13, but never reports here. Since it began (Nov 9), every session also reads the inbox first, listens while it waits on you, and can't end with something in its hands.</td><td class="rec">Keep it for the overnight notes, have it report its run here, and have it skip the session when nothing came in overnight. <b>Pick 3.</b></td></tr>
+      <tr><td><b>Slowest pages</b><small>askdnd itself</small></td><td>Mondays</td><td><span class="pill q">Not run yet</span> Built Nov 20; its first Monday is Nov 23. It reports here by itself.</td><td class="rec">Keep weekly: a week of page times is enough to see a slow page.</td></tr>
+      <tr><td><b>The phone sweep</b><small>Claude · a session each Monday</small></td><td>Mondays, 7:00</td><td><span class="pill q">Not run yet</span> Set up Nov 19; its first Monday is Nov 23. It doesn't report here yet.</td><td class="rec">Keep weekly; have it report its run here like New notes. <b>Pick 3.</b></td></tr>
+      <tr class="grp"><td colspan="4">Running, but not on the list</td></tr>
+      <tr><td><b>After each deploy</b><small>Mac Mini · a quick live check</small></td><td>Each deploy</td><td><span class="pill new">Not listed</span> The Mini runs it after each deploy (feedback.py live starts it), so a deploy that broke the bridge shows within minutes.</td><td class="rec">List it and have it report. <b>Pick 5.</b></td></tr>
+      <tr><td><b>The Inbox digest</b><small>askdnd itself · the email digest</small></td><td>As each person set it</td><td><span class="pill new">Not listed</span> askdnd sends it from inside itself; a failure today shows only in Sentry.</td><td class="rec">List it, with the last send and how many went. <b>Pick 5.</b></td></tr>
+      <tr><td><b>Dependabot</b><small>GitHub · library updates</small></td><td>Weekly</td><td><span class="pill new">Not listed</span> Opens pull requests for updated libraries; I merge them when green.</td><td class="rec">Leave it off the list: its pull requests already reach me, and there's nothing for you to watch. <b>Pick 5.</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Not jobs, and left as they are: Sentry's alerts (they come when something breaks), refreshing staging by hand, and the checks GitHub runs on every push.</p>
+
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · D&amp;D Beyond drift: never reported</legend>
+        <label class="o"><input type="radio" name="drift" value="report"><span>GitHub reports each run here <span class="mine">my pick</span></span><small>A key of its own in GitHub's secrets that may only report jobs, like the Mini's. Late or failed shows on Scheduled.</small></label>
+        <label class="o"><input type="radio" name="drift" value="link"><span>Leave it to GitHub, link there from Scheduled</span><small>No new key; its row says "on GitHub" and opens its runs.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · Backups: proven by restoring</legend>
+        <label class="o"><input type="radio" name="restore" value="monthly"><span>A monthly restore drill into staging <span class="mine">my pick</span></span><small>The first of each month, the newest backup is loaded into staging (scripts/refresh_staging.sh) and checked; it reports here like any job.</small></label>
+        <label class="o"><input type="radio" name="restore" value="hand"><span>Only when staging is refreshed by hand</span><small>As today.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · New notes (6:00) and the phone sweep (Mondays)</legend>
+        <label class="o"><input type="radio" name="claude" value="report"><span>Keep both, report here, skip an empty morning <span class="mine">my pick</span></span><small>Each session ends by reporting its run; New notes doesn't start when nothing came in overnight.</small></label>
+        <label class="o"><input type="radio" name="claude" value="retire"><span>Retire New notes; keep the sweep</span><small>Every session already reads the inbox first; overnight notes wait for the next one.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · iPhone Safari: how often</legend>
+        <label class="o"><input type="radio" name="iphone" value="nightly"><span>Nightly, after the live test <span class="mine">my pick</span></span><small>As today: free, and a phone break shows the next morning.</small></label>
+        <label class="o"><input type="radio" name="iphone" value="weekly"><span>Weekly, with the phone sweep</span><small>Fewer reports to look at.</small></label>
+      </fieldset>
+      <fieldset><legend>5 · Jobs not on the list</legend>
+        <label class="o"><input type="radio" name="missing" value="three"><span>Add After each deploy and the Inbox digest <span class="mine">my pick</span></span><small>Each reports its runs; Dependabot stays off the list.</small></label>
+        <label class="o"><input type="radio" name="missing" value="all"><span>Add all three, Dependabot too</span><small>The list shows everything that runs on a schedule.</small></label>
+      </fieldset>
+    </div>
+    <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="A job you'd add, or one you'd run more or less often"></textarea></label>
+    <div class="sendline"><button type="submit" class="go">Save my picks</button><span class="saved">Not saved yet</span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["drift", "restore", "claude", "iphone", "missing"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

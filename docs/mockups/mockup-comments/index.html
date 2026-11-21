@@ -1,0 +1,248 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Comments on a Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #131518; --panel: #1a1d21; --panel-2: #21252a; --line: #2c3036; --soft: #23272c; --text: #e9e6df; --strong: #fff; --muted: #a29d93; --faint: #7d786f;
+  --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --violet: #b39ddb; --blue: #7ea6e0;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 98ch; }
+.ideas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ideas div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
+.ideas b { display: block; }
+@media (max-width: 900px) { .ideas { grid-template-columns: minmax(0, 1fr); } }
+.controls { position: sticky; top: 0; z-index: 30; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.ctl { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lbl { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; flex-wrap: wrap; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 11px; min-height: 30px; font: 500 .86rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: rgba(126, 166, 224, .18); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.stage-wrap { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #4a4f57; }
+.stage { transform-origin: 0 0; }
+.note-under { color: var(--muted); font-size: .86rem; }
+
+/* ===== the drawn app ===== */
+.app { background: var(--bg); color: var(--text); font-size: 13.5px; line-height: 1.45; height: 820px; position: relative; overflow: hidden; }
+.abar { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 22px; background: #0f1113; border-bottom: 2px solid var(--red); font: 600 14px/1 var(--sans); }
+.abar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); }
+.abar .sp { flex: 1; max-width: 380px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--faint); display: flex; align-items: center; padding: 0 12px; font-weight: 500; }
+.abar .here { color: #fff; }
+.abar .pic { width: 28px; height: 28px; border-radius: 50%; background: #4a5563; margin-left: auto; }
+.dim { position: absolute; inset: 56px 0 0; background: rgba(0,0,0,.55); display: grid; place-items: center; }
+.win { width: 1220px; height: 740px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.whead { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.whead .t { flex: 1; } .whead .t small { display: block; color: var(--faint); font-size: 12px; } .whead .t b { font-size: 16px; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 5px 12px; font: 500 13px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.on { background: rgba(232,179,75,.16); border-color: var(--amber); color: var(--strong); }
+.btn.p { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.wbody { display: grid; grid-template-columns: minmax(0, 1fr) 330px; min-height: 0; }
+.wbody.norail { grid-template-columns: minmax(0, 1fr); }
+.frame { position: relative; overflow: hidden; background: #0f1012; border-right: 1px solid var(--line); }
+.frame.commenting { cursor: crosshair; }
+.hint { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: var(--amber); color: #1b1408; border-radius: 999px; padding: 4px 14px; font-size: 12.5px; font-weight: 600; z-index: 4; }
+/* the mockup inside the frame (an earlier one: Split… on an issue) */
+.mk { padding: 26px 32px; display: grid; gap: 14px; color: #d9d5cc; }
+.mk h4 { margin: 0; font-size: 15px; color: #fff; }
+.mk .scr { border: 1px solid #33373d; border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; background: #17191c; position: relative; }
+.mk .scr .tag { position: absolute; top: -10px; left: 14px; background: #0f1012; padding: 0 6px; font-size: 11.5px; color: var(--faint); }
+.mk .row { display: grid; grid-template-columns: 20px 1fr 220px; gap: 8px; align-items: center; }
+.mk .inp { border: 1px solid #33373d; border-radius: 6px; padding: 5px 9px; font-size: 13px; background: #101214; }
+.mk .foot { display: flex; gap: 8px; align-items: center; }
+.mk .cbtn { display: none; }
+.perscreen .mk .cbtn { display: inline-block; position: absolute; top: 8px; right: 10px; font-size: 12px; padding: 2px 9px; }
+.pin { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50% 50% 50% 2px; background: var(--amber); color: #1b1408; font: 700 12px/24px var(--sans); text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.5); z-index: 3; }
+.pin.mine { outline: 2px solid #fff; }
+.pop { position: absolute; width: 300px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 8px; box-shadow: 0 14px 34px rgba(0,0,0,.55); z-index: 5; }
+.pop small { color: var(--faint); font-size: 12px; }
+.pop .box { min-height: 62px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 8px 10px; font-size: 14px; color: var(--text); }
+.pop .r { display: flex; gap: 8px; align-items: center; }
+.rail { padding: 14px 16px; display: grid; align-content: start; gap: 12px; overflow: auto; }
+.rail h5 { margin: 0; font-size: 14px; color: #fff; } .rail h5 i { font-style: normal; color: var(--faint); font-weight: 500; }
+.cm { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; background: var(--bg); font-size: 14px; }
+.cm .where { display: flex; gap: 8px; align-items: center; color: var(--faint); font-size: 12.5px; }
+.cm .where .n { width: 20px; height: 20px; border-radius: 50% 50% 50% 2px; background: var(--amber); color: #1b1408; font: 700 11px/20px var(--sans); text-align: center; flex: none; }
+.cm .ans { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 6px; }
+.cm .ans b { color: var(--violet); font-weight: 600; }
+.sent { color: var(--green); font-size: 12.5px; }
+/* the issue's conversation (screen 2) */
+.convo { position: absolute; inset: 56px 0 0; display: grid; grid-template-columns: 188px minmax(0,1fr) 520px; }
+.convo .aside { padding: 16px 10px; color: var(--muted); font-size: 13px; display: grid; align-content: start; gap: 6px; }
+.convo .aside .on { color: #fff; background: var(--panel-2); border-radius: 6px; padding: 4px 8px; box-shadow: inset 2px 0 0 var(--blue); }
+.convo .list { padding: 16px; color: var(--faint); }
+.convo .peek { background: var(--panel); border-left: 1px solid var(--line); padding: 16px 20px; display: grid; align-content: start; gap: 12px; }
+.convo .peek h3 { margin: 0; font-size: 18px; color: #fff; }
+.bub { border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-size: 14px; }
+.bub small { color: var(--faint); font-size: 12px; }
+.bub.you { background: rgba(232,179,75,.08); border: 1px solid rgba(232,179,75,.25); }
+.bub.cl { background: rgba(179,157,219,.08); border: 1px solid rgba(179,157,219,.25); }
+.bub .on { border-left: 2px solid var(--amber); padding-left: 8px; color: var(--muted); font-size: 13px; }
+.mark { outline: 2px dashed var(--blue); outline-offset: 3px; border-radius: 6px; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--red); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+<!-- Comments on part of a mockup, inside askdnd (issue 24; Brett, Nov 18: "a comment on a mockup on claude.ai only reaches
+     Claude at the end of its turn"). Drawn with an earlier mockup inside it (Split…, docs/mockups/fft-round-2/).
+     Source: docs/mockups/mockup-comments/index.html. -->
+<div class="wrap">
+  <header style="display:grid;gap:8px"><h1>Comments on a mockup, inside askdnd</h1>
+  <p class="lede">Issue 24. Today a mockup opens in askdnd from its question, and your picks save there, but a comment on one part of it only works on claude.ai, and reaches me only when my turn ends. Below: comment on any part of a mockup in the window it opens in, and each comment reaches me the moment you send it, like a note. Drawn with the Split… mockup inside the window.</p></header>
+  <div class="ideas">
+    <div><b>Point at the part</b>Comment turns the mockup into a pin board: click any part, write, send. The pin stays where you clicked.</div>
+    <div><b>Right away</b>Each comment is a line in the question's issue, so it's in my inbox at once, and my answer comes back under it.</div>
+    <div><b>Every mockup</b>askdnd adds the comment layer when it opens any mockup, older ones too: nothing to add to each page.</div>
+    <div><b>Picks unchanged</b>Save my picks still answers the question; your comments go with it as what you said.</div>
+  </div>
+  <div class="controls">
+    <span class="ctl"><span class="lbl">Show</span><span class="seg" data-ctl="screen"><button type="button" data-v="mode" aria-pressed="true">Commenting</button><button type="button" data-v="sent">After two comments</button><button type="button" data-v="issue">In the issue</button></span></span>
+    <span class="ctl"><span class="lbl">1 · Point</span><span class="seg" data-ctl="point"><button type="button" data-v="pin" aria-pressed="true">A pin anywhere</button><button type="button" data-v="screen">A button per screen</button></span></span>
+    <span class="ctl"><span class="lbl">2 · Where they show</span><span class="seg" data-ctl="rail"><button type="button" data-v="rail" aria-pressed="true">Beside the mockup and in the issue</button><button type="button" data-v="issue">Only in the issue</button></span></span>
+  </div>
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+  <p class="note-under" id="scale-note"></p>
+  <form class="decide" aria-label="Your picks">
+    <div class="row2">
+      <fieldset><legend>1 · How you point at a part</legend>
+        <label class="o"><input type="radio" name="point" value="pin"><span>A pin wherever you click <span class="mine">my pick</span></span><small>Comment, then click any part of the mockup: a numbered pin stays there, and the comment says which screen and the words nearest it.</small></label>
+        <label class="o"><input type="radio" name="point" value="screen"><span>A Comment button on each screen</span><small>Simpler: a comment is about a whole screen (2A, 2B…), not a spot on it.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · Where your comments show</legend>
+        <label class="o"><input type="radio" name="rail" value="rail"><span>Beside the mockup, and in the issue <span class="mine">my pick</span></span><small>A column at the right of the window lists them with my answers; each is also a line in the question's issue.</small></label>
+        <label class="o"><input type="radio" name="rail" value="issue"><span>Only in the issue's conversation</span><small>The mockup takes the whole window; you read them and my answers on the issue.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · When I get them</legend>
+        <label class="o"><input type="radio" name="when" value="each"><span>Each one as you send it <span class="mine">my pick</span></span><small>Like a note: in my inbox at once, so a listening session answers while you're still looking.</small></label>
+        <label class="o"><input type="radio" name="when" value="picks"><span>All together with Save my picks</span><small>Fewer interruptions; nothing reaches me until you save.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · Which mockups</legend>
+        <label class="o"><input type="radio" name="which" value="all"><span>Every mockup, older ones too <span class="mine">my pick</span></span><small>askdnd adds the comment layer as it opens the page in its sealed frame; the pages themselves don't change.</small></label>
+        <label class="o"><input type="radio" name="which" value="new"><span>Only mockups made from now on</span><small>The layer goes in the shared picks block of each new page.</small></label>
+      </fieldset>
+    </div>
+    <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="What's missing, or what you'd change"></textarea></label>
+    <div class="sendline"><button type="submit" class="go">Save my picks</button><span class="saved">Not saved yet</span></div>
+  </form>
+</div>
+<script>
+(() => {
+  const st = { screen: "mode", point: "pin", rail: "rail" };
+  const abar = () => `<div class="abar"><span class="logo"></span><span>The Adventure Begins ▾</span><span>Campaign</span><span>Party ▾</span><span class="sp">Search…</span><span class="here">Backstage ▾</span><span class="pic"></span></div>`;
+  const mock = () => `<div class="mk"><h4>Split it into several issues</h4>
+    <div class="scr"><span class="tag">2A · Split… on an issue</span><button type="button" class="btn cbtn">Comment on 2A</button>
+      <div class="row"><span>1</span><span class="inp">A check's window gets too tall</span><span class="inp">Feedback and Testing › Testing</span></div>
+      <div class="row"><span>2</span><span class="inp">The arrow is too small</span><span class="inp">Feedback and Testing › Sending a note</span></div>
+      <div class="row"><span>3</span><span class="inp">The first paste replaced the page's picture</span><span class="inp">Feedback and Testing › Sending a note</span></div>
+      <div class="foot"><span class="btn p">Split into 3</span><span class="btn">Cancel</span><span style="color:var(--faint);font-size:12px">Claude does the same when it sorts a note.</span></div></div>
+    <div class="scr"><span class="tag">2B · Several issues… while approving</span><button type="button" class="btn cbtn">Comment on 2B</button>
+      <p style="color:var(--muted)">Only while a player's note waits for you. Your own notes are filed the moment you send them.</p>
+      <div class="foot"><span class="btn p">Approve as 3 issues</span><span class="btn">Approve as one</span></div></div>
+    <div class="scr" style="opacity:.7"><span class="tag">Your picks</span><p style="color:var(--muted)">1 · Claude missed … 2 · Splitting a note … 3 · Screenshot first …</p></div></div>`;
+  const comments = [
+    { n: 1, where: "2A · near “Split into 3”", words: "Say how many before I press it: the count changes as I add parts?", ans: "Yes: it counts the parts with a title, so a blank one isn't made." },
+    { n: 2, where: "2A · near “Feedback and Testing › Sending a note”", words: "Default each new part to this issue's Feature.", ans: "" },
+  ];
+  const pins = list => list.map((c, i) => `<span class="pin${i === list.length - 1 && st.screen === "sent" ? " mine" : ""}" style="left:${[540, 610][i]}px;top:${[236, 166][i]}px">${c.n}</span>`).join("");
+  const rail = list => `<aside class="rail"><h5>Comments <i>· ${list.length}</i></h5>${list.length ? list.map(c => `<div class="cm"><span class="where"><span class="n">${st.point === "pin" ? c.n : "•"}</span>${st.point === "pin" ? c.where : c.where.split(" · ")[0] + " (the whole screen)"}</span><span>${c.words}</span>${c.ans ? `<span class="ans"><b>Claude:</b> ${c.ans}</span>` : `<span class="sent">Sent to Claude · just now</span>`}</div>`).join("") : `<p style="color:var(--faint)">None yet. Press Comment, then click a part.</p>`}</aside>`;
+  const windowView = () => {
+    const list = st.screen === "sent" ? comments : comments.slice(0, 1);
+    const commenting = st.screen === "mode";
+    const pop = commenting ? (st.point === "pin"
+      ? `<span class="pin" style="left:610px;top:166px">2</span><div class="pop" style="left:626px;top:176px"><small>2A · near “Feedback and Testing › Sending a note”</small><div class="box">Default each new part to this issue's Feature.</div><div class="r"><span class="btn p">Comment</span><span class="btn link">Cancel</span><small>Reaches Claude now</small></div></div>`
+      : `<div class="pop" style="left:560px;top:60px"><small>On screen 2A · Split… on an issue</small><div class="box">Default each new part to this issue's Feature.</div><div class="r"><span class="btn p">Comment</span><span class="btn link">Cancel</span></div></div>`) : "";
+    return `<div class="dim"><div class="win"><div class="whead"><div class="t"><small>Mockup · question 9 on issue 22</small><b>Split… on an issue</b></div>
+      ${st.point === "pin" ? `<button type="button" class="btn${commenting ? " on" : ""}">${commenting ? "Commenting · Esc to stop" : "Comment"}</button>` : ""}<span class="btn link">On claude.ai ↗</span><span class="btn link">✕</span></div>
+      <div class="wbody${st.rail === "issue" ? " norail" : ""}"><div class="frame${commenting && st.point === "pin" ? " commenting" : ""}${st.point === "screen" ? " perscreen" : ""}">${commenting && st.point === "pin" ? `<span class="hint">Click any part to comment on it</span>` : ""}${mock()}${st.point === "pin" ? pins(list) : ""}${pop}</div>${st.rail === "rail" ? rail(list) : ""}</div></div></div>`;
+  };
+  const issueView = () => `<div class="convo"><div class="aside"><span class="on">Feedback</span><span>For you</span><span>Roadmap</span><span>Development</span></div><div class="list">Issues · Feedback and Testing…</div>
+    <div class="peek"><small style="color:var(--faint)">Issue 22 · Feedback and Testing › Feedback</small><h3>A note with several problems: split it</h3>
+      <div class="bub cl"><small>Claude · question 9 · 10:02 AM</small><span>Split… on an issue, or while approving? The mockup has both. <u>Open mockup</u></span></div>
+      <div class="bub you mark"><small>You · on the mockup · 10:06 AM</small><span class="on">Pin 1 · 2A · near “Split into 3”</span><span>Say how many before I press it: the count changes as I add parts?</span></div>
+      <div class="bub cl"><small>Claude · 10:06 AM</small><span>Yes: it counts the parts with a title, so a blank one isn't made.</span></div>
+      <div class="bub you mark"><small>You · on the mockup · 10:08 AM</small><span class="on">Pin 2 · 2A · near “Feedback and Testing › Sending a note”</span><span>Default each new part to this issue's Feature.</span></div>
+      <div class="bub you"><small>You · your picks · 10:11 AM</small><span>2 · A, Split… on any open issue</span></div>
+      <p style="color:var(--faint);font-size:13px">Dashed: comments made in the mockup's window, each a line here the moment it's sent.</p></div></div>`;
+  const stage = document.getElementById("stage"), wrapEl = stage.parentElement, note = document.getElementById("scale-note"), W = 1280;
+  const draw = () => {
+    stage.innerHTML = `<div class="app" style="width:${W}px">${abar()}${st.screen === "issue" ? issueView() : windowView()}</div>`;
+    const s = Math.min(1, wrapEl.clientWidth / W);
+    stage.style.transform = `scale(${s})`; wrapEl.style.height = (stage.firstElementChild.offsetHeight * s) + "px";
+    note.textContent = (s < 1 ? `Drawn at ${W}px wide (a 13–14" laptop), shown at ${Math.round(s * 100)}% to fit this page. ` : `Drawn at ${W}px wide (a 13–14" laptop). `) + "The window is For you's Open mockup, nearly the whole screen.";
+  };
+  addEventListener("resize", draw);
+  document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    st[seg.dataset.ctl] = b.dataset.v; draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["point", "rail", "when", "which"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
