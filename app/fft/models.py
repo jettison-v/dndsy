@@ -70,6 +70,10 @@ class FftScope(_Stamped, Base):
     actor: Mapped[str] = mapped_column(String(40), default="", server_default="")
     agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     agreed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Reviewing a scope (issue 54, Brett's picks Nov 20): Needs changes… on this version (it's Claude's turn to write the
+    # next), and Claude's suggested answer to each open question (in the questions' order; "" for none)
+    changes_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    suggested: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class FftAddition(_Stamped, Base):
@@ -80,11 +84,18 @@ class FftAddition(_Stamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
     words: Mapped[str] = mapped_column(Text)
-    where: Mapped[str] = mapped_column(String(10), default="askdnd", server_default="askdnd")  # askdnd, chat
+    where: Mapped[str] = mapped_column(String(10), default="askdnd", server_default="askdnd")  # askdnd, chat, discussion
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     answer: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", in, later, question
     answer_words: Mapped[str] = mapped_column(Text, default="", server_default="")
     scope_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Reviewing a scope (issue 54): a comment on one line of a version ("what", "in:2", "not:0"; "q:1" is his answer to
+    # its second open question), the line as it read then, and held: his own, not sent to Claude until he answers the
+    # scope (Scope looks right, or Needs changes…)
+    on_line: Mapped[str] = mapped_column(String(12), default="", server_default="")
+    line_text: Mapped[str] = mapped_column(Text, default="", server_default="")
+    on_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    held: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
 
 class FftStep(_Stamped, Base):

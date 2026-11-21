@@ -10,6 +10,7 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1><a href="/manage/roadmap" class="crumb">Roadmap ›</a> {{ it.title }}</h1>
     {% if it.section not in ("shipped", "not_doing") %}
+    <button class="btn title-action" type="button" data-modal-url="/manage/roadmap/{{ it.id }}/discuss" data-do="discuss">Discuss with Claude ↗</button>
     {% call more_menu("More for " ~ it.title) %}
       {% for k in sections if k != it.section %}<form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="move"><input type="hidden" name="section" value="{{ k }}"><button type="submit" data-move="{{ k }}">Move to {{ section_said[k] }}</button></form>{% endfor %}
       <form method="post" action="/manage/roadmap/{{ it.id }}"><input type="hidden" name="do" value="ship"><button type="submit" data-do="ship">Shipped</button></form>
@@ -34,35 +35,80 @@
   </nav>
 
   {% if tab == "scope" %}
+  {# Reviewing a scope (issue 54, Brett's picks Nov 20, docs/mockups/roadmap-scope-review/): comment on any line or the
+     whole of it, answer its open questions in place (Claude's suggestion a press away), then Scope looks right or Needs
+     changes…; what he wrote is held, his own, until he answers, and goes to Claude with it. #}
+  {% set can = shown and latest and shown.version == latest.version and open %}
+  {% macro line(key, text, can, on_lines) %}
+  {% set mine = on_lines.get(key, []) %}
+  <div class="rm-line{{ ' has' if mine }}" data-line="{{ key }}">
+    <span class="rm-line-text">{{ text }}</span>
+    {% if can %}<button class="btn link small rm-cbtn" type="button" data-show="rm-c-{{ key | replace(':', '-') }}" data-do="comment-line">{% if mine %}{{ mine | length }} comment{{ "s" if mine | length != 1 }}{% else %}Comment{% endif %}</button>
+    <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold rm-cform" id="rm-c-{{ key | replace(':', '-') }}" hidden>
+      <input type="hidden" name="do" value="comment"><input type="hidden" name="on" value="{{ key }}">
+      <label class="field"><span>Your comment on this line</span><textarea name="words" rows="2" required maxlength="8000"></textarea></label>
+      <div class="row tight"><button class="btn primary small" type="submit" data-do="comment">Comment</button><button class="btn link small" type="button" data-cancel="rm-c-{{ key | replace(':', '-') }}">Cancel</button></div>
+    </form>{% endif %}
+  </div>
+  {% endmacro %}
   <div class="rm-scope">
     <section class="rm-doc panel" data-scope{% if shown %} data-version="{{ shown.version }}"{% endif %}>
       {% if not shown %}{{ empty_state("No scope yet: Claude writes its first version when it's next, or when you say so in chat.") }}
       {% else %}
       <div class="rm-doc-bar"><span class="rm-vers">{% for s in scopes %}<a href="?tab=scope&amp;ver={{ s.version }}" class="{{ 'on' if s.version == shown.version }}" data-ver="{{ s.version }}">v{{ s.version }}</a>{% endfor %}</span>
-        <span class="note">{% if shown.version != latest.version %}An earlier version{% elif shown.agreed_at %}Agreed <time datetime="{{ shown.agreed_at.isoformat() }}" data-clock="ago">{{ shown.agreed_at | ago }}</time>{% else %}Latest · waits for your OK{% endif %}</span></div>
+        <span class="note">{% if shown.version != latest.version %}An earlier version{% elif shown.agreed_at %}Agreed <time datetime="{{ shown.agreed_at.isoformat() }}" data-clock="ago">{{ shown.agreed_at | ago }}</time>{% elif shown.changes_at %}Changes asked <time datetime="{{ shown.changes_at.isoformat() }}" data-clock="ago">{{ shown.changes_at | ago }}</time>{% else %}Latest · waits for your OK{% endif %}</span></div>
       {% if shown.changed %}<p class="rm-changed" data-changed><b>What changed in v{{ shown.version }}:</b> {{ shown.changed }}</p>{% endif %}
-      <div><h3 class="plabel">What it is</h3><p>{{ shown.what }}</p></div>
-      <div><h3 class="plabel">In scope</h3><ul>{% for x in shown.inside %}<li>{{ x }}</li>{% endfor %}</ul></div>
-      {% if shown.not_now %}<div><h3 class="plabel">Not now</h3><ul>{% for x in shown.not_now %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
-      {% if shown.questions %}<div><h3 class="plabel">Open questions</h3><ul>{% for x in shown.questions %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
-      {% if shown.version == latest.version and not shown.agreed_at and it.section not in ("shipped", "not_doing") %}
-      <form method="post" action="/manage/roadmap/{{ it.id }}" class="act-bar"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ shown.version }}"><button class="btn primary" type="submit" data-do="agree">Scope looks right</button></form>{% endif %}
+      <div><h3 class="plabel">What it is</h3>{{ line("what", shown.what, can, line_comments) }}</div>
+      <div><h3 class="plabel">In scope</h3><div class="rm-lines">{% for x in shown.inside %}{{ line("in:" ~ loop.index0, x, can, line_comments) }}{% endfor %}</div></div>
+      {% if shown.not_now %}<div><h3 class="plabel">Not now</h3><div class="rm-lines">{% for x in shown.not_now %}{{ line("not:" ~ loop.index0, x, can, line_comments) }}{% endfor %}</div></div>{% endif %}
+      {% if shown.questions %}<div><h3 class="plabel">Open questions</h3>
+        <div class="rm-lines">{% for q in shown.questions %}{% set n = loop.index0 %}{% set a = answers.get(n) if can else none %}{% set sug = (shown.suggested or [])[n] if (shown.suggested or []) | length > n else "" %}
+        <div class="rm-q" data-question="{{ n }}">
+          <span class="rm-line-text">{{ q }}</span>
+          {% if can and waits %}
+          <form method="post" action="/manage/roadmap/{{ it.id }}" class="rm-answer"><input type="hidden" name="do" value="comment"><input type="hidden" name="on" value="q:{{ n }}">
+            <label class="field"><span>Your answer{% if a %} · not sent yet{% endif %}</span><input type="text" name="words" maxlength="2000" value="{{ a.words if a else '' }}" placeholder="Or leave it: Claude asks again in the next version"></label>
+            <div class="row tight"><button class="btn small" type="submit" data-do="answer">{{ "Change answer" if a else "Save answer" }}</button>
+              {% if sug and not a %}<span class="note rm-sug">Claude suggests: <b>{{ sug }}</b></span><button class="btn small" type="submit" name="words" value="{{ sug }}" data-do="use-suggestion">Use it</button>{% endif %}</div>
+          </form>
+          {% elif a %}<p class="note" data-answered>Your answer: {{ a.words }}</p>
+          {% elif sug %}<p class="note">Claude suggested: {{ sug }}</p>{% endif %}
+        </div>{% endfor %}</div></div>{% endif %}
+      {% if can and waits %}
+      <div class="rm-foot" data-answer-scope>
+        <div class="row tight">
+          <form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="agree"><input type="hidden" name="seen" value="{{ shown.version }}"><button class="btn primary" type="submit" data-do="agree">Scope looks right</button></form>
+          <button class="btn" type="button" data-show="rm-changes-{{ it.id }}" data-do="changes">Needs changes…</button>
+          {% if held %}{% set nq = held | selectattr("on_line", "in", question_keys) | list | length %}{% set nc = held | length - nq %}
+          <span class="note" data-held="{{ held | length }}">Goes with it: {% if nc %}{{ nc }} comment{{ "s" if nc != 1 }}{% endif %}{% if nc and nq %} and {% endif %}{% if nq %}{{ nq }} answer{{ "s" if nq != 1 }}{% endif %}</span>{% endif %}
+        </div>
+        <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold" id="rm-changes-{{ it.id }}" hidden><input type="hidden" name="do" value="changes"><input type="hidden" name="seen" value="{{ shown.version }}">
+          <label class="field"><span>What's missing or wrong{% if held %} (beyond your comments){% endif %}</span><textarea name="words" rows="3" maxlength="8000"{% if not held %} required{% endif %}></textarea></label>
+          <div class="row tight"><button class="btn primary small" type="submit" data-do="send-changes">Send to Claude</button><button class="btn link small" type="button" data-cancel="rm-changes-{{ it.id }}">Cancel</button></div>
+        </form>
+        <p class="note">Comment on a line, or answer a question, before either: they go with your answer.</p>
+      </div>
+      {% elif can and latest.changes_at and not latest.agreed_at %}
+      <p class="rm-turn" data-changes-asked>{{ state_word("Claude's", "claude") }} <span>You asked for changes: Claude answers each comment here and writes version {{ latest.version + 1 }}.</span></p>
+      {% endif %}
       {% endif %}
     </section>
     <section class="rm-adds" data-additions aria-labelledby="rm-adds-h">
-      <div class="rm-adds-head"><h3 class="plabel" id="rm-adds-h">Your additions · {{ adds | length }}</h3>
-        <button class="btn small" type="button" data-show="rm-add-{{ it.id }}" data-do="add">Add to this item…</button></div>
-      <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold" id="rm-add-{{ it.id }}" hidden><input type="hidden" name="do" value="add">
-        <label class="field"><span>What to add or change, in your words</span><textarea name="words" rows="3" required maxlength="8000"></textarea></label>
-        <p class="note">It's kept here as you wrote it and reaches Claude like a note; Claude answers it here and writes the scope's next version.</p>
-        <div class="row tight"><button class="btn primary small" type="submit">Add it</button><button class="btn link small" type="button" data-cancel="rm-add-{{ it.id }}">Cancel</button></div></form>
+      <h3 class="plabel" id="rm-adds-h">Comments and additions · {{ adds | length }}</h3>
+      {% if open %}
+      <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer rm-general" data-general><input type="hidden" name="do" value="comment">
+        <label class="field"><span>{% if waits %}A comment on the whole scope, or something to add{% else %}Something to add to this item{% endif %}</span><textarea name="words" rows="2" required maxlength="8000"></textarea></label>
+        <div class="row tight"><button class="btn small" type="submit" data-do="comment">{{ "Add comment" if waits else "Add" }}</button>{% if waits %}<span class="note">It goes to Claude with your answer to the scope.</span>{% endif %}</div>
+      </form>{% endif %}
       {% for a in adds %}
-      <article class="rm-add panel" data-addition="{{ a.id }}">
-        <p class="note">{{ "In chat" if a.where == "chat" else "In askdnd" }} · <time datetime="{{ a.created_at.isoformat() }}" data-clock="when">{{ a.created_at | ago }}</time>{% if a.scope_version %} · v{{ a.scope_version }}{% endif %}</p>
+      <article class="rm-add panel{{ ' held' if a.held }}" data-addition="{{ a.id }}"{% if a.held %} data-held{% endif %}>
+        <p class="note">{% if a.held %}Yours · not sent yet{% else %}{{ {"chat": "In chat", "discussion": "In a discussion with Claude"}.get(a.where, "In askdnd") }}{% endif %} · <time datetime="{{ a.created_at.isoformat() }}" data-clock="when">{{ a.created_at | ago }}</time>{% if a.on_version %} · on v{{ a.on_version }}{% elif a.scope_version %} · v{{ a.scope_version }}{% endif %}</p>
+        {% if a.on_line %}<p class="rm-on" data-on="{{ a.on_line }}">{{ "Answer to: " if a.on_line.startswith("q:") }}{{ a.line_text }}</p>{% endif %}
         <p class="rm-add-words">“{{ a.words }}”</p>
-        <p class="rm-ans">{% if a.answer %}{{ state_word({"in": "In scope", "later": "Later", "question": "A question"}[a.answer], {"in": "passed", "later": "quiet", "question": "ask"}[a.answer], ' data-answer="' ~ a.answer ~ '"') }} {{ a.answer_words }}{% else %}{{ state_word("Claude's to answer", "claude", ' data-answer="none"') }}{% endif %}</p>
+        {% if a.held %}<form method="post" action="/manage/roadmap/{{ it.id }}" class="inline"><input type="hidden" name="do" value="drop"><input type="hidden" name="addition" value="{{ a.id }}"><button class="btn link small" type="submit" data-do="drop">Take back</button></form>
+        {% else %}<p class="rm-ans">{% if a.answer %}{{ state_word({"in": "In scope", "later": "Later", "question": "A question"}[a.answer], {"in": "passed", "later": "quiet", "question": "ask"}[a.answer], ' data-answer="' ~ a.answer ~ '"') }} {{ a.answer_words }}{% else %}{{ state_word("Claude's to answer", "claude", ' data-answer="none"') }}{% endif %}</p>{% endif %}
       </article>
-      {% else %}<p class="note">Nothing added yet.</p>{% endfor %}
+      {% else %}<p class="note">Nothing yet.</p>{% endfor %}
     </section>
   </div>
 

@@ -231,7 +231,7 @@ def for_you(db: Session, device: str) -> list[dict]:
     for it in db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(rules.ROADMAP_SECTIONS))
                          .order_by(rules.item_rank(), FftItem.place, FftItem.id)):  # (a scope waiting for his OK, or a step of his: Nov 20)
         sc = rules.latest_scope(db, it)
-        if sc is not None and sc.agreed_at is None:
+        if rules.waits_on_brett(sc):
             put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "scope", "sub": f"Scope version {sc.version} waits for your OK"})
         elif it.next_whose == "brett":
             put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "roadmap", "sub": it.next_step or "Its next step is yours"})
@@ -353,9 +353,10 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
     if kind == "d" and (d := db.get(FftIdea, ident)):
         return {"kind": "idea", "d": d}
     if kind == "r" and (it := db.get(FftItem, ident)):
+        from app.fft import roadmap_page
         from app.fft.models import FftStep
 
-        return {"kind": "roadmap", "it": it, "scope": rules.latest_scope(db, it),
+        return {"kind": "roadmap", "it": it, "scope": rules.latest_scope(db, it), "row": roadmap_page.row(db, it),
                 "mine": list(db.scalars(select(FftStep).where(FftStep.item_id == it.id, FftStep.whose == "brett", FftStep.done_at.is_(None)).order_by(FftStep.place)))}
     if kind == "l" and (lt := db.get(FftLocalTry, ident)):
         return {"kind": "local", "lt": lt, "area": db.get(FftArea, lt.area_id) if lt.area_id else None, "open": LOCAL + "/dev/login?next=" + quote(lt.path, safe="/?=&")}

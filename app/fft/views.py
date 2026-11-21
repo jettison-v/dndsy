@@ -309,9 +309,11 @@ def event_words(ev) -> str:
         to = {"sender": ", to its senders", "claude": ", to Claude"}.get(d.get("to") or "", "")
         return f"{who} wrote on {ev.thing} {ev.thing_id}{to}"
     if ev.thing == "item" and ev.kind.startswith("item_"):  # (a Roadmap item's Updates, and Claude's inbox)
-        said = {"item_new": "Added to the Roadmap", "item_addition": "Brett added to it" + (" (said in chat)" if d.get("where") == "chat" else ""),
+        said = {"item_new": "Added to the Roadmap", "item_addition": "Brett added to it" + {"chat": " (said in chat)", "discussion": " (in a discussion with Claude)"}.get(d.get("where") or "", ""),
                 "item_answered": "Claude answered an addition: " + {"in": "in scope", "later": "later", "question": "a question"}.get(d.get("answer", ""), ""),
                 "item_scope": f"Claude wrote scope version {d.get('version')}", "item_agreed": f"Brett: scope version {d.get('version')} looks right",
+                "item_changes": f"Brett asked for changes to scope version {d.get('version')}",
+                "item_comments": f"Brett's {d.get('n')} comment{'s' if d.get('n') != 1 else ''} on its scope" + (f" (answers to {d.get('answers')} question{'s' if d.get('answers') != 1 else ''})" if d.get("answers") else ""),
                 "item_step": "A step added" + (" for Brett" if d.get("whose") == "brett" else ""), "item_step_done": "A step done",
                 "item_step_open": "A step not done after all", "item_step_removed": "A step taken off", "item_shipped": "Shipped",
                 "item_not_doing": "Not doing", "item_set": "Its " + ", ".join(k for k in ("title", "why", "size", "status") if d.get(k)) + " changed",
@@ -392,6 +394,11 @@ def gaps(db: Session) -> list[dict]:
         if not rules.lane_of(a) and any(i.pr and i.area_id == a.id for i in issues):  # goes without its lane)
             out.append({"kind": "no_lane", "thing": "area", "id": a.id, "title": a.title,
                         "says": "A fix in a pull request with no lane: feedback.py lane --area <id> (or attach its pull request again)."})
+    for it in db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(rules.ROADMAP_SECTIONS)).order_by(FftItem.id)):
+        sc = rules.latest_scope(db, it)  # (Needs changes… on its scope: Claude answers each comment and writes the next, issue 54)
+        if sc is not None and sc.agreed_at is None and sc.changes_at is not None:
+            out.append({"kind": "scope_changes", "thing": "item", "id": it.id, "title": it.title, "since": sc.changes_at,
+                        "says": f"Brett asked for changes to scope v{sc.version}: answer each comment (feedback.py roadmap {it.id} answer …) and write v{sc.version + 1} (scope … --changed)."})
     for it in db.scalars(select(FftItem).where(FftItem.section == "shipped", FftItem.result == "").order_by(FftItem.id)):  # (Brett, Nov 20)
         out.append({"kind": "no_result", "thing": "item", "id": it.id, "title": it.title,
                     "says": "Shipped with no result: write what it changed, with its numbers (feedback.py roadmap <id> set --result \"…\")."})
@@ -404,7 +411,7 @@ def gaps(db: Session) -> list[dict]:
 GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself",
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
-             "no_result": "finished, with no result written yet"}  # (each kind of gap, as Development says it)
+             "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope"}  # (each kind of gap, as Development says it)
 GAP_GRACE = timedelta(minutes=30)  # (Brett, Nov 19, issue 39: what just happened isn't missed yet)
 
 
