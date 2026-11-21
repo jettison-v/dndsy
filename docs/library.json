@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "One Development queue",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 20",
+  "what": "Issue 62: Development as one queue, each Roadmap build (once its scope is agreed) and each Product Area batch in your one order, drawn with today's real items. Three picks: one order or batches first, when a build joins, what its row shows.",
+  "source": "docs/mockups/one-development-queue/index.html",
+  "link": "https://claude.ai/artifact/AyY6sTzkxe3NvHGkc9E16M"
+ },
+ {
   "title": "Open Feedback, reviewed",
   "kind": "plan",
   "status": "Your picks",
