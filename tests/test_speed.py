@@ -87,3 +87,16 @@ def test_the_stopwatch_counts_every_request_but_a_held_wait(monkeypatch):
     assert ("GET", "/page/{n}") in speed._now and ("GET", "/held") in speed._now
     assert not any("7" in route for _, route in speed._now)
     _fresh()
+
+
+def test_a_campaigns_pages_are_one_route_and_the_slowest_tenth_never_passes_the_slowest(db):
+    """Nov 20, askdnd.ai's first numbers: /c/vtt-test/party kept the campaign's name, and its slowest tenth read 2 s
+    when no request took more than 1.45."""
+    _fresh()
+    for slug in ("main", "vtt-test"):
+        for _ in range(10):
+            speed.record("GET", f"/c/{slug}/party", 1450)
+    speed.flush(db)
+    rows = speed.week(db)
+    assert [r["route"] for r in rows] == ["/c/{slug}/party"] and rows[0]["count"] == 20
+    assert rows[0]["p90_ms"] <= rows[0]["max_ms"] == 1450
