@@ -188,7 +188,13 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
 .done-note { border: 1px solid rgba(179, 157, 219, .45); background: rgba(179, 157, 219, .07); border-radius: 8px; padding: 10px 12px; font-size: 13px; display: grid; gap: 4px; }
 .done-note b { color: var(--violet); }
 .reset { justify-self: start; }
-.ideas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.msg { white-space: pre-wrap; margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: var(--text); }
+.chg { background: rgba(126, 166, 224, .08); border: 1px solid rgba(126, 166, 224, .35); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.chg b { color: #fff; }
+.card.talk { border-color: rgba(179, 157, 219, .55); }
+.card.talk .meta { color: var(--violet); }
+.seg.sm button { min-height: 26px; font-size: 12px; }
+.ideas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .ideas div { border-left: 2px solid var(--blue); padding: 2px 12px; font-size: .88rem; color: var(--muted); }
 .ideas b { display: block; }
 @media (max-width: 1000px) { .ideas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -198,19 +204,21 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
 <div class="wrap">
   <header style="display:grid;gap:8px">
     <h1>Reviewing a scope</h1>
-    <p class="lede">Issue 54. Today a scope has one answer, Scope looks right, as a full-width red bar. There's nowhere to say it isn't right, comment on a line, or answer its open questions. <b>Add to this item…</b> is up in the corner and reads as a new idea, not a reply. Below is the page you were on, <i>Clearer checks</i>, with the ideas switchable. Everything is clickable: comment on a line, answer a question, send changes.</p>
+    <p class="lede">Issue 54. Today a scope has one answer, Scope looks right, as a full-width red bar. There's nowhere to say it isn't right, comment on a line, or answer its open questions. <b>Add to this item…</b> is up in the corner and reads as a new idea, not a reply. Below is the page you were on, <i>Clearer checks</i>, with the ideas switchable. Everything is clickable: comment on a line, answer a question, send changes, or Discuss with Claude to talk it through in a new session.</p>
   </header>
   <div class="ideas">
     <div><b>Two answers, side by side</b>Scope looks right, or Needs changes…, each a normal-sized button at the foot of the scope. Changes go to Claude, who writes the next version.</div>
     <div><b>Comment where you mean</b>Point at any line of the scope and comment on it. Your comments gather in the right-hand column, and a general one goes in a box that's always open there.</div>
     <div><b>Answer the open questions in place</b>Each question has a box under it, with Claude's suggestion one tap away. Your answers go with your OK or your changes.</div>
     <div><b>Claude answers every comment</b>The next version says, for each comment, what it did. Its "What changed" line lists them, and each comment gets its answer: in scope, later, or a question back.</div>
+    <div><b>Or talk it through: Discuss with Claude</b>A button opens a new Claude Code session with a message filled in about this item (on your Mac, in askdnd's folder; elsewhere, claude.ai with askdnd's repo). You send it, talk, and that session writes the outcome back here.</div>
   </div>
 
   <div class="controls">
     <span class="ctl"><span class="lbl">1 · Your answer</span><span class="seg" data-ctl="decide"><button type="button" data-v="two" aria-pressed="true">Two buttons</button><button type="button" data-v="review">One reply box</button></span></span>
     <span class="ctl"><span class="lbl">2 · Comments</span><span class="seg" data-ctl="comments"><button type="button" data-v="lines" aria-pressed="true">On a line, and a box</button><button type="button" data-v="box">A box only</button></span></span>
     <span class="ctl"><span class="lbl">3 · Open questions</span><span class="seg" data-ctl="questions"><button type="button" data-v="inline" aria-pressed="true">Answered in place</button><button type="button" data-v="comment">As comments</button></span></span>
+    <span class="ctl"><span class="lbl">4 · Talking it through</span><span class="seg" data-ctl="discuss"><button type="button" data-v="write" aria-pressed="true">It writes back</button><button type="button" data-v="confirm">You confirm it first</button><button type="button" data-v="none">In this chat</button></span></span>
     <button type="button" class="btn reset" data-reset>Start over</button>
   </div>
   <div class="stage-wrap"><div class="stage" id="stage"></div></div>
@@ -230,6 +238,11 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
         <label class="o"><input type="radio" name="questions" value="inline"><span>Answered in place <span class="mine">my pick</span></span><small>A box under each question, with Claude's suggestion one tap away. An unanswered question is fine; Claude asks again in the next version.</small></label>
         <label class="o"><input type="radio" name="questions" value="comment">
           <span>As comments</span><small>The questions stay a list; you answer them in a comment, like anything else.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · Talking it through</legend>
+        <label class="o"><input type="radio" name="discuss" value="write"><span>Discuss with Claude; it writes back <span class="mine">my pick</span></span><small>A new session, its first message filled in, for you to send. When you're done it writes onto the item itself: your points as comments with its answers, answers to the questions, the scope's next version. You still say Scope looks right here.</small></label>
+        <label class="o"><input type="radio" name="discuss" value="confirm"><span>Discuss with Claude; you confirm what comes back</span><small>The same, but the outcome waits on the item as one summary card (Accept, or edit it) before anything changes.</small></label>
+        <label class="o"><input type="radio" name="discuss" value="none"><span>No button: in this chat</span><small>As now: you talk to Claude in its running session, and it writes onto the item.</small></label>
       </fieldset>
     </div>
     <label style="display:grid;gap:6px"><span class="lbl">Anything else</span><textarea name="notes" placeholder="What's missing, or what you'd change"></textarea></label>
@@ -253,7 +266,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     ["In chat · 2:21 PM · v1", "We can also add to that roadmap item by writing additional test cases or executing live test cases in staging or somewhere else we do not have to worry about data ← this is only an idea", "Two suggested lines in v1: a test of its own where a check can be automated, and Claude running each check on staging first."],
     ["In chat · 2:21 PM · v1", "Investigate a scalable and repeatable way to write clearer tests/checks. They are still hard to follow. I think the goal should come first and the steps afterward.", "Goal first, one shape for every check, enforced by askdnd."],
   ];
-  const fresh = () => ({ decide: "two", comments: "lines", questions: "inline", open: null, notes: {}, general: [], answers: {}, changing: false, sent: null });
+  const fresh = () => ({ decide: "two", comments: "lines", questions: "inline", discuss: "write", talk: null, where: "mac", open: null, notes: {}, general: [], answers: {}, changing: false, sent: null });
   let st = fresh();
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const nComments = () => Object.keys(st.notes).length + st.general.length;
@@ -289,7 +302,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     if (st.changing) return `<div class="foot"><span class="plabel">What's missing or wrong</span><textarea class="ta" data-reply placeholder="${nComments() ? "Anything beyond your comments (optional)" : "Say what to change"}"></textarea>
       <div class="row"><button type="button" class="btn p lg" data-send>Send to Claude</button><button type="button" class="btn ghost" data-uncancel>Cancel</button>${carry}</div></div>`;
     return `<div class="foot"><div class="row"><button type="button" class="btn p lg" data-ok>Scope looks right</button><button type="button" class="btn lg" data-change>Needs changes…</button>${carry}</div>
-      <span class="hint">Comment on a line, or answer a question, before either: they go with your answer.</span></div>`;
+      <span class="hint">Comment on a line, or answer a question, before either: they go with your answer.${st.discuss !== "none" ? ` Rather talk it through? <a class="link" data-discuss>Discuss with Claude ↗</a>` : ""}</span></div>`;
   };
 
   const side = () => {
@@ -299,18 +312,47 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
     }).join("") + st.general.map(t => `<div class="card yours"><span class="meta">Your comment · just now · v1</span><span>${esc(t)}</span>${st.sent === "changes" ? `<span class="ansr"><span class="st cl">Claude's</span> answers it in v2</span>` : ""}</div>`).join("");
     const box = st.sent ? "" : `<div class="card"><textarea class="ta" data-general placeholder="${st.comments === "lines" ? "A comment on the whole scope, or a new idea for it" : "Anything: a comment, an answer, a new idea"}"></textarea><div class="row"><button type="button" class="btn" data-add>Add comment</button></div></div>`;
     const old = ADDS.map(([m, w, a]) => `<div class="card"><span class="meta">${m}</span><span>“${esc(w)}”</span><span class="ansr"><span class="st ok">In scope</span> ${esc(a)}</span></div>`).join("");
-    return `<div class="side"><div class="side-h"><b>Comments and additions · ${ADDS.length + nComments()}</b></div>${box}${mine}${old}</div>`;
+    const n = ADDS.length + nComments() + (st.talk === "back" ? TALKED.length : 0);
+    return `<div class="side"><div class="side-h"><b>Comments and additions · ${n}</b></div>${talkCards()}${st.talk === "back" ? "" : box}${mine}${old}</div>`;
+  };
+
+  const MSG = () => {
+    const extra = nComments() || nAnswers() ? ` and what I've written on it so far` : "";
+    const back = st.discuss === "confirm"
+      ? "When we're done, write one summary of what we decided onto the item (feedback.py roadmap 6 discussed \"…\"); it waits there for my OK before anything changes."
+      : "When we're done, write back onto the item what we decided: my points as additions with your answers (roadmap 6 add, answer), answers to its open questions, and the scope's next version with what changed (roadmap 6 scope). Never say the scope looks right: that's mine.";
+    return `Let's discuss askdnd's Roadmap item 6, "Clearer checks: the goal first, then the steps".\n\nFirst read it: uv run python scripts/feedback.py roadmap 6 (its scope v1, its open questions${extra}). Then talk it through with me.\n\n${back}`;
+  };
+  const talkWin = () => st.talk !== "window" ? "" : `<div class="veil center"><div class="win">
+    <div class="w-h"><b style="color:#fff;font-size:14px">Discuss with Claude</b><button type="button" class="btn ghost" data-tclose>✕</button></div>
+    <div class="w-b">
+      <span class="seg sm"><button type="button" data-where="mac" aria-pressed="${st.where === "mac"}">On this Mac</button><button type="button" data-where="web" aria-pressed="${st.where === "web"}">Phone or web</button></span>
+      <p style="color:var(--muted)">${st.where === "mac"
+        ? "Opens a new Claude Code session in the Claude app, in askdnd's folder on this Mac (it asks you to confirm the folder each time). It reads askdnd as I do: its guide, my notes, the code."
+        : "Opens a new Claude Code session on claude.ai, or in the Claude app on your phone, with askdnd's repo picked. A cloud session: it reads the repo, not my notes on this Mac."}</p>
+      <div class="sect">The message, filled in for you to read and send</div>
+      <pre class="msg">${esc(MSG())}</pre>
+    </div>
+    <div class="w-f"><button type="button" class="btn p" data-topen>Open in Claude ↗</button><button type="button" class="btn" data-tcopy>Copy the message</button><span class="sp"></span><button type="button" class="btn ghost" data-tclose>Cancel</button></div>
+  </div></div>`;
+  const TALKED = [["Refuse a check without a goal; don't just warn.", "In v2: askdnd refuses it."], ["Rewrite only the checks still open, not the passed ones.", "In v2."]];
+  const talkCards = () => {
+    if (st.talk === "away") return `<div class="done-note"><span><b>Opened in Claude</b> · just now</span><span>Talk it through there; it writes back here when you're done. <a class="link" data-tback>In this mockup: see what comes back</a></span></div>`;
+    if (st.talk === "pending") return `<div class="card talk"><span class="meta">From your discussion in Claude · just now · waits for you</span><span><b>What we decided</b></span><ul style="margin:0;padding-left:18px">${TALKED.map(([w]) => `<li>${esc(w)}</li>`).join("")}<li>A check you can't try now says so at the top</li></ul><div class="row"><button type="button" class="btn p" data-taccept>Accept: Claude writes v2</button><button type="button" class="btn">Edit…</button></div></div>`;
+    if (st.talk === "back") return TALKED.map(([w, a]) => `<div class="card talk"><span class="meta">From your discussion in Claude · just now</span><span>“${esc(w)}”</span><span class="ansr"><span class="st ok">In scope</span> ${esc(a)}</span></div>`).join("");
+    return "";
   };
 
   const page = () => {
     const stage = st.sent === "ok" ? `<span class="st ok">Scope agreed</span>` : st.sent === "changes" ? `<span class="st cl">Claude's: v2 next</span>` : `<span class="st you">Scope: your OK</span>`;
     const next = st.sent === "ok" ? `Next: <span class="st cl">Claude's</span> Write its steps` : st.sent === "changes" ? `Next: <span class="st cl">Claude's</span> Answer your comments, write v2` : `Next: <span class="st you">Yours</span> OK its scope (version 1)`;
-    return `<div class="head"><h3><span class="crumb">Roadmap ›</span> Clearer checks: the goal first, then the steps</h3><span class="btn ghost">⋯</span></div>
+    return `<div class="head"><h3><span class="crumb">Roadmap ›</span> Clearer checks: the goal first, then the steps</h3>${st.discuss !== "none" ? `<button type="button" class="btn" data-discuss>Discuss with Claude ↗</button>` : ""}<span class="btn ghost">⋯</span></div>
       <div class="facts">${stage}<span>Now</span><span>Size M</span><span>${next}</span></div>
       <p class="why">Checks are still hard to follow (issue 36 too): what's being tested and what you should see come first.</p>
       <div class="vtabs"><span class="on">Scope</span><span>Steps</span><span>Plans</span><span>Updates</span></div>
       <div class="cols"><section class="doc">
-        <div class="docbar"><span class="ver">v1</span><span>Latest · ${st.sent === "ok" ? "agreed just now" : st.sent === "changes" ? "changes asked just now" : "waits for your OK"}</span></div>
+        <div class="docbar"><span>${st.talk === "back" ? `<span class="ver" style="border-color:var(--line);color:var(--muted)">v1</span> <span class="ver">v2</span>` : `<span class="ver">v1</span>`}</span><span>Latest · ${st.sent === "ok" ? "agreed just now" : st.sent === "changes" ? "changes asked just now" : "waits for your OK"}</span></div>
+        ${st.talk === "back" ? `<p class="chg"><b>What changed in v2</b> (from your discussion in Claude, just now): askdnd refuses a check without a goal; only open checks are rewritten; a check you can't try right away says so at the top.</p>` : ""}
         <div><p class="plabel">What it is</p>${line("what", SCOPE.what, true)}</div>
         <div><p class="plabel">In scope</p>${SCOPE.inside.map((x, i) => line("i" + i, x)).join("")}</div>
         <div><p class="plabel">Open questions</p>${questions()}</div>
@@ -320,7 +362,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   const stageEl = document.getElementById("stage"), wrapEl = stageEl.parentElement, note = document.getElementById("scale-note");
   const W = 1280;
   const draw = () => {
-    stageEl.innerHTML = `<div class="app" style="width:${W}px;min-height:820px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div class="amain">${page()}</div></div></div>`;
+    stageEl.innerHTML = `<div class="app" style="width:${W}px;min-height:820px">${abar()}<div class="abody"><span class="band"></span>${aside()}<div class="amain">${page()}</div></div>${talkWin()}</div>`;
     const s = Math.min(1, wrapEl.clientWidth / W);
     stageEl.style.transform = `scale(${s})`; wrapEl.style.height = (stageEl.firstElementChild.offsetHeight * s) + "px";
     note.textContent = s < 1 ? `Drawn at ${W}px wide (a 13–14" laptop), shown at ${Math.round(s * 100)}% to fit this page.` : `Drawn at ${W}px wide (a 13–14" laptop).`;
@@ -331,6 +373,13 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   stageEl.addEventListener("change", () => draw());
   stageEl.addEventListener("click", e => {
     const t = e.target;
+    if (t.closest("[data-discuss]")) { st.talk = "window"; draw(); return; }
+    const wh = t.closest("[data-where]"); if (wh) { st.where = wh.dataset.where; draw(); return; }
+    if (t.closest("[data-tclose]")) { st.talk = null; draw(); return; }
+    if (t.closest("[data-tcopy]")) { const b = t.closest("[data-tcopy]"); b.textContent = "Copied"; return; }
+    if (t.closest("[data-topen]")) { st.talk = "away"; draw(); return; }
+    if (t.closest("[data-tback]")) { if (st.discuss === "confirm") st.talk = "pending"; else { st.talk = "back"; st.answers[0] = SCOPE.questions[0][1]; } draw(); return; }
+    if (t.closest("[data-taccept]")) { st.talk = "back"; st.answers[0] = SCOPE.questions[0][1]; draw(); return; }
     const c = t.closest("[data-comment]"); if (c) { st.open = st.open === c.dataset.comment ? null : c.dataset.comment; draw(); return; }
     const sv = t.closest("[data-save]"); if (sv) { const v = stageEl.querySelector("[data-draft]").value.trim(); if (v) st.notes[sv.dataset.save] = v; else delete st.notes[sv.dataset.save]; st.open = null; draw(); return; }
     const dr = t.closest("[data-drop]"); if (dr) { delete st.notes[dr.dataset.drop]; st.open = null; draw(); return; }
@@ -348,9 +397,9 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   document.querySelectorAll("[data-ctl]").forEach(seg => seg.addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    st[seg.dataset.ctl] = b.dataset.v; st.open = null; st.changing = false; draw();
+    st[seg.dataset.ctl] = b.dataset.v; st.open = null; st.changing = false; st.talk = null; draw();
   }));
-  document.querySelector("[data-reset]").addEventListener("click", () => { const keep = { decide: st.decide, comments: st.comments, questions: st.questions }; st = { ...fresh(), ...keep }; draw(); });
+  document.querySelector("[data-reset]").addEventListener("click", () => { const keep = { decide: st.decide, comments: st.comments, questions: st.questions, discuss: st.discuss }; st = { ...fresh(), ...keep }; draw(); });
   draw();
 })();
 (() => {
@@ -358,7 +407,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
   // to this mockup's question; on claude.ai, in the page's own store, every change as you make it.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["decide", "comments", "questions"];
+  const NAMES = ["decide", "comments", "questions", "discuss"];
   let db = null, inAskdnd = false, timer = 0;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
