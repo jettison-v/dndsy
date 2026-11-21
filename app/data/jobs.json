@@ -6,6 +6,7 @@
     {"key": "drift", "title": "D&D Beyond drift", "what": "Today's test sheets against the fixtures' shape", "when": "Daily, 12:30 UTC", "where": "GitHub", "every_hours": 24},
     {"key": "backup", "title": "Backups", "what": "The database, to S3", "when": "Nightly", "where": "Railway", "every_hours": 24},
     {"key": "notes", "title": "New notes", "what": "Sorts what came in overnight against what's merged", "when": "Daily, 6:00", "where": "Claude", "every_hours": 24},
+    {"key": "speed", "title": "Slowest pages", "what": "Each page's time on askdnd.ai this week; a slow one becomes an issue (Behind the scenes › Speed)", "when": "Mondays", "where": "askdnd itself", "every_hours": 168},
     {"key": "phones", "title": "The phone sweep", "what": "Every page at 375 and 768 as admin, DM and player; one pull request", "when": "Mondays", "where": "Claude", "every_hours": 168}
   ]
 }

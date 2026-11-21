@@ -1126,5 +1126,22 @@ class UsageEvent(Base):
 
 
 
+class RequestTime(Base):
+    """How long a route took on one day (the table's day): how many requests, their total and slowest time, and how
+    many fell in each time band (app/speed.py `BANDS_MS`). The route as written, never an id (app/timing.py
+    `route_of`). Kept KEEP_DAYS; read by the weekly look at the slowest pages (Performance: the whole tool, Nov 20)."""
+
+    __tablename__ = "request_times"
+    __table_args__ = (UniqueConstraint("day", "method", "route"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    method: Mapped[str] = mapped_column(String(10))
+    route: Mapped[str] = mapped_column(String(200))
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    total_ms: Mapped[int] = mapped_column(BigInteger, default=0)
+    max_ms: Mapped[int] = mapped_column(Integer, default=0)
+    bands: Mapped[list] = mapped_column(JSONB, default=list)
+
+
 # Found, Fixed, Tried (app/fft/): its own tables, registered here so the metadata and migrations see them
 from app.fft import models as _fft_models  # noqa: F401

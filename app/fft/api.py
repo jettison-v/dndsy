@@ -190,6 +190,15 @@ def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depend
                 "round_open": rules.holding_round(db) is not None})  # (a sitting that holds; ▶ Try it's never does)
 
 
+@router.get("/speed")
+def speed_week(days: int = 7, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Each route's time on askdnd.ai over the last `days` days, slowest tenth first (app/speed.py)."""
+    from app import speed
+
+    keys.require(db, x_fft_key, "read")
+    return _ok({"routes": speed.week(db, max(1, min(days, 60))), "slow_p90_ms": speed.SLOW_P90_MS})
+
+
 @router.get("/notes")
 def notes(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """The notes admins have filed (T1: never one waiting or declined)."""
