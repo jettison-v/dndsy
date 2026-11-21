@@ -1,11 +1,12 @@
 {# Discuss with Claude (app/fft/roadmap_page.py `discuss`; issue 54, Brett's pick Nov 20): a new Claude Code session with
-   a message about this item filled in for him to read and send; that session writes what they decided back here. #}
+   a message about this item filled in for him to read and send; that session writes what they decided back here. A
+   plan in Development has the same (work_page.py `discuss`, issue 19): a session for that plan's area alone. #}
 <div class="peek-head">
-  <div><div class="note">Roadmap item {{ it.id }}</div><h2 id="peek-title">Discuss with Claude</h2></div>
+  <div><div class="note">{{ label }}</div><h2 id="peek-title">Discuss with Claude</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body rm-discuss" data-discuss>
-  <p>Opens a new Claude Code session with this message filled in, for you to read and send. Talk it through there; when you're done, that session writes what you decided back onto this item, and it reaches Claude here too.</p>
+  <p>Opens a new Claude Code session with this message filled in, for you to read and send. Talk it through there; when you're done, that session writes what you decided back onto {{ back_to }}, and it reaches Claude here too.</p>
   <h3 class="plabel">The message</h3>
   <pre class="rm-msg" data-message>{{ d.message }}</pre>
   <div class="row tight">

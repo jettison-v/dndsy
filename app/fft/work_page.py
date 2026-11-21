@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.fft import lanes, rules, taxonomy, testing_page, views
 from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftQuestion
-from app.models import ToolSetting
+from app.models import JobRun, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
@@ -224,10 +224,24 @@ def jobs(db: Session) -> list[dict]:
             last = json.loads(row.value) if row is not None and row.value else {}
         except ValueError:
             last = {}
+        if not last and j.get("reads") == "job_runs":  # (the backup reports to its own table: Manage's Overview reads it too)
+            run = db.scalar(select(JobRun).where(JobRun.name == j["key"]).order_by(JobRun.id.desc()))
+            if run is not None:
+                last = {"at": run.finished_at.isoformat(), "result": "ok" if run.status == "ok" else "failed", "words": run.detail[:200] if run.status != "ok" else ""}
         at = datetime.fromisoformat(last["at"]) if last.get("at") else None
         late = at is not None and (rules.now() - at).total_seconds() > j["every_hours"] * 3600 * 1.5
         out.append({**j, "at": at, "result": last.get("result", ""), "words": last.get("words", ""), "late": late})
     return out
+
+
+def job_runs(db: Session, j: dict, limit: int = 10) -> list[dict]:
+    """A job's latest runs, newest first: {at, result, words} (its reports here, or its own table's)."""
+    if j.get("reads") == "job_runs":
+        return [{"at": r.finished_at, "result": "ok" if r.status == "ok" else "failed", "words": r.detail[:200] if r.status != "ok" else ""}
+                for r in db.scalars(select(JobRun).where(JobRun.name == j["key"]).order_by(JobRun.id.desc()).limit(limit))]
+    events = db.scalars(select(FftEvent).where(FftEvent.kind == "job_ran", FftEvent.data["job"].astext == j["key"])
+                        .order_by(FftEvent.id.desc()).limit(limit))
+    return [{"at": e.at, "result": e.data.get("result", ""), "words": e.data.get("words", "")} for e in events]
 
 
 def job_keys() -> set[str]:
@@ -243,7 +257,7 @@ def report_job(db: Session, actor: str, key: str, result: str, words: str = "") 
     row = db.get(ToolSetting, JOB_KEY + key) or ToolSetting(key=JOB_KEY + key)
     row.value = json.dumps({"at": rules.now().isoformat(), "result": result, "words": words.strip()[:200]})
     db.merge(row)
-    rules._event(db, actor, "job_ran", "tool", 0, job=key, result=result)
+    rules._event(db, actor, "job_ran", "tool", 0, job=key, result=result, words=words.strip()[:200])  # (the job's own line, its history in the side panel)
 
 
 LANE_NEEDS = {"ship": ("Nothing a person sees", "Merges when its tests and the review pass", "Nobody: the tests"),
@@ -287,7 +301,7 @@ def page(request: Request, tab: str = "queue", open: str = "", history: int = 0,
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
-    ctx = {"tab": tab, "tabs": TABS, "q": q, "status": testing_page.status(db), "missed": views.missed(db), "gap_words": views.GAP_WORDS, "lanes": rules.LANES,
+    ctx = {"tab": tab, "tabs": TABS, "q": q, "status": testing_page.status(db), "gap_words": views.GAP_WORDS, "lanes": rules.LANES,
            "lane_said": rules.LANE_SAID, "stages": STAGES, "device_name": DEVICE_NAME, "history": bool(history),
            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
@@ -305,6 +319,47 @@ def page(request: Request, tab: str = "queue", open: str = "", history: int = 0,
         ctx["how"] = how()
     db.commit()
     return templates.TemplateResponse(request, "fft_work.html", ctx)
+
+
+def discuss(a: FftArea) -> dict:
+    """Discuss with Claude from a plan (issue 19, Brett, Nov 17: a chat of its own for one area, listening to that area
+    alone; the fresh sessions per Product Area trial in CLAUDE.md): a new Claude Code session with this message filled in."""
+    n = a.id
+    msg = (f'Let\'s work on askdnd\'s plan {n}, "{a.title}" (Backstage › Development), in a session of its own.\n\n'
+           f"First read it: uv run python scripts/feedback.py issues --area {n} and checks --area {n}, each issue in full "
+           f"(feedback.py issue <id>), docs/DECISIONS.md and its Product Area's heading in docs/MAP.md; say in your first "
+           f"message what you read. Listen with this plan's own read mark: feedback.py inbox --listener area-{n}, and "
+           f"feedback.py wait --listener area-{n} in the background while you wait on me.\n\n"
+           f"Work only on this plan's issues, the whole area as one fix with the full review and one pull request "
+           f"(feedback.py issue <id> pr <url> for each). Write back onto each issue what we decided "
+           f'(feedback.py issue <id> tell "…"). Ask me in askdnd, never in chat, about what I did there.')
+    from app.fft import roadmap_page  # (it reads this module: imported when used)
+
+    return roadmap_page.links(msg)
+
+
+@router.get("/manage/work/{area_id:int}/discuss")
+def discuss_window(request: Request, area_id: int, db: Session = Depends(get_db)):
+    _, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    a = db.get(FftArea, area_id)
+    if a is None or a.archived:
+        return HTMLResponse("This plan isn't here any more.", status_code=404)
+    return templates.TemplateResponse(request, "_roadmap_discuss.html", {"label": f"Plan {a.id}: {a.title}", "back_to": "this plan's issues", "d": discuss(a)})
+
+
+@router.get("/manage/work/jobs/{key}")
+def job_panel(request: Request, key: str, db: Session = Depends(get_db)):
+    """A scheduled job in the side panel (issue 55, Brett, Nov 20: "a description in the sidebar with more detail"): what it
+    does, what it checks, what happens when it fails, and its latest runs."""
+    _, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    j = next((x for x in jobs(db) if x["key"] == key), None)
+    if j is None:
+        return HTMLResponse("There's no such job.", status_code=404)
+    return templates.TemplateResponse(request, "_fft_job.html", {"j": j, "runs": job_runs(db, j)})
 
 
 def _above(db: Session) -> list[int]:

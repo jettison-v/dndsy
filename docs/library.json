@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "A Roadmap item's page",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 21",
+  "what": "Issues 59, 60 and 61: a Roadmap item's page laid out for a laptop, drawn with Homebrew items (no scope) and Clearer checks (scope v3): reading-size type, labelled facts, a short why, the design system's tab bar, Scope it on an item with no scope, and ⋯ opening toward the page. Four picks.",
+  "source": "docs/mockups/roadmap-item-page/index.html",
+  "link": "https://claude.ai/artifact/3cQkMfWPVwHUXX178MJboC"
+ },
+ {
   "title": "Built vs. planned",
   "kind": "plan",
   "status": "Your picks",

@@ -412,7 +412,7 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope"}  # (each kind of gap, as Development says it)
-GAP_GRACE = timedelta(minutes=30)  # (Brett, Nov 19, issue 39: what just happened isn't missed yet)
+GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 
 def _since(db: Session, out: list[dict]) -> list[dict]:
@@ -430,8 +430,15 @@ def _since(db: Session, out: list[dict]) -> list[dict]:
     return out
 
 
+def hands(db: Session) -> list[dict]:
+    """What's in Claude's hands (Brett's pick 1A on docs/mockups/fft-round-2/, issue 21: "you haven't missed anything
+    yet; you just haven't processed it"): every gap, oldest first, each `late` once it has waited GAP_GRACE while a
+    Claude session listens. With none listening it waits for the next session and nothing is late. Claude's own
+    end-of-turn check still holds it to every one at once."""
+    cut, on = rules.now() - GAP_GRACE, listening(db)
+    return [g | {"late": on and g["since"] <= cut} for g in sorted(gaps(db), key=lambda g: g["since"])]
+
+
 def missed(db: Session) -> list[dict]:
-    """Claude missed, as Brett sees it on Work: only what has waited longer than GAP_GRACE (Claude's own
-    end-of-turn check still sees every gap at once)."""
-    cut = rules.now() - GAP_GRACE
-    return [g for g in gaps(db) if g["since"] <= cut]
+    """Waiting on Claude too long (Development's amber panel): the late ones in `hands`."""
+    return [g for g in hands(db) if g["late"]]

@@ -15,6 +15,7 @@ from app.fft import rules, views, work_page
 from app.fft.models import FftArea, FftCheck, FftEvent, FftItem
 from app.importer import import_bundle
 from app.main import app
+from app.models import JobRun
 from tests.table_setup import BUNDLE
 
 CLAUDE, MINI = "c" * 40, "m" * 40
@@ -139,11 +140,13 @@ def test_the_item_window_walks_works_lists(db, admin):
     assert keys.index(f"c{a.id}") < keys.index(f"c{b.id}")
     win = admin.get(f"/manage/item/c{a.id}?from=checks").text
     assert f'data-item-next="/manage/item/c{b.id}?from=checks"' in win or f"/manage/item/c{b.id}" in win
-    assert "Open in Development" in win
+    assert 'data-do="open-page"' not in win  # (opened on Development: no link back to the page it's on, issue 58)
+    win = admin.get(f"/manage/item/c{a.id}?from=foryou").text
+    assert "Open in Development" in win  # (a check lives in Development's Checks, wherever it's opened)
     issue = rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)
     db.flush()
     win = admin.get(f"/manage/item/i{issue.id}?from=plan:{battle.id}").text
-    assert f'href="/manage/work/{battle.id}?tab=issues"' in win  # (Open in its plan, not Feedback)
+    assert "Open in Feedback" in win and f"/manage/work/{battle.id}?tab=issues" not in win  # (where it lives, never the plan it was opened on: issue 58)
 
 
 # ------------------------------------------------------------------ a check follows its issue
@@ -206,6 +209,17 @@ def test_checks_done_scheduled_and_how_we_work(db, admin, monkeypatch):
     assert "No drift" in drift[:600] and "OK" in drift[:600]
     nightly = sched[sched.index('data-job="nightly"'):]
     assert "Failed" in nightly[:600] and "2 missed" in nightly[:600]
+
+    for key in work_page.job_keys():  # (each job's side panel: what it does, checks, and when it fails; issue 55)
+        assert f'data-panel-url="/manage/work/jobs/{key}"' in sched
+    panel = admin.get("/manage/work/jobs/nightly").text
+    assert all(f"data-job-{part}" in panel for part in ("does", "checks", "fails", "runs")) and "2 missed" in panel
+    assert admin.get("/manage/work/jobs/nope").status_code == 404
+    db.add(JobRun(name="backup", status="error", detail="S3 refused it", started_at=rules.now()))
+    db.flush()
+    backup = admin.get("/manage/work?tab=scheduled").text
+    assert "S3 refused it" in backup[backup.index('data-job="backup"'):][:600]  # (the backup's own table: no longer Not reported yet)
+    assert "S3 refused it" in admin.get("/manage/work/jobs/backup").text
 
     how = admin.get("/manage/work?tab=how").text
     for lane in rules.LANES:
@@ -285,3 +299,14 @@ def test_every_kind_of_gap_says_what_it_is():
 
     kinds = set(re.findall(r'"kind": "([a-z_]+)"', inspect.getsource(views.gaps)))
     assert kinds and kinds <= set(views.GAP_WORDS), f"no words for: {kinds - set(views.GAP_WORDS)}"
+
+
+def test_a_plan_has_discuss_with_claude(db, admin):
+    """Issue 19 (Brett, Nov 17): from a plan in Development, a session of its own for that area, listening to it alone."""
+    _, battle, _ = _plans(db)
+    page = admin.get(f"/manage/work/{battle.id}").text
+    assert f'data-modal-url="/manage/work/{battle.id}/discuss"' in page
+    win = admin.get(f"/manage/work/{battle.id}/discuss").text
+    assert f"--listener area-{battle.id}" in win and f"issues --area {battle.id}" in win and 'data-open="mac"' in win
+    assert admin.get("/manage/work/99999/discuss").status_code == 404
+

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, more_menu %}
 {% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head %}
+{% from "_fft_bits.html" import hands_list %}
 {% block title %}Development · Backstage · askdnd{% endblock %}
 {% block head %}{% if tab == "queue" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -63,11 +64,10 @@
   <div class="title-row"><h1>Development</h1></div>
   <p class="subtitle">Everything being built, in your order: the Roadmap's builds (once you've agreed their scope) and each Product Area's fixes. Claude takes the rows above the line, top first. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
-  {% if missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
-    <h3 class="plabel" id="fft-missed-h">Claude missed · {{ missed | length }}</h3>
-    <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
-    <ul class="fft-missed-list">{% for g in missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/work' if g.thing == 'area' else '/manage/roadmap/' ~ g.id if g.thing == 'item' else '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
-      <span class="note">· {{ gap_words[g.kind] }}</span></li>{% endfor %}</ul>
+  {% if status.late %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
+    <h3 class="plabel" id="fft-missed-h">Waiting on Claude too long · {{ status.late | length }}</h3>
+    {{ hands_list(status.late, gap_words) }}
+    <p class="note">Only what's waited more than 15 minutes while a Claude session listens. With none listening, it waits for the next one and nothing turns amber.</p>
   </section>{% endif %}
 
   <nav class="sub-tabs" aria-label="Development">
@@ -126,7 +126,7 @@
   <div class="table-scroll"><table class="dtable fft-table" data-jobs>
     <thead><tr><th>Job</th><th class="dt-w4">When</th><th class="dt-w3">Where</th><th class="dt-w3">Last run</th><th class="dt-w5">Result</th></tr></thead>
     <tbody>{% for j in jobs %}
-      <tr data-job="{{ j.key }}"><td class="dt-title">{{ j.title }}<span class="dt-why">{{ j.what }}</span></td><td class="dt-wrap">{{ j.when }}</td><td>{{ j.where }}</td>
+      <tr data-job="{{ j.key }}" data-panel-url="/manage/work/jobs/{{ j.key }}" tabindex="0"><td class="dt-title">{{ j.title }}<span class="dt-why">{{ j.what }}</span></td><td class="dt-wrap">{{ j.when }}</td><td>{{ j.where }}</td>
         <td>{% if j.at %}<time datetime="{{ j.at.isoformat() }}" data-clock="ago">{{ j.at | ago }}</time>{% else %}<span class="dt-id">Not reported yet</span>{% endif %}</td>
         <td>{% if not j.at %}<span class="dt-id">—</span>{% elif j.late %}{{ state_word("Late", "failed") }} {{ j.words }}{% elif j.result == "failed" %}{{ state_word("Failed", "failed") }} {{ j.words }}{% else %}{{ state_word("OK", "passed") }} {{ j.words }}{% endif %}</td></tr>
     {% endfor %}</tbody></table></div>

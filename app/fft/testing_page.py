@@ -306,7 +306,9 @@ def status(db: Session) -> dict:
     r = rules.round_open(db)
     area = db.get(FftArea, r.area_id) if r is not None and r.area_id else None
     after = rules.after_state(db)
-    return {"available": av, "listening": views.listening(db), "listener": li, "round": r,
+    hands = views.hands(db)  # (what's in Claude's hands: the bar's quiet line, Development's amber panel for the late ones)
+    return {"available": av, "listening": views.listening(db), "listener": li, "round": r, "hands": hands, "late": [g for g in hands if g["late"]],
+            "gap_words": views.GAP_WORDS,
             "after": after, "flight": rules.in_flight(db),  # (a round waiting for changes to go live; what pausing would hold)
             "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)
             "freeze": rules.freeze_state(db), "mode": rules.mode_of(db)}
@@ -750,9 +752,24 @@ def wrong_form(request: Request, check_id: int, db: Session = Depends(get_db)):
     device = (_round(request) or {}).get("device") or device_of(request)
     issues = [i for i in rules._blocking_issues(db, c) if i.state in ("ready", "closed", "merge_ok")]
     last = _last_failed(db, c, device)
+    said = [{"id": i.id, "title": i.title, "said": "fixed, not confirmed · still happening" if i.state != "closed" else "closed: works now · still happening"} for i in issues]
+    said += [{"id": i.id, "title": i.title, "said": "you sent it from this check · it stops it", "sent": True} for i in _sent_from(db, c)]
     return JSONResponse({"title": c.title, "device": DEVICE_SAID.get(device, device), "version": c.version, "app_version": app_version(),
-                         "where": where_of(request), "issues": [{"id": i.id, "title": i.title, "said": "fixed, not confirmed" if i.state != "closed" else "closed: works now"} for i in issues],
-                         "try": last.id if last else None}, headers={"Cache-Control": "no-store"})
+                         "where": where_of(request), "issues": said, "try": last.id if last else None}, headers={"Cache-Control": "no-store"})
+
+
+def _sent_from(db: Session, c: FftCheck) -> list[FftIssue]:
+    """The open issues sent from this check's version that didn't stop it (issue 16, Brett, Nov 17: "I had already added
+    issues … Should I be allowed to skip logging the last issue?"): Something's wrong… offers them, so failing the check
+    for one needs no second note."""
+    since = db.scalar(select(FftCheckVersion.created_at).where(FftCheckVersion.check_id == c.id, FftCheckVersion.version == c.version))
+    named = {i.id for i in rules._blocking_issues(db, c)}
+    q = (select(FftIssue).join(FftNote, FftNote.issue_id == FftIssue.id)
+         .where(FftNote.context["check"].as_integer() == c.id, FftIssue.state.in_(("to_fix", "fixing", "asks")))
+         .distinct().order_by(FftIssue.id))
+    if since is not None:
+        q = q.where(FftNote.created_at >= since)
+    return [i for i in db.scalars(q) if i.id not in named]
 
 
 @router.post("/manage/testing/checks/{check_id:int}/wrong")
@@ -766,15 +783,15 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
     c = db.get(FftCheck, check_id) or _missing()
     body = body if isinstance(body, dict) else {}
     text = str(body.get("text") or "").strip()[:sending.MAX_TEXT]
-    if not text:
-        raise HTTPException(400, "Say what's wrong.")
     if type(body.get("blocking")) is not bool:
         raise HTTPException(400, "Does it stop this check passing?")
     blocking, stops = body["blocking"], body.get("stops_round") is True
     issue_id = body.get("issue") if type(body.get("issue")) is int else None
-    if issue_id is not None and issue_id not in [i.id for i in rules._blocking_issues(db, c)]:
+    if issue_id is not None and issue_id not in [i.id for i in rules._blocking_issues(db, c) + _sent_from(db, c)]:
         raise HTTPException(400, "That isn't one of this check's issues.")
     pics = sending._pictures(body)
+    if not text and (issue_id is None or pics):  # (an issue already sent needs no words again: issue 16)
+        raise HTTPException(400, "Say what's wrong.")
     me = views.person(db, request.session.get("real_user") or user)
     actor = f"user:{me['id']}"
     found = rules.Found(issue_id=issue_id, title=views.title_of(text, 120), blocking=blocking, stops_round=stops and blocking)
@@ -794,12 +811,13 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
         else:
             issue = rules.new_issue(db, actor, found.title, area_id=c.area_id)
         context = body.get("context") if isinstance(body.get("context"), dict) else {}
-        note = rules.note_on_issue(db, actor, issue, user_id=me["id"], first_name=me["first_name"], text=text, url=str(body.get("url") or ""),
+        note = None if not text else rules.note_on_issue(db, actor, issue, user_id=me["id"], first_name=me["first_name"], text=text, url=str(body.get("url") or ""),
                                    page=str(context.get("page") or ""), context=context | {"check": c.id, "blocking": blocking},
                                    html=sending.safe_html(str(body.get("html") or "")[:sending.MAX_HTML]), try_id=t.id if t else None)
     except rules.RuleError as e:
         raise HTTPException(409 if e.code == "stale" else 400, e.words) from e
-    sending.attach_pictures(db, stored, note_id=note.id)
+    if note is not None:
+        sending.attach_pictures(db, stored, note_id=note.id)
     db.commit()
     return JSONResponse({"ok": True, "try": t.id if t else None, "issue": issue.id, "failed": bool(t),
                          "said": ("Failed: sent to Claude" if t and not prior else "Added to this try" if t else "Sent on its own: the check stays to try")})

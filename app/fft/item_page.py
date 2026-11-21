@@ -31,19 +31,24 @@ def _list(db: Session, frm: str, device: str) -> list[str]:
 
 
 def _home(picked: dict, frm: str) -> tuple[str, str]:
-    """Where the item lives as a page: Open in … (its old address, which opens it in this window there)."""
+    """Where the item lives as a page: Open in … (its old address, which opens it in this window there). Nothing when
+    that's the page the window was opened on (issue 58, Brett, Nov 20: "This button is recursive")."""
     k = picked["kind"]
-    if k == "issue" and frm.startswith("plan:"):
-        return "its plan", f"/manage/work/{frm[5:]}?tab=issues"
     if k in ("note", "issue", "idea"):
-        return "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
-    if k == "check" and frm.startswith("round:"):
-        return "its plan", f"/manage/work/{frm[6:]}?tab=round"
-    if k == "roadmap":  # (Brett, Nov 20: "the navigation is circular and you never actually get to the roadmap item")
-        return "the Roadmap", f"/manage/roadmap/{picked['it'].id}"
-    if k == "check" and frm == "checks":
-        return "Development", f"/manage/work?tab=checks&open={picked['key']}"
-    return "For you", f"/manage/for-you?open={picked['key']}"
+        name, href = "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
+    elif k == "roadmap":  # (Brett, Nov 20: "the navigation is circular and you never actually get to the roadmap item")
+        name, href = "the Roadmap", f"/manage/roadmap/{picked['it'].id}"
+    elif k == "check":  # (a check lives in Development's Checks, wherever it was opened from)
+        name, href = "Development", f"/manage/work?tab=checks&open={picked['key']}"
+    else:  # (a question or a try on your Mac lives only in For you)
+        name, href = "For you", f"/manage/for-you?open={picked['key']}"
+    return ("", "") if name == _page_of(frm) else (name, href)
+
+
+def _page_of(frm: str) -> str:
+    """The page a window was opened on, named as _home names it ("" when unknown)."""
+    first = frm.split(":", 1)[0]
+    return {"foryou": "For you", "feedback": "Feedback", "checks": "Development"}.get(first, "")  # (from a plan's page: where it lives)
 
 
 @router.get("/manage/item/{key}", response_class=HTMLResponse)

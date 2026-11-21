@@ -96,6 +96,11 @@ def discuss(it: FftItem, sc: FftScope | None) -> dict:
            f'(feedback.py roadmap {n} add "…" --where discussion) with your answer (roadmap {n} answer …), and the scope\'s next '
            f'version with what changed (roadmap {n} scope … --changed "From our discussion: …"). Never say the scope looks '
            f"right: that's mine, in askdnd.")
+    return links(msg)
+
+
+def links(msg: str) -> dict:
+    """The two ways to start a session with a message filled in: this Mac's Claude app, or claude.ai/code."""
     mac = {"q": msg} | ({"folder": config.DISCUSS_FOLDER} if config.DISCUSS_FOLDER else {})
     return {"message": msg, "mac": "claude://code/new?" + urlencode(mac), "web": "https://claude.ai/code/new?" + urlencode({"q": msg, "repo": config.DISCUSS_REPO})}
 
@@ -108,7 +113,8 @@ def discuss_window(request: Request, item_id: int, db: Session = Depends(get_db)
     it = db.get(FftItem, item_id)
     if it is None or it.standing:
         return HTMLResponse("This Roadmap item isn't here any more.", status_code=404)
-    return templates.TemplateResponse(request, "_roadmap_discuss.html", {"it": it, "d": discuss(it, rules.latest_scope(db, it))})
+    return templates.TemplateResponse(request, "_roadmap_discuss.html", {"label": f"Roadmap item {it.id}", "back_to": "this item",
+                                                                         "d": discuss(it, rules.latest_scope(db, it))})
 
 
 @router.get("/manage/roadmap")
