@@ -11,6 +11,7 @@ up to date while it's open), and the run is reported as the Scheduled job "speed
 
 import asyncio
 import logging
+import re
 import threading
 from datetime import timedelta
 
@@ -38,10 +39,15 @@ def band(ms: float) -> int:
     return next((i for i, edge in enumerate(BANDS_MS) if ms <= edge), len(BANDS_MS))
 
 
+CAMPAIGN = re.compile(r"^/c/[^/]+")  # (a campaign's pages reach the app with its name in the address: one route for all)
+
+
 def record(method: str, route: str, ms: float) -> None:
-    """One request's time, added to its route's count in memory (called by the stopwatch on every HTTP request)."""
+    """One request's time, added to its route's count in memory (called by the stopwatch on every HTTP request). A
+    campaign's address is counted without its name (/c/{slug}/party), so one page is one route and no name is kept."""
     if not route or route.startswith(SKIP):
         return
+    route = CAMPAIGN.sub("/c/{slug}", route)
     with _lock:
         row = _now.setdefault((method, route), [0, 0.0, 0.0] + [0] * (len(BANDS_MS) + 1))
         row[0] += 1
@@ -96,7 +102,7 @@ def week(db: Session, days: int = 7) -> list[dict]:
         a["max"] = max(a["max"], r.max_ms)
         a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [], strict=False)]
     out = [{"method": m, "route": route, "count": a["count"], "avg_ms": round(a["total"] / a["count"]) if a["count"] else 0,
-            "p50_ms": _quantile(a["bands"], .5), "p90_ms": _quantile(a["bands"], .9), "max_ms": a["max"]}
+            "p50_ms": min(_quantile(a["bands"], .5), a["max"]), "p90_ms": min(_quantile(a["bands"], .9), a["max"]), "max_ms": a["max"]}
            for (m, route), a in acc.items()]
     return sorted(out, key=lambda r: (-r["p90_ms"], -r["count"]))
 
