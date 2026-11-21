@@ -765,7 +765,7 @@ def _sent_from(db: Session, c: FftCheck) -> list[FftIssue]:
     since = db.scalar(select(FftCheckVersion.created_at).where(FftCheckVersion.check_id == c.id, FftCheckVersion.version == c.version))
     named = {i.id for i in rules._blocking_issues(db, c)}
     q = (select(FftIssue).join(FftNote, FftNote.issue_id == FftIssue.id)
-         .where(FftNote.context["check"].as_integer() == c.id, FftIssue.state.in_(("to_fix", "fixing", "asks")))
+         .where(FftNote.context["check"].astext == str(c.id), FftIssue.state.in_(("to_fix", "fixing", "asks")))  # (as text: a context's check may be empty)
          .distinct().order_by(FftIssue.id))
     if since is not None:
         q = q.where(FftNote.created_at >= since)
