@@ -117,9 +117,12 @@ async def lifespan(app: FastAPI):
     from app import digest  # the Inbox digest, once a day where email is set up (app/digest.py)
 
     mailing = asyncio.create_task(digest.loop()) if digest.enabled() and listener is not None else None
+    from app import speed  # each page's time, saved; the weekly look at the slowest (app/speed.py)
+
+    timing_saved = asyncio.create_task(speed.loop()) if listener is not None else None
     yield
     await reparsing
-    for task in (listener, reading, mailing):
+    for task in (listener, reading, mailing, timing_saved):
         if task:
             task.cancel()
 

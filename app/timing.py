@@ -106,6 +106,12 @@ class Stopwatch:
         finally:
             _now.reset(token)
             total = time.monotonic() - start - watch.pop(HELD, 0.0)
+            try:  # (every route's time, for the weekly look at the slowest: app/speed.py)
+                from app import speed
+
+                speed.record(scope.get("method", ""), route_of(scope), total * 1000)
+            except Exception:
+                log.exception("Couldn't record a request's time")
             if total >= SLOW:
                 try:
                     _report(scope.get("method", ""), route_of(scope), total, dict(watch))
