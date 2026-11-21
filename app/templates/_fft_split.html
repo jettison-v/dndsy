@@ -1,0 +1,31 @@
+{# Split… (issue 22, Brett's pick 2A on docs/mockups/fft-round-2/, Nov 21; app/fft/feedback_page.py `split_window`): an
+   open issue with several problems in it becomes several issues. This one keeps the first part; each other part is a
+   new issue with every note of this one as its evidence, and their senders hear how each turns out (R2: never another
+   part's title). A part left without a title isn't made. #}
+{% macro feature_pick(name, chosen, required) %}<select name="{{ name }}" class="ls-select" aria-label="Its Feature"{% if required %} required{% endif %}>
+  {% if not chosen %}<option value="">{{ "Pick one" if required else "Same Feature" }}</option>{% endif %}
+  {% for a in taxonomy %}<optgroup label="{{ a.title }}">{% for f in a.features %}<option value="{{ f.key }}"{% if f.key == chosen %} selected{% endif %}>{{ f.title }}</option>{% endfor %}</optgroup>{% endfor %}</select>{% endmacro %}
+{% macro part(n) %}<div class="fft-split-part" data-split-part="{{ n }}"><span class="fft-split-n" aria-hidden="true">{{ n }}</span>
+  <input type="text" name="part_title" maxlength="120" autocomplete="off" aria-label="Part {{ n }}: its title" placeholder="What part {{ n }} is">
+  {{ feature_pick("part_feature", i.feature, false) }}</div>{% endmacro %}
+<div class="peek-head">
+  <div><div class="note">Feedback</div><h2 id="peek-title">Split it into several issues</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<form method="post" class="peek-form" action="/manage/feedback/issues/{{ i.id }}?tab=open" data-split-form>
+  <div class="peek-body stack">
+    <input type="hidden" name="do" value="split">
+    {% if notes %}<div class="fft-split-quote" data-split-notes>{% for n in notes %}<p><span class="note">{{ n.first_name or "Someone" }}:</span> {{ n.text }}</p>{% endfor %}</div>{% endif %}
+    <p class="note">Each part becomes an issue of its own, with {{ "these notes" if notes | length > 1 else "this note" if notes else "this issue's notes" }} as its evidence.{% if senders %} {{ senders | join(", ") }} hear{{ "s" if senders | length == 1 }} how each one turns out.{% endif %}</p>
+    <div class="fft-split-parts">
+      <div class="fft-split-part" data-split-part="1"><span class="fft-split-n" aria-hidden="true">1</span>
+        <input type="text" name="words" value="{{ i.title }}" maxlength="120" required autocomplete="off" aria-label="Part 1: this issue's title">
+        {{ feature_pick("feature", i.feature, not i.feature) }}<span class="note">this issue</span></div>
+      {{ part(2) }}{{ part(3) }}
+      <div id="fft-split-more-{{ i.id }}" class="fft-split-parts" hidden>{{ part(4) }}{{ part(5) }}{{ part(6) }}</div>
+    </div>
+    <div class="row tight"><button class="btn small" type="button" data-show="fft-split-more-{{ i.id }}" data-do="more-parts">+ More parts</button></div>
+  </div>
+  <div class="peek-foot row"><button class="btn primary" type="submit" data-do="split">Split it</button><button class="btn link peek-close" type="button">Cancel</button>
+    <span class="note">A part without a title isn't made.</span></div>
+</form>

@@ -27,6 +27,7 @@ from app.fft.models import (
     FftListener,
     FftLocalTry,
     FftNote,
+    FftNoteIssue,
     FftQuestion,
     FftRound,
     FftScope,
@@ -145,6 +146,47 @@ def file_issue(db: Session, actor: str, note: FftNote, title: str = "", kind: st
     _event(db, actor, "issue_new", "issue", issue.id, from_note=note.id)
     _event(db, actor, "note_filed", "note", note.id, as_="issue", issue=issue.id)
     return issue
+
+
+def on_issue(issue_id: int):
+    """The notes on an issue: filed as it, or the evidence of a part it was split into (issue 22). Every reader of an
+    issue's notes asks this, never `FftNote.issue_id` alone."""
+    return or_(FftNote.issue_id == issue_id, FftNote.id.in_(select(FftNoteIssue.note_id).where(FftNoteIssue.issue_id == issue_id)))
+
+
+def issues_of_note(db: Session, note: FftNote) -> list[int]:
+    """Every issue a note is on, the one it was filed as first, then its split parts in order."""
+    if not note.issue_id:
+        return []
+    return [note.issue_id] + list(db.scalars(select(FftNoteIssue.issue_id).where(FftNoteIssue.note_id == note.id).order_by(FftNoteIssue.issue_id)))
+
+
+def split_issue(db: Session, actor: str, issue: FftIssue, parts: list[tuple[str, str]], title: str = "", feature: str = "") -> list[FftIssue]:
+    """Split… (issue 22, Brett's pick 2A, Nov 21): an open issue with several problems in it becomes several issues. This
+    one keeps the first (its title and Feature may change with it); each other part is a new issue (a title, a Feature:
+    this one's if none), of the same kind, with every note of this one as its evidence, so their senders hear how each
+    turns out. Claude splits the same way when it sorts a note (`/api/fft/issues`, `feedback.py issue <id> split`)."""
+    if issue.state == "closed":
+        raise RuleError("stale", "It's closed: reopen it first.")
+    parts = [(t.strip(), f.strip()) for t, f in parts if t.strip()]
+    if not parts:
+        raise RuleError("bad", "Give each part a title.")
+    if title.strip() and title.strip() != issue.title:
+        retitle(db, actor, issue, title)
+    if feature and feature != issue.feature:
+        set_feature(db, actor, issue, feature)
+    notes = list(db.scalars(select(FftNote.id).where(on_issue(issue.id))))
+    made = []
+    for t, f in parts:
+        new = new_issue(db, actor, t, feature=f or issue.feature, kind=issue.kind)
+        new.from_player = issue.from_player
+        for nid in notes:
+            db.add(FftNoteIssue(note_id=nid, issue_id=new.id))
+        _event(db, actor, "issue_split_from", "issue", new.id, area_id=new.area_id, issue=issue.id)
+        made.append(new)
+    db.flush()
+    _event(db, actor, "issue_split", "issue", issue.id, area_id=issue.area_id, into=[m.id for m in made])
+    return made
 
 
 def join_issue(db: Session, actor: str, note: FftNote, issue: FftIssue) -> FftIssue:
@@ -617,7 +659,7 @@ def fix_live(db: Session, actor: str, issue: FftIssue, commit: str) -> None:
     if issue.state not in ("fixing", "to_fix"):
         raise RuleError("stale", f"It's {issue.state}.")
     issue.fixed_in = commit[:40]
-    reporter = db.scalar(select(FftNote.user_id).where(FftNote.issue_id == issue.id, FftNote.role != "admin", FftNote.user_id.isnot(None)))
+    reporter = db.scalar(select(FftNote.user_id).where(on_issue(issue.id), FftNote.role != "admin", FftNote.user_id.isnot(None)))
     if reporter:
         issue.confirm_by, issue.confirm_since = reporter, now()
     _set_issue(db, actor, issue, "ready", "issue_live", commit=commit)
@@ -663,6 +705,10 @@ def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = ""
             same_as.from_player = True
         for note in db.scalars(select(FftNote).where(FftNote.issue_id == issue.id)):
             note.issue_id = same_as.id
+        for link in list(db.scalars(select(FftNoteIssue).where(FftNoteIssue.issue_id == issue.id))):  # (a split part's notes too)
+            if db.get(FftNoteIssue, (link.note_id, same_as.id)) is None and db.get(FftNote, link.note_id).issue_id != same_as.id:
+                db.add(FftNoteIssue(note_id=link.note_id, issue_id=same_as.id))
+            db.delete(link)
         _relink(db, issue, same_as)  # (R8: a check this one held is now held by the other, never released early)
     issue.close_reason, issue.close_words = reason, words.strip()
     _set_issue(db, actor, issue, "closed", "issue_closed", reason=reason)
@@ -697,7 +743,7 @@ def player_confirms(db: Session, actor: str, issue: FftIssue, works: bool, words
         issue.close_reason = "works"
         _set_issue(db, actor, issue, "closed", "issue_confirmed", by="player")
         return
-    note = db.scalar(select(FftNote).where(FftNote.issue_id == issue.id, FftNote.user_id == user_id))
+    note = db.scalar(select(FftNote).where(on_issue(issue.id), FftNote.user_id == user_id))
     if note is not None and words.strip():
         add_line(db, actor, "Still broken. " + words, note=note, to="claude", who="sender", user_id=user_id, approved=False)
     issue.confirm_by = issue.confirm_since = None

@@ -132,6 +132,7 @@
     {% else %}
     <form method="post" action="/manage/feedback/issues/{{ i.id }}?tab={{ tab }}" data-stay><input type="hidden" name="do" value="kind"><input type="hidden" name="kind" value="{{ 'fix' if i.kind == 'improvement' else 'improvement' }}"><button class="btn small" type="submit" data-do="kind">{{ "It's a fix" if i.kind == "improvement" else "It's an improvement" }}</button></form>
     <button class="btn small" type="button" data-modal-url="/manage/feedback/same?issue={{ i.id }}" data-do="same">Same as…</button>
+    <button class="btn small" type="button" data-modal-url="/manage/feedback/split?issue={{ i.id }}" data-do="split">Split…</button>
     <button class="btn small" type="button" data-modal-url="/manage/feedback/close?issue={{ i.id }}" data-do="close">Close with a reason…</button>
     {% endif %}
     {% call more_menu("More for this issue") %}<button type="button" data-show="fft-title-{{ i.id }}">Rename…</button>{% endcall %}

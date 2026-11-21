@@ -145,6 +145,9 @@ def fft_note(db: Session, note: FftNote, me_id: int | None) -> dict:
     pics = list(db.scalars(select(FftPicture).where(or_(FftPicture.note_id == note.id, FftPicture.line_id.in_([x.id for x in lines] or [0])))
                            .order_by(FftPicture.id)))
     trying = None
+    for other in [db.get(FftIssue, x) for x in rules.issues_of_note(db, note)[1:]]:  # (a part it was split into, issue 22)
+        if issue is not None and not (issue.state == "ready" and issue.confirm_by == me_id) and other.state == "ready" and other.confirm_by == me_id:
+            issue = other
     if issue is not None and issue.state == "ready" and issue.confirm_by and issue.confirm_by == me_id:
         v = db.execute(select(FftCheckVersion).join(FftCheckIssue, FftCheckIssue.check_id == FftCheckVersion.check_id)
                        .join(FftCheck, FftCheck.id == FftCheckVersion.check_id)

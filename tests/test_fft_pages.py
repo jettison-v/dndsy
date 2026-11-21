@@ -522,3 +522,43 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     assert 'data-mode-menu' in page and 'fft-bar-help' not in page  # (each choice says what it does in Deploys' menu: no Help, issue 42)
     assert page.count('data-mode-pick="') == 3 and page.count('<small>', page.index('data-mode-menu')) >= 3
     assert "Local tries ended" not in page  # (he chose it: nothing to explain)
+
+
+def test_split_makes_each_part_an_issue_with_the_note_and_its_sender_hears_each(admin, sender, db):
+    """A standing rule (R2; issue 22, Brett's pick 2A, Nov 21): Split… makes each part its own issue with the note as its
+    evidence; the sender reads how each part turns out, never a part's title or another sender's words."""
+    send(sender, text="Three things: the arrow, the paste, the button.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
+    db.refresh(n)
+    issue = db.get(FftIssue, n.issue_id)
+    window = admin.get(f"/manage/feedback/split?issue={issue.id}").text
+    assert "data-split-form" in window and 'name="part_title"' in window
+    admin.post(f"/manage/feedback/issues/{issue.id}", data={"do": "split", "words": "The arrow is too small", "feature": "",
+                                                            "part_title": ["Pasting replaced the picture", "", "A button to take a screenshot"],
+                                                            "part_feature": ["", "", ""]})
+    parts = list(db.scalars(select(FftIssue).where(FftIssue.id != issue.id).order_by(FftIssue.id)))
+    assert [p.title for p in parts] == ["Pasting replaced the picture", "A button to take a screenshot"] and issue.title == "The arrow is too small"
+    assert all(n.id in [x.id for x in db.scalars(select(FftNote).where(rules.on_issue(p.id)))] for p in parts)
+    part = admin.get(f"/manage/item/i{parts[0].id}").text
+    assert "Three things: the arrow" in part
+    rules.add_line(db, "claude", "Fixed the paste for you", issue=parts[0], to="sender")
+    rules.close(db, "user:1", parts[1], "wont", "Not now.")
+    db.flush()
+    mine = sender.get("/your-notes?tab=askdnd").text
+    assert mine.count("data-part=") == 3 and "Fixed the paste for you" in mine
+    assert "Pasting replaced" not in mine and "A button to take" not in mine and "The arrow is too small" not in mine
+    r = admin.post(f"/manage/feedback/issues/{issue.id}", data={"do": "split", "words": issue.title, "part_title": ["", ""]}, follow_redirects=False)
+    assert r.status_code == 400  # (no part with a title: nothing made)
+
+
+def test_a_split_parts_reporter_confirms_it_and_same_as_carries_the_note(db):
+    """A player who sent a split note confirms each part (R5); a part closed as the same as another takes the note along."""
+    note = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="problem", text="Two things")
+    issue = rules.file_issue(db, "user:1", note, title="One")
+    two, = rules.split_issue(db, "claude", issue, [("Two", "")])
+    other = rules.new_issue(db, "claude", "Elsewhere")
+    rules.close(db, "claude", two, "same", same_as=other)
+    db.flush()
+    assert note.id in [x.id for x in db.scalars(select(FftNote).where(rules.on_issue(other.id)))]
+    assert note.id not in [x.id for x in db.scalars(select(FftNote).where(rules.on_issue(two.id)))]

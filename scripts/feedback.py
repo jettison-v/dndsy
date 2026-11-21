@@ -248,7 +248,12 @@ def issue(a) -> None:
         body |= {"reason": w[0], "words": w[1] if len(w) > 1 else "", "same_as": a.same_as}
     elif a.do == "tell":
         body = {"do": "line", "to": a.to, "words": w[0]}
+    elif a.do == "split":  # (issue 22: each --part "title" [--part-feature key, in order]; this issue keeps its own)
+        feats = a.part_feature + [""] * len(a.part)
+        body["parts"] = [{"title": t, "feature": feats[n]} for n, t in enumerate(a.part)]
     got = call(a.base, f"/issues/{a.id}", body)
+    if got.get("split_into"):
+        print(f"Split: issues {', '.join(map(str, got['split_into']))}, each with this issue's notes.")
     print_issue(got)
     if a.do == "pr" and got.get("area_id"):  # (Brett, Nov 19: a fix never goes without its lane: attaching it picks one)
         lane_from_pr(a, got["area_id"], w[0])
@@ -655,13 +660,15 @@ def main() -> None:
     s.add_argument("--feature", default="")
     s = sub.add_parser("issue")
     s.add_argument("id")
-    s.add_argument("do", nargs="?", help="title, feature, kind, move, start, pr, close, reopen or tell (after new: the title)")
+    s.add_argument("do", nargs="?", help="title, feature, kind, move, start, pr, close, reopen, split or tell (after new: the title)")
     s.add_argument("words", nargs="*")
     s.add_argument("--area", type=int)
     s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
     s.add_argument("--kind", choices=["fix", "improvement"], help="new: a fix (it's broken) or an improvement (make it better)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
+    s.add_argument("--part", action="append", default=[], help="split: a new issue's title (one per part)")
+    s.add_argument("--part-feature", action="append", default=[], help="split: each --part's Feature, in order (none: this issue's)")
     s = sub.add_parser("sort", help="an issue in one go: --title, --feature, --kind, --tell (a reply), --pr")
     s.add_argument("id")
     s.add_argument("--title", default="")

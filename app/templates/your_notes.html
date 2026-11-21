@@ -93,6 +93,8 @@
       <p class="note ts-where">{{ n.kind_said }} · {{ n.at.strftime("%b %-d") }}{% if n.where %} · {% if n.href %}<a href="{{ n.href }}" data-no-peek>{{ n.where }}</a>{% else %}{{ n.where }}{% endif %}{% endif %}</p>
       <h2 class="nt-h">{{ n.title }}</h2>
       {{ state_line(n.says.word, n.says.tone, n.says.sentence) }}
+      {% if n.says.parts %}<ol class="nt-parts" data-parts>{# (Split… into several issues, issue 22: each part's outcome, never its title) #}
+        {% for p in n.says.parts %}<li data-part="{{ loop.index }}">{{ state_word(p.word, p.tone) }} <span>{{ p.sentence }}</span></li>{% endfor %}</ol>{% endif %}
       <div class="convo" aria-label="The conversation">
         <div class="bub you"><small>You</small><p>{{ n.text }}</p>
           {% if n.pics %}<span class="fft-thumbs">{% for p in n.pics %}<img class="fft-pic" src="/your-notes/pictures/{{ p.id }}" alt="{{ 'The page as you sent this' if p.kind == 'page' else 'Your picture' }}" loading="lazy">{% endfor %}</span>{% endif %}</div>
