@@ -264,6 +264,7 @@ class FftCheck(_Stamped, Base):
     retired: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     preflight: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", passed, failed (R18: tried before it reaches Brett)
     asks: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # Claude asks about it
+    people: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # needs more than one person (its own rounds)
 
 
 class FftCheckVersion(_Stamped, Base):
@@ -276,6 +277,9 @@ class FftCheckVersion(_Stamped, Base):
     steps: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # a step each, in the walkthrough's markup
     expect: Mapped[str] = mapped_column(Text, default="", server_default="")
     why: Mapped[str] = mapped_column(Text, default="", server_default="")  # what changed, in words
+    # The goal, first (Clearer checks, Roadmap item 6, Brett's picks Nov 21): what was wrong before, what's true now
+    before: Mapped[str] = mapped_column(Text, default="", server_default="")
+    now: Mapped[str] = mapped_column(Text, default="", server_default="")
 
 
 class FftCheckIssue(Base):

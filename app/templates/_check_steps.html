@@ -6,3 +6,13 @@
   {%- for p in st.parts %}{% if p.kind == "typed" %}<code class="typed">{{ p.text }}</code>{% elif p.kind == "press" %}<span class="press">{{ p.text }}</span>{% elif p.kind == "box" %}<b>{{ p.text }}</b>{% else %}{{ p.text }}{% endif %}{% endfor %}
   {%- if st.why %}<span class="walk-why">{{ st.why }}</span>{% endif %}</span></li>{% endfor %}</ol>
 {%- endmacro %}
+
+{# A check's goal, first (Clearer checks, Roadmap item 6, Brett's picks Nov 21): what was wrong before and what's true
+   now, two short lines. In a check's window it sits above the steps; on the round's card it's a tap away (Goal ▸). #}
+{% macro goal(v, folded=false) -%}
+{% if v and (v.before or v.now) %}
+{% set lines %}<dl class="cc-goal-lines">{% if v.before %}<dt>Before</dt><dd>{{ v.before }}</dd>{% endif %}{% if v.now %}<dt>Now</dt><dd>{{ v.now }}</dd>{% endif %}</dl>{% endset %}
+{% if folded %}<details class="cc-goal" data-goal><summary>Goal</summary>{{ lines }}</details>
+{% else %}<section class="cc-goal panel" data-goal><h3 class="plabel">Goal</h3>{{ lines }}</section>{% endif %}
+{% endif %}
+{%- endmacro %}

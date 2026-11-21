@@ -4,7 +4,7 @@
    the page underneath redraws in place (app.js "A press redraws in place"). #}
 {% from "_admin_bits.html" import state_word, state_line, more_menu, rd_section, kind_word %}
 {% from "_lists.html" import empty_state, count_pill %}
-{% from "_check_steps.html" import walkthrough %}
+{% from "_check_steps.html" import walkthrough, goal %}
 {% from "_fft_bits.html" import report, convo_line, history, asked_bub, its_checks with context %}
 {% if picked.kind == "check" %}{% set c = picked.c %}{% set v = picked.v %}
 {# ---- a check (screens 1, 4, 7) #}
@@ -13,7 +13,8 @@
   <h2 class="nt-h">{{ c.title }}</h2>
   {% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude"), "closed": ("Done", "quiet")}[picked.turn] %}
   {{ state_line(w[0], w[1], picked.sentence) }}
-  <div class="fft-devices" data-devices>{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
+  {{ goal(v) }}
+  <div class="fft-devices" data-devices>{% if c.people %}<span data-need="people"><b>Needs more than one person</b></span>{% endif %}{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
   {% if picked.turn == "yours" %}
   <div class="act-bar" data-check-acts>
     <form method="post" action="/manage/testing/checks/{{ c.id }}/go" data-reload>{# (it takes you to the check's page: a full load) #}<button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>

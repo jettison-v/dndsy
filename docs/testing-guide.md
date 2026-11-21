@@ -12,6 +12,22 @@ For you only then, and again after each new version); **tie it to the issues it 
 comes back to him once they're live); and **name the devices it must pass on** (`--device laptop --device iphone`; the
 Mac Mini's own runs are `mac_mini`).
 
+## The shape (Clearer checks, Roadmap item 6, Brett's picks Nov 21)
+
+Every check reads the same way, in this order, so Brett knows what he's testing before he starts (issue 36, Nov 18:
+"the number of steps isn't the problem; it's knowing what you're testing and what the result should be"):
+
+1. **Goal**: what was wrong **before** (`--before`) and what's true **now** (`--now`), a short line each. It sits above
+   the steps in the check's window, on For you's row (its Now), and a tap away on the round's card (Goal ▸).
+   askdnd refuses a new check without both, or without what you should see.
+2. **Where**: the page it starts on (`--path`).
+3. **Steps** (`--step`, the rules below).
+4. **You should see** (`--expect`).
+
+**What it needs** decides its round: a device (`--device laptop`, `--device iphone`), or more than one person
+(`--people`: a second person or a second seat at once). For you groups Try by need (On your laptop, On your iPhone,
+With more than one person), each with its own ▶ Start round, and a round never mixes them.
+
 ## The rules
 
 1. **One action per step**, numbered in the order Brett does them. A step with ", then", "and then" or "then press" is
@@ -46,6 +62,7 @@ Mac Mini's own runs are `mac_mini`).
 ```bash
 uv run python scripts/feedback.py check new "A mistake keeps what you typed" --area 2 --issue 14 \
   --path "/c/vtt-test/dm/items/new" --makes --device laptop \
+  --before "A mistake in the roll cleared the whole item." --now "It says what's wrong and keeps what you typed." \
   --step "In **Name**, type \`Test Compass 2\`." \
   --step "Press [+ Add]." \
   --step "Press [A roll]." \

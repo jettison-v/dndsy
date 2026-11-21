@@ -332,7 +332,7 @@ def check(a) -> None:
         pr = f"https://github.com/{REPO}/pull/{a.pr}" if a.pr.isdigit() else a.pr  # (a number or the link: one way stored)
         body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area, "pr": pr,
                 "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes,
-                "as_character": a.as_character}
+                "as_character": a.as_character, "before": a.before or "", "now": a.now or "", "people": a.people}
         c = call(a.base, "/checks", body)
         if a.tried:  # (R18: Claude's own try of this version, in the same go: Nov 20, one command not two)
             c = call(a.base, f"/checks/{c['id']}", {"do": "preflight", "passed": True, "why": ""})
@@ -343,6 +343,7 @@ def check(a) -> None:
         w, body = a.words, {"do": a.do}
         if a.do == "version":
             body |= {"steps": a.step, "expect": a.expect, "path": a.path, "why": a.why}
+            body |= {k: v for k, v in (("before", a.before), ("now", a.now)) if v is not None} | ({"people": True} if a.people else {})
         elif a.do == "preflight":
             body |= {"passed": w[0] == "pass", "why": w[1] if len(w) > 1 else ""}
         elif a.do == "retire":
@@ -686,7 +687,10 @@ def main() -> None:
     s.add_argument("--step", action="append", default=[])
     s.add_argument("--expect", default="")
     s.add_argument("--path", default="")
-    s.add_argument("--why", default="")
+    s.add_argument("--why", default="", help="new: why it's written (its issues say what); version: what changed")
+    s.add_argument("--before", default=None, help="the goal: what was wrong before (required for a new check)")
+    s.add_argument("--now", default=None, help="the goal: what's true now (required for a new check)")
+    s.add_argument("--people", action="store_true", help="it needs more than one person: tried in a round of its own")
     s.add_argument("--area", type=int)
     s.add_argument("--issue", action="append", default=[])
     s.add_argument("--device", action="append", default=[])

@@ -4,7 +4,7 @@
    (keys P, F, C), End round. After a fail: what was sent, ✗ Another…, Change result…, Next check →. Never in a note's
    picture. `sample`: drawn on the Design system page, with no address to open. #}
 {% from "_lists.html" import grip %}
-{% from "_check_steps.html" import walkthrough %}
+{% from "_check_steps.html" import walkthrough, goal %}
 <aside class="check-card fft-card{{ ' folded' if folded }}{{ ' fft-card-failed' if failed }}"{% if not sample %} data-check-card="{{ c.id }}" data-fft-card{% endif %} data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
   <div class="cc-top"{% if not sample %} data-cc-drag{% endif %}{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Check {{ n }} of {{ of }}{% if area %} · {{ area.title }}{% endif %} · {{ device_said[device].replace("your ", "") }}</span>
     <button type="button" class="btn link small"{% if not sample %} data-cc-fold{% endif %} aria-expanded="true" aria-label="Fold the card">—</button></div>
@@ -13,6 +13,7 @@
     {% if failed %}
     <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
     {% else %}
+    {{ goal(v, folded=true) }}
     {{ walkthrough({"id": c.id, "steps": steps}) }}
     {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}
     {% endif %}

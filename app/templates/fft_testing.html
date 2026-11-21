@@ -20,18 +20,21 @@
   <p class="note fft-foryou-sum" data-summary><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b> · {{ summary.line }}</p>
   <div class="table-scroll" id="ts-list">
   <table class="dtable fft-table" data-fft-list="{{ show }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-    <thead><tr><th class="dt-w3">Kind</th><th>What, and why it's here</th><th class="num dt-w2">Takes</th><th class="dt-w4"></th></tr></thead>
+    <thead><tr><th class="dt-w3">Kind</th><th>What, and its goal</th><th class="num dt-w2">Takes</th><th class="dt-w4"></th></tr></thead>
     <tbody>
     {% for g in groups %}
       {% if (loop.first or loop.previtem.section != g.section) %}
-      <tr class="dt-group" data-section="{{ g.section }}"><td colspan="4"><span class="fft-section">{{ sections[g.section] }}</span>
-        {# ▶ Start round at the top of what to try (Brett, Nov 19) #}
-        {% if g.section == "try" and round_n and not round_open %}{% if round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up" data-do="start-round">▶ Start round · {{ round_n }} check{{ "s" if round_n != 1 }}</button>
-        {% else %}<form method="post" action="/manage/testing/round" class="inline"><button class="btn link small" type="submit" data-do="start-round">▶ Start round · {{ round_n }} check{{ "s" if round_n != 1 }}</button></form>{% endif %}{% endif %}</td></tr>
+      <tr class="dt-group" data-section="{{ g.section }}"><td colspan="4"><span class="fft-section">{{ sections[g.section] }}</span></td></tr>
       {% endif %}
       {% if g.section == "try" %}
+      {% if loop.first or loop.previtem.need != g.need %}{% set nc = need_counts[g.need] %}{# (a group per need, each its own round: Clearer checks, Brett's pick 3) #}
+      <tr class="dt-group fft-need" data-need="{{ g.need }}"><td colspan="4"><span class="fft-need-name">{{ need_said[g.need] }}</span> <span class="note">{{ nc.n }} check{{ "s" if nc.n != 1 }} · about {{ nc.minutes }} min</span>
+        {% if not round_open %}{% if need_device[g.need] != device %}<span class="note">· start it {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span>
+        {% elif round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
+        {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}</td></tr>
+      {% endif %}
       <tr class="dt-group" data-group="{{ g.key }}"><td colspan="4"><span class="fft-group-name">{{ g.title }}</span>
-        {% if g.checks and g.area_id and not round_open %}{% if g.area_id in flight_areas %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?area={{ g.area_id }}" data-do="area-round">▶ Just this area</button>{% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="area" value="{{ g.area_id }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}{% endif %}</td></tr>
+        {% if g.checks and g.area_id and not round_open %}{% if g.area_id in flight_areas %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?area={{ g.area_id }}&amp;need={{ g.need }}" data-do="area-round">▶ Just this area</button>{% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="area" value="{{ g.area_id }}"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}{% endif %}</td></tr>
       {% endif %}
       {% for r in g.rows %}{% set k = kinds.get(r.kind, ("Item", "quiet")) %}
       <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>

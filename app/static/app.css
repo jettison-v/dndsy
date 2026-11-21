@@ -4457,6 +4457,14 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-title { margin: 0; font-weight: 600; color: var(--text); }
 .cc-exp { background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); }
 .cc-exp b { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; }
+/* A check's goal (Clearer checks, Roadmap item 6): Before and Now, two short lines; on the card a tap away */
+.cc-goal { display: grid; gap: var(--sp-1); }
+.cc-goal .plabel { margin: 0; }
+.cc-goal-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--sp-3); margin: 0; }
+.cc-goal-lines dt { color: var(--muted); font-size: var(--fs-sm); }
+.cc-goal-lines dd { margin: 0; }
+details.cc-goal > summary { cursor: pointer; color: var(--blue); font-size: var(--fs-sm); width: fit-content; }
+details.cc-goal[open] > summary { margin-bottom: var(--sp-1); }
 .cc-acts { flex-wrap: wrap; gap: var(--sp-2); }
 .cc-acts .cc-stop { display: contents; }
 .cc-pill { background: var(--surface); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); color: var(--text); font: inherit; font-size: var(--fs-sm); box-shadow: var(--lift); cursor: pointer; }
@@ -4572,6 +4580,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-group:first-child { margin-top: 0; }
 /* For you's sections (the work flow's slice 2, Nov 19): Try, Decide, Look at, From the table, From the Roadmap */
 .fft-section { margin: var(--sp-4) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 700; color: var(--text-strong); }
+.fft-need-name { font-weight: 600; color: var(--text-strong); }  /* (Try, a group per need: Clearer checks) */
 .fft-section-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: var(--sp-4) 0 var(--sp-1); padding-right: var(--sp-2); }  /* (a section's name, and Try's ▶ Start round at its right, as ▶ Just this area) */
 .fft-section-row:first-child { margin-top: 0; }
 .fft-section-row .fft-section { margin: 0; }
