@@ -202,7 +202,7 @@ def run_day(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
     local = now.astimezone(TABLE_TIME)
     if local.hour < config.DIGEST_HOUR:
         return []
-    today, sent = local.date().isoformat(), []
+    today, sent, looked, missed = local.date().isoformat(), [], 0, 0
     for campaign in db.scalars(select(Campaign).where(Campaign.is_test.is_(False))):
         roles = {m.user_id: m.role for m in db.scalars(select(CampaignMember).where(CampaignMember.campaign_id == campaign.id,
                                                                                     CampaignMember.left_on.is_(None)))}
@@ -219,14 +219,22 @@ def run_day(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
                     ok = SEND(user.email, compose(campaign, counts, user, roles.get(user.id)))
                 except Exception:
                     log.warning("The Inbox digest didn't go out this time", exc_info=True)
+                    missed += 1
                     continue
                 if not ok:
+                    missed += 1
                     continue
                 e["at"] = {**(e.get("at") or {}), cid: now.isoformat()}
                 sent.append((user.email, campaign.name))
             e["checked"] = {**(e.get("checked") or {}), cid: today}
             user.emails = e
+            looked += 1
     sent += _fixes_day(db, now, today)
+    if looked:  # (once a day, at its look; a send that keeps failing shows as Late. The day's look, on Development › Scheduled: the jobs audit, Brett's pick 5, Nov 21)
+        from app.fft import work_page
+
+        work_page.report_job(db, "askdnd", "digest", "failed" if missed else "ok",
+                             f"{len(sent)} sent" + (f", {missed} didn't go out (tried again at the next look)" if missed else ""))
     db.commit()
     return sent
 

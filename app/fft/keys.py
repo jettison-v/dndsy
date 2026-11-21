@@ -19,12 +19,15 @@ SCOPES = {
     "claude": frozenset({"read", "write", "ask", "check", "deploy"}),
     "relay": frozenset({"relay"}),
     "mini": frozenset({"mini"}),
+    "github": frozenset({"jobs"}),  # (GitHub's scheduled runs: it may report only its own jobs; the jobs audit, Brett's pick 1, Nov 21)
 }
+# The jobs each reporter that isn't Claude may report (POST /api/fft/jobs/<key>; app/data/jobs.json)
+JOBS_OF = {"mini": ("nightly", "iphone", "after_deploy"), "github": ("drift",)}
 
 
 @dataclass(frozen=True)
 class Actor:
-    name: str  # "claude", "relay", "mini": the event's actor
+    name: str  # "claude", "relay", "mini", "github": the event's actor
     scopes: frozenset
 
     def may(self, scope: str) -> bool:

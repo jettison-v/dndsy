@@ -137,3 +137,17 @@ def test_a_fix_to_try_emails_its_sender_once_a_day_counts_only(db, sent, campaig
     assert player.post("/email/fixes", data={"on": "1"}).status_code == 200
     db.expire_all()
     assert digest.wants_fixes(db.scalar(select(User).where(User.email == "player@example.com")))
+
+
+def test_the_digest_reports_its_day_on_scheduled(db, sent, dm, campaign):
+    """The jobs audit (Brett's pick 5, Nov 21): the Inbox digest's daily look reports on Development › Scheduled, once a
+    day, with how many went out."""
+    from app.fft import work_page
+
+    c, dm = campaign
+    _suggest(db, c, at=_at(15) - timedelta(hours=2))
+    digest.run_day(db, _at(18))
+    row = next(j for j in work_page.jobs(db) if j["key"] == "digest")
+    assert row["result"] == "ok" and row["words"] == "1 sent"
+    digest.run_day(db, _at(21))  # (already looked at today: no second report)
+    assert len(work_page.job_runs(db, row)) == 1

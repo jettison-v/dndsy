@@ -9,6 +9,13 @@ T=$HOME/askdnd-tests
 cd "$T" || exit 1
 set -a; [ -f "$T/.env" ] && . "$T/.env"; set +a
 mkdir -p "$T/logs"
+# Each run reports to Development › Scheduled on askdnd.ai (the jobs audit, Brett's pick 5, Nov 21): FFT_MINI_KEY may report
+# only the Mini's jobs (app/fft/keys.py JOBS_OF)
+report() {
+  [ -n "$FFT_MINI_KEY" ] || return 0
+  curl -s -m 20 -o /dev/null -X POST "https://askdnd.ai/api/fft/jobs/after_deploy" -H "X-Fft-Key: $FFT_MINI_KEY" \
+    -H "Content-Type: application/json" -H "User-Agent: askdnd-mini" -d "{\"result\": \"$1\", \"words\": \"$2\"}" || true
+}
 RUNS=(closed-sheet hit-points condition cast)
 now=$(curl -s -m 15 -A askdnd-live-test https://beta.askdnd.ai/health | .venv/bin/python -c 'import json, sys; print(json.load(sys.stdin).get("version", ""))' 2>/dev/null)
 [ -n "$now" ] && [ "$now" != local ] || exit 0  # (beta down or restarting: the next check sees it)
@@ -28,3 +35,4 @@ trap 'rmdir "$T/logs/.seats-busy"' EXIT
   echo "#### exit $status $(date)"
 } >> "$T/logs/after-deploy-$(date +%F).log" 2>&1
 echo "$now" > "$T/logs/after-deploy-version"
+if [ "$status" = 0 ]; then report ok "Version ${now:0:7}: ${#RUNS[@]} runs passed"; else report failed "Version ${now:0:7}: a run missed (Sentry has it)"; fi

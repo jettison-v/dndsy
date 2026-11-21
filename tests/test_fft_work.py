@@ -310,3 +310,30 @@ def test_a_plan_has_discuss_with_claude(db, admin):
     assert f"--listener area-{battle.id}" in win and f"issues --area {battle.id}" in win and 'data-open="mac"' in win
     assert admin.get("/manage/work/99999/discuss").status_code == 404
 
+
+
+def test_the_jobs_audit_github_reports_its_own_and_dependabot_is_on_github(admin, db, monkeypatch):
+    """The jobs audit (Brett's picks, Nov 21): GitHub gets a key of its own, made with Claude's and shown once, that may
+    report only its own job; the Mini reports After each deploy; Dependabot, which reports elsewhere, is never Late."""
+    from app.fft.models import FftKey
+
+    monkeypatch.setattr(config, "FEEDBACK_KEY", CLAUDE)
+    monkeypatch.setenv("FFT_MINI_KEY", MINI)
+    before = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = lambda: db
+    try:
+        api = TestClient(app)
+        assert api.post("/api/fft/keys", json={"actor": "github"}).status_code == 404  # (no key)
+        assert api.post("/api/fft/keys", headers={"X-Fft-Key": CLAUDE}, json={"actor": "claude"}).status_code == 400
+        gh = api.post("/api/fft/keys", headers={"X-Fft-Key": CLAUDE}, json={"actor": "github", "name": "GitHub drift"}).json()["key"]
+        assert db.scalar(select(FftKey).where(FftKey.actor == "github")).key_hash != gh  # (only its hash is kept)
+        assert api.post("/api/fft/jobs/drift", headers={"X-Fft-Key": gh}, json={"result": "ok", "words": "No drift"}).status_code == 200
+        assert api.post("/api/fft/jobs/nightly", headers={"X-Fft-Key": gh}, json={"result": "ok"}).status_code == 403
+        assert api.post("/api/fft/keys", headers={"X-Fft-Key": gh}, json={"actor": "github"}).status_code == 403  # (it can't make keys)
+        assert api.post("/api/fft/jobs/after_deploy", headers={"X-Fft-Key": MINI}, json={"result": "ok"}).status_code == 200
+    finally:
+        app.dependency_overrides[get_db] = before
+    sched = admin.get("/manage/work?tab=scheduled").text
+    dep = sched[sched.index('data-job="dependabot"'):][:800]
+    assert "data-job-link" in dep and "Late" not in dep and "Not reported yet" not in dep
+    assert all(f'data-job="{k}"' in sched for k in ("after_deploy", "digest", "restore", "dependabot"))
