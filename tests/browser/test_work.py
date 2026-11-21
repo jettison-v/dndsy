@@ -40,3 +40,24 @@ def test_a_rows_lane_menu_and_more_menu_open_over_the_next_row(people, server, b
     assert box["x"] >= 0 and box["x"] + box["width"] <= screen["width"], "⋯ runs off the window"
     page.keyboard.press("Escape")
     assert not admin.errors, admin.errors
+
+
+def test_a_scopes_two_answers_are_one_height(people, server, browser_db):
+    """Issue 57 (Brett's round 15, Nov 20: "Buttons have strange heights"): Scope looks right took a panel's lone-button
+    size beside Needs changes…; side by side, buttons are one height, and a line's Comment no taller than its words."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        item = conn.execute(text("INSERT INTO fft_items (title, place, section, standing, next_whose, next_step, workspace_id) VALUES ('An idea', 1, 'now', false, '', '', 1) RETURNING id")).scalar()
+        conn.execute(text("INSERT INTO fft_scopes (item_id, version, what, inside, workspace_id) VALUES (:i, 1, 'What it is.', '[\"One line\", \"Another\"]', 1)"), {"i": item})
+    engine.dispose()
+    admin = people("admin")
+    for width in (1280, 375):
+        admin.page.set_viewport_size({"width": width, "height": 900})
+        page = admin.open(f"/manage/roadmap/{item}")
+        ok, changes = page.locator('[data-do="agree"]').bounding_box(), page.locator('[data-do="changes"]').bounding_box()
+        assert abs(ok["height"] - changes["height"]) < 1, f"Scope looks right {ok['height']} px, Needs changes… {changes['height']} px at {width}"
+        line = page.locator('[data-line="in:0"]').bounding_box()
+        words = page.locator('[data-line="in:0"] .rm-line-text').bounding_box()
+        if width >= 1000:  # (on a phone the Comment link keeps a tap target's height, as every small link does)
+            assert line["height"] - words["height"] <= 12, f"a scope line is {line['height']} px for {words['height']} px of words at {width}"
+    assert not admin.errors, admin.errors
