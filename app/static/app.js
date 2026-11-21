@@ -5268,6 +5268,10 @@ document.addEventListener('click', e => {
     if (e.target.closest('[data-comment-cancel]')) { const form = rail.querySelector('[data-comment-composer]'); if (form) form.hidden = true; pending.delete(frame); return; }
     if (row) send(frame, { askdnd: 'show-pin', n: Number(row.dataset.pin) });
   });
+  document.addEventListener('keydown', e => {  // (Escape stops commenting wherever the focus is, not only in the mockup)
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('iframe.doc-frame[data-doc]').forEach(f => { const b = buttonOf(f); if (b && b.getAttribute('aria-pressed') === 'true') mode(f, false); });
+  });
   document.addEventListener('submit', e => {
     const form = e.target.closest('[data-comment-composer]');
     if (!form) return;
