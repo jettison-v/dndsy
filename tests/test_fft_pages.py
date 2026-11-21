@@ -562,3 +562,19 @@ def test_a_split_parts_reporter_confirms_it_and_same_as_carries_the_note(db):
     db.flush()
     assert note.id in [x.id for x in db.scalars(select(FftNote).where(rules.on_issue(other.id)))]
     assert note.id not in [x.id for x in db.scalars(select(FftNote).where(rules.on_issue(two.id)))]
+
+
+def test_a_reply_on_a_split_part_shows_as_new(db):
+    """A split note's marker stays short enough to hold its newest reply (it keeps 40 characters), so a reply on any
+    part reads as new to its sender."""
+    from app.fft import views
+
+    note = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="problem", text="Many things")
+    issue = rules.file_issue(db, "user:1", note, title="One")
+    parts = rules.split_issue(db, "claude", issue, [(f"Part {n}", "") for n in range(2, 8)])
+    db.flush()
+    before = views.marker(db, note, None)
+    rules.add_line(db, "claude", "Fixed this part", issue=parts[-1], to="sender")
+    db.flush()
+    after = views.marker(db, note, None)
+    assert after != before and len(after) <= 40

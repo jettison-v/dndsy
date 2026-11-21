@@ -198,7 +198,7 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
             said = out("claude", f"Split into {len(each)} parts: {len(each) - left} done, {left} being fixed.")
         else:
             said = out("closed", f"Split into {len(each)} parts, all closed.", open_=False)
-        return said | {"parts": [{"word": w or turn_pill(t)[0], "tone": turn_pill(t)[1], "sentence": s} for t, s, w, _ in each]}
+        return said | {"parts": [{"word": w or turn_pill(t)[0], "tone": turn_pill(t)[1], "sentence": s, "open": o} for t, s, w, o in each]}
     turn, sentence, word, open_ = _one_issue(issue, me_id)
     return out(turn, sentence, open_, word)
 
@@ -261,7 +261,7 @@ def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, s
                 and (x.who == "sender" or x.to == "sender")]
         parts = [issues[i] for i in split.get(n.id, []) if i in issues] if n.issue_id else []
         said = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id), parts=parts)
-        word = said["word"] + "".join(":" + p["word"] for p in said.get("parts", []))
+        word = said["word"] + (f"/{sum(1 for p in said['parts'] if p['open'])}of{len(said['parts'])}" if said.get("parts") else "")  # (short: the marker keeps 40 characters)
         out[n.id] = f"{word}:{max((x.id for x in mine if x.who != 'sender'), default=0)}"[:40]
     return out
 
