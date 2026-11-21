@@ -351,7 +351,9 @@ def check(a) -> None:
         elif a.do == "link":
             body["issue"] = int(w[0])
         c = call(a.base, f"/checks/{a.id}", body)
-    print(f"Check {c['id']} v{c['version']} · {c['state']} ({c['turn']}): {c['title']}")
+    print(f"Check {c['id']} v{c['version']} · {c['state']} ({c['turn']}): {c['title']}" + (" · needs more than one person" if c.get("people") else ""))
+    if c.get("before") or c.get("now"):  # (its goal first: Clearer checks)
+        print(f"  Before: {c.get('before', '')}\n  Now: {c.get('now', '')}")
     for n, s in enumerate(c["steps"], 1):
         print(f"  {n}. {s}")
     print(f"  Expect: {c['expect']}")

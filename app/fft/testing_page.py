@@ -254,7 +254,8 @@ def for_you(db: Session, device: str) -> list[dict]:
 
 
 def summary(groups: list[dict]) -> dict:
-    rows = [r for g in groups for r in g["rows"]]
+    every = [r for g in groups for r in g["rows"]]
+    rows = list({r["key"]: r for r in every}.values())  # (a check to try on two devices is one check, in two groups)
     count = lambda kind: sum(1 for r in rows if r["kind"] == kind)
     checks = [r for r in rows if r["kind"] == "check"]
     bits = [(count("local"), "change to try on your Mac", "changes to try on your Mac", ""),
@@ -363,7 +364,7 @@ def need_counts(groups: list[dict]) -> dict:
 
 def listed_keys(db: Session, show: str, device: str) -> list[str]:
     """For you's rows, in their order: the item window's ↑ ↓ follow it."""
-    return [r["key"] for g in for_you(db, device) for r in g["rows"]] if show == "foryou" else []
+    return list(dict.fromkeys(r["key"] for g in for_you(db, device) for r in g["rows"])) if show == "foryou" else []
 
 
 def _picked(db: Session, pick: str, device: str) -> dict | None:
