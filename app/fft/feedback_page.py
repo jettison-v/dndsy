@@ -67,7 +67,7 @@ def counts(db: Session) -> dict:
 
 
 def notes_of_issue(db: Session, issue: FftIssue) -> list[FftNote]:
-    return list(db.scalars(select(FftNote).where(FftNote.issue_id == issue.id).order_by(FftNote.id)))
+    return list(db.scalars(select(FftNote).where(rules.on_issue(issue.id)).order_by(FftNote.id)))  # (a split part's too, issue 22)
 
 
 def senders(notes: list[FftNote]) -> list[str]:
@@ -221,7 +221,7 @@ def new_since(db: Session, issue: FftIssue, viewer_id: int | None, asked: list[d
     seen = db.scalar(select(FftSeen.at).where(FftSeen.user_id == viewer_id, FftSeen.issue_id == issue.id)) if viewer_id else None
     after = (lambda at: at is not None and at > seen) if seen else (lambda at: at is not None)
     lines = db.scalars(select(FftLine).where(or_(FftLine.issue_id == issue.id,
-                                                 FftLine.note_id.in_(select(FftNote.id).where(FftNote.issue_id == issue.id)))))
+                                                 FftLine.note_id.in_(select(FftNote.id).where(rules.on_issue(issue.id))))))
     return {"seen_at": seen,
             "new_lines": {x.id for x in lines if after(x.created_at) and not (x.user_id and x.user_id == viewer_id)},
             "new_asked": {a["q"].id for a in asked if after(a["q"].created_at)}}
@@ -383,7 +383,8 @@ def note_undo(request: Request, note_id: int, db: Session = Depends(get_db)):
 
 @router.post("/manage/feedback/issues/{issue_id:int}")
 def issue_change(request: Request, issue_id: int, do: str = Form(...), words: str = Form(""), to: str = Form(""), feature: str = Form(""), kind: str = Form(""),
-                 reason: str = Form(""), same_as: int = Form(0), note: int = Form(0), seen: str = Form(""), db: Session = Depends(get_db)):
+                 reason: str = Form(""), same_as: int = Form(0), note: int = Form(0), seen: str = Form(""),
+                 part_title: list[str] = Form([]), part_feature: list[str] = Form([]), db: Session = Depends(get_db)):
     user, denied = _admin(request)
     if denied:
         return denied
@@ -402,6 +403,10 @@ def issue_change(request: Request, issue_id: int, do: str = Form(...), words: st
             raise HTTPException(400, "Same as which issue?")
         _act(lambda: rules.close(db, actor, i, reason, words, same_as=other, seen=seen or None))
         _said(request, "Closed: its senders read why" if words.strip() else "Closed")
+    elif do == "split":  # (issue 22: this issue keeps the first part, `words` and `feature` its title and Feature)
+        feats = list(part_feature) + [""] * len(part_title)
+        made = _act(lambda: rules.split_issue(db, actor, i, [(t[:120], feats[n][:20]) for n, t in enumerate(part_title[:8])], title=words[:120], feature=feature[:20]))
+        _said(request, f"Split into {len(made) + 1}: each has its notes, and their senders hear how each turns out")
     elif do == "reopen":
         _act(lambda: rules.reopen(db, actor, i))
         _said(request, "Reopened: it's Claude's again, marked came back")
@@ -469,6 +474,18 @@ def same_window(request: Request, note: int = 0, issue: int = 0, q: str = "", pa
                for i in db.scalars(found.limit(20))]
     return templates.TemplateResponse(request, "_fft_same.html", {"note": n, "issue": this, "q": q, "options": options, "seen": last_line(db, n) if n else 0,
                                                                     "senders": senders, "partial": bool(part)})
+
+
+@router.get("/manage/feedback/split")
+def split_window(request: Request, issue: int, db: Session = Depends(get_db)):
+    """Split… (issue 22, Brett's pick 2A): an open issue with several problems in it, as several issues, its notes the
+    evidence of each (docs/mockups/fft-round-2/, screen 2A)."""
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    i = db.get(FftIssue, issue) or _missing()
+    notes = notes_of_issue(db, i)
+    return templates.TemplateResponse(request, "_fft_split.html", {"i": i, "notes": notes, "senders": senders(notes), "taxonomy": taxonomy.areas()})
 
 
 @router.get("/manage/feedback/close")

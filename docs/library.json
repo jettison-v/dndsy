@@ -1582,5 +1582,23 @@
   "what": "Every help line, page subtitle, pill and tab name in askdnd (438), each with Claude's suggestion chosen (keep, cut, hide, shorten); and the one way to hide what's needed but not critical. Brett changes what he disagrees with; one pass applies them.",
   "source": "docs/mockups/string-audit/index.html",
   "link": "https://claude.ai/artifact/86vWsRCqsfUPyZFRSAwjSq"
+ },
+ {
+  "title": "Comments on a mockup",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 21",
+  "what": "Issue 24: comment on any part of a mockup in the window askdnd opens it in (a pin where you click, a column of comments with Claude's answers), each comment a line in the question's issue the moment it's sent; drawn with the Split… mockup inside. Four picks.",
+  "source": "docs/mockups/mockup-comments/index.html",
+  "link": "https://claude.ai/artifact/HcBwagafNNy5itfA2wEatZ"
+ },
+ {
+  "title": "The scheduled jobs: an audit",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 21",
+  "what": "Issue 55's second half: each scheduled job against what actually ran (two never report here, two haven't had their first Monday, three that run aren't listed), with what to keep, change or add. Five picks.",
+  "source": "docs/mockups/jobs-audit/index.html",
+  "link": "https://claude.ai/artifact/KQnbahX384PkwPdmVEGZPt"
  }
 ]

@@ -9,7 +9,19 @@ from sqlalchemy.orm import Session
 
 from app import access, picks
 from app.fft import rules, taxonomy
-from app.fft.models import FftArea, FftCheck, FftCheckIssue, FftIdea, FftIssue, FftItem, FftLine, FftListener, FftNote, FftQuestion
+from app.fft.models import (
+    FftArea,
+    FftCheck,
+    FftCheckIssue,
+    FftIdea,
+    FftIssue,
+    FftItem,
+    FftLine,
+    FftListener,
+    FftNote,
+    FftNoteIssue,
+    FftQuestion,
+)
 from app.models import User
 
 KIND_SAID = {"problem": "A problem", "idea": "An idea", "question": "A question"}  # (in the window, nothing picked first)
@@ -146,7 +158,7 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
 _FETCH = object()  # (not given: sender_says looks it up itself)
 
 
-def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, idea=_FETCH) -> dict:
+def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, idea=_FETCH, parts=_FETCH) -> dict:
     """What a note's sender reads on Notes you sent: {turn, word, tone, sentence, open}. Never another sender's words,
     the issue's title or anything only an admin sees (R2). `issue` and `idea` may be given, already read (`markers`, for
     many notes at once). A line to them is a new reply, never "asked you something": a line isn't marked a question,
@@ -174,23 +186,44 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
     issue = (db.get(FftIssue, note.issue_id) if note.issue_id else None) if issue is _FETCH else issue
     if issue is None:
         return out("closed", "Closed.", open_=False)
+    if parts is _FETCH:
+        parts = [db.get(FftIssue, x) for x in rules.issues_of_note(db, note)[1:]]
+    if parts:  # (Split… into several issues, issue 22: how each part turns out, in order, never their titles: R2)
+        each = [_one_issue(x, me_id) for x in [issue, *parts]]
+        mine = next((x for x in each if x[0] == "yours"), None)
+        left = sum(1 for x in each if x[3])
+        if mine:
+            said = out(*mine[:2])
+        elif left:
+            said = out("claude", f"Split into {len(each)} parts: {len(each) - left} done, {left} being fixed.")
+        else:
+            said = out("closed", f"Split into {len(each)} parts, all closed.", open_=False)
+        return said | {"parts": [{"word": w or turn_pill(t)[0], "tone": turn_pill(t)[1], "sentence": s, "open": o} for t, s, w, o in each]}
+    turn, sentence, word, open_ = _one_issue(issue, me_id)
+    return out(turn, sentence, open_, word)
+
+
+def _one_issue(issue, me_id: int | None) -> tuple[str, str, str | None, bool]:
+    """One issue as a sender reads it: (turn, sentence, word, open)."""
     if issue.state == "closed":
         word = CLOSED_WORD.get(issue.close_reason or "", "Closed")
-        return out("closed", {"works": "It works now.", "wont": "Not changing it: why is below.", "same": "It's being fixed with another note like it.",
-                              "cant_repro": "Claude couldn't make it happen: why is below.", "withdrawn": "Withdrawn."}.get(issue.close_reason or "", "Closed."),
-                   open_=False, word=word if issue.close_reason != "same" else "Closed")
+        return ("closed", {"works": "It works now.", "wont": "Not changing it: why is below.", "same": "It's being fixed with another note like it.",
+                           "cant_repro": "Claude couldn't make it happen: why is below.", "withdrawn": "Withdrawn."}.get(issue.close_reason or "", "Closed."),
+                word if issue.close_reason != "same" else "Closed", False)
     if issue.state == "ready":
         if issue.confirm_by and issue.confirm_by == me_id:
-            return out("yours", "Fixed and live: does it work now?")
-        return out("claude", "Fixed and live: being tried.", word="Fixed")
-    return out("claude", "Claude is fixing it.")
+            return ("yours", "Fixed and live: does it work now?", None, True)
+        return ("claude", "Fixed and live: being tried.", "Fixed", True)
+    return ("claude", "Claude is fixing it.", None, True)
 
 
 def _their_lines(note: FftNote):
-    """The lines a sender may read: on their note, and those to every sender on its issue (R2)."""
+    """The lines a sender may read: on their note, and those to every sender on its issue, or on each part it was split
+    into (R2, issue 22)."""
     cond = FftLine.note_id == note.id
     if note.issue_id:
-        cond = cond | ((FftLine.issue_id == note.issue_id) & (FftLine.to == "sender"))
+        on = FftLine.issue_id.in_(select(FftNoteIssue.issue_id).where(FftNoteIssue.note_id == note.id)) | (FftLine.issue_id == note.issue_id)
+        cond = cond | (on & (FftLine.to == "sender"))
     return cond
 
 
@@ -210,7 +243,10 @@ def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, s
     """`marker` for many notes in four reads, not several per note (Notes you sent's badge runs on every page)."""
     if not notes:
         return {}
-    issue_ids = {n.issue_id for n in notes if n.issue_id}
+    split: dict[int, list[int]] = {}  # (a note's split parts, issue 22)
+    for nid, iid in db.execute(select(FftNoteIssue.note_id, FftNoteIssue.issue_id).where(FftNoteIssue.note_id.in_([n.id for n in notes])).order_by(FftNoteIssue.issue_id)):
+        split.setdefault(nid, []).append(iid)
+    issue_ids = {n.issue_id for n in notes if n.issue_id} | {i for ids in split.values() for i in ids}
     idea_ids = {n.idea_id for n in notes if n.idea_id}
     issues = {i.id: i for i in db.scalars(select(FftIssue).where(FftIssue.id.in_(issue_ids)))} if issue_ids else {}
     ideas = {i.id: i for i in db.scalars(select(FftIdea).where(FftIdea.id.in_(idea_ids)))} if idea_ids else {}
@@ -220,9 +256,12 @@ def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, s
     lines = list(db.scalars(select(FftLine).where(cond).order_by(FftLine.id)))
     out = {}
     for n in notes:
-        mine = [x for x in lines if (x.note_id == n.id or (n.issue_id and x.issue_id == n.issue_id and x.to == "sender"))
+        on = {n.issue_id, *split.get(n.id, [])} if n.issue_id else set()
+        mine = [x for x in lines if (x.note_id == n.id or (x.issue_id in on and x.to == "sender"))
                 and (x.who == "sender" or x.to == "sender")]
-        word = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id))["word"]
+        parts = [issues[i] for i in split.get(n.id, []) if i in issues] if n.issue_id else []
+        said = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id), parts=parts)
+        word = said["word"] + (f"/{sum(1 for p in said['parts'] if p['open'])}of{len(said['parts'])}" if said.get("parts") else "")  # (short: the marker keeps 40 characters)
         out[n.id] = f"{word}:{max((x.id for x in mine if x.who != 'sender'), default=0)}"[:40]
     return out
 
@@ -321,6 +360,10 @@ def event_words(ev) -> str:
                 "item_moved": f"Moved to {str(d.get('section', '')).replace('_', ' ').title()}", "item_next": "Its next step changed"}.get(ev.kind)
         if said:
             return f"Roadmap item {ev.thing_id}: {said}"
+    if ev.kind == "issue_split":  # (Split…, issue 22)
+        return f"Issue {ev.thing_id} split: issues {', '.join(str(x) for x in d.get('into') or [])} have its notes too"
+    if ev.kind == "issue_split_from":
+        return f"Issue {ev.thing_id} split from issue {d.get('issue')}, with its notes"
     if ev.kind == "issue_kind":
         return f"Issue {ev.thing_id} is {'an improvement' if d.get('became') == 'improvement' else 'a fix'}"
     if ev.kind == "issue_feature":

@@ -286,6 +286,15 @@ class FftCheckIssue(Base):
     issue_id: Mapped[int] = mapped_column(ForeignKey("fft_issues.id", ondelete="CASCADE"), primary_key=True)
 
 
+class FftNoteIssue(Base):
+    """A note's other issues, after its issue was Split… into several (issue 22, Brett's pick 2A, Nov 21): the note is the
+    evidence of each, and its sender hears how each one turns out. The issue it was filed as stays `FftNote.issue_id`."""
+
+    __tablename__ = "fft_note_issues"
+    note_id: Mapped[int] = mapped_column(ForeignKey("fft_notes.id", ondelete="CASCADE"), primary_key=True)
+    issue_id: Mapped[int] = mapped_column(ForeignKey("fft_issues.id", ondelete="CASCADE"), primary_key=True, index=True)
+
+
 class FftRound(_Stamped, Base):
     """A sitting of tries. While one is open nothing merges to askdnd.ai (R11); it ends by hand or idle 12 hours."""
 

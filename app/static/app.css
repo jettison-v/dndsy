@@ -4549,6 +4549,16 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-covered { color: var(--amber); }
 .fft-approve { display: grid; gap: var(--sp-2); }
 .fft-options { display: grid; gap: var(--sp-1); }
+/* Split… (issue 22): the notes on top, then a row per part: its number, its title, its Feature */
+.fft-split-quote { max-height: 11em; overflow: auto; display: grid; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--line); background: var(--surface); border-radius: var(--r-sm); }
+.fft-split-quote p { margin: 0; }
+.fft-split-parts { display: grid; gap: var(--sp-2); }
+.fft-split-part { display: grid; grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; }
+.fft-split-part > :is(input, select) { min-width: 0; }
+.fft-split-n { min-width: 1.5em; text-align: center; color: var(--muted); font-weight: 600; }
+@media (max-width: 640px) { .fft-split-part { grid-template-columns: auto minmax(0, 1fr); } .fft-split-part > select, .fft-split-part > .note { grid-column: 2; } }
+.nt-parts { margin: 0; padding-left: 1.4em; display: grid; gap: var(--sp-1); }
+.nt-parts li > span:last-child { color: var(--muted); }
 .fft-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; text-align: left; color: var(--text); font: inherit; }
 .fft-opt:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
 .fft-opt.btn-plain { grid-template-columns: minmax(0, 1fr); }
