@@ -27,7 +27,7 @@ from app.templating import templates
 router = APIRouter()
 ROADMAP = "/manage/roadmap"
 SECTION_SAID = {"now": "Now", "next": "Next", "later": "Later", "paused": "Paused", "shipped": "Shipped", "not_doing": "Not doing"}
-STAGE = {"idea": ("Idea", "quiet"), "scoping": ("Scope: your OK", "ask"), "revising": ("Scope: Claude's", "claude"), "agreed": ("Scope agreed", "claude"),
+STAGE = {"idea": ("Idea", "quiet"), "asked": ("Scoping", "claude"), "scoping": ("Scope: your OK", "ask"), "revising": ("Scope: Claude's", "claude"), "agreed": ("Scope agreed", "claude"),
          "building": ("Building", "claude"), "paused": ("Paused", "quiet"), "shipped": ("Shipped", "passed"),
          "not_doing": ("Not doing", "quiet")}
 TABS = (("scope", "Scope"), ("steps", "Steps"), ("plans", "Plans"), ("updates", "Updates"))
@@ -41,7 +41,7 @@ def stage(db: Session, it: FftItem, scope: FftScope | None) -> str:
     if it.section in ("shipped", "not_doing", "paused"):
         return it.section
     if scope is None:
-        return "idea"
+        return "asked" if it.scope_asked_at else "idea"  # (Scope it: Brett asked for its scope, Nov 21)
     if scope.agreed_at is None:
         return "revising" if scope.changes_at else "scoping"  # (Needs changes…: Claude's turn, issue 54)
     areas = db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)))
@@ -60,6 +60,8 @@ def row(db: Session, it: FftItem) -> dict:
         nxt = ("claude", f"Answer your comments, write version {scope.version + 1}")
     elif s == "idea":
         nxt = ("claude", "Scope it")
+    elif s == "asked":
+        nxt = ("claude", "Write its scope · first in Claude's queue")
     elif first:
         nxt = (first.whose, first.text)
     else:
@@ -196,7 +198,7 @@ def item(request: Request, item_id: int, tab: str = "scope", ver: int = 0, db: S
 def change(request: Request, item_id: int, do: str = Form(...), words: str = Form(""), section: str = Form(""), step: int = Form(0),
            seen: int = Form(0), on: str = Form(""), addition: int = Form(0), db: Session = Depends(get_db)):
     """Brett's presses on an item: a comment on its scope (a line, the whole, an answer to a question), Scope looks right,
-    Needs changes…, take back a comment not sent, tick a step of his, move it, ship it."""
+    Needs changes…, take back a comment not sent, tick a step of his, Scope it (or Not now), move it, ship it."""
     user, denied = _admin(request)
     if denied:
         return denied
@@ -233,6 +235,9 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
             rules.tick_step(db, actor, st, do == "tick")
             said = "Done" if do == "tick" else "Not done after all"
             back += "?tab=steps"
+        elif do in ("scope_it", "not_now"):  # (Scope it, Brett's pick Nov 21: first in Claude's queue, or back)
+            rules.ask_scope(db, actor, it, do == "scope_it")
+            said = "First in Claude's queue: its scope comes to For you for your OK" if do == "scope_it" else "Back in its place: Claude scopes it when it's next"
         elif do in ("hold", "unhold"):  # (Development's line, issue 62)
             rules.hold_item(db, actor, it, do == "hold")
             said = "Held below Development's line" if do == "hold" else "Back above Development's line"

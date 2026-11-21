@@ -303,3 +303,46 @@ def test_a_roadmap_row_in_for_you_says_why_it_is_yours_and_opens_the_item(db, ad
     win = admin.get(f"/manage/item/r{it.id}?from=foryou").text
     assert 'data-stage-word="agreed"' in win and 'data-sec="steps"' in win and 'data-do="open-page"' in win
     assert f'href="/manage/roadmap/{it.id}"' in win and "/manage/for-you?open=" not in win
+
+
+def test_scope_it_puts_an_unscoped_item_first_in_claudes_queue_until_its_scope_is_written(db, admin, api):
+    """Scope it (issue 60, Brett's pick Nov 21): an item with no scope offers it; one press puts the item first in Claude's
+    queue and in Claude's hands, Not now takes it back, and its first version ends it."""
+    from app.fft import views
+
+    it = rules.new_idea(db, "claude", "Homebrew items", "Easier builder.", where="chat")
+    db.flush()
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-scope-none' in page and 'data-do="scope-it"' in page and 'data-stage-word="idea"' in page
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "scope_it"})
+    db.refresh(it)
+    assert it.scope_asked_at is not None
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert 'data-scope-asked' in page and 'data-stage-word="asked"' in page and 'data-do="not-now"' in page
+    assert rules.pick_next(db).item.id == it.id
+    assert any(g["kind"] == "scope_asked" and g["id"] == it.id for g in views.gaps(db))
+    assert api.get(f"/api/fft/roadmap/{it.id}", headers=H).json()["scope_asked"] is True
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "not_now"})
+    db.refresh(it)
+    assert it.scope_asked_at is None and not any(g["kind"] == "scope_asked" for g in views.gaps(db))
+    admin.post(f"/manage/roadmap/{it.id}", data={"do": "scope_it"})
+    rules.write_scope(db, "claude", it, what="An easier builder.", inside=["Start from a weapon"])
+    db.flush()
+    assert not any(g["kind"] == "scope_asked" for g in views.gaps(db))
+    assert rules.pick_next(db).item is None or rules.pick_next(db).item.id != it.id
+    r = admin.post(f"/manage/roadmap/{it.id}", data={"do": "scope_it"}, follow_redirects=False)  # (it has one: refused)
+    assert r.status_code == 303 and 'data-do="scope-it"' not in admin.get(f"/manage/roadmap/{it.id}").text
+
+
+def test_an_items_why_is_a_line_then_points_with_the_decisions_behind_it(db, admin, api):
+    """The why (Brett's pick Nov 21): its first line the headline, each line after it a point, the decisions behind it in
+    a quiet line; the facts a labelled strip that says Next once."""
+    it = rules.new_idea(db, "claude", "Homebrew items", where="chat")
+    db.flush()
+    api.post(f"/api/fft/roadmap/{it.id}", json={"do": "set", "why": "Make homebrew items easy.\n- Start from a weapon\n- Give one to a character",
+                                                "why_from": "From your picks on Item Builder.", "size": "M"}, headers=H)
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    why = page[page.index("data-why "):page.index("</section>", page.index("data-why "))]
+    assert why.count("<li>") == 2 and "homebrew items easy" in why.split("<li>")[0] and "data-why-from" in why
+    assert page.count("<dt>") == 4 and 'data-next="claude"' in page  # (Section, Size, Stage, Next step)
+    assert 'role="tablist"' in page and 'id="t-steps"' in page

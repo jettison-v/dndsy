@@ -785,14 +785,17 @@ def new_idea(db: Session, actor: str, title: str, words: str = "", section: str 
 
 
 def set_item(db: Session, actor: str, item: FftItem, *, title: str | None = None, why: str | None = None,
-             size: str | None = None, status: str | None = None, result: str | None = None) -> None:
-    """A Roadmap item's title, why it matters, size (S, M, L), status line or result (what it changed, its numbers)."""
+             size: str | None = None, status: str | None = None, result: str | None = None, why_from: str | None = None) -> None:
+    """A Roadmap item's title, why it matters (its first line the headline, each line after it a point: Brett's pick
+    Nov 21), the decisions behind it, size (S, M, L), status line or result (what it changed, its numbers)."""
     if title is not None:
         if not title.strip():
             raise RuleError("bad", "Give it a title.")
         item.title = title.strip()[:120]
     if why is not None:
         item.why = why.strip()[:2000]
+    if why_from is not None:
+        item.why_from = why_from.strip()[:400]
     if size is not None:
         if size not in SIZES:
             raise RuleError("bad", "S, M or L.")
@@ -802,7 +805,27 @@ def set_item(db: Session, actor: str, item: FftItem, *, title: str | None = None
     if result is not None:
         item.result = result.strip()[:4000]
     _event(db, actor, "item_set", "item", item.id, **{k: True for k, v in (("title", title), ("why", why), ("size", size), ("status", status),
-                                                                           ("result", result)) if v is not None})
+                                                                           ("result", result), ("why_from", why_from)) if v is not None})
+
+
+def ask_scope(db: Session, actor: str, item: FftItem, asked: bool = True) -> None:
+    """Scope it (Brett's pick Nov 21, issue 60): an item with no scope goes first in Claude's queue (`pick_next`), and is in
+    Claude's hands (`views.gaps`) until its first version is written; Not now takes it back to its place."""
+    if item.standing or item.section not in ROADMAP_SECTIONS:
+        raise RuleError("bad", "Only an item on the Roadmap is scoped.")
+    if asked and latest_scope(db, item) is not None:
+        raise RuleError("stale", "It has a scope already.")
+    if asked == (item.scope_asked_at is not None):
+        return
+    item.scope_asked_at = now() if asked else None
+    _event(db, actor, "item_scope_asked" if asked else "item_scope_unasked", "item", item.id)
+
+
+def scope_asked(db: Session) -> list[FftItem]:
+    """The items Brett pressed Scope it on that have no scope yet, the first asked first."""
+    q = (select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(ROADMAP_SECTIONS), FftItem.scope_asked_at.is_not(None))
+         .order_by(FftItem.scope_asked_at, FftItem.id))
+    return [it for it in db.scalars(q) if latest_scope(db, it) is None]
 
 
 def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
@@ -1765,7 +1788,7 @@ def hold_item(db: Session, actor: str, item: FftItem, held: bool = True) -> None
 
 
 def pick_next(db: Session) -> Pick:
-    """R15: a blocker first (an issue that stops Brett's round); otherwise Development's one queue from the top (issue 62:
+    """R15: a blocker first (an issue that stops Brett's round); then an item Brett pressed Scope it on; otherwise Development's one queue from the top (issue 62:
     the Product Area batches and the Roadmap builds in his order), skipping a held row, a build whose next step is his and a
     plan in his open round; the first that's Claude's. A build with plans of its own is taken by its plan; one without, as
     itself (its next step)."""
@@ -1775,6 +1798,8 @@ def pick_next(db: Session) -> Pick:
                          .where(FftTryIssue.stops_round.is_(True), FftIssue.state.in_(("to_fix", "fixing"))))
         if stop is not None and stop.area_id:
             return Pick(db.get(FftArea, stop.area_id), f"Blocker: “{stop.title}” stops Brett's round.", blocker=True)
+    for it in scope_asked(db):  # (Scope it: Brett asked, so first after a blocker, Nov 21)
+        return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it)
     skipped: list[tuple[str, str]] = []
 
     def plan_ok(area: FftArea, name: str) -> bool:

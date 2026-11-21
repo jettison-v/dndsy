@@ -46,6 +46,11 @@ class FftItem(_Stamped, Base):
     held: Mapped[bool] = mapped_column(Boolean, server_default=false(), deferred=True, deferred_group="roadmap")
     # What it changed, with its numbers (Brett, Nov 20): its first line the headline, each line after it one result
     result: Mapped[str] = mapped_column(Text, server_default="", deferred=True, deferred_group="roadmap")
+    # The item's page (issues 60, 61, Brett's picks Nov 21, docs/mockups/roadmap-item-page/): the decisions behind its why, a
+    # quiet line under it (the why itself: its first line the headline, each line after it a point); and Scope it, when
+    # Brett asked for its scope (first in Claude's queue until its first version is written, or he says Not now)
+    why_from: Mapped[str] = mapped_column(Text, server_default="", deferred=True, deferred_group="roadmap")
+    scope_asked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"), deferred=True, deferred_group="roadmap")
 
 
 class FftCheckWait(_Stamped, Base):

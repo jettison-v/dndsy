@@ -575,7 +575,7 @@ def _roadmap_row(db: Session, it: FftItem) -> dict:
             "result": it.result, "next": {"whose": r["next"][0], "step": r["next"][1]}, "steps": [r["done"], r["steps"]],
             "scope_version": r["scope"].version if r["scope"] else None, "agreed": bool(r["scope"] and r["scope"].agreed_at),
             "unanswered": db.scalar(select(func.count()).select_from(FftAddition).where(FftAddition.item_id == it.id, FftAddition.answer == "", FftAddition.held.is_(False))),
-            "changes_asked": r["stage"] == "revising"}
+            "changes_asked": r["stage"] == "revising", "scope_asked": r["stage"] == "asked"}
 
 
 @router.get("/roadmap")
@@ -596,7 +596,7 @@ def roadmap_item(item_id: int, x_fft_key: str | None = Header(default=None), db:
     keys.require(db, x_fft_key, "read")
     it = db.get(FftItem, item_id) or _missing()
     return _ok(_roadmap_row(db, it) | {
-        "why": it.why,
+        "why": it.why, "why_from": it.why_from,
         "scopes": [{"version": s.version, "what": s.what, "inside": s.inside, "not_now": s.not_now, "questions": s.questions, "changed": s.changed,
                     "suggested": s.suggested, "agreed": s.agreed_at.isoformat() if s.agreed_at else "",
                     "changes_asked": s.changes_at.isoformat() if s.changes_at else ""} for s in db.scalars(select(FftScope).where(FftScope.item_id == it.id).order_by(FftScope.version))],
@@ -634,7 +634,8 @@ def roadmap_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
 def roadmap_change(item_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """One change at a time: scope (what, inside, not_now, questions, changed: the next version), add (Brett's words said in
     chat), answer (addition, answer: in|later|question, words, version), step (text, whose), tick (step, done), unstep
-    (step), move (section), ship, not_doing, set (title, why, size, status). Only Brett says a scope looks right."""
+    (step), move (section), ship, not_doing, set (title, why: its first line the headline, each after it a point; why_from: the
+    decisions behind it; size, status, result). Only Brett says a scope looks right."""
     from app.fft.models import FftAddition, FftStep
 
     actor = keys.require(db, x_fft_key, "write")
@@ -672,7 +673,7 @@ def roadmap_change(item_id: int, body=web.JsonBody, x_fft_key: str | None = Head
                 raise HTTPException(400, "result: what it changed, with its numbers (for Not doing, why not)")
             rules.ship_item(db, actor.name, it, not_doing=do == "not_doing", result=result)
         elif do == "set":
-            rules.set_item(db, actor.name, it, **{k: _str(body, k, 4000 if k == "result" else 2000) for k in ("title", "why", "size", "status", "result") if k in body})
+            rules.set_item(db, actor.name, it, **{k: _str(body, k, 4000 if k == "result" else 2000) for k in ("title", "why", "size", "status", "result", "why_from") if k in body})
         elif do == "agree":
             raise HTTPException(403, "Only Brett says a scope looks right.")
         else:
