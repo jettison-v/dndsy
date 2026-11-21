@@ -308,9 +308,10 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
         admin.open("/manage/work")
-        def where():  # (the pill against its bar, not the window: a scrollbar coming or going shifts both alike on Linux)
+        def where():  # (the pill against its bar's right end, where it sits: a scrollbar the round's row brings narrows
+            # the bar, so from its left the pill seemed to move 13 px; Nov 20, main's run after PR 449)
             p, b = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status").bounding_box()
-            return {"x": p["x"] - b["x"], "y": p["y"] - b["y"], "height": p["height"], "top": p["y"]}
+            return {"x": (b["x"] + b["width"]) - (p["x"] + p["width"]), "y": p["y"] - b["y"], "height": p["height"], "top": p["y"]}
         before = where()
         engine = create_engine(browser_db[0])
         with engine.begin() as conn:

@@ -258,3 +258,15 @@ def test_done_leaves_feedbacks_list_for_its_history(db, admin):
     assert 'data-tab="closed"' not in page and 'href="?tab=closed" data-history' in page
     hist = admin.get("/manage/feedback?tab=closed").text
     assert "data-history-head" in hist and 'data-history-back' in hist and f'data-row="i{gone.id}"' in hist
+
+
+def test_every_kind_of_gap_says_what_it_is():
+    """Nov 20: a shipped item with no result showed in Claude missed as its title and a bare "·", its kind having no
+    words. Every kind `views.gaps` can give has its words."""
+    import inspect
+    import re
+
+    from app.fft import views
+
+    kinds = set(re.findall(r'"kind": "([a-z_]+)"', inspect.getsource(views.gaps)))
+    assert kinds and kinds <= set(views.GAP_WORDS), f"no words for: {kinds - set(views.GAP_WORDS)}"

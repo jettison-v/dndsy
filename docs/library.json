@@ -1485,6 +1485,15 @@
   "link": "https://claude.ai/artifact/TQZVVTJZGyLCNFoXUqb4Rz"
  },
  {
+  "title": "Reviewing a scope",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 20",
+  "what": "Issue 54: how you answer a Roadmap item's scope. Scope looks right or Needs changes…, comments on any line, answers to its open questions in place, and Claude answering every comment in the next version. Drawn on Clearer checks; three picks.",
+  "source": "docs/mockups/roadmap-scope-review/index.html",
+  "link": "https://claude.ai/artifact/WBNuMU1YxvoaW3wRQhkrJZ"
+ },
+ {
   "title": "The Work Pages",
   "kind": "design",
   "status": "Picked; built (slice 4)",

@@ -401,6 +401,10 @@ def gaps(db: Session) -> list[dict]:
     return _since(db, out)
 
 
+GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself",
+             "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
+             "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
+             "no_result": "finished, with no result written yet"}  # (each kind of gap, as Development says it)
 GAP_GRACE = timedelta(minutes=30)  # (Brett, Nov 19, issue 39: what just happened isn't missed yet)
 
 
