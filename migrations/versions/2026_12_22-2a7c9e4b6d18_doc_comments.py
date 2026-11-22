@@ -17,7 +17,7 @@ def upgrade() -> None:
     op.create_table("fft_doc_comments",
                     sa.Column("id", sa.Integer(), primary_key=True),
                     sa.Column("workspace_id", sa.Integer(), nullable=False, server_default="1", index=True),
-                    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+                    sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
                     sa.Column("doc", sa.String(300), nullable=False, index=True),
                     sa.Column("page", sa.String(300), nullable=False, server_default=""),
                     sa.Column("n", sa.Integer(), nullable=False),
