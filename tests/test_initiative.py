@@ -4,12 +4,15 @@ master; after Start Combat the order is the DM's, changed by dragging a row. Num
 (extension 0.12.0), which asks for them; what's asked for shows at once, on its way, until the VTT shows it."""
 
 import copy
+import itertools
 import json
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app import fight, initiative
+from app import ddb_bridge, fight, initiative
 from app.models import Campaign, TableRoll
 from tests.roles import set_role
 from tests.table_setup import char
@@ -272,3 +275,134 @@ def test_a_homunculus_goes_right_after_its_master(player, db, table, monkeypatch
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=14)})
     owl = next(x for x in table.fight["order"] if x["key"] == "t-owl")
     assert owl["initiative"] == 13.5 and owl["pending"]
+
+
+def test_a_fight_report_that_arrived_earlier_and_finished_later_never_undoes_a_newer_one(player, db, table):
+    """Issue 70 (the live test, Nov 22): the DM's number and Start Combat came 2 ms apart, "waiting" finished last, and a
+    roll after Start Combat was named Initiative and moved the fight."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    assert fight.heard(db, table, started, arrived=2.0) is True
+    assert fight.heard(db, table, waiting, arrived=1.0) is False
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+    assert initiative.rolled(db, table, char(db, "Cole"), "", 6) is False  # (after Start Combat a roll changes nothing)
+    assert fight.heard(db, table, None, arrived=1.5) is False and table.fight  # (a late "no fight", the same)
+    assert fight.heard(db, table, waiting, arrived=3.0) is True and table.fight["waiting"]  # (a newer one always counts)
+
+
+def test_the_bridge_orders_fight_reports_by_when_each_reached_askdnd(player, db, table, monkeypatch):
+    """Issue 70: the order is when the request reached the server, not when a worker got the fight's lock."""
+    came, began = [], []
+    real, who = fight.heard, ddb_bridge._signed_in
+    monkeypatch.setattr(ddb_bridge, "_signed_in", lambda *a: began.append(time.monotonic()) or who(*a))
+    monkeypatch.setattr(fight, "heard", lambda *a, arrived=None: came.append(arrived) or real(*a, arrived=arrived))
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=9, waiting=False, active="t-e1")})
+    player.post(f"/bridge/fight/{GAME}", json={"closed": True})
+    assert len(came) >= 2 and came == sorted(came)
+    assert all(a < b for a, b in zip(came, began))  # (stamped before the route's first step, not once it had the lock)
+
+
+def test_two_overlapping_reports_finishing_in_reverse_keep_the_newer(player, db, table, monkeypatch):
+    """Issue 70 as it happened: "waiting" reached askdnd first, waited for a worker, and finished after Start Combat's."""
+    entered, go = threading.Event(), threading.Event()
+    who = ddb_bridge._signed_in
+
+    def slow_first(*args):
+        if not entered.is_set():
+            entered.set()
+            go.wait(10)  # (the first report waits here while the second is handled whole)
+        return who(*args)
+
+    monkeypatch.setattr(ddb_bridge, "_signed_in", slow_first)
+    answers = []
+    first = threading.Thread(target=lambda: answers.append(player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})))
+    first.start()
+    assert entered.wait(10)
+    newer = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")})
+    go.set()
+    first.join(10)
+    assert newer.json()["changed"] is True and answers[0].json()["changed"] is False
+    db.refresh(table)
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+
+
+def test_a_waiting_report_swapped_on_the_way_never_undoes_start_combat(player, db, table):
+    """Issue 70 again (the live test after 466, Nov 22, try 4 of 5): the two reports left the same millisecond and
+    "waiting" reached askdnd second. Nobody ends a fight and adds the tokens again within a second of its starting."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    assert fight.heard(db, table, waiting, arrived=1.0) is True
+    assert fight.heard(db, table, started, arrived=10.000) is True
+    assert fight.heard(db, table, waiting, arrived=10.002) is False
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+    assert initiative.rolled(db, table, char(db, "Cole"), "", 9) is False  # (the roll that moved the fight in try 4)
+
+
+def test_a_new_encounter_still_waits_for_start_combat(player, db, table):
+    """The rule above never holds back a real "waiting": after End Combat (no fight, however soon), or later on, as when
+    askdnd didn't hear the last fight end (the VTT was closed)."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    fight.heard(db, table, started, arrived=10.0)
+    assert fight.heard(db, table, None, arrived=10.2) is True
+    assert fight.heard(db, table, waiting, arrived=10.4) is True and table.fight["waiting"]
+    fight.heard(db, table, started, arrived=20.0)
+    assert fight.heard(db, table, waiting, arrived=20.0 + fight.SWAPPED + 0.1) is True and table.fight["waiting"]
+
+
+def test_the_bridge_drops_a_waiting_report_that_lands_just_after_start_combats(player, db, table):
+    """Issue 70, try 4 as the server saw it: through the route, "started" then "waiting", a moment apart."""
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")})
+    late = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})
+    db.refresh(table)
+    assert late.json()["changed"] is False and not table.fight.get("waiting")
+
+
+def test_start_combat_holds_in_every_order_its_reports_can_arrive_and_finish(player, db, table):
+    """Issue 73 (the live test after 467, try 5 of 10): "started" arrived first, was handled second and was dropped as
+    older. The reports sent as Start Combat is pressed can reach askdnd in any order and be handled in any other: each
+    of the 36 ways must end with the fight running."""
+    sent = [heard(cole_ini=8), heard(cole_ini=17.5), heard(cole_ini=17.5, waiting=False, active="t-cole")]
+    wrong = []
+    for arrival in itertools.permutations(range(3)):
+        for handled in itertools.permutations(range(3)):
+            table.fight, table.fight_at = None, None
+            db.flush()
+            fight._newest.clear()
+            for i in handled:
+                fight.heard(db, table, copy.deepcopy(sent[i]), arrived=100 + arrival.index(i) * 0.002)
+                db.flush()
+            if not table.fight or table.fight.get("waiting"):
+                wrong.append((arrival, handled))
+    assert not wrong
+
+
+def test_start_combat_that_arrived_first_and_finished_second_still_starts_the_fight(player, db, table, monkeypatch):
+    """Issue 73, try 5 as it happened, through the route: "waiting" arrived a moment later and got the lock first."""
+    entered, go = threading.Event(), threading.Event()
+    who = ddb_bridge._signed_in
+
+    def slow_first(*args):
+        if not entered.is_set():
+            entered.set()
+            go.wait(10)  # (the first report waits here while the second is handled whole)
+        return who(*args)
+
+    monkeypatch.setattr(ddb_bridge, "_signed_in", slow_first)
+    started = {"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")}
+    first = threading.Thread(target=lambda: player.post(f"/bridge/fight/{GAME}", json=started))
+    first.start()
+    assert entered.wait(10)
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})
+    go.set()
+    first.join(10)
+    db.refresh(table)
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+
+
+def test_an_older_turn_never_brings_back_a_fight_that_was_ended(player, db, table):
+    """The review of issue 73's rule: "running beats waiting" never reaches back past End Combat's "no fight"."""
+    turn, waiting = heard(cole_ini=8, waiting=False, active="t-cole"), heard()
+    fight.heard(db, table, turn, arrived=10.0)
+    fight.heard(db, table, None, arrived=20.0)
+    fight.heard(db, table, waiting, arrived=20.2)
+    assert fight.heard(db, table, copy.deepcopy(turn), arrived=19.8) is False
+    assert table.fight["waiting"]

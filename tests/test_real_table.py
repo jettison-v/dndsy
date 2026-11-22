@@ -69,3 +69,56 @@ def test_a_creature_back_as_a_new_row_is_back_as_found():
     assert not rt.steady(rt.changes(before, again))
     other = {"creatures": [form(2, 5195167, "Polar Bear"), form(9, 5194910, "Dire Wolf")]}
     assert sorted(p for p, _, _ in rt.steady(rt.changes(before, other))) == [".creatures{+}", ".creatures{-}"]
+
+
+def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(monkeypatch):
+    """Issue 71, Nov 22: the first try stopped with the Owl switched on; the second took that as found and left it on."""
+    owl = {"id": 5, "groupId": 2, "isActive": False, "name": "Ocho", "description": "", "entityTypeId": 9}
+    found = {"creatures": [owl], "characterValues": []}
+    dirty = {"creatures": [{**owl, "isActive": True, "name": "Pip"}], "characterValues": [], "actions": {"class": []}}
+    sent, refused, missed = [], [], []
+
+    class Sheet:
+        def evaluate(self, script, args):
+            sent.append(args[1])
+            if refused:
+                raise ConnectionError("out of reach")
+            return [400 if method == "DELETE" else 200 for method, path, body in args[1]]  # (no creature type to remove: 400)
+
+    class Seat:
+        via_dm = True
+
+        def sheet(self, seat):
+            return Sheet()
+
+        def battle(self, seat):
+            return object()
+
+        def note(self, ok, what):
+            missed.append(what)
+
+    def stops(*args):
+        raise TimeoutError("stopped")
+
+    seat = Seat()
+    seat.found = {"player4": found}
+    monkeypatch.setattr(rt, "connects", lambda *a: None)
+    monkeypatch.setattr(rt, "record", lambda sheet: dirty)
+    monkeypatch.setattr(rt, "ws_used", lambda d: 0)
+    monkeypatch.setattr(rt, "caught_up", stops)
+    for run in (rt.familiar, rt.wild_companion):
+        sent.clear()
+        try:
+            run(seat)
+        except TimeoutError:
+            pass
+        ops = {path: body for method, path, body in sent[0]}
+        assert ops["creature/status"] == {"id": 5, "isActive": False}
+        assert ops["creature"]["name"] == "Ocho"
+    assert not missed
+    refused.append(True)
+    try:
+        rt.familiar(seat)
+    except TimeoutError:  # (what stopped the run is still what it says)
+        pass
+    assert len(missed) == 1  # (and the put-back that failed is a miss of its own)
