@@ -63,6 +63,7 @@ class Table:
         self.run = ""
         self.last: Page | None = None
         self.via_dm = via_dm
+        self.found: dict[str, dict] = {}  # each seat's sheet as part 1 found it: what a run puts back, on its second try too
 
     def page(self, seat: str, url: str) -> Page:
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
@@ -1371,6 +1372,18 @@ def caught_up(t: Table, page: Page, sheet: Page, oid: int) -> None:
     print(f"  askdnd's copy caught up with D&D Beyond in {int(time.time() - start)} seconds", flush=True)
 
 
+def owl_back(t: Table, sheet, seat: str, before: dict, owl: dict) -> None:
+    """The familiar put back as part 1 found it, whether its run finished or stopped (issue 71, Nov 22: a try that stopped
+    left the Owl switched on, the second try took that as found and put it back switched on)."""
+    oid = owl["id"]
+    ops = [["PUT", "creature", {"id": oid, "name": owl["name"], "description": owl["description"], "groupId": owl["groupId"]}],
+           ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]
+    if not any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) for v in before.get("characterValues") or []):
+        ops.append(["DELETE", "custom/value", {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]),
+                                               "contextId": None, "contextTypeId": None}])
+    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+
+
 def familiar(t: Table, seat: str = "player4") -> None:
     """A familiar kept in step (Nov 4, extension 0.11.0; Levi's Owl): Find Familiar cast in askdnd as a Ritual, named Pip
     and made Fey, switches the Owl on on D&D Beyond with its creature type and name; sent to the pocket dimension it's
@@ -1379,36 +1392,35 @@ def familiar(t: Table, seat: str = "player4") -> None:
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
-    before = record(sheet)
+    before = t.found.get(seat) or record(sheet)
     owl = next(c for c in before["creatures"] if c["groupId"] == 2)
     oid = owl["id"]
-    caught_up(t, page, sheet, oid)
-    page.locator(".spellbook-btn").first.click(timeout=8000)
-    go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
-    page.locator('select[name="way"]').first.select_option("ritual")
-    page.locator(f'input[name="familiar"][value="{oid}"]').check()
-    page.locator('input[name="kind"][value="Fey"]').check()
-    page.locator('input[name="familiar_name"]').fill("Pip")
-    page.locator("[data-use-go]").first.click(timeout=8000)
-    t.expect("the Owl is switched on on D&D Beyond", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
-    t.expect("as Fey (its creature type)", lambda: any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8
-                                                        for v in record(sheet).get("characterValues") or []), SLOW)
-    t.expect("named Pip", lambda: creature_of(record(sheet), oid)["name"] == "Pip", SLOW)
-    page.wait_for_timeout(1500)
-    page.goto(f"{page.url.split('?')[0]}?creature={oid}", wait_until="domcontentloaded")
-    page.locator('button:has-text("Pocket dimension")').first.click(timeout=8000)
-    t.expect("sent to the pocket dimension, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
-    page.wait_for_timeout(1500)
-    page.locator('button:has-text("Bring back")').first.click(timeout=8000)
-    t.expect("brought back, it's on again", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
-    page.wait_for_timeout(1500)
-    page.locator('.cr-forever > summary').first.click(timeout=8000)
-    page.locator('.cr-forever-pop button').first.click(timeout=8000)
-    t.expect("dismissed, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
-    key = {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]), "contextId": None, "contextTypeId": None}
-    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
-        ["DELETE", "custom/value", key], ["PUT", "creature", {"id": oid, "name": owl["name"], "description": owl["description"], "groupId": owl["groupId"]}],
-        ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]]), flush=True)
+    try:
+        caught_up(t, page, sheet, oid)
+        page.locator(".spellbook-btn").first.click(timeout=8000)
+        go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
+        page.locator('select[name="way"]').first.select_option("ritual")
+        page.locator(f'input[name="familiar"][value="{oid}"]').check()
+        page.locator('input[name="kind"][value="Fey"]').check()
+        page.locator('input[name="familiar_name"]').fill("Pip")
+        page.locator("[data-use-go]").first.click(timeout=8000)
+        t.expect("the Owl is switched on on D&D Beyond", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
+        t.expect("as Fey (its creature type)", lambda: any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8
+                                                            for v in record(sheet).get("characterValues") or []), SLOW)
+        t.expect("named Pip", lambda: creature_of(record(sheet), oid)["name"] == "Pip", SLOW)
+        page.wait_for_timeout(1500)
+        page.goto(f"{page.url.split('?')[0]}?creature={oid}", wait_until="domcontentloaded")
+        page.locator('button:has-text("Pocket dimension")').first.click(timeout=8000)
+        t.expect("sent to the pocket dimension, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
+        page.wait_for_timeout(1500)
+        page.locator('button:has-text("Bring back")').first.click(timeout=8000)
+        t.expect("brought back, it's on again", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
+        page.wait_for_timeout(1500)
+        page.locator('.cr-forever > summary').first.click(timeout=8000)
+        page.locator('.cr-forever-pop button').first.click(timeout=8000)
+        t.expect("dismissed, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
+    finally:
+        owl_back(t, sheet, seat, before, owl)
 
 
 def wild_companion(t: Table, seat: str = "player4") -> None:
@@ -1418,27 +1430,25 @@ def wild_companion(t: Table, seat: str = "player4") -> None:
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
-    before = record(sheet)
+    now = record(sheet)
+    before = t.found.get(seat) or now  # (the uses are counted from now, the Owl put back as found)
     owl = next(c for c in before["creatures"] if c["groupId"] == 2)
-    oid, used = owl["id"], ws_used(before)
-    caught_up(t, page, sheet, oid)
-    page.locator(".spellbook-btn").first.click(timeout=8000)
-    go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
-    page.locator('select[name="way"]').first.select_option("wild")
-    page.locator(f'input[name="familiar"][value="{oid}"]').check()
-    page.locator("[data-use-go]").first.click(timeout=8000)
-    t.expect("a Wild Shape use is spent on D&D Beyond", lambda: ws_used(record(sheet)) == used + 1, SLOW)
-    t.expect("and the Owl is switched on, as Fey", lambda: creature_of(record(sheet), oid)["isActive"] and any(
-        v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8 for v in record(sheet).get("characterValues") or []), SLOW)
-    page.wait_for_timeout(1500)
-    if undo(page):
-        t.expect("Undo gives the Wild Shape use back", lambda: ws_used(record(sheet)) == used, SLOW)
-    key = {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]), "contextId": None, "contextTypeId": None}
-    tidy = [["PUT", "creature", {"id": oid, "name": owl["name"], "description": owl["description"], "groupId": owl["groupId"]}],
-            ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]  # (the familiar's name goes with it to a new form)
-    if not any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) for v in before.get("characterValues") or []):
-        tidy.append(["DELETE", "custom/value", key])
-    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], tidy]), flush=True)
+    oid, used = owl["id"], ws_used(now)
+    try:
+        caught_up(t, page, sheet, oid)
+        page.locator(".spellbook-btn").first.click(timeout=8000)
+        go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
+        page.locator('select[name="way"]').first.select_option("wild")
+        page.locator(f'input[name="familiar"][value="{oid}"]').check()
+        page.locator("[data-use-go]").first.click(timeout=8000)
+        t.expect("a Wild Shape use is spent on D&D Beyond", lambda: ws_used(record(sheet)) == used + 1, SLOW)
+        t.expect("and the Owl is switched on, as Fey", lambda: creature_of(record(sheet), oid)["isActive"] and any(
+            v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8 for v in record(sheet).get("characterValues") or []), SLOW)
+        page.wait_for_timeout(1500)
+        if undo(page):
+            t.expect("Undo gives the Wild Shape use back", lambda: ws_used(record(sheet)) == used, SLOW)
+    finally:
+        owl_back(t, sheet, seat, before, owl)
 
 
 def dm_backup(t: Table, seat: str = "player2") -> None:
@@ -1848,7 +1858,7 @@ def initiative(t: Table, seat: str = "player4") -> None:
 
     def started() -> bool:
         party.goto(party.url, wait_until="domcontentloaded")
-        return "Waiting for Start Combat" not in " ".join(party.locator(".fight-band").all_text_contents())
+        return party.locator(".fight-band[data-turn]").count() > 0  # (someone's turn: no band at all isn't a fight started)
     # (the roll after it waited 2 seconds, and askdnd heard Start Combat from the DM's VTT 1 to 3 seconds after the
     # press: rolled first, it was still Initiative before Start Combat, Nov 9 to 12. A player rolls once they see it)
     t.expect("askdnd hears Start Combat", started, 30)
@@ -2103,6 +2113,7 @@ def main() -> int:
             for seat in sorted(used(names)):
                 clean_start(t, seat)
             before = {seat: record(t.sheet(seat)) for seat in SHEETS if seat in used(names)}
+            t.found = before
         except Exception as e:  # (the seats aren't open, or D&D Beyond can't be reached)
             t.note(False, f"the seats open: {type(e).__name__}: {str(e)[:200]}")
             before, opened = {}, False
