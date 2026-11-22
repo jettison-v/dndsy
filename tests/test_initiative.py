@@ -396,3 +396,13 @@ def test_start_combat_that_arrived_first_and_finished_second_still_starts_the_fi
     first.join(10)
     db.refresh(table)
     assert not table.fight.get("waiting") and table.fight["round"] == 1
+
+
+def test_an_older_turn_never_brings_back_a_fight_that_was_ended(player, db, table):
+    """The review of issue 73's rule: "running beats waiting" never reaches back past End Combat's "no fight"."""
+    turn, waiting = heard(cole_ini=8, waiting=False, active="t-cole"), heard()
+    fight.heard(db, table, turn, arrived=10.0)
+    fight.heard(db, table, None, arrived=20.0)
+    fight.heard(db, table, waiting, arrived=20.2)
+    assert fight.heard(db, table, copy.deepcopy(turn), arrived=19.8) is False
+    assert table.fight["waiting"]

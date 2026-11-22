@@ -109,6 +109,7 @@ def lock(db: Session, campaign: Campaign) -> None:
 
 
 SWAPPED = 1.0  # seconds: reports this close can't be put in order by when they arrived (seen: under 20 ms apart)
+_ended: dict[int, float] = {}  # per campaign, when the newest "no fight" taken reached askdnd
 _newest: dict[int, float] = {}  # per campaign, when the newest report taken reached askdnd (one server process: Procfile)
 
 
@@ -132,12 +133,16 @@ def heard(db: Session, campaign: Campaign, fight: dict | None, arrived: float | 
             # Sent together, they arrive in any order and are handled in any other (issue 73): which came first says
             # nothing then, so running beats waiting. "waiting" can't follow a running fight that soon: End Combat says
             # "no fight" in between
+            if said == "running" and arrived < _ended.get(campaign.id, arrived):
+                return False  # (a turn from before End Combat never brings that fight back)
             if abs(arrived - newest) < SWAPPED and {kept, said} == {"waiting", "running"}:
                 if said == "waiting":
                     return False
             elif arrived < newest:
                 return False
         _newest[campaign.id] = arrived if newest is None else max(arrived, newest)
+        if not _phase(fight):
+            _ended[campaign.id] = arrived
     if (campaign.fight or {}).get("source") == "askdnd":
         return False
     # A token is its D&D Beyond id's own character, before a test copy sharing its sheet (the bridge never works on one;

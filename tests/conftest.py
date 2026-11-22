@@ -210,6 +210,7 @@ def _fresh_context():
     test_history found the source an earlier test had left, and recorded its edit under it)."""
     from app import fight, rules_book
 
+    fight._ended.clear()
     fight._newest.clear()  # (when each campaign's newest fight report arrived: one test's never outdates the next's)
     tokens = [(var, var.set(default)) for var, default in context_values()]
     # and an empty adds cache: an answer kept from an earlier test (or, in mutation testing, from the clean run before
