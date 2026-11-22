@@ -5,6 +5,7 @@ master; after Start Combat the order is the DM's, changed by dragging a row. Num
 
 import copy
 import json
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -298,3 +299,27 @@ def test_the_bridge_orders_fight_reports_by_when_each_reached_askdnd(player, db,
     player.post(f"/bridge/fight/{GAME}", json={"closed": True})
     assert len(came) >= 2 and came == sorted(came)
     assert all(a < b for a, b in zip(came, began))  # (stamped before the route's first step, not once it had the lock)
+
+
+def test_two_overlapping_reports_finishing_in_reverse_keep_the_newer(player, db, table, monkeypatch):
+    """Issue 70 as it happened: "waiting" reached askdnd first, waited for a worker, and finished after Start Combat's."""
+    entered, go = threading.Event(), threading.Event()
+    who = ddb_bridge._signed_in
+
+    def slow_first(*args):
+        if not entered.is_set():
+            entered.set()
+            go.wait(10)  # (the first report waits here while the second is handled whole)
+        return who(*args)
+
+    monkeypatch.setattr(ddb_bridge, "_signed_in", slow_first)
+    answers = []
+    first = threading.Thread(target=lambda: answers.append(player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})))
+    first.start()
+    assert entered.wait(10)
+    newer = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")})
+    go.set()
+    first.join(10)
+    assert newer.json()["changed"] is True and answers[0].json()["changed"] is False
+    db.refresh(table)
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
