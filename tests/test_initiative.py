@@ -5,11 +5,12 @@ master; after Start Combat the order is the DM's, changed by dragging a row. Num
 
 import copy
 import json
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app import fight, initiative
+from app import ddb_bridge, fight, initiative
 from app.models import Campaign, TableRoll
 from tests.roles import set_role
 from tests.table_setup import char
@@ -288,10 +289,12 @@ def test_a_fight_report_that_arrived_earlier_and_finished_later_never_undoes_a_n
 
 def test_the_bridge_orders_fight_reports_by_when_each_reached_askdnd(player, db, table, monkeypatch):
     """Issue 70: the order is when the request reached the server, not when a worker got the fight's lock."""
-    came = []
-    real = fight.heard
+    came, began = [], []
+    real, who = fight.heard, ddb_bridge._signed_in
+    monkeypatch.setattr(ddb_bridge, "_signed_in", lambda *a: began.append(time.monotonic()) or who(*a))
     monkeypatch.setattr(fight, "heard", lambda *a, arrived=None: came.append(arrived) or real(*a, arrived=arrived))
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=9, waiting=False, active="t-e1")})
     player.post(f"/bridge/fight/{GAME}", json={"closed": True})
-    assert all(came) and came == sorted(came) and len(came) >= 2
+    assert len(came) >= 2 and came == sorted(came)
+    assert all(a < b for a, b in zip(came, began))  # (stamped before the route's first step, not once it had the lock)
