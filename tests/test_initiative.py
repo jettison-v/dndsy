@@ -323,3 +323,33 @@ def test_two_overlapping_reports_finishing_in_reverse_keep_the_newer(player, db,
     assert newer.json()["changed"] is True and answers[0].json()["changed"] is False
     db.refresh(table)
     assert not table.fight.get("waiting") and table.fight["round"] == 1
+
+
+def test_a_waiting_report_swapped_on_the_way_never_undoes_start_combat(player, db, table):
+    """Issue 70 again (the live test after 466, Nov 22, try 4 of 5): the two reports left the same millisecond and
+    "waiting" reached askdnd second. Nobody ends a fight and adds the tokens again within a second of its starting."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    assert fight.heard(db, table, waiting, arrived=1.0) is True
+    assert fight.heard(db, table, started, arrived=10.000) is True
+    assert fight.heard(db, table, waiting, arrived=10.002) is False
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+    assert initiative.rolled(db, table, char(db, "Cole"), "", 9) is False  # (the roll that moved the fight in try 4)
+
+
+def test_a_new_encounter_still_waits_for_start_combat(player, db, table):
+    """The rule above never holds back a real "waiting": after End Combat (no fight, however soon), or later on, as when
+    askdnd didn't hear the last fight end (the VTT was closed)."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    fight.heard(db, table, started, arrived=10.0)
+    assert fight.heard(db, table, None, arrived=10.2) is True
+    assert fight.heard(db, table, waiting, arrived=10.4) is True and table.fight["waiting"]
+    fight.heard(db, table, started, arrived=20.0)
+    assert fight.heard(db, table, waiting, arrived=20.0 + fight.SWAPPED + 0.1) is True and table.fight["waiting"]
+
+
+def test_the_bridge_drops_a_waiting_report_that_lands_just_after_start_combats(player, db, table):
+    """Issue 70, try 4 as the server saw it: through the route, "started" then "waiting", a moment apart."""
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")})
+    late = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})
+    db.refresh(table)
+    assert late.json()["changed"] is False and not table.fight.get("waiting")

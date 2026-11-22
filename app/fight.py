@@ -108,6 +108,7 @@ def lock(db: Session, campaign: Campaign) -> None:
     db.refresh(campaign, ["fight", "fight_at"])
 
 
+SWAPPED = 1.0  # seconds: "waiting" this soon after a running fight's report left before it (seen: under 5 ms apart)
 _newest: dict[int, float] = {}  # per campaign, when the newest report taken reached askdnd (one server process: Procfile)
 
 
@@ -117,8 +118,15 @@ def heard(db: Session, campaign: Campaign, fight: dict | None, arrived: float | 
     side, so one that came earlier and got the lock later is dropped (issue 70, Nov 22: "waiting" undid Start Combat)."""
     lock(db, campaign)
     if arrived is not None:
-        if arrived < _newest.get(campaign.id, arrived):
-            return False
+        newest = _newest.get(campaign.id)
+        if newest is not None:
+            if arrived < newest:
+                return False
+            # (two sent together can also swap on the way, so "waiting" arrives second: it can't follow a fight that's
+            # running that soon, since End Combat says "no fight" in between)
+            running = campaign.fight and not campaign.fight.get("waiting")
+            if running and arrived - newest < SWAPPED and isinstance(fight, dict) and fight.get("waiting"):
+                return False
         _newest[campaign.id] = arrived
     if (campaign.fight or {}).get("source") == "askdnd":
         return False
