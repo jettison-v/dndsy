@@ -235,7 +235,8 @@ def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_d
     admin.allow("lacks the 'allow-same-origin' flag")  # (the test's own watcher, reading storage inside the sealed frame)
     page = admin.open(f"/manage/documents/{doc_id(path)}")
     frame = page.frame_locator("iframe.doc-frame")
-    frame.locator('form.decide .saved[data-state="none"]').wait_for(timeout=20000)
+    # (the mockup has heard from askdnd: nothing saved yet, or the picks test before this one's picks loaded)
+    frame.locator('form.decide .saved[data-state="none"], form.decide .saved[data-state="loaded"]').wait_for(timeout=20000)
     rail = page.locator("[data-doc-comments]")
     rail.wait_for()
     for n, words in enumerate(("Shorter title here.", "Not this one."), 1):
