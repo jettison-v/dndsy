@@ -108,9 +108,18 @@ def lock(db: Session, campaign: Campaign) -> None:
     db.refresh(campaign, ["fight", "fight_at"])
 
 
-def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
-    """The VTT's fight now (None: no fight). True when it changed. Ignored while askdnd runs the fight itself."""
+_newest: dict[int, float] = {}  # per campaign, when the newest report taken reached askdnd (one server process: Procfile)
+
+
+def heard(db: Session, campaign: Campaign, fight: dict | None, arrived: float | None = None) -> bool:
+    """The VTT's fight now (None: no fight). True when it changed. Ignored while askdnd runs the fight itself.
+    `arrived`: when the report reached askdnd (app/timing.py). Each report is the whole fight and they're handled side by
+    side, so one that came earlier and got the lock later is dropped (issue 70, Nov 22: "waiting" undid Start Combat)."""
     lock(db, campaign)
+    if arrived is not None:
+        if arrived < _newest.get(campaign.id, arrived):
+            return False
+        _newest[campaign.id] = arrived
     if (campaign.fight or {}).get("source") == "askdnd":
         return False
     # A token is its D&D Beyond id's own character, before a test copy sharing its sheet (the bridge never works on one;

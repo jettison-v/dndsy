@@ -1497,9 +1497,10 @@ def bridge_heard(ddb_id: str, request: Request, pull: int = 0, body=web.JsonBody
 def bridge_fight(game_id: str, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """The extension, on an open D&D Beyond VTT page, says what the fight is now (app/fight.py; it only listens).
     Taken from anyone at that campaign's table, where the campaign has the bridge."""
-    from app import fight
+    from app import fight, timing
 
     user = _signed_in(request, db)
+    arrived = request.scope.get(timing.CAME)
     if not isinstance(body, dict):
         return _json({"ok": False, "changed": False})  # (not a report: a fight only ends when it's said to)
     told = body.get("fight")
@@ -1511,9 +1512,9 @@ def bridge_fight(game_id: str, request: Request, body=web.JsonBody, db: Session 
         # theirs mid-fight leaves it on (review, 2026-10-29), and a fight nobody hears any more goes after fight.STALE
         if body.get("closed"):
             if is_dm(user, campaign.id) or is_admin(user):
-                changed = fight.heard(db, campaign, None) or changed
+                changed = fight.heard(db, campaign, None, arrived=arrived) or changed
             continue
-        changed = fight.heard(db, campaign, told if isinstance(told, dict) else None) or changed
+        changed = fight.heard(db, campaign, told if isinstance(told, dict) else None, arrived=arrived) or changed
     db.commit()
     return _json({"ok": True, "changed": changed})
 

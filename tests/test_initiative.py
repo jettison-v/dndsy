@@ -272,3 +272,26 @@ def test_a_homunculus_goes_right_after_its_master(player, db, table, monkeypatch
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=14)})
     owl = next(x for x in table.fight["order"] if x["key"] == "t-owl")
     assert owl["initiative"] == 13.5 and owl["pending"]
+
+
+def test_a_fight_report_that_arrived_earlier_and_finished_later_never_undoes_a_newer_one(player, db, table):
+    """Issue 70 (the live test, Nov 22): the DM's number and Start Combat came 2 ms apart, "waiting" finished last, and a
+    roll after Start Combat was named Initiative and moved the fight."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    assert fight.heard(db, table, started, arrived=2.0) is True
+    assert fight.heard(db, table, waiting, arrived=1.0) is False
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+    assert initiative.rolled(db, table, char(db, "Cole"), "", 6) is False  # (after Start Combat a roll changes nothing)
+    assert fight.heard(db, table, None, arrived=1.5) is False and table.fight  # (a late "no fight", the same)
+    assert fight.heard(db, table, waiting, arrived=3.0) is True and table.fight["waiting"]  # (a newer one always counts)
+
+
+def test_the_bridge_orders_fight_reports_by_when_each_reached_askdnd(player, db, table, monkeypatch):
+    """Issue 70: the order is when the request reached the server, not when a worker got the fight's lock."""
+    came = []
+    real = fight.heard
+    monkeypatch.setattr(fight, "heard", lambda *a, arrived=None: came.append(arrived) or real(*a, arrived=arrived))
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=9, waiting=False, active="t-e1")})
+    player.post(f"/bridge/fight/{GAME}", json={"closed": True})
+    assert all(came) and came == sorted(came) and len(came) >= 2
