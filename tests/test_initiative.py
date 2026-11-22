@@ -5,11 +5,13 @@ master; after Start Combat the order is the DM's, changed by dragging a row. Num
 
 import copy
 import json
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app import fight, initiative
+from app import ddb_bridge, fight, initiative
 from app.models import Campaign, TableRoll
 from tests.roles import set_role
 from tests.table_setup import char
@@ -272,3 +274,52 @@ def test_a_homunculus_goes_right_after_its_master(player, db, table, monkeypatch
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=14)})
     owl = next(x for x in table.fight["order"] if x["key"] == "t-owl")
     assert owl["initiative"] == 13.5 and owl["pending"]
+
+
+def test_a_fight_report_that_arrived_earlier_and_finished_later_never_undoes_a_newer_one(player, db, table):
+    """Issue 70 (the live test, Nov 22): the DM's number and Start Combat came 2 ms apart, "waiting" finished last, and a
+    roll after Start Combat was named Initiative and moved the fight."""
+    started, waiting = heard(cole_ini=17.5, waiting=False, active="t-cole"), heard(cole_ini=17.5)
+    assert fight.heard(db, table, started, arrived=2.0) is True
+    assert fight.heard(db, table, waiting, arrived=1.0) is False
+    assert not table.fight.get("waiting") and table.fight["round"] == 1
+    assert initiative.rolled(db, table, char(db, "Cole"), "", 6) is False  # (after Start Combat a roll changes nothing)
+    assert fight.heard(db, table, None, arrived=1.5) is False and table.fight  # (a late "no fight", the same)
+    assert fight.heard(db, table, waiting, arrived=3.0) is True and table.fight["waiting"]  # (a newer one always counts)
+
+
+def test_the_bridge_orders_fight_reports_by_when_each_reached_askdnd(player, db, table, monkeypatch):
+    """Issue 70: the order is when the request reached the server, not when a worker got the fight's lock."""
+    came, began = [], []
+    real, who = fight.heard, ddb_bridge._signed_in
+    monkeypatch.setattr(ddb_bridge, "_signed_in", lambda *a: began.append(time.monotonic()) or who(*a))
+    monkeypatch.setattr(fight, "heard", lambda *a, arrived=None: came.append(arrived) or real(*a, arrived=arrived))
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=9, waiting=False, active="t-e1")})
+    player.post(f"/bridge/fight/{GAME}", json={"closed": True})
+    assert len(came) >= 2 and came == sorted(came)
+    assert all(a < b for a, b in zip(came, began))  # (stamped before the route's first step, not once it had the lock)
+
+
+def test_two_overlapping_reports_finishing_in_reverse_keep_the_newer(player, db, table, monkeypatch):
+    """Issue 70 as it happened: "waiting" reached askdnd first, waited for a worker, and finished after Start Combat's."""
+    entered, go = threading.Event(), threading.Event()
+    who = ddb_bridge._signed_in
+
+    def slow_first(*args):
+        if not entered.is_set():
+            entered.set()
+            go.wait(10)  # (the first report waits here while the second is handled whole)
+        return who(*args)
+
+    monkeypatch.setattr(ddb_bridge, "_signed_in", slow_first)
+    answers = []
+    first = threading.Thread(target=lambda: answers.append(player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})))
+    first.start()
+    assert entered.wait(10)
+    newer = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")})
+    go.set()
+    first.join(10)
+    assert newer.json()["changed"] is True and answers[0].json()["changed"] is False
+    db.refresh(table)
+    assert not table.fight.get("waiting") and table.fight["round"] == 1

@@ -20,6 +20,7 @@ SLOW = 2.0  # seconds: log it
 REPORT = 15.0  # seconds: tell Sentry too
 QUIET = 600  # seconds between Sentry warnings for the same route
 STEP_MIN = 0.005  # seconds: a step quicker than this isn't worth a word
+CAME = "askdnd.came"  # the request's scope: when it reached askdnd, before it waited for a thread, a connection or a lock
 HELD = "held open"  # a step a route waits on by design (a long-poll, Nov 20): not counted towards slow
 
 _now: contextvars.ContextVar[dict | None] = contextvars.ContextVar("askdnd_timing", default=None)
@@ -101,6 +102,7 @@ class Stopwatch:
             return await self.app(scope, receive, send)
         watch: dict = {}
         token, start = _now.set(watch), time.monotonic()
+        scope[CAME] = start
         try:
             await self.app(scope, receive, send)
         finally:
