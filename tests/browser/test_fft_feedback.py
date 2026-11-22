@@ -218,3 +218,41 @@ def test_change_and_rename_close_with_cancel_or_escape_and_change_nothing(people
     assert rename.is_hidden()
     assert _one(browser_db[0], "SELECT feature, title FROM fft_issues WHERE id = :i", i=iid) == (feature, title)
     assert not admin.errors, admin.errors
+
+
+def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_db):
+    """Issue 24 (Brett's picks, Nov 21): on any mockup askdnd opens, Comment then a click pins a comment where he clicked;
+    the column beside it lists it (Take back while held); Save my picks sends it with his answer, and it says so."""
+    from app.documents import doc_id
+
+    path = "docs/mockups/fft-round-2/index.html"
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        qid = conn.execute(text("INSERT INTO fft_questions (about, about_id, doc_path, text, choices, workspace_id) VALUES "
+                                "('document', NULL, :p, 'Which?', '[]', 1) RETURNING id"), {"p": path}).scalar()
+    engine.dispose()
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")  # (the test's own watcher, reading storage inside the sealed frame)
+    page = admin.open(f"/manage/documents/{doc_id(path)}")
+    frame = page.frame_locator("iframe.doc-frame")
+    # (the mockup has heard from askdnd: nothing saved yet, or the picks test before this one's picks loaded)
+    frame.locator('form.decide .saved[data-state="none"], form.decide .saved[data-state="loaded"]').wait_for(timeout=20000)
+    rail = page.locator("[data-doc-comments]")
+    rail.wait_for()
+    for n, words in enumerate(("Shorter title here.", "Not this one."), 1):
+        page.locator("[data-comment-mode]").click()
+        frame.locator("h1").first.click()
+        composer = page.locator("[data-comment-composer]")
+        composer.wait_for(state="visible")
+        composer.locator("textarea").fill(words)
+        composer.locator("button[type=submit]").click()
+        page.wait_for_function(f"document.querySelectorAll('[data-doc-comments] .doc-comment').length === {n}")
+    frame.locator(".askdnd-pin").nth(1).wait_for()  # (both pins drawn on the mockup)
+    page.locator("[data-doc-comments] .doc-comment").nth(1).locator("[data-comment-drop]").click()
+    page.wait_for_function("document.querySelectorAll('[data-doc-comments] .doc-comment').length === 1")
+    frame.locator("input[name=queue][value=quiet]").check()
+    frame.locator("form.decide button[type=submit]").click()
+    frame.locator('form.decide .saved[data-state="saved"]').wait_for()
+    words = _one(browser_db[0], "SELECT answer_text FROM fft_questions WHERE id = :i", i=qid)[0]
+    assert "Comments on the mockup:" in words and "Shorter title here." in words and "Not this one." not in words
+    page.wait_for_function("!document.querySelector('[data-doc-comments] .doc-comment.held')")  # (sent: no longer held)

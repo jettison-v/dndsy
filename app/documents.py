@@ -22,7 +22,7 @@ from markupsafe import Markup
 from app import config, web
 from app.auth import is_admin
 from app.render import markdown_to_html
-from app.templating import templates
+from app.templating import _static, templates
 
 router = APIRouter()
 
@@ -149,5 +149,9 @@ def document_file(key: str, rel: str):
         if not page.lstrip()[:15].lower().startswith("<!doctype"):  # (claude.ai pages are written without their skeleton)
             page = ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,'
                     'initial-scale=1"></head><body style="margin:0">' + page + "</body></html>")
+        # (every mockup, older ones too, gets the comment layer: pins where Brett clicks, issue 24; it does nothing alone)
+        layer = f'<script src="{_static("doc-layer.js")}" defer></script>'
+        at = page.lower().rfind("</body>")
+        page = page[:at] + layer + page[at:] if at >= 0 else page + layer
         return HTMLResponse(page, headers=headers)
     return FileResponse(path, media_type=kind, headers=headers)

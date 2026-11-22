@@ -46,7 +46,7 @@
   /* Space: a 4px scale for padding, margins and gaps */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
   /* Corners: tiny marks, controls, cards and sections, pills */
-  --r-xs: 3px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
+  --r-xs: 3px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px; --r-pin: 50% 50% 50% 2px;  /* (a pin on a mockup: comments, issue 24) */
   /* Controls (search box, selects, buttons): 32px tall on desktop, 44px on phones (Brett, 2026-10-22) */
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a29d93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");  /* every dropdown's and the Filters control's arrow, one drawing (Nov 16) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
@@ -1752,6 +1752,23 @@ button.rm-box { cursor: pointer; }
 .doc-window { display: flex; flex-direction: column; gap: var(--sp-2); padding-bottom: var(--sp-3); }  /* a mockup in a full window (_document_window.html) */
 .doc-window .doc-frame { flex: 1; height: auto; min-height: 0; }
 .doc-frame { display: block; width: 100%; height: calc(100vh - 220px); min-height: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+/* Comments pinned to a mockup (issue 24, Brett's picks Nov 21): the mockup and a column of its comments beside it */
+.doc-with-comments { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-3); align-items: stretch; min-height: 0; }
+.doc-window.doc-with-comments { display: grid; flex: 1; }
+.doc-with-comments > [data-comments-slot] { min-width: 0; min-height: 0; overflow: auto; }
+@media (max-width: 900px) { .doc-with-comments { grid-template-columns: minmax(0, 1fr); } }
+.doc-comments { display: grid; gap: var(--sp-2); align-content: start; }
+.doc-comments-h { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text-strong); }
+.doc-comments-h .note { font-weight: 400; }
+.doc-composer { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); border-radius: var(--r-md); background: var(--surface); }
+.doc-composer > p { margin: 0; }
+.doc-comment { display: grid; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; }
+.doc-comment > p { margin: 0; }
+.doc-comment.held { box-shadow: inset 2px 0 0 var(--amber); }
+.doc-comment.lit { border-color: var(--amber); }
+.doc-comment-where { display: flex; gap: var(--sp-2); align-items: baseline; min-width: 0; }
+.doc-pin-n { flex: none; min-width: 20px; height: 20px; border-radius: var(--r-pin); background: var(--amber); color: var(--bg); font-size: var(--fs-xs); font-weight: 700; line-height: 20px; text-align: center; }
+.doc-comment-bar { margin: 0 0 var(--sp-2); }
 .ov-state { font-size: var(--fs-sm); }
 .ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
