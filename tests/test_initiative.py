@@ -4,6 +4,7 @@ master; after Start Combat the order is the DM's, changed by dragging a row. Num
 (extension 0.12.0), which asks for them; what's asked for shows at once, on its way, until the VTT shows it."""
 
 import copy
+import itertools
 import json
 import threading
 import time
@@ -353,3 +354,45 @@ def test_the_bridge_drops_a_waiting_report_that_lands_just_after_start_combats(p
     late = player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})
     db.refresh(table)
     assert late.json()["changed"] is False and not table.fight.get("waiting")
+
+
+def test_start_combat_holds_in_every_order_its_reports_can_arrive_and_finish(player, db, table):
+    """Issue 73 (the live test after 467, try 5 of 10): "started" arrived first, was handled second and was dropped as
+    older. The reports sent as Start Combat is pressed can reach askdnd in any order and be handled in any other: each
+    of the 36 ways must end with the fight running."""
+    sent = [heard(cole_ini=8), heard(cole_ini=17.5), heard(cole_ini=17.5, waiting=False, active="t-cole")]
+    wrong = []
+    for arrival in itertools.permutations(range(3)):
+        for handled in itertools.permutations(range(3)):
+            table.fight, table.fight_at = None, None
+            db.flush()
+            fight._newest.clear()
+            for i in handled:
+                fight.heard(db, table, copy.deepcopy(sent[i]), arrived=100 + arrival.index(i) * 0.002)
+                db.flush()
+            if not table.fight or table.fight.get("waiting"):
+                wrong.append((arrival, handled))
+    assert not wrong
+
+
+def test_start_combat_that_arrived_first_and_finished_second_still_starts_the_fight(player, db, table, monkeypatch):
+    """Issue 73, try 5 as it happened, through the route: "waiting" arrived a moment later and got the lock first."""
+    entered, go = threading.Event(), threading.Event()
+    who = ddb_bridge._signed_in
+
+    def slow_first(*args):
+        if not entered.is_set():
+            entered.set()
+            go.wait(10)  # (the first report waits here while the second is handled whole)
+        return who(*args)
+
+    monkeypatch.setattr(ddb_bridge, "_signed_in", slow_first)
+    started = {"fight": heard(cole_ini=17.5, waiting=False, active="t-cole")}
+    first = threading.Thread(target=lambda: player.post(f"/bridge/fight/{GAME}", json=started))
+    first.start()
+    assert entered.wait(10)
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=17.5)})
+    go.set()
+    first.join(10)
+    db.refresh(table)
+    assert not table.fight.get("waiting") and table.fight["round"] == 1

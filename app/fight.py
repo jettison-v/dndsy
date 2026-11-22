@@ -108,26 +108,36 @@ def lock(db: Session, campaign: Campaign) -> None:
     db.refresh(campaign, ["fight", "fight_at"])
 
 
-SWAPPED = 1.0  # seconds: "waiting" this soon after a running fight's report left before it (seen: under 5 ms apart)
+SWAPPED = 1.0  # seconds: reports this close can't be put in order by when they arrived (seen: under 20 ms apart)
 _newest: dict[int, float] = {}  # per campaign, when the newest report taken reached askdnd (one server process: Procfile)
+
+
+def _phase(f) -> str:
+    """Whether a report, or the fight kept, is waiting for Start Combat, running, or no fight ("")."""
+    if not isinstance(f, dict) or not isinstance(f.get("order"), list):
+        return ""
+    return "waiting" if f.get("waiting") else "running"
 
 
 def heard(db: Session, campaign: Campaign, fight: dict | None, arrived: float | None = None) -> bool:
     """The VTT's fight now (None: no fight). True when it changed. Ignored while askdnd runs the fight itself.
     `arrived`: when the report reached askdnd (app/timing.py). Each report is the whole fight and they're handled side by
-    side, so one that came earlier and got the lock later is dropped (issue 70, Nov 22: "waiting" undid Start Combat)."""
+    side, so one that came earlier and got the lock later is dropped (issue 70, Nov 22: "waiting" undid Start Combat),
+    except that Start Combat holds in every order (issue 73): "running" and "waiting" within SWAPPED, running wins."""
     lock(db, campaign)
     if arrived is not None:
         newest = _newest.get(campaign.id)
         if newest is not None:
-            if arrived < newest:
+            kept, said = _phase(campaign.fight), _phase(fight)
+            # Sent together, they arrive in any order and are handled in any other (issue 73): which came first says
+            # nothing then, so running beats waiting. "waiting" can't follow a running fight that soon: End Combat says
+            # "no fight" in between
+            if abs(arrived - newest) < SWAPPED and {kept, said} == {"waiting", "running"}:
+                if said == "waiting":
+                    return False
+            elif arrived < newest:
                 return False
-            # (two sent together can also swap on the way, so "waiting" arrives second: it can't follow a fight that's
-            # running that soon, since End Combat says "no fight" in between)
-            running = campaign.fight and not campaign.fight.get("waiting")
-            if running and arrived - newest < SWAPPED and isinstance(fight, dict) and fight.get("waiting"):
-                return False
-        _newest[campaign.id] = arrived
+        _newest[campaign.id] = arrived if newest is None else max(arrived, newest)
     if (campaign.fight or {}).get("source") == "askdnd":
         return False
     # A token is its D&D Beyond id's own character, before a test copy sharing its sheet (the bridge never works on one;
