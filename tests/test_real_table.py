@@ -83,7 +83,7 @@ def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(mo
             sent.append(args[1])
             if refused:
                 raise ConnectionError("out of reach")
-            return [200] * len(args[1])
+            return [400 if method == "DELETE" else 200 for method, path, body in args[1]]  # (no creature type to remove: 400)
 
     class Seat:
         via_dm = True

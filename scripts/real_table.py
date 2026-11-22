@@ -1386,7 +1386,8 @@ def owl_back(t: Table, sheet, seat: str, before: dict, owl: dict) -> None:
     except Exception as e:  # (said as its own miss: what stopped the run stays the run's)
         got = type(e).__name__
     print("  put back on D&D Beyond:", got, flush=True)
-    if not isinstance(got, list) or set(got) != {200}:
+    # (removing a creature type that was never set answers 400, as when a run stopped before the cast: nothing to put back)
+    if not isinstance(got, list) or any(code != 200 and not (op[0] == "DELETE" and code == 400) for op, code in zip(ops, got)):
         t.note(False, f"put back {seat}'s familiar ({got})")
 
 
