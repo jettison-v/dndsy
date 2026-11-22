@@ -84,7 +84,6 @@ def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(mo
 
     class Seat:
         via_dm = True
-        found: dict = {}
 
         def sheet(self, seat):
             return Sheet()
