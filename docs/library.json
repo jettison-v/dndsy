@@ -1516,7 +1516,7 @@
   "kind": "design",
   "status": "Picked; built",
   "date": "Nov 20",
-  "what": "A first Roadmap inside askdnd, for you and Claude only: items in Now, Next, Later and Paused, each with its steps and whose each one is, the plans building it, and what changed; a step of yours shows in For you. Four picks.",
+  "what": "A first Roadmap inside askdnd, for you and Claude only. Round 3: the two types of work (a fix or improvement in a Product Area; an idea that needs discussion, on the Roadmap) and done leaving every list (History, one quiet link). Round 2: Our work as For you, Feedback, Roadmap, Development; the Roadmap its own page; an item's scope as versions with your additions. Eight picks.",
   "source": "docs/mockups/roadmap-in-askdnd/index.html",
   "link": "https://claude.ai/artifact/TQZVVTJZGyLCNFoXUqb4Rz"
  },
