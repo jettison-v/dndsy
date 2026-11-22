@@ -1381,7 +1381,13 @@ def owl_back(t: Table, sheet, seat: str, before: dict, owl: dict) -> None:
     if not any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) for v in before.get("characterValues") or []):
         ops.append(["DELETE", "custom/value", {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]),
                                                "contextId": None, "contextTypeId": None}])
-    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+    try:
+        got = sheet.evaluate(TIDYING, [SHEETS[seat], ops])
+    except Exception as e:  # (said as its own miss: what stopped the run stays the run's)
+        got = type(e).__name__
+    print("  put back on D&D Beyond:", got, flush=True)
+    if not isinstance(got, list) or set(got) != {200}:
+        t.note(False, f"put back {seat}'s familiar ({got})")
 
 
 def familiar(t: Table, seat: str = "player4") -> None:

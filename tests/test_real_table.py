@@ -76,11 +76,14 @@ def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(mo
     owl = {"id": 5, "groupId": 2, "isActive": False, "name": "Ocho", "description": "", "entityTypeId": 9}
     found = {"creatures": [owl], "characterValues": []}
     dirty = {"creatures": [{**owl, "isActive": True, "name": "Pip"}], "characterValues": [], "actions": {"class": []}}
-    sent = []
+    sent, refused, missed = [], [], []
 
     class Sheet:
         def evaluate(self, script, args):
             sent.append(args[1])
+            if refused:
+                raise ConnectionError("out of reach")
+            return [200] * len(args[1])
 
     class Seat:
         via_dm = True
@@ -90,6 +93,9 @@ def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(mo
 
         def battle(self, seat):
             return object()
+
+        def note(self, ok, what):
+            missed.append(what)
 
     def stops(*args):
         raise TimeoutError("stopped")
@@ -109,3 +115,10 @@ def test_a_familiar_run_that_stops_still_puts_the_owl_back_as_part_1_found_it(mo
         ops = {path: body for method, path, body in sent[0]}
         assert ops["creature/status"] == {"id": 5, "isActive": False}
         assert ops["creature"]["name"] == "Ocho"
+    assert not missed
+    refused.append(True)
+    try:
+        rt.familiar(seat)
+    except TimeoutError:  # (what stopped the run is still what it says)
+        pass
+    assert len(missed) == 1  # (and the put-back that failed is a miss of its own)
