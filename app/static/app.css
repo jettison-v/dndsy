@@ -1737,7 +1737,10 @@ button.rm-box { cursor: pointer; }
 .doc-title { font-weight: 600; color: var(--text-strong); min-width: 0; }
 .doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 .doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
-@media (max-width: 640px) {
+/* (the list's own width, not the screen's: under 800px its four columns squeeze the status onto two lines, so the
+   status and what it is go under the title and date; the weekly phone sweep, Nov 23) */
+.doc-list { container: doclist / inline-size; }
+@container doclist (max-width: 800px) {
   .doc-rows { grid-template-columns: minmax(0, 1fr) auto; }
   .doc-date { grid-column: 2; grid-row: 1; justify-self: end; }
   .doc-status { grid-column: 1 / -1; grid-row: 2; }
@@ -1762,6 +1765,8 @@ button.rm-box { cursor: pointer; }
 .doc-comments-h .note { font-weight: 400; }
 .doc-composer { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); border-radius: var(--r-md); background: var(--surface); }
 .doc-composer > p { margin: 0; }
+.doc-composer [data-comment-where] { display: flex; gap: var(--sp-2); align-items: baseline; min-width: 0; }
+.doc-pin-n.draft { background: var(--surface); color: var(--text-strong); outline: 2px dashed var(--amber); outline-offset: 1px; }
 .doc-comment { display: grid; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; }
 .doc-comment > p { margin: 0; }
 .doc-comment.held { box-shadow: inset 2px 0 0 var(--amber); }
@@ -2589,8 +2594,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 /* floating over its rows (app.js marks it): set apart by a shadow under it, its words brighter, and the surface carried
    2px above it so no sliver of a row shows over it (Brett's look, Nov 16) */
 .ls-head[data-stuck] { color: var(--text); background: var(--surface-2); border-bottom-color: var(--line-strong); box-shadow: 0 -2px 0 var(--surface), 0 8px 10px -8px var(--shadow); }
-.ls-grouphead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); padding: 12px 4px 4px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
-.ls-group-note { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }  /* (a heading's note: a container's coins, feedback 49) */
+.ls-grouphead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 var(--sp-3); padding: 12px 4px 4px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.ls-group-note { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }  /* (a heading's note: a container's coins, feedback 49, or a group's line on Documents. Gives way: beside the heading while both fit, else under it, and only a note wider than the whole row wraps; the weekly phone sweep, Nov 23) */
 .ls-row { font-size: var(--fs-sm); align-items: center; padding: 7px 4px; border-top: 1px solid var(--line-soft); cursor: pointer; border-radius: var(--r-sm); scroll-margin-top: calc(var(--ls-head-top, var(--stick-top, 0px)) + 40px); }
 .ls-row:hover, .ls-row:focus-visible { background: var(--row-hover); }
 .ls-pk { display: inline-flex; }
@@ -4251,7 +4256,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-dot-badge.for-you-badge { background: var(--amber); color: var(--chrome); }
 .manage > button:has(> .for-you-badge:not([hidden])) { padding-right: 28px; }  /* (room for it inside the door: never over its words, never outside) */
 .manage > button .for-you-badge { top: 4px; right: 4px; }
-.bottom-nav .for-you-badge { top: 50%; right: auto; left: 6px; transform: translateY(-50%); }  /* (beside More, on its line: Notes you sent's keeps the corner) */
+.bottom-nav .for-you-badge { position: static; }  /* (beside More, on its line, in the button's flow so a count of any length sits before the word, never on it (the weekly phone sweep, Nov 23: "10" covered "More"); Notes you sent's keeps the corner) */
+.bottom-nav > button:has(> .for-you-badge:not([hidden])) { grid-auto-flow: column; justify-content: center; gap: 4px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
    its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }

@@ -149,6 +149,7 @@ ask => {
     if (el.tagName === 'IMG' || getComputedStyle(el).position !== 'absolute' || !shown(el) || el.closest('.menu, .peek, .tour-card, [role=tooltip], [hidden]')) continue;  // (a picture over its fallback letter is meant to)
     const r = el.getBoundingClientRect();
     if (r.width > 400 || r.height > 200) continue;  // a layer, not a badge
+    if (r.width <= 1 && r.height <= 1) continue;  // read aloud only (.sr: 1px, clipped), it draws nothing (a file box inside its button; the weekly phone sweep, Nov 23)
     const box = el.offsetParent; if (!box) continue;
     const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
     for (let n = walk.nextNode(); n; n = walk.nextNode()) {
