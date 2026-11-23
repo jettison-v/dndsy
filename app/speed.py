@@ -42,18 +42,21 @@ def band(ms: float) -> int:
 CAMPAIGN = re.compile(r"^/c/[^/]+")  # (a campaign's pages reach the app with its name in the address: one route for all)
 
 
-def record(method: str, route: str, ms: float) -> None:
+def record(method: str, route: str, ms: float, db_ms: float = 0.0, reads: int = 0, before_ms: float = 0.0) -> None:
     """One request's time, added to its route's count in memory (called by the stopwatch on every HTTP request). A
     campaign's address is counted without its name (/c/{slug}/party), so one page is one route and no name is kept."""
     if not route or route.startswith(SKIP):
         return
     route = CAMPAIGN.sub("/c/{slug}", route)
     with _lock:
-        row = _now.setdefault((method, route), [0, 0.0, 0.0] + [0] * (len(BANDS_MS) + 1))
+        row = _now.setdefault((method, route), [0, 0.0, 0.0, 0.0, 0, 0.0] + [0] * (len(BANDS_MS) + 1))
         row[0] += 1
         row[1] += ms
         row[2] = max(row[2], ms)
-        row[3 + band(ms)] += 1
+        row[3] += db_ms
+        row[4] += reads
+        row[5] += before_ms
+        row[6 + band(ms)] += 1
 
 
 def flush(db: Session) -> int:
@@ -66,14 +69,18 @@ def flush(db: Session) -> int:
     if not taken:
         return 0
     day = config.table_today()
-    for (method, route), (count, total, top, *bands) in taken.items():
+    for (method, route), (count, total, top, db_ms, reads, before_ms, *bands) in taken.items():
         row = db.scalar(select(RequestTime).where(RequestTime.day == day, RequestTime.method == method, RequestTime.route == route))
         if row is None:
-            row = RequestTime(day=day, method=method, route=route[:200], count=0, total_ms=0, max_ms=0, bands=[0] * (len(BANDS_MS) + 1))
+            row = RequestTime(day=day, method=method, route=route[:200], count=0, total_ms=0, max_ms=0, db_ms=0, reads=0,
+                              before_ms=0, bands=[0] * (len(BANDS_MS) + 1))
             db.add(row)
         row.count += count
         row.total_ms += int(total)
         row.max_ms = max(row.max_ms, int(top))
+        row.db_ms = (row.db_ms or 0) + int(db_ms)
+        row.reads = (row.reads or 0) + reads
+        row.before_ms = (row.before_ms or 0) + int(before_ms)
         row.bands = [a + b for a, b in zip(row.bands or [0] * len(bands), bands, strict=False)]
     db.commit()
     return len(taken)
@@ -104,13 +111,19 @@ def week(db: Session, days: int = 7) -> list[dict]:
     acc: dict[tuple[str, str], dict] = {}
     for r in db.scalars(select(RequestTime).where(RequestTime.day >= since)):
         route = CAMPAIGN.sub("/c/{slug}", r.route)  # (rows saved before Nov 20 kept the campaign's name)
-        a = acc.setdefault((r.method, route), {"count": 0, "total": 0, "max": 0, "bands": [0] * (len(BANDS_MS) + 1)})
+        a = acc.setdefault((r.method, route), {"count": 0, "total": 0, "max": 0, "db": 0, "reads": 0, "before": 0,
+                                               "bands": [0] * (len(BANDS_MS) + 1)})
         a["count"] += r.count
+        a["db"] += r.db_ms or 0
+        a["reads"] += r.reads or 0
+        a["before"] += r.before_ms or 0
         a["total"] += r.total_ms
         a["max"] = max(a["max"], r.max_ms)
         a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [0] * len(a["bands"]), strict=False)]  # (a row with none never wipes the rest)
     out = [{"method": m, "route": route, "count": a["count"], "avg_ms": round(a["total"] / a["count"]) if a["count"] else 0,
-            "p50_ms": _quantile(a["bands"], .5, a["max"]), "p90_ms": _quantile(a["bands"], .9, a["max"]), "max_ms": a["max"]}
+            "p50_ms": _quantile(a["bands"], .5, a["max"]), "p90_ms": _quantile(a["bands"], .9, a["max"]), "max_ms": a["max"],
+            **({"avg_db_ms": round(a["db"] / a["count"]), "avg_reads": round(a["reads"] / a["count"], 1),
+                "avg_before_ms": round(a["before"] / a["count"])} if a["count"] else {"avg_db_ms": 0, "avg_reads": 0, "avg_before_ms": 0})}
            for (m, route), a in acc.items()]
     return sorted(out, key=lambda r: (-r["p90_ms"], -r["count"]))
 

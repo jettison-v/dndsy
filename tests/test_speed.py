@@ -153,3 +153,21 @@ def test_rows_saved_with_a_campaigns_name_count_as_its_page(db):
                        max_ms=40, bands=None))  # (a row with no bands never wipes the rest)
     db.commit()
     assert speed.week(db)[0]["p50_ms"] > 0
+
+
+def test_a_routes_database_reads_and_its_wait_before_the_route_are_kept(db, player):
+    """Nov 23: askdnd.ai's pages took 10 times what the same pages take here, and nothing said where: each route now
+    keeps its database reads' time and count, and the time before its route started."""
+    from app import timing
+
+    _fresh()
+    assert player.get("/party").status_code == 200
+    with speed._lock:
+        row = speed._now[("GET", "/party")]
+    count, total, _top, db_ms, reads, before_ms = row[:6]
+    assert count == 1 and reads > 0 and 0 < db_ms < total and 0 <= before_ms < total
+    speed.flush(db)
+    got = next(r for r in speed.week(db) if r["route"] == "/party")
+    assert got["avg_reads"] == reads and got["avg_db_ms"] == int(db_ms) and "avg_before_ms" in got
+    line = timing.said("GET", "/party", 2.5, {timing.DB: 1.2, timing.READS: 40, timing.BEFORE: 0.9})
+    assert "database 1200 ms (40 reads)" in line and "before the route 900 ms" in line and "the rest 400 ms" in line

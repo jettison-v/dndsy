@@ -22,8 +22,12 @@ QUIET = 600  # seconds between Sentry warnings for the same route
 STEP_MIN = 0.005  # seconds: a step quicker than this isn't worth a word
 CAME = "askdnd.came"  # the request's scope: when it reached askdnd, before it waited for a thread, a connection or a lock
 HELD = "held open"  # a step a route waits on by design (a long-poll, Nov 20): not counted towards slow
+DB = "database"  # the time the request's own database reads took (app/db.py counts every one)
+READS = "reads"  # how many: a count, never a time, so never in a sum of steps
+BEFORE = "before the route"  # from reaching askdnd to the route's first database work: the sign-in check, a free worker
 
 _now: contextvars.ContextVar[dict | None] = contextvars.ContextVar("askdnd_timing", default=None)
+_came: contextvars.ContextVar[float] = contextvars.ContextVar("askdnd_came", default=0.0)
 _reported: dict[str, float] = {}
 
 
@@ -38,6 +42,23 @@ def step(name: str):
     finally:
         if watch is not None:
             watch[name] = watch.get(name, 0.0) + time.monotonic() - start
+
+
+def read(seconds: float) -> None:
+    """One database read of the request in hand (app/db.py's engine events): its time and the count."""
+    watch = _now.get()
+    if watch is not None:
+        watch[DB] = watch.get(DB, 0.0) + seconds
+        watch[READS] = watch.get(READS, 0) + 1
+
+
+def started() -> None:
+    """The route's first database work (app/db.py `get_db`): what came before it is BEFORE, once per request. Nov 23:
+    askdnd.ai's pages took 10 times what the same pages take here, and nothing said whether the time went before the
+    route (a worker thread free, the sign-in check), to the database, or to the route's own work."""
+    watch, came = _now.get(), _came.get()
+    if watch is not None and came and BEFORE not in watch:
+        watch[BEFORE] = time.monotonic() - came
 
 
 def route_of(scope: dict) -> str:
@@ -61,7 +82,10 @@ def _pool() -> str:
 
 
 def said(method: str, route: str, total: float, steps: dict) -> str:
-    parts = [f"{name} {round(sec * 1000)} ms" for name, sec in sorted(steps.items(), key=lambda kv: -kv[1]) if sec >= STEP_MIN]
+    steps = dict(steps)
+    reads = steps.pop(READS, 0)
+    parts = [f"{name} {round(sec * 1000)} ms" + (f" ({reads} reads)" if name == DB else "")
+             for name, sec in sorted(steps.items(), key=lambda kv: -kv[1]) if sec >= STEP_MIN]
     other = total - sum(steps.values())
     if other >= STEP_MIN:
         parts.append(f"the rest {round(other * 1000)} ms")
@@ -102,16 +126,19 @@ class Stopwatch:
             return await self.app(scope, receive, send)
         watch: dict = {}
         token, start = _now.set(watch), time.monotonic()
+        came = _came.set(start)
         scope[CAME] = start
         try:
             await self.app(scope, receive, send)
         finally:
             _now.reset(token)
+            _came.reset(came)
             total = time.monotonic() - start - watch.pop(HELD, 0.0)
             try:  # (every route's time, for the weekly look at the slowest: app/speed.py)
                 from app import speed
 
-                speed.record(scope.get("method", ""), route_of(scope), total * 1000)
+                speed.record(scope.get("method", ""), route_of(scope), total * 1000, db_ms=watch.get(DB, 0.0) * 1000,
+                             reads=watch.get(READS, 0), before_ms=watch.get(BEFORE, 0.0) * 1000)
             except Exception:
                 log.exception("Couldn't record a request's time")
             if total >= SLOW:
