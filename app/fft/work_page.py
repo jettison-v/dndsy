@@ -267,7 +267,8 @@ LANE_NEEDS = {"ship": ("Nothing a person sees", "Merges when its tests and the r
                           "Waits for your try on your Mac, then merges", "You, before it merges")}
 STEPS = ("Read its area whole: every issue and failed check", "Design one fix, written before it's built",
          "Build it, one area at a time (its lock)", "Look at it: every person, page and width",
-         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round")
+         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round",
+         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74)
 
 
 def how() -> dict:
