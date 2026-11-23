@@ -503,7 +503,7 @@ def test_pausing_says_what_it_would_hold(admin, db):
 
 def test_a_pause_lets_what_was_merged_finish_and_says_when_askdnd_last_updated(admin, db):
     """Issue 110 (Brett, Nov 23: "a pause is not a nuclear option. I would want inflight work to finish, not stop"):
-    paused, the bar says what was merged before still goes live and when askdnd.ai last updated, so he sees it settle."""
+    paused, the bar says what was merged before still goes live and when askdnd.ai started running, so he sees it settle."""
     from app import config
 
     rules.set_freeze(db, "user:1", True, why="Game night")

@@ -50,7 +50,7 @@ jobs:
       - name: Is the game-night freeze on?
         env:
           SAID: ${{ github.event.head_commit.message || github.event.pull_request.title }}
-          COMMITTED: ${{ github.event_name == 'push' && github.event.head_commit.timestamp || '' }}
+          COMMITTED: ${{ github.event_name == 'push' && github.event.repository.pushed_at || '' }}  # (when it reached main, epoch seconds: not the commit's own time)
         run: |
           state=$(curl -fsS --max-time 20 -G https://askdnd.ai/api/fft/freeze --data-urlencode "merged=$COMMITTED") \
             || { echo "askdnd.ai didn't answer: holding nothing."; exit 0; }

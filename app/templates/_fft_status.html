@@ -33,7 +33,7 @@
     </details>
   </div>
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span>
-    <span class="note" data-paused-drain>· what was merged before still goes live · askdnd.ai last updated <time datetime="{{ bar.updated }}" data-clock="when">{{ bar.updated }}</time></span></div>{# (a pause starts nothing new and finishes what's on its way: issue 110) #}
+    <span class="note" data-paused-drain>· what was merged before still goes live · askdnd.ai running since <time datetime="{{ bar.updated }}" data-clock="when">{{ bar.updated }}</time></span></div>{# (a pause starts nothing new and finishes what's on its way: issue 110) #}
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
   {% if bar.after.on and not bar.round %}<div class="fft-status-line" data-stat="after"><span>Your round starts when {{ bar.after.prs | length }} change{{ "s" if bar.after.prs | length != 1 }} of Claude's {{ "is" if bar.after.prs | length == 1 else "are" }} live</span>
     <form method="post" action="/manage/testing/round/after/cancel" class="fft-inline"><button class="btn link small" type="submit" data-do="round-after-cancel">Cancel</button></form></div>{% endif %}

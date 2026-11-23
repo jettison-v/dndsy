@@ -493,14 +493,18 @@ def frozen(db: Session) -> bool:
 
 
 def freeze_lets(db: Session, merged: str) -> bool:
-    """Whether main's commit at `merged` (ISO, from GitHub) deploys: always when not paused; while paused, only if it
-    was merged before the pause began, so what's on its way finishes and nothing new starts (issue 110)."""
+    """Whether main's change at `merged` (when it reached main: epoch seconds from GitHub's push, or an ISO time with
+    its offset) deploys: always when not paused; while paused, only if it reached main before the pause began, so
+    what's on its way finishes and nothing new starts (issue 110). Anything unreadable waits."""
     st = freeze_state(db)
     if not st["on"]:
         return True
     try:
-        return bool(st["since"]) and datetime.fromisoformat(merged) <= datetime.fromisoformat(st["since"])
-    except ValueError:
+        at = datetime.fromtimestamp(int(merged), UTC) if merged.strip().isdigit() else datetime.fromisoformat(merged)
+        if at.tzinfo is None:
+            return False
+        return bool(st["since"]) and at <= datetime.fromisoformat(st["since"])
+    except (ValueError, TypeError, OverflowError, OSError):
         return False
 
 
