@@ -5248,9 +5248,10 @@ document.addEventListener('click', e => {
   }
   async function post(f, url, body) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).catch(() => null);
-    if (!r) { window.askdndCard("Couldn't reach askdnd. Try again.", { kind: 'warn' }); return; }
-    if (!r.ok) { const j = await r.json().catch(() => ({})); window.askdndCard(j.detail || "Couldn't save it. Try again.", { kind: 'warn' }); return; }
+    if (!r) { window.askdndCard("Couldn't reach askdnd. Try again.", { kind: 'warn' }); return false; }
+    if (!r.ok) { const j = await r.json().catch(() => ({})); window.askdndCard(j.detail || "Couldn't save it. Try again.", { kind: 'warn' }); return false; }
     await load(f, await r.text());
+    return true;
   }
   const start = root => root.querySelectorAll('iframe.doc-frame[data-doc]').forEach(f => { if (boxOf(f) && !f.dataset.commentsOn) { f.dataset.commentsOn = '1'; load(f); } });
   start(document);
@@ -5266,7 +5267,7 @@ document.addEventListener('click', e => {
     const frame = rail && rail.closest('.doc-with-comments') && rail.closest('.doc-with-comments').querySelector('iframe.doc-frame');
     if (!frame) return;
     if (drop) { post(frame, `/manage/testing/comments/${drop.dataset.commentDrop}/drop`); return; }
-    if (e.target.closest('[data-comment-cancel]')) { const form = rail.querySelector('[data-comment-composer]'); if (form) form.hidden = true; pending.delete(frame); return; }
+    if (e.target.closest('[data-comment-cancel]')) { const form = rail.querySelector('[data-comment-composer]'); if (form) form.hidden = true; pending.delete(frame); send(frame, { askdnd: 'draft', pin: null }); return; }
     if (row) send(frame, { askdnd: 'show-pin', n: Number(row.dataset.pin) });
   });
   document.addEventListener('keydown', e => {  // (Escape stops commenting wherever the focus is, not only in the mockup)
@@ -5279,9 +5280,15 @@ document.addEventListener('click', e => {
     e.preventDefault();
     const frame = form.closest('.doc-with-comments') && form.closest('.doc-with-comments').querySelector('iframe.doc-frame');
     const at = frame && pending.get(frame);
-    if (!at) return;
-    pending.delete(frame);
-    post(frame, '/manage/testing/comments', { doc: frame.dataset.doc, page: pageOf(frame), ...at, words: form.elements.words.value });
+    if (!at || form.dataset.saving) return;  // (one press, one comment)
+    form.dataset.saving = '1';
+    // (kept, the pin too, until it's saved: a save that fails can be tried again as it stands; the review of #472)
+    post(frame, '/manage/testing/comments', { doc: frame.dataset.doc, page: pageOf(frame), ...at, words: form.elements.words.value }).then(saved => {
+      delete form.dataset.saving;
+      if (!saved || pending.get(frame) !== at) return;
+      pending.delete(frame);
+      send(frame, { askdnd: 'draft', pin: null });  // (the saved pin took its place as the rail came back)
+    });
   });
   addEventListener('message', e => {
     const d = e.data, f = frameOf(e.source);
@@ -5295,8 +5302,15 @@ document.addEventListener('click', e => {
       const form = boxOf(f) && boxOf(f).querySelector('[data-comment-composer]');
       if (!form) return;
       const near = String(d.near || '').slice(0, 200);
-      pending.set(f, { x: Number(d.x) || 0, y: Number(d.y) || 0, near });
-      form.querySelector('[data-comment-where]').textContent = near ? `Near “${near}”` : 'Where you clicked';
+      const at = { x: Number(d.x) || 0, y: Number(d.y) || 0, near };
+      pending.set(f, at);
+      // (its pin shows where you clicked while you write, marked as not sent; Cancel takes it away: issue 102)
+      const n = pinsOf(f).reduce((m, p) => Math.max(m, Number(p.n) || 0), 0) + 1;
+      send(f, { askdnd: 'draft', pin: { n, x: at.x, y: at.y } });
+      const where = form.querySelector('[data-comment-where]');
+      const badge = Object.assign(document.createElement('span'), { className: 'doc-pin-n draft', textContent: String(n) });
+      badge.dataset.n = String(n);
+      where.replaceChildren(badge, Object.assign(document.createElement('span'), { textContent: near ? `Near “${near}”` : 'Where you clicked' }));
       form.hidden = false;
       form.elements.words.focus();
       mode(f, false);
@@ -5427,10 +5441,25 @@ document.addEventListener('click', e => {
     }));
     return inline.join('\n');
   })().catch(() => ''));
+  // A mockup in its sealed frame can't be read from here: its own layer (app/static/doc-layer.js) draws what it shows and
+  // hands the picture back, and it's laid over the frame while the page is drawn (issue 103: the mockup came out blank)
+  const framePicture = f => new Promise(ok => {
+    const id = Math.random().toString(36).slice(2);
+    const done = png => { removeEventListener('message', heard); clearTimeout(late); ok(png); };
+    const heard = e => { const d = e.data; if (e.source === f.contentWindow && d && d.askdnd === 'picture' && d.id === id) done(typeof d.png === 'string' && d.png.startsWith('data:image/') ? d.png : ''); };
+    const late = setTimeout(() => done(''), 3000);  // (a frame already drawn answers in well under a second)
+    addEventListener('message', heard);
+    try { f.contentWindow.postMessage({ askdnd: 'picture', id }, '*'); } catch (e) { done(''); }
+  });
+  async function framesShown() {
+    const frames = [...document.querySelectorAll('iframe.doc-frame')].filter(f => { const r = f.getBoundingClientRect(); return r.width && r.height && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && !f.closest('#fb-win'); });
+    return (await Promise.all(frames.map(async f => [f, await framePicture(f)]))).filter(([, png]) => png);
+  }
   async function picture() {  // what's on screen, drawn again as an image (the 3D dice may differ)
     let h;
     try { h = await loadLib(); } catch (e) { why = "the picture's code didn't load"; return null; }
     const fonts = await embedFonts();
+    const framed = await framesShown();
     const options = {
       quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK, ...(fonts ? { fontEmbedCSS: fonts } : {}),
       backgroundColor: getComputedStyle(document.body).backgroundColor,
@@ -5501,6 +5530,17 @@ document.addEventListener('click', e => {
     });
     // (the 3D dice keep no copy of their last frame: each box on screen draws once more into a picture over its canvas)
     const stills = [];
+    framed.forEach(([f, png]) => {  // (each mockup's own picture, over its frame)
+      const box = f.parentElement, fr = f.getBoundingClientRect(), br = box.getBoundingClientRect();
+      if (getComputedStyle(box).position === 'static') hold(box, { position: 'relative' });
+      const im = document.createElement('img');
+      im.src = png;
+      Object.assign(im.style, { position: 'absolute', left: (fr.left - br.left - box.clientLeft + box.scrollLeft) + 'px', top: (fr.top - br.top - box.clientTop + box.scrollTop) + 'px',
+                                width: fr.width + 'px', height: fr.height + 'px', pointerEvents: 'none', zIndex: '1' });
+      im.className = 'fb-still';
+      box.append(im);
+      stills.push(im);
+    });
     (window.askdndDice || []).forEach(b => {
       const c = b.renderer && b.renderer.domElement, r = c && c.getBoundingClientRect();
       if (!c || !c.isConnected || !r.width || !r.height || offscreen(c)) return;
