@@ -239,14 +239,24 @@ def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_d
     frame.locator('form.decide .saved[data-state="none"], form.decide .saved[data-state="loaded"]').wait_for(timeout=20000)
     rail = page.locator("[data-doc-comments]")
     rail.wait_for()
+    composer = page.locator("[data-comment-composer]")
+    # (issue 102, Brett's note Nov 23: the pin shows where he clicked while he writes, as not sent; Cancel takes it away)
+    page.locator("[data-comment-mode]").click()
+    frame.locator("h1").first.click()
+    composer.wait_for(state="visible")
+    frame.locator(".askdnd-pin.draft").wait_for()
+    assert frame.locator(".askdnd-pin.draft").get_attribute("data-draft") == "1" and composer.locator(".doc-pin-n.draft").get_attribute("data-n") == "1"
+    composer.locator("[data-comment-cancel]").click()
+    frame.locator(".askdnd-pin.draft").wait_for(state="detached")
     for n, words in enumerate(("Shorter title here.", "Not this one."), 1):
         page.locator("[data-comment-mode]").click()
         frame.locator("h1").first.click()
-        composer = page.locator("[data-comment-composer]")
         composer.wait_for(state="visible")
+        assert frame.locator(".askdnd-pin.draft").get_attribute("data-draft") == str(n)
         composer.locator("textarea").fill(words)
         composer.locator("button[type=submit]").click()
         page.wait_for_function(f"document.querySelectorAll('[data-doc-comments] .doc-comment').length === {n}")
+        frame.locator(".askdnd-pin.draft").wait_for(state="detached")
     frame.locator(".askdnd-pin").nth(1).wait_for()  # (both pins drawn on the mockup)
     page.locator("[data-doc-comments] .doc-comment").nth(1).locator("[data-comment-drop]").click()
     page.wait_for_function("document.querySelectorAll('[data-doc-comments] .doc-comment').length === 1")
@@ -256,3 +266,45 @@ def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_d
     words = _one(browser_db[0], "SELECT answer_text FROM fft_questions WHERE id = :i", i=qid)[0]
     assert "Comments on the mockup:" in words and "Shorter title here." in words and "Not this one." not in words
     page.wait_for_function("!document.querySelector('[data-doc-comments] .doc-comment.held')")  # (sent: no longer held)
+
+
+def test_a_mockup_draws_its_own_picture_for_a_note(people, browser_db):
+    """Issue 103 (Brett's note, Nov 23): a note's screenshot came out blank where a mockup was, as askdnd can't read
+    inside its sealed frame; the frame's layer draws what it shows and hands the picture back."""
+    from app.documents import doc_id
+
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")
+    page = admin.open(f"/manage/documents/{doc_id('docs/mockups/fft-round-2/index.html')}")
+    page.frame_locator("iframe.doc-frame").locator("h1").first.wait_for()
+    png = page.evaluate("""() => new Promise(ok => {
+        const f = document.querySelector('iframe.doc-frame');
+        addEventListener('message', e => { if (e.source === f.contentWindow && e.data && e.data.askdnd === 'picture') ok(e.data.png); });
+        f.contentWindow.postMessage({ askdnd: 'picture', id: 't' }, '*');
+    })""")
+    assert png.startswith("data:image/jpeg") and len(png) > 5000
+
+
+def test_a_notes_picture_shows_the_mockup_in_its_window(people, browser_db):
+    """Issue 103 (Brett's note, Nov 23): a note sent over an open mockup had a blank window where the mockup was. Its
+    own picture is laid over the frame while the page is drawn, so the note's picture shows what the mockup shows."""
+    from app.documents import doc_id
+
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")
+    page = admin.open(f"/manage/documents/{doc_id('docs/mockups/fft-round-2/index.html')}")
+    page.frame_locator("iframe.doc-frame").locator("h1").first.wait_for()
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    page.keyboard.press("\\")
+    page.locator("[data-fb-wrap]").wait_for(state="visible", timeout=20000)
+    page.wait_for_function("() => { const c = document.querySelector('[data-fb-canvas]'); return c && c.width > 100; }")
+    shades = page.evaluate("""() => {  // how many shades the picture has where the mockup is on screen (blank: one)
+      const c = document.querySelector('[data-fb-canvas]'), g = c.getContext('2d'), s = c.width / innerWidth;
+      const f = document.querySelector('iframe.doc-frame').getBoundingClientRect();
+      const top = Math.max(f.top, 0), bottom = Math.min(f.bottom, innerHeight);
+      const d = g.getImageData(Math.floor(f.left * s), Math.floor(top * s), Math.floor(f.width * s), Math.floor((bottom - top) * s)).data;
+      const seen = new Set();
+      for (let i = 0; i < d.length; i += 4) seen.add((d[i] >> 3) + ',' + (d[i + 1] >> 3) + ',' + (d[i + 2] >> 3));
+      return seen.size;
+    }""")
+    assert shades > 40, shades

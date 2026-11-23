@@ -1762,6 +1762,8 @@ button.rm-box { cursor: pointer; }
 .doc-comments-h .note { font-weight: 400; }
 .doc-composer { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); border-radius: var(--r-md); background: var(--surface); }
 .doc-composer > p { margin: 0; }
+.doc-composer [data-comment-where] { display: flex; gap: var(--sp-2); align-items: baseline; min-width: 0; }
+.doc-pin-n.draft { background: var(--surface); color: var(--text-strong); outline: 2px dashed var(--amber); outline-offset: 1px; }
 .doc-comment { display: grid; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; }
 .doc-comment > p { margin: 0; }
 .doc-comment.held { box-shadow: inset 2px 0 0 var(--amber); }
