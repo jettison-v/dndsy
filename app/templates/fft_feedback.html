@@ -9,6 +9,7 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Feedback</h1></div>
   <p class="subtitle">Every note and issue, and what became of it: a player's note waits here for you before Claude sees any of it. Only admins can see this page.</p>
+  {% with bar = status, back = "feedback" %}{% include "_fft_status.html" %}{% endwith %}{# (as on every Our work page: issue 109) #}
 
   {# To sort · Issues · Ideas (The Work Pages, Nov 20): an issue's states are views of Issues, not tabs of their own #}
   {% set issues_on = tab in ("open", "ready", "closed") %}

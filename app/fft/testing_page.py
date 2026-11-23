@@ -493,7 +493,8 @@ def mode(request: Request, mode: str = Form(...), back: str = Form(""), why: str
     request.session["toast"] = {"available": f"Deploys after your local try, for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
                                 "independent": "Deploys when tests pass: visible changes go live, and you try them after",
                                 "frozen": "Deploys paused" + (f": {why.strip()[:120]}" if why.strip() else "") + ". Nothing deploys until you choose another"}[mode]
-    return RedirectResponse(WORK if back in ("work", "stands") else FOR_YOU, status_code=303)
+    back_to = {"work": WORK, "stands": WORK, "feedback": "/manage/feedback", "roadmap": "/manage/roadmap"}  # (the page you were on)
+    return RedirectResponse(back_to.get(back, FOR_YOU), status_code=303)
 
 
 @router.post("/manage/for-you/local/{try_id:int}")

@@ -11,7 +11,7 @@
   <div class="title-row"><h1>Roadmap</h1>
     {% if not history %}<button class="btn title-action" type="button" data-modal-url="/manage/roadmap/new" data-do="new-idea">+ New idea</button>{% endif %}</div>
   <p class="subtitle">The ideas that need discussion, in your order: each one's scope, your additions and Claude's answers, its steps. Changes to what exists are in <a href="/manage/feedback?tab=open">Feedback</a>; what's being built, in <a href="/manage/work">Development</a>. Only admins can see this page.</p>
-  {% with bar = status, back = "work" %}{% include "_fft_status.html" %}{% endwith %}
+  {% with bar = status, back = "roadmap" %}{% include "_fft_status.html" %}{% endwith %}
   {% if history %}{{ history_head("shipped and not doing", "/manage/roadmap") }}{% else %}
   <p class="note fft-foryou-sum" data-summary><b>{{ rows | length }} on the Roadmap</b>{% if yours %} · {{ yours }} wait{{ "s" if yours == 1 }} on you{% endif %} · drag to reorder</p>{% endif %}
   {% if not rows %}{{ empty_state("Nothing shipped yet." if history else "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.") }}{% else %}

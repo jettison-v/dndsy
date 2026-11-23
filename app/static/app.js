@@ -793,7 +793,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const base = layers.base;
     const fromModal = !modal && opener && isOpen(base) && base.panel.classList.contains('modal') && base.panel.contains(opener);
     const fromTop = opener && isOpen(layers.top) && layers.top.panel.contains(opener);
-    const layer = back ? back.layer : peekPanel(fromModal || fromTop ? 'top' : 'base');
+    // (a window opened from inside Backstage's item window goes over it, and closing it leaves the item window as it was:
+    // Same as…, Split…, Close with a reason…, Can't try…, Change result…; issue 108, Brett: "should not close the
+    // sidebar". Elsewhere a window from a side panel still takes its place with ← Back, as the table's flows expect)
+    const fromSide = modal && opener && isOpen(base) && !base.panel.classList.contains('modal') && base.panel.contains(opener)
+      && !!base.panel.querySelector('[data-item-panel]');
+    const layer = back ? back.layer : peekPanel(fromModal || fromTop || fromSide ? 'top' : 'base');
     const { panel, backdrop } = layer;
     if (layer.name === 'base' && !back && layers.top) closeLayer(layers.top);
     const inside = isOpen(layer) && opener && panel.contains(opener);
@@ -1107,6 +1112,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         const url = new URL(r.url), page = (r.headers.get('content-type') || '').includes('text/html');
         const doc = page ? new DOMParser().parseFromString(html, 'text/html') : null, said = doc && doc.body.dataset.toast;
         const item = panel && panel.querySelector('[data-item-panel]');
+        // (a window opened over the item window, issue 108: done, it closes and the item window moves on, as after any press in it)
+        const under = !item && panel && panel.classList.contains('top') && layers.base && layers.base.panel.querySelector('[data-item-panel]') ? layers.base.panel : null;
+        if (under && doc) { closeLayer(layers.top); itemDone(under, form, said); return; }
         if (item && doc) {  // (the item window: whatever page answered, this one stays where it is and draws again for what
           // changed: For you loses what you just did, To sort the note you filed; the window moves on)
           itemDone(panel, form, said);

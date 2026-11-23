@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app import files, web
 from app.auth import is_admin
 from app.db import get_db
-from app.fft import rules, taxonomy, views
+from app.fft import rules, taxonomy, testing_page, views
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -260,6 +260,7 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
     return templates.TemplateResponse(request, "fft_feedback.html", {
         "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "chip": chip, "area": area, "pa": pa, "feature": feature,
         "grouped": grouped, "taxonomy": taxonomy.areas(), "from_": from_key(tab, chip, area, pa, feature),
+        "status": testing_page.status(db),  # (the bar every Our work page has: issue 109)
         "toast": request.session.pop("toast", None)})
 
 

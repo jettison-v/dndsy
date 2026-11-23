@@ -94,7 +94,7 @@ def test_a_press_in_a_side_panel_redraws_in_place(people, server, browser_db):
     page.locator('#peek [data-fft-issue] [data-do="close"]').wait_for()
     page.evaluate("window.__stayed = true")
     page.locator('#peek [data-fft-issue] [data-do="close"]').click()
-    win = page.locator("#peek")
+    win = page.locator("#peek-top")  # (its window opens over the item window: issue 108)
     win.locator('[data-reason="withdrawn"] input').check()
     win.locator('[data-do="close"]').click()
     page.wait_for_function("() => !document.querySelector('#peek.open')")  # (the panel closed)

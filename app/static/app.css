@@ -2672,6 +2672,18 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   border: none; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 30px var(--shadow); transform: translateX(100%); }
 .peek > .peek.top.open { transform: none; }
 .peek > .peek-backdrop.top { position: absolute; inset: 0; z-index: 5; background: var(--backdrop-soft); }
+/* A window opened from inside the side panel (Same as…, Split…, Close with a reason…: issue 108): the top layer, a
+   centred window over the whole screen like any other, with the side panel left open behind it */
+.peek:not(.modal) > .peek.top.modal { position: fixed; top: 50%; left: 50%; right: auto; bottom: auto; width: min(var(--modal-w), calc(100% - 32px)); max-height: 86vh;
+  border-left: 0; border-top: 3px solid var(--red); border-radius: var(--r-lg); transform: translate(-50%, -46%); opacity: 0; transition: transform .18s ease, opacity .18s ease; }
+.peek:not(.modal) > .peek.top.modal.open { transform: translate(-50%, -50%); opacity: 1; }
+.peek:not(.modal) > .peek.top.modal.large { width: min(var(--modal-lg-w), calc(100% - 48px)); height: 90vh; max-height: 90vh; }
+@media (min-width: 901px) { .peek:not(.modal) > .peek.top.modal.full { width: min(var(--modal-full-w), calc(100% - 32px)); height: 94vh; max-height: 94vh; } }
+.peek:not(.modal) > .peek-backdrop.top.dim { position: fixed; background: var(--backdrop-strong); }
+@media (max-width: 900px) {
+  .peek:not(.modal) > .peek.top.modal { top: auto; left: 0; bottom: 0; width: 100%; transform: translateY(100%); border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .peek:not(.modal) > .peek.top.modal.open { transform: none; }
+}
 .peek:focus { outline: none; }
 
 /* Plan's notes (roadmap step 6): compact rows for combos, leveling and quests; tiles for general notes,
@@ -4662,6 +4674,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-status-round form { margin: 0; }
 .fft-status-line .fft-inline { margin: 0; }
 .fft-status-line.fft-hands { display: block; }  /* (its list opens under its line, not beside it: issue 21) */
+.fft-status > .fold { margin: 0; padding: var(--sp-2) var(--sp-3); }  /* (a fold row keeps the bar's own spacing, not a fold's 14px margin: issue 107) */
 .fft-hands > .fft-missed-list { margin-top: var(--sp-2); }
 .fft-hands .fft-late, .fft-hands li[data-late] .note { color: var(--amber); }  /* (late, where there's no amber panel) */
 .fft-holds { margin: 0; color: var(--amber); font-size: var(--fs-xs); line-height: 1.4; }  /* (what pausing would hold: the heads-up, Brett's pick A) */
