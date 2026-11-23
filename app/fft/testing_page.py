@@ -792,7 +792,8 @@ def wrong_form(request: Request, check_id: int, db: Session = Depends(get_db)):
     said = [{"id": i.id, "title": i.title, "said": "fixed, not confirmed · still happening" if i.state != "closed" else "closed: works now · still happening"} for i in issues]
     said += [{"id": i.id, "title": i.title, "said": "you sent it from this check · didn't stop it then", "sent": True} for i in _sent_from(db, c)]
     return JSONResponse({"title": c.title, "device": DEVICE_SAID.get(device, device), "version": c.version, "app_version": app_version(),
-                         "where": where_of(request), "issues": said, "try": last.id if last else None}, headers={"Cache-Control": "no-store"})
+                         "where": where_of(request), "issues": said, "try": last.id if last else None,
+                         "elsewhere": device != device_of(request)}, headers={"Cache-Control": "no-store"})  # (issue 104: its picture is this screen's)
 
 
 def _sent_from(db: Session, c: FftCheck) -> list[FftIssue]:

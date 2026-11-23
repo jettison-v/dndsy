@@ -179,7 +179,8 @@ def test_a_check_for_the_iphone_marked_on_the_laptop_counts_for_the_iphone(admin
     phone = _check(db, title="On a phone", devices=["iphone"])
     admin.post(f"/manage/testing/checks/{phone.id}/go")
     card = admin.get("/manage/testing/card").text
-    assert f'data-check-card="{phone.id}"' in card and "data-cc-elsewhere" in card and "iPhone" in card
+    assert f'data-check-card="{phone.id}"' in card and 'data-cc-elsewhere="iphone"' in card
+    assert admin.get(f"/manage/testing/checks/{phone.id}/wrong", headers={"Accept": "application/json"}).json()["elsewhere"] is True
     admin.post(f"/manage/testing/checks/{phone.id}/try", data={"result": "passed", "seen": "to_try"})
     t = db.scalar(select(FftTry).where(FftTry.check_id == phone.id))
     assert t.device == "iphone" and rules.check_state(db, phone)["devices"]["iphone"] == "passed"
