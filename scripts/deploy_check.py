@@ -35,7 +35,7 @@ SERVICES = ["askdnd-v2", "askdnd-backup"]
 # Railway keeps this list in the service's settings; --set-backup-watch copies it there. (Railway's config files are
 # deprecated, and its replacement manages the whole project, the legacy service included, so we set just this.)
 BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/fft/__init__.py", "app/fft/models.py", "app/backup.py", "app/books.py", "app/config.py", "app/db.py", "app/errors.py",
-                "app/files.py", "app/history.py", "app/models.py", "pyproject.toml", "uv.lock", ".python-version"]
+                "app/files.py", "app/history.py", "app/models.py", "app/timing.py", "pyproject.toml", "uv.lock", ".python-version"]
 # The app's watch paths: what beta runs. A merge that changes only what's left out (docs, tests, the workflow, notes)
 # doesn't rebuild beta (Brett, Nov 4: each deploy costs). tests/test_deploy.py checks every file in git is in one list
 # or the other, so something new the app needs can't be left out by accident. --set-app-watch copies it to Railway.
