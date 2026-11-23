@@ -5248,9 +5248,10 @@ document.addEventListener('click', e => {
   }
   async function post(f, url, body) {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).catch(() => null);
-    if (!r) { window.askdndCard("Couldn't reach askdnd. Try again.", { kind: 'warn' }); return; }
-    if (!r.ok) { const j = await r.json().catch(() => ({})); window.askdndCard(j.detail || "Couldn't save it. Try again.", { kind: 'warn' }); return; }
+    if (!r) { window.askdndCard("Couldn't reach askdnd. Try again.", { kind: 'warn' }); return false; }
+    if (!r.ok) { const j = await r.json().catch(() => ({})); window.askdndCard(j.detail || "Couldn't save it. Try again.", { kind: 'warn' }); return false; }
     await load(f, await r.text());
+    return true;
   }
   const start = root => root.querySelectorAll('iframe.doc-frame[data-doc]').forEach(f => { if (boxOf(f) && !f.dataset.commentsOn) { f.dataset.commentsOn = '1'; load(f); } });
   start(document);
@@ -5279,10 +5280,15 @@ document.addEventListener('click', e => {
     e.preventDefault();
     const frame = form.closest('.doc-with-comments') && form.closest('.doc-with-comments').querySelector('iframe.doc-frame');
     const at = frame && pending.get(frame);
-    if (!at) return;
-    pending.delete(frame);
-    send(frame, { askdnd: 'draft', pin: null });  // (the saved pin takes its place as the rail comes back)
-    post(frame, '/manage/testing/comments', { doc: frame.dataset.doc, page: pageOf(frame), ...at, words: form.elements.words.value });
+    if (!at || form.dataset.saving) return;  // (one press, one comment)
+    form.dataset.saving = '1';
+    // (kept, the pin too, until it's saved: a save that fails can be tried again as it stands; the review of #472)
+    post(frame, '/manage/testing/comments', { doc: frame.dataset.doc, page: pageOf(frame), ...at, words: form.elements.words.value }).then(saved => {
+      delete form.dataset.saving;
+      if (!saved || pending.get(frame) !== at) return;
+      pending.delete(frame);
+      send(frame, { askdnd: 'draft', pin: null });  // (the saved pin took its place as the rail came back)
+    });
   });
   addEventListener('message', e => {
     const d = e.data, f = frameOf(e.source);
@@ -5441,7 +5447,7 @@ document.addEventListener('click', e => {
     const id = Math.random().toString(36).slice(2);
     const done = png => { removeEventListener('message', heard); clearTimeout(late); ok(png); };
     const heard = e => { const d = e.data; if (e.source === f.contentWindow && d && d.askdnd === 'picture' && d.id === id) done(typeof d.png === 'string' && d.png.startsWith('data:image/') ? d.png : ''); };
-    const late = setTimeout(() => done(''), 6000);
+    const late = setTimeout(() => done(''), 3000);  // (a frame already drawn answers in well under a second)
     addEventListener('message', heard);
     try { f.contentWindow.postMessage({ askdnd: 'picture', id }, '*'); } catch (e) { done(''); }
   });

@@ -298,13 +298,15 @@ def test_a_notes_picture_shows_the_mockup_in_its_window(people, browser_db):
     page.keyboard.press("\\")
     page.locator("[data-fb-wrap]").wait_for(state="visible", timeout=20000)
     page.wait_for_function("() => { const c = document.querySelector('[data-fb-canvas]'); return c && c.width > 100; }")
-    shades = page.evaluate("""() => {  // how many shades the picture has where the mockup is on screen (blank: one)
+    shades = page.evaluate("""() => {  // the shades and light pixels where the mockup is on screen
       const c = document.querySelector('[data-fb-canvas]'), g = c.getContext('2d'), s = c.width / innerWidth;
       const f = document.querySelector('iframe.doc-frame').getBoundingClientRect();
       const top = Math.max(f.top, 0), bottom = Math.min(f.bottom, innerHeight);
       const d = g.getImageData(Math.floor(f.left * s), Math.floor(top * s), Math.floor(f.width * s), Math.floor((bottom - top) * s)).data;
       const seen = new Set();
       for (let i = 0; i < d.length; i += 4) seen.add((d[i] >> 3) + ',' + (d[i + 1] >> 3) + ',' + (d[i + 2] >> 3));
-      return seen.size;
+      let light = 0;  // (the mockup's words and boxes; blank, the frame's area is the window's dark ground)
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] > 180 && d[i + 2] > 180) light++;
+      return [seen.size, light];
     }""")
-    assert shades > 40, shades
+    assert shades[0] > 500 and shades[1] > 3000, shades  # (Nov 23: with it, ~1,070 shades and ~9,400 light pixels; blank, ~170 and ~270)
