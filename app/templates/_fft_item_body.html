@@ -191,6 +191,10 @@
   {% set r = picked.row %}
   <p class="wk-facts" data-facts>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}{% if it.size %}<span>Size {{ it.size }}</span>{% endif %}{% if it.status %}<span>{{ it.status }}</span>{% endif %}</p>
   {% if it.why %}<p class="note">{{ it.why }}</p>{% endif %}
+  {% if picked.pages %}{# (the pages it points to, opened in askdnd: what you read before an OK or a pick; issue 105) #}
+  {% call rd_section("Its pages" if picked.pages | length > 1 else "Its page", count=picked.pages | length if picked.pages | length > 1 else 0, attrs=' data-sec="pages"') %}
+  {% for p in picked.pages %}<p class="row tight"><a class="btn small" href="{{ p.href }}" data-no-peek data-page="{{ p.id }}">Open {{ p.title }}</a>{% if p.status %}<span class="note">{{ p.status }}</span>{% endif %}</p>{% endfor %}
+  {% endcall %}{% endif %}
   {% if sc and not sc.agreed_at and not sc.changes_at %}
   {% call rd_section("Scope version " ~ sc.version ~ " waits for your OK", tone="ask", attrs=' data-sec="scope"') %}
   {% if sc.changed %}<p class="note">What changed: {{ sc.changed }}</p>{% endif %}

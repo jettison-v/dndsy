@@ -65,6 +65,23 @@ def find(did: str) -> dict | None:
     return next((e for e in library() if e["id"] == did), None)
 
 
+_LINK = re.compile(r"claude\.ai/(?:code/)?artifact/([A-Za-z0-9_-]+)|(docs/[A-Za-z0-9_./-]+\.(?:html|md))")
+
+
+def linked(*texts: str) -> list[dict]:
+    """The pages these words point to (a claude.ai link or a docs/ path), each as it opens inside askdnd: Documents'
+    entry, in the order first named (issue 105, Brett's note Nov 23: a Roadmap item's scope named its page but nothing
+    opened it). A link that isn't in docs/library.json is left out."""
+    out: dict[str, dict] = {}
+    for words in texts:
+        for m in _LINK.finditer(words or ""):
+            art, path = m.group(1), m.group(2)
+            e = next((x for x in library() if (art and (x.get("link") or "").rstrip("/").endswith("/" + art)) or (path and x["source"] == path)), None)
+            if e is not None and e["id"] not in out:
+                out[e["id"]] = {"id": e["id"], "title": e["title"], "status": e.get("status", ""), "href": f"/manage/documents/{e['id']}"}
+    return list(out.values())
+
+
 def inside_docs(rel: str) -> Path | None:
     """A path under docs/, never outside it and never a hidden file; None otherwise."""
     if not rel or "\\" in rel or any(part.startswith(".") for part in Path(rel).parts):
