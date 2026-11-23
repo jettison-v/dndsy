@@ -479,7 +479,7 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
 
 
 @router.post("/manage/for-you/mode")
-def mode(request: Request, mode: str = Form(...), back: str = Form(""), why: str = Form(""), db: Session = Depends(get_db)):
+def mode(request: Request, mode: str = Form(...), back: str = Form(""), here: str = Form(""), why: str = Form(""), db: Session = Depends(get_db)):
     """Deploys (Brett, Nov 19): After my local try, When tests pass, or Paused (with an optional reason)."""
     user, denied = _admin(request)
     if denied:
@@ -493,7 +493,10 @@ def mode(request: Request, mode: str = Form(...), back: str = Form(""), why: str
     request.session["toast"] = {"available": f"Deploys after your local try, for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
                                 "independent": "Deploys when tests pass: visible changes go live, and you try them after",
                                 "frozen": "Deploys paused" + (f": {why.strip()[:120]}" if why.strip() else "") + ". Nothing deploys until you choose another"}[mode]
-    return RedirectResponse(WORK if back in ("work", "stands") else FOR_YOU, status_code=303)
+    if here.startswith("/manage/") and "//" not in here and "\\" not in here:  # (the page, tab and filters you were on: one of Backstage's own)
+        return RedirectResponse(here, status_code=303)
+    back_to = {"work": WORK, "stands": WORK, "feedback": "/manage/feedback", "roadmap": "/manage/roadmap"}
+    return RedirectResponse(back_to.get(back, FOR_YOU), status_code=303)
 
 
 @router.post("/manage/for-you/local/{try_id:int}")

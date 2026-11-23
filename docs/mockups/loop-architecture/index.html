@@ -72,6 +72,20 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
 .decide .saved { color: var(--muted); font-size: .84rem; }
 .decide .saved.ok { color: var(--green); }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+/* the process flow: a lane per who, a column per step, one note from sent to closed */
+.flow { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.lanes { display: grid; grid-template-columns: 120px repeat(10, minmax(118px, 1fr)); min-width: 1300px; }
+.lanes > div { border-top: 1px solid var(--line-soft); padding: 10px 8px; min-height: 92px; font-size: .82rem; line-height: 1.35; }
+.lanes > .lane { font: 700 .74rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; background: var(--surface-2); }
+.lanes > .head { min-height: 0; border-top: 0; color: var(--faint); font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding-block: 10px; background: var(--surface-2); }
+.lanes > .lane.you { color: var(--amber); } .lanes > .lane.app { color: var(--blue); } .lanes > .lane.mini { color: var(--muted); }
+.lanes > .lane.lead { color: var(--violet); } .lanes > .lane.wk { color: var(--violet); }
+.step { display: grid; gap: 4px; align-content: start; }
+.step .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 700 .74rem/1 var(--sans); color: var(--bg); }
+.step.you .n { background: var(--amber); } .step.app .n { background: var(--blue); } .step.mini .n { background: var(--muted); } .step.lead .n, .step.wk .n { background: var(--violet); }
+.step.alt { opacity: .9; } .step.alt .n { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+.qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.qa .card p + p { margin-top: 2px; }
 @media (max-width: 640px) { .miss { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 1.6rem; } }
 </style>
 
@@ -85,6 +99,94 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <p><b>Yes</b> to askdnd doing the sequencing and the status, with clear rules. <b>No</b> to more standing chats. The distributor has to be askdnd's own code, not a chat, because a chat can't listen between turns and is one more thing that can go quiet unseen. Expertise belongs in the Map and the tests, not in a chat's memory. So: <b>askdnd is the dispatcher, sessions are short-lived workers that hold a claim on one task, and one lead session (the one you talk to) is architect and reviewer.</b> It's built so channels plug in when they leave preview, with nothing else changing.</p>
     </div>
   </header>
+
+  <section aria-labelledby="h-flow">
+    <h2 id="h-flow">One note, start to finish</h2>
+    <p class="note">Read left to right. Each lane is who acts; the numbers are the order. Dashed steps happen only sometimes.</p>
+    <div class="flow"><div class="lanes" role="table" aria-label="One note's journey, step by step, by who acts">
+      <div class="head">Who</div>
+      <div class="head">Step 1</div>
+      <div class="head">Step 2</div>
+      <div class="head">Step 3</div>
+      <div class="head">Step 4</div>
+      <div class="head">Step 5</div>
+      <div class="head">Step 6</div>
+      <div class="head">Step 7</div>
+      <div class="head">Step 8</div>
+      <div class="head">Step 9</div>
+      <div class="head">Step 10</div>
+      <div class="lane you">You</div>
+      <div class="step you"><span class="n">1</span><span>You send a note (or make a pick, or mark a check).</span></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div class="step you"><span class="n">10</span><span>You try it. Passed closes it; Something's wrong starts again at 1.</span></div>
+      <div class="lane app">askdnd</div>
+      <div></div>
+      <div class="step app"><span class="n">2</span><span>askdnd files it in your one order, marked <b>waiting on Claude</b>, and starts its clock.</span></div>
+      <div></div>
+      <div class="step app"><span class="n">4</span><span>askdnd marks it <b>Ready</b> only when it's approved, not in your round, and nothing is paused.</span></div>
+      <div></div>
+      <div></div>
+      <div class="step app"><span class="n">7b</span><span>askdnd and GitHub merge it once tests pass and it's up to date.</span></div>
+      <div class="step app"><span class="n">8</span><span>Railway deploys; askdnd marks it <b>live</b> and releases its check, by itself.</span></div>
+      <div></div>
+      <div></div>
+      <div class="lane mini">Mac Mini</div>
+      <div></div>
+      <div></div>
+      <div class="step mini alt"><span class="n">3b</span><span><b>No session open?</b> After 10 minutes the Mini notices and sends your phone a notification.</span></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div class="step mini alt"><span class="n">8b</span><span>The Mini runs its quick check on the real D&D Beyond.</span></div>
+      <div></div>
+      <div></div>
+      <div class="lane lead">Lead session</div>
+      <div></div>
+      <div></div>
+      <div class="step lead"><span class="n">3</span><span>The lead hears it within seconds (it's listening) and sorts it: title, Feature, a reply to you.</span></div>
+      <div></div>
+      <div class="step lead"><span class="n">5</span><span>The lead takes the top of the order. A clear fix may go to a worker, with the brief askdnd writes.</span></div>
+      <div class="step lead alt"><span class="n">6b</span><span><b>Or</b> the lead builds it itself (anything you'll look at, always).</span></div>
+      <div class="step lead"><span class="n">7</span><span>The lead reviews it at high effort.</span></div>
+      <div></div>
+      <div class="step lead"><span class="n">9</span><span>The lead tries it on askdnd.ai; only a pass sends it to your For you.</span></div>
+      <div></div>
+      <div class="lane wk">A worker</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div class="step wk"><span class="n">6</span><span>The worker reads the brief and the files, builds it, opens a pull request, and ends.</span></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div></div>
+  </section>
+
+  <section aria-labelledby="h-qa">
+    <h2 id="h-qa">Your questions</h2>
+    <div class="qa">
+      <div class="card"><span class="tag">How do workers get their context, and what do they cost?</span>
+        <p>askdnd can't start a Claude session; it's a website. The lead starts a worker and hands it the brief askdnd writes: the issue in your words, its Product Area's part of the Map, the check to pass, the files involved. The worker never sees this chat.</p>
+        <p class="note">A small fix by a worker costs about what the lead would spend on it, plus 10–20% for reading in. Workers don't save money; they keep the lead free to talk with you and to review. Two at once costs twice as much, so start with one.</p></div>
+      <div class="card"><span class="tag">Does Claude still have to listen?</span>
+        <p>Yes, for now: something has to notice what you send. The difference: listening becomes a claim in askdnd that checks in, so when it stops the bar says so at once, and the Mini covers the time when no session is open.</p>
+        <p class="note">Once channels leave preview, askdnd pushes into an open session and the listening loop goes away; a session still has to be open.</p></div>
+      <div class="card"><span class="tag">How is the Mini involved?</span>
+        <p>It's the always-on computer in your house that already runs the nightly test. A small script asks askdnd every minute or two: is anything waiting on Claude, and is anyone listening? If something has waited 10 minutes with nobody listening, it notifies your phone (step 3b).</p>
+        <p class="note">Later it could start a session itself; that spends money with nobody watching, so it's your call after the notification has proven itself.</p></div>
+    </div>
+  </section>
 
   <section aria-labelledby="h-misses">
     <h2 id="h-misses">What actually broke today</h2>

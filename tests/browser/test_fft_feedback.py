@@ -128,7 +128,7 @@ def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
     iid = _issue_of(browser_db[0], nid)
     page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
     _item(page, f"i{iid}").locator('[data-fft-issue] [data-do="close"]').click()
-    win = page.locator("#peek")
+    win = page.locator("#peek-top")  # (a window opened from the side panel goes over it: issue 108)
     win.locator('[data-reason="withdrawn"] input').check()
     win.locator("textarea[name=words]").fill("Typed before Same as")
     win.locator('[data-reason="same"]').click()
@@ -310,3 +310,42 @@ def test_a_notes_picture_shows_the_mockup_in_its_window(people, browser_db):
       return [seen.size, light];
     }""")
     assert shades[0] > 500 and shades[1] > 3000, shades  # (Nov 23: with it, ~1,070 shades and ~9,400 light pixels; blank, ~170 and ~270)
+
+
+def test_a_window_opened_from_the_side_panel_leaves_it_open(people, server, browser_db):
+    """Issue 108 (Brett, Nov 23: "Clicking on these buttons which open a modal should not close the sidebar"): Same as…,
+    Split… and Close with a reason… open their window over the issue's side panel; closing it leaves the panel as it was."""
+    nid = _waiting_note(browser_db[0], "The rest button does nothing.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
+    press(_item(page, f"n{nid}").locator('[data-do="fix"]'))
+    iid = _issue_of(browser_db[0], nid)
+    page = admin.open(f"/manage/feedback?tab=open&open=i{iid}")
+    for do in ("same", "split", "close"):
+        _item(page, f"i{iid}").locator(f'[data-fft-issue] [data-do="{do}"]').click()
+        top = page.locator("#peek-top.open")
+        top.wait_for()
+        assert page.locator(f'#peek.open [data-item-panel="i{iid}"]').count() == 1, do  # (the side panel stays, behind it)
+        box, wide = top.bounding_box(), page.evaluate("document.documentElement.clientWidth")  # (the page's width, past its scrollbar)
+        assert abs(box["x"] + box["width"] / 2 - wide / 2) < 12, do  # (centred, like any window, give or take a scrollbar)
+        page.keyboard.press("Escape")
+        page.wait_for_function("() => !document.querySelector('#peek-top.open')")
+        assert page.locator(f'#peek.open [data-item-panel="i{iid}"]').count() == 1, do
+    assert not admin.errors, admin.errors
+
+
+def test_the_bars_rows_keep_its_spacing_with_a_round_and_claudes_hands(people, server, browser_db):
+    """Issue 107 (Brett, Nov 23: "Spacing is off when below trying a check when Claude has things in its hands"): the
+    hands row is a fold, and a fold's own 14px margin opened a gap under the round's row. Each row now sits on the next."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO fft_issues (title, state, kind, workspace_id) VALUES ('No Feature yet', 'to_fix', 'fix', 1)"))
+        conn.execute(text("INSERT INTO fft_rounds (user_id, holds, last_at, workspace_id) VALUES (NULL, false, now(), 1)"))
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/feedback")  # (Feedback has the bar too: issue 109)
+    page.locator('.fft-status [data-stat="hands"]').wait_for()
+    gaps = page.evaluate("""() => { const rows = [...document.querySelector('.fft-status').children];
+        return rows.slice(1).map((r, i) => Math.round(r.getBoundingClientRect().top - rows[i].getBoundingClientRect().bottom)); }""")
+    assert gaps and all(g == 0 for g in gaps), gaps
+    assert not admin.errors, admin.errors

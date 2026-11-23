@@ -19,12 +19,12 @@
       <summary aria-label="Deploys: {{ said[mode] }}"><span class="state-word fft-deploys-pill" data-tone="{{ mode }}"><span class="k">Deploys:</span> {{ said[mode] }}{% if mode == "available" %} <span class="fft-until">· until <time datetime="{{ bar.available.until }}" data-clock="when">{{ bar.available.until }}</time></span>{% endif %} ▾</span></summary>
       <div class="act-menu end fft-deploys-menu" role="group" aria-label="Deploys">
         {% for k in ("available", "independent") %}
-        <form method="post" action="/manage/for-you/mode"><input type="hidden" name="back" value="{{ back }}">
+        <form method="post" action="/manage/for-you/mode"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="here" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query }}">
           <button type="submit" name="mode" value="{{ k }}" data-mode-pick="{{ k }}" aria-pressed="{{ 'true' if mode == k else 'false' }}"><span class="ck" aria-hidden="true">{{ "✓" if mode == k }}</span><span class="pick">{{ said[k] }}</span><small>{{ does[k] }}</small></button></form>
         {% endfor %}
         <button type="button" data-mode-pick="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-show="fft-pause-why"><span class="ck" aria-hidden="true">{{ "✓" if mode == "frozen" }}</span><span class="pick">{{ said.frozen }}</span><small>{{ does.frozen }}</small></button>
         {# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, whole, on its own line #}
-        <form method="post" action="/manage/for-you/mode" class="fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}">
+        <form method="post" action="/manage/for-you/mode" class="fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="here" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query }}">
           {% if bar.flight and mode != "frozen" %}<p class="fft-holds" data-holds-flight>⚠ Pausing holds {{ bar.flight | length }} change{{ "s" if bar.flight | length != 1 }} about to go live: {{ bar.flight | map(attribute="titles") | map("first") | join("; ") }}</p>{% endif %}{# (the heads-up, Brett's pick A) #}
           <label class="field"><span>Why pause? <span class="note">(optional)</span></span><input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow"></label>
           <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>

@@ -347,11 +347,20 @@ def test_claudes_hands_is_the_bars_last_row_under_an_open_round(db, admin):
     me = views.person(db, {"email": "admin@example.com"})
     rules.open_round(db, "user:x", me["id"], battle.id)
     db.flush()
-    for path in ("/manage/work", "/manage/for-you"):
+    for path in ("/manage/work", "/manage/for-you", "/manage/feedback", "/manage/roadmap"):  # (Feedback too: issue 109)
         page = admin.get(path).text
         bar = page[page.index('class="fft-banner fft-status"'):]
         assert 'data-stat="round"' in bar and 'data-stat="hands"' in bar, path
         assert bar.index('data-stat="round"') < bar.index('data-stat="hands"'), f"{path}: Claude's hands sits above the round"
+    feedback = admin.get("/manage/feedback").text  # (Deploys changed there comes back there, as on the Roadmap)
+    assert 'name="back" value="feedback"' in feedback and 'name="back" value="roadmap"' in admin.get("/manage/roadmap").text
+    for back, to in (("feedback", "/manage/feedback"), ("roadmap", "/manage/roadmap"), ("work", "/manage/work"), ("", "/manage/for-you")):
+        r = admin.post("/manage/for-you/mode", data={"mode": "independent", "back": back}, follow_redirects=False)
+        assert r.headers["location"].startswith(to), back
+    for here, to in (("/manage/feedback?tab=open&area=3", "/manage/feedback?tab=open&area=3"), ("https://elsewhere.example/x", "/manage/for-you"),
+                     ("//elsewhere.example/x", "/manage/for-you"), ("/manage/x//y", "/manage/for-you")):  # (only Backstage's own pages)
+        r = admin.post("/manage/for-you/mode", data={"mode": "independent", "here": here}, follow_redirects=False)
+        assert r.headers["location"] == to, here
 
 
 def test_a_build_with_every_step_done_is_claudes_to_ship(db, admin):
