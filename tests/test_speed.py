@@ -123,15 +123,20 @@ def test_a_page_at_0_6_s_is_not_filed_and_an_open_issue_hears_it_wasnt_slow(db):
     for _ in range(30):
         speed.record("GET", "/c/{slug}/campaign", 600)
         speed.record("GET", "/c/{slug}/campaign/old", 1500)  # (a longer route that starts the same is its own issue)
+    for _ in range(5):
+        speed.record("GET", "/rare", 1500)  # (slow, but too few to be a finding)
     speed.flush(db)
     old = rules.new_issue(db, "askdnd", "Slow: GET /c/{slug}/campaign (slowest tenth 1.0 s, average 600 ms, 30 requests this week)",
                           feature="speed", kind="improvement")
     gone = rules.new_issue(db, "askdnd", "Slow: GET /gone (slowest tenth 1.0 s, average 900 ms, 30 requests this week)",
                            feature="speed", kind="improvement")
+    rare = rules.new_issue(db, "askdnd", "Slow: GET /rare (slowest tenth 1.5 s, average 1500 ms, 25 requests this week)",
+                           feature="speed", kind="improvement")
     got = speed.review(db)
     assert [r["route"] for r in got["slow"]] == ["/c/{slug}/campaign/old"] and old.id not in got["issues"]
-    said = {x.issue_id: x.text for x in db.scalars(select(FftLine).where(FftLine.issue_id.in_([old.id, gone.id])))}
+    said = {x.issue_id: x.text for x in db.scalars(select(FftLine).where(FftLine.issue_id.in_([old.id, gone.id, rare.id])))}
     assert said[old.id].startswith("Not slow this week: slowest tenth 0.6 s") and said[gone.id] == "Not asked this week."
+    assert said[rare.id].startswith("Too few requests this week to tell: slowest tenth 1.")
 
 
 def test_rows_saved_with_a_campaigns_name_count_as_its_page(db):
@@ -144,3 +149,7 @@ def test_rows_saved_with_a_campaigns_name_count_as_its_page(db):
     speed.flush(db)
     rows = speed.week(db)
     assert [(r["route"], r["count"]) for r in rows] == [("/c/{slug}/party", 6)]
+    db.add(RequestTime(day=config.table_today() - timedelta(days=1), method="GET", route="/c/{slug}/party", count=1, total_ms=40,
+                       max_ms=40, bands=None))  # (a row with no bands never wipes the rest)
+    db.commit()
+    assert speed.week(db)[0]["p50_ms"] > 0

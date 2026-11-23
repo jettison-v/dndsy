@@ -108,7 +108,7 @@ def week(db: Session, days: int = 7) -> list[dict]:
         a["count"] += r.count
         a["total"] += r.total_ms
         a["max"] = max(a["max"], r.max_ms)
-        a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [], strict=False)]
+        a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [0] * len(a["bands"]), strict=False)]  # (a row with none never wipes the rest)
     out = [{"method": m, "route": route, "count": a["count"], "avg_ms": round(a["total"] / a["count"]) if a["count"] else 0,
             "p50_ms": _quantile(a["bands"], .5, a["max"]), "p90_ms": _quantile(a["bands"], .9, a["max"]), "max_ms": a["max"]}
            for (m, route), a in acc.items()]
@@ -138,8 +138,9 @@ def review(db: Session) -> dict:
     for issue in db.scalars(select(FftIssue).where(FftIssue.feature == "speed", FftIssue.state != "closed",
                                                    FftIssue.title.startswith("Slow: "), FftIssue.id.not_in(filed or [0]))):
         r = next((v for k, v in seen.items() if issue.title.startswith(k + " (")), None)  # (an open one that isn't slow now)
-        rules.add_line(db, "askdnd", f"Not slow this week: slowest tenth {r['p90_ms'] / 1000:.1f} s, average {r['avg_ms']} ms, "
-                       f"{r['count']} requests." if r else "Not asked this week.", issue=issue)
+        nums = f"slowest tenth {r['p90_ms'] / 1000:.1f} s, average {r['avg_ms']} ms, {r['count']} requests." if r else ""
+        rules.add_line(db, "askdnd", "Not asked this week." if r is None else f"Too few requests this week to tell: {nums}"
+                       if r["p90_ms"] >= SLOW_P90_MS else f"Not slow this week: {nums}", issue=issue)
     db.execute(RequestTime.__table__.delete().where(RequestTime.day < config.table_today() - timedelta(days=KEEP_DAYS)))
     words = (f"{len(rows)} routes this week; {len(slow)} slow (the slowest tenth {SLOW_P90_MS} ms or more): "
              + ", ".join(f"{r['route']} {r['p90_ms'] / 1000:.1f} s" for r in slow[:5])) if slow else f"{len(rows)} routes this week; none slow."
