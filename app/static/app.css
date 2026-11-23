@@ -4254,7 +4254,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-dot-badge.for-you-badge { background: var(--amber); color: var(--chrome); }
 .manage > button:has(> .for-you-badge:not([hidden])) { padding-right: 28px; }  /* (room for it inside the door: never over its words, never outside) */
 .manage > button .for-you-badge { top: 4px; right: 4px; }
-.bottom-nav .for-you-badge { top: 50%; right: auto; left: 6px; transform: translateY(-50%); }  /* (beside More, on its line: Notes you sent's keeps the corner) */
+.bottom-nav .for-you-badge { position: static; }  /* (beside More, on its line, in the button's flow so a count of any length sits before the word, never on it (the weekly phone sweep, Nov 23: "10" covered "More"); Notes you sent's keeps the corner) */
+.bottom-nav > button:has(> .for-you-badge:not([hidden])) { grid-auto-flow: column; justify-content: center; gap: 4px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
    its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
