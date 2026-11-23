@@ -689,7 +689,7 @@ def round_end(request: Request, db: Session = Depends(get_db)):
         return denied
     to = _end(request, db)
     if (row := rules.round_open(db)) is not None:  # (the round the bar shows, wherever it was started: issue 106)
-        rules.end_round(db, f"user:{views.person(db, user)['id']}", row)
+        rules.end_round(db, f"user:{views.person(db, request.session.get('real_user') or user)['id']}", row)
     db.commit()
     request.session["toast"] = "Round ended: Claude's work in its area may merge again"
     return RedirectResponse(to, status_code=303)
@@ -1071,6 +1071,9 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     if denied:
         return denied
     r = _round(request)
+    if r is not None and ((row := db.get(rules.FftRound, r["id"])) is None or row.ended_at is not None):
+        request.session.pop(ROUND, None)  # (ended from the other device's bar: its card goes too; the review of #476)
+        r = None
     if r is None:
         return templates.TemplateResponse(request, "_fft_card_empty.html", {})
     if r["i"] >= len(r["checks"]):  # (every check tried: the round stays open until End round)

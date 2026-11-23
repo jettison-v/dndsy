@@ -216,6 +216,10 @@ def test_end_round_ends_the_round_the_bar_shows_wherever_it_was_started(admin, d
     admin.post(f"/manage/testing/checks/{c.id}/go")  # (and its own round of one still ends as before)
     admin.post("/manage/testing/round/end")
     assert rules.round_open(db) is None
+    admin.post(f"/manage/testing/checks/{c.id}/go")  # (ended from elsewhere: this browser's card goes too)
+    rules.end_round(db, "user:other", rules.round_open(db))
+    db.flush()
+    assert f'data-check-card="{c.id}"' not in admin.get("/manage/testing/card").text
 
 
 def test_a_round_over_every_area_holds_an_issue_in_none(admin, db):
