@@ -37,8 +37,10 @@ env:
 
 jobs:
   # Brett's game-night freeze (Nov 19: a switch on Testing › Where it stands, on before a game, off after; the work
-  # flow's slice 3). While it's on this job fails, so the run fails and Railway doesn't deploy: nothing reaches
-  # askdnd.ai until he turns it off and the run is re-run. A commit (or pull request title) saying [table-fix] goes,
+  # flow's slice 3). While it's on this job fails, so the run fails and Railway doesn't deploy: nothing new reaches
+  # askdnd.ai until he turns it off and the run is re-run. A change merged before he paused still finishes going live
+  # (issue 110, Brett: "I would want inflight work to finish, not stop"): main's commit from before the pause passes;
+  # a pull request's run never does, so nothing new merges. A commit (or pull request title) saying [table-fix] goes,
   # with his OK. If askdnd.ai doesn't answer, it holds nothing.
   freeze:
     name: Game-night freeze
@@ -48,12 +50,16 @@ jobs:
       - name: Is the game-night freeze on?
         env:
           SAID: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+          COMMITTED: ${{ github.event_name == 'push' && github.event.head_commit.timestamp || '' }}
         run: |
-          frozen=$(curl -fsS --max-time 20 https://askdnd.ai/api/fft/freeze | python3 -c 'import json, sys; print(json.load(sys.stdin)["frozen"])') \
+          state=$(curl -fsS --max-time 20 -G https://askdnd.ai/api/fft/freeze --data-urlencode "merged=$COMMITTED") \
             || { echo "askdnd.ai didn't answer: holding nothing."; exit 0; }
+          frozen=$(echo "$state" | python3 -c 'import json, sys; print(json.load(sys.stdin)["frozen"])')
           if [ "$frozen" = "True" ]; then
             case "$SAID" in *"[table-fix]"*) echo "Frozen, but this is a table fix: it goes."; exit 0;; esac
-            echo "::error::The game-night freeze is on: nothing deploys to askdnd.ai until Brett turns it off. Re-run this run then."
+            goes=$(echo "$state" | python3 -c 'import json, sys; print(json.load(sys.stdin).get("goes", False))')
+            if [ "$goes" = "True" ]; then echo "Paused, but this was merged before the pause: it finishes going live."; exit 0; fi
+            echo "::error::The game-night freeze is on: nothing new deploys to askdnd.ai until Brett turns it off. Re-run this run then."
             exit 1
           fi
           echo "Not frozen."

@@ -492,6 +492,18 @@ def frozen(db: Session) -> bool:
     return freeze_state(db)["on"]
 
 
+def freeze_lets(db: Session, merged: str) -> bool:
+    """Whether main's commit at `merged` (ISO, from GitHub) deploys: always when not paused; while paused, only if it
+    was merged before the pause began, so what's on its way finishes and nothing new starts (issue 110)."""
+    st = freeze_state(db)
+    if not st["on"]:
+        return True
+    try:
+        return bool(st["since"]) and datetime.fromisoformat(merged) <= datetime.fromisoformat(st["since"])
+    except ValueError:
+        return False
+
+
 def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch (Nov 19): on before a game, off after. While it's on, nothing merges and GitHub's tests stop a
     deploy (the Server tests' first step asks /api/fft/freeze); a fix for something broken at the table may go."""

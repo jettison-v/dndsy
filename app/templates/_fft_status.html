@@ -25,14 +25,15 @@
         <button type="button" data-mode-pick="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-show="fft-pause-why"><span class="ck" aria-hidden="true">{{ "✓" if mode == "frozen" }}</span><span class="pick">{{ said.frozen }}</span><small>{{ does.frozen }}</small></button>
         {# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, whole, on its own line #}
         <form method="post" action="/manage/for-you/mode" class="fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="here" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query }}">
-          {% if bar.flight and mode != "frozen" %}<p class="fft-holds" data-holds-flight>⚠ Pausing holds {{ bar.flight | length }} change{{ "s" if bar.flight | length != 1 }} about to go live: {{ bar.flight | map(attribute="titles") | map("first") | join("; ") }}</p>{% endif %}{# (the heads-up, Brett's pick A) #}
+          {% if bar.flight and mode != "frozen" %}<p class="fft-holds" data-holds-flight>⚠ {{ bar.flight | length }} change{{ "s" if bar.flight | length != 1 }} of Claude's on the way: any already merged still go{{ "es" if bar.flight | length == 1 }} live; the rest wait until you resume: {{ bar.flight | map(attribute="titles") | map("first") | join("; ") }}</p>{% endif %}{# (the heads-up, Brett's pick A) #}
           <label class="field"><span>Why pause? <span class="note">(optional)</span></span><input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow"></label>
           <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>
         </form>
       </div>
     </details>
   </div>
-  {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span></div>
+  {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span>
+    <span class="note" data-paused-drain>· what was merged before still goes live · askdnd.ai last updated <time datetime="{{ bar.updated }}" data-clock="when">{{ bar.updated }}</time></span></div>{# (a pause starts nothing new and finishes what's on its way: issue 110) #}
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
   {% if bar.after.on and not bar.round %}<div class="fft-status-line" data-stat="after"><span>Your round starts when {{ bar.after.prs | length }} change{{ "s" if bar.after.prs | length != 1 }} of Claude's {{ "is" if bar.after.prs | length == 1 else "are" }} live</span>
     <form method="post" action="/manage/testing/round/after/cancel" class="fft-inline"><button class="btn link small" type="submit" data-do="round-after-cancel">Cancel</button></form></div>{% endif %}

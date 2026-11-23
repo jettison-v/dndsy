@@ -547,10 +547,15 @@ def local_try(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
 
 
 @router.get("/freeze")
-def freeze(db: Session = Depends(get_db)):
+def freeze(merged: str = "", db: Session = Depends(get_db)):
     """Public, and only this (Brett, Nov 19: a switch he turns on before a game): whether deploys are frozen. GitHub's
-    Server tests ask it first, so while it's on nothing deploys to askdnd.ai (a commit saying [table-fix] goes)."""
-    return _ok({"frozen": rules.frozen(db)})
+    Server tests ask it first: while it's on nothing new deploys to askdnd.ai, and a commit saying [table-fix] goes.
+    Given main's commit time (`merged`), it also says whether that commit goes: one merged before the pause finishes
+    going live (issue 110, Brett: "a pause is not a nuclear option"); never when the pause began."""
+    out = {"frozen": rules.frozen(db)}
+    if merged:
+        out["goes"] = rules.freeze_lets(db, merged)
+    return _ok(out)
 
 
 @router.post("/deploy")
