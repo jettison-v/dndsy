@@ -874,6 +874,22 @@ def scope_asked(db: Session) -> list[FftItem]:
     return [it for it in db.scalars(q) if latest_scope(db, it) is None]
 
 
+def builds_done(db: Session) -> list[tuple[FftItem, datetime]]:
+    """Open Roadmap items whose every step is done, each with when its last step was ticked: finished, waiting for
+    Claude to ship it with its result (issue 72, Brett Nov 22: nothing told Claude when he ticked the last one). Not one
+    Brett paused or held, nor one whose plans still have open issues (those are Claude's work already)."""
+    last = (select(FftStep.item_id, func.max(FftStep.done_at).label("at")).group_by(FftStep.item_id)
+            .having(func.count() == func.count(FftStep.done_at)).subquery())
+    q = (select(FftItem, last.c.at).join(last, last.c.item_id == FftItem.id)
+         .where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next", "later")), FftItem.held.is_(False)).order_by(FftItem.id))
+    out = []
+    for it, at in db.execute(q).all():
+        plans = db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)))
+        if not any(area_open_issues(db, a) for a in plans):
+            out.append((it, at))
+    return out
+
+
 def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
     """Now, Next, Later or Paused (a shipped item comes back with this too: Reopen)."""
     if section not in ROADMAP_SECTIONS:
@@ -1356,6 +1372,18 @@ def still_happening(db: Session, actor: str, issue: FftIssue, check: FftCheck | 
         issue.fixed_in, issue.confirm_by, issue.confirm_since = "", None, None
         _set_issue(db, actor, issue, "to_fix", "issue_still_happening", check=check.id if check else None,
                    **({"by_try": by_try} if by_try else {}))
+
+
+def fix_failed(db: Session, actor: str, issue: FftIssue, why: str) -> None:
+    """Claude's own live try of a fix failed (issue 74, found with issue 70): the issue goes back to To fix, so its check
+    leaves Brett's For you (it reads fixing until the next fix is live), and he's told why. Only a fix in hand or live:
+    a closed issue comes back with reopen."""
+    if issue.state not in ("ready", "merge_ok", "fixing"):
+        raise RuleError("stale", "Only a fix being made, waiting to merge or live can go back to To fix.")
+    if not why.strip():
+        raise RuleError("bad", "Say what the try showed.")
+    still_happening(db, actor, issue)
+    add_line(db, actor, why, issue=issue, to="")
 
 
 def _name_issue(db: Session, actor: str, check: FftCheck, t: FftTry, f: Found) -> FftIssue:

@@ -883,8 +883,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!t) return;
     // A pop-up, form or button of its own inside the row: the row stays put; a link of its own goes where it says. Only
     // what's inside the row counts: a button that sits in an open <details> list (Apply to… in Table rolls) still opens
-    // its window (Brett, Nov 13: picking a name there did nothing). A row in a <summary> is the details' toggle.
-    const own = e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek], .ft-init button, .ft-init input');
+    // its window (Brett, Nov 13: picking a name there did nothing). A row in a <summary> is the details' toggle. A link
+    // that opens a new tab is always its own (issue 69: Scheduled's Its runs ↗ opened the row's window, not GitHub).
+    const own = e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek], a[target="_blank"], .ft-init button, .ft-init input');
     if ((own && (own === t || t.contains(own))) || t.closest('summary')) return;
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);

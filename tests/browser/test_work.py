@@ -118,3 +118,31 @@ def test_scope_it_on_a_roadmap_item_and_its_tabs(people, server, browser_db):
     page.locator('[data-do="not-now"]').click()
     page.locator("[data-scope-none]").wait_for()
     assert not admin.errors, admin.errors
+
+
+def test_a_jobs_runs_link_goes_to_github_and_its_window_is_compact(people, server, browser_db):
+    """Issue 69 (Brett, round 17: "Clicking on its runs opens the right sidebar, but it looks like a link"): a link that
+    opens a new tab, inside a row that opens a window, goes where it says. Issue 68 ("The spacing between the sections is
+    very large for no clear reason"): the job window's sections are the item window's boxes, their labels tight."""
+    admin = people("admin")
+    page = admin.open("/manage/work?tab=scheduled")
+    page.context.route("https://github.com/**", lambda r: r.fulfill(body="GitHub's runs", content_type="text/plain"))
+    with page.context.expect_page() as opened:
+        page.locator('tr[data-job="dependabot"] a[data-job-link]').click()
+    gh = opened.value
+    gh.wait_for_load_state()
+    assert gh.url.startswith("https://github.com/jettison-v/dndsy/"), gh.url
+    gh.close()
+    assert page.locator(".peek [data-job-panel]").count() == 0, "the row's window opened too"
+    page.locator('tr[data-job="nightly"] td').first.click()  # (the rest of the row still opens it)
+    win = page.locator('.peek [data-job-panel="nightly"]')
+    win.wait_for()
+    sections = page.locator(".peek section.rd-sec")
+    assert sections.count() == 4
+    for s in sections.all():
+        head = s.locator(".rd-sec-h")
+        assert head.evaluate("h => getComputedStyle(h.querySelector('h3')).marginTop") == "0px"
+        assert head.bounding_box()["height"] < 40, "a section's label carries a page heading's margin"
+        first = s.locator(".rd-sec-in > *").first
+        assert first.evaluate("el => getComputedStyle(el).marginTop") == "0px"
+    assert not admin.errors, admin.errors

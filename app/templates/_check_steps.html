@@ -1,3 +1,4 @@
+{% from "_admin_bits.html" import rd_section %}
 {# A check's steps as a walkthrough (app/fft/steps.py `walk`; Working with Claude, Brett's 3A, Nov 17): a step a line, one
    action each, numbered, with a box to tick as you go (kept on this device for this check only: app.js "the
    walkthrough's ticks"); what to type in a dashed box, a button drawn as one, a box's name in bold, and why under it. #}
@@ -13,6 +14,6 @@
 {% if v and (v.before or v.now) %}
 {% set lines %}<dl class="cc-goal-lines">{% if v.before %}<dt>Before</dt><dd>{{ v.before }}</dd>{% endif %}{% if v.now %}<dt>Now</dt><dd>{{ v.now }}</dd>{% endif %}</dl>{% endset %}
 {% if folded %}<details class="cc-goal" data-goal><summary>Goal</summary>{{ lines }}</details>
-{% else %}<section class="cc-goal panel" data-goal><h3 class="plabel">Goal</h3>{{ lines }}</section>{% endif %}
+{% else %}{% call rd_section("Goal", attrs=' data-goal') %}{{ lines }}{% endcall %}{% endif %}{# (the item window's section, issue 68) #}
 {% endif %}
 {%- endmacro %}
