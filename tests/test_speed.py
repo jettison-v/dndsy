@@ -100,3 +100,47 @@ def test_a_campaigns_pages_are_one_route_and_the_slowest_tenth_never_passes_the_
     rows = speed.week(db)
     assert [r["route"] for r in rows] == ["/c/{slug}/party"] and rows[0]["count"] == 20
     assert rows[0]["p90_ms"] <= rows[0]["max_ms"] == 1450
+
+
+def test_the_slowest_tenth_is_estimated_inside_its_band():
+    """Nov 23, the first Monday: the band's upper edge alone read a page whose slowest tenth took 0.6 s as 1 s, over the
+    0.8 s line, and 25 routes were filed. Inside the band, evenly spread, never past the slowest request."""
+    def bands(**at):
+        out = [0] * (len(speed.BANDS_MS) + 1)
+        for edge, n in at.items():
+            out[speed.band(int(edge[1:]))] = n
+        return out
+    assert speed._quantile(bands(b40=90, b600=10), .9, 620) == 50  # (the 90th of 100 is the last of the fast ones, under 50 ms)
+    assert 500 < speed._quantile(bands(b40=80, b600=20), .9, 990) <= 750  # (halfway into 0.5-1 s, not 1 s)
+    assert speed._quantile(bands(b600=10), .9, 640) <= 640  # (never past the slowest)
+    assert speed._quantile(bands(b9000=10), .9, 9000) <= 9000 and speed._quantile([0] * 8, .9, 0) == 0
+
+
+def test_a_page_at_0_6_s_is_not_filed_and_an_open_issue_hears_it_wasnt_slow(db):
+    from app.fft import rules
+    from app.fft.models import FftLine
+    _fresh()
+    for _ in range(30):
+        speed.record("GET", "/c/{slug}/campaign", 600)
+        speed.record("GET", "/c/{slug}/campaign/old", 1500)  # (a longer route that starts the same is its own issue)
+    speed.flush(db)
+    old = rules.new_issue(db, "askdnd", "Slow: GET /c/{slug}/campaign (slowest tenth 1.0 s, average 600 ms, 30 requests this week)",
+                          feature="speed", kind="improvement")
+    gone = rules.new_issue(db, "askdnd", "Slow: GET /gone (slowest tenth 1.0 s, average 900 ms, 30 requests this week)",
+                           feature="speed", kind="improvement")
+    got = speed.review(db)
+    assert [r["route"] for r in got["slow"]] == ["/c/{slug}/campaign/old"] and old.id not in got["issues"]
+    said = {x.issue_id: x.text for x in db.scalars(select(FftLine).where(FftLine.issue_id.in_([old.id, gone.id])))}
+    assert said[old.id].startswith("Not slow this week: slowest tenth 0.6 s") and said[gone.id] == "Not asked this week."
+
+
+def test_rows_saved_with_a_campaigns_name_count_as_its_page(db):
+    """Rows from before Nov 20 kept the campaign's name: /c/vtt-test/party was filed as a page of its own (issue 87)."""
+    _fresh()
+    db.add(RequestTime(day=config.table_today(), method="GET", route="/c/vtt-test/party", count=5, total_ms=500, max_ms=100,
+                       bands=[5, 0, 0, 0, 0, 0, 0, 0]))
+    db.commit()
+    speed.record("GET", "/c/main/party", 40)
+    speed.flush(db)
+    rows = speed.week(db)
+    assert [(r["route"], r["count"]) for r in rows] == [("/c/{slug}/party", 6)]
