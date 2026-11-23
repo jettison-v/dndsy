@@ -1,0 +1,336 @@
+<title>How the Work Flows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Roadmap item 39, A sturdier loop. Brett, Nov 23: "discuss the scalable architecture first ... A visual would be
+   helpful. Also, the chat architecture ... play devil's advocate." */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 700 1rem/1.3 var(--sans); }
+p { margin: 0; max-width: 78ch; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+section { display: grid; gap: 14px; }
+.lede { display: grid; gap: 10px; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; }
+.answer .tag, .card .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card.mine { border-color: var(--amber); }
+.card.against { border-color: var(--line-strong); }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; font-size: .9rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: .9rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-top: 1px solid var(--line-soft); }
+th { color: var(--muted); font: 700 .72rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; border-top: 0; background: var(--surface-2); }
+td b { white-space: nowrap; }
+.who { display: inline-block; padding: 1px 8px; border-radius: 999px; font: 600 .76rem/1.6 var(--sans); white-space: nowrap; }
+.who.a { background: var(--blue-soft); color: var(--blue); }
+.who.c { background: var(--violet-soft); color: var(--violet); }
+.who.b { background: var(--amber-soft); color: var(--amber); }
+.who.g { background: var(--green-soft); color: var(--green); }
+.miss { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--line-soft); font-size: .9rem; }
+.miss:first-of-type { border-top: 0; }
+.miss .fix { color: var(--green); }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
+.dia { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.dia svg { display: block; width: 100%; min-width: 900px; height: auto; color: var(--text); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.decide { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 640px) { .miss { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 1.6rem; } }
+</style>
+
+<div class="wrap">
+  <header class="lede">
+    <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23</span>
+    <h1>How the work flows: askdnd runs it, Claude works it</h1>
+    <p class="note">You asked for the architecture first, a picture of it, the chat setup, and real pushback. Your idea was expert chats per Product Area, a listener chat that hands work out, and me as architect and reviewer. This page is my answer, with picks at the bottom.</p>
+    <div class="answer">
+      <span class="tag">In short</span>
+      <p><b>Yes</b> to askdnd doing the sequencing and the status, with clear rules. <b>No</b> to more standing chats. The distributor has to be askdnd's own code, not a chat, because a chat can't listen between turns and is one more thing that can go quiet unseen. Expertise belongs in the Map and the tests, not in a chat's memory. So: <b>askdnd is the dispatcher, sessions are short-lived workers that hold a claim on one task, and one lead session (the one you talk to) is architect and reviewer.</b> It's built so channels plug in when they leave preview, with nothing else changing.</p>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-misses">
+    <h2 id="h-misses">What actually broke today</h2>
+    <p class="note">Five misses since this morning. None was a lack of chats or of knowledge. Each was work with <b>no owner, no state, or nobody told</b>. That points the fix at askdnd's bookkeeping, not at more sessions.</p>
+    <div class="card">
+      <div class="miss"><span><b>Claude stopped listening</b> and your bar said so before I did.</span><span class="fix">The listener becomes a claim with a heartbeat; a turn can't end without it (already in scope).</span></div>
+      <div class="miss"><span><b>Three pull requests sat stuck:</b> one clashed with main, one was finished but its session ended unmerged, one failed for 16 hours with no one watching.</span><span class="fix">askdnd tracks every pull request as owned work; a small GitHub job keeps waiting ones up to date. (GitHub's merge queue isn't offered on a personal account's repository.)</span></div>
+      <div class="miss"><span><b>Retiring a check left a fix with no check</b>, and you saw it first.</span><span class="fix">askdnd refuses the gap at the moment it's made: retire takes its replacement, or says what's left.</span></div>
+      <div class="miss"><span><b>An iPhone check you passed twice stayed</b> (issue 104, fixed).</span><span class="fix">A rule in askdnd, not a chat, decides what counts.</span></div>
+      <div class="miss"><span><b>Item 38's page couldn't be opened</b> from its scope (issue 105, fixed today).</span><span class="fix">Everything you need to act on is one press away from where you're asked.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-map">
+    <h2 id="h-map">Who does what</h2>
+    <figure>
+      <div class="dia">
+        <svg viewBox="0 0 1180 560" role="img" aria-label="askdnd in the middle holds the queue, the states, the gates and the timers. You decide and try in askdnd. GitHub, Railway and the Mac Mini report into askdnd. Claude's lead session and short-lived workers take work from askdnd through a delivery that is a long-poll today and channels later.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a29d93"/></marker>
+          </defs>
+          <g font-family="Inter, system-ui, sans-serif">
+          <!-- you -->
+          <rect x="20" y="210" width="200" height="140" rx="12" fill="#2a2418" stroke="#e8b34b"/>
+          <text x="120" y="244" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">You</text>
+          <text x="120" y="270" text-anchor="middle" fill="#a29d93" font-size="12.5">decide: scopes, picks</text>
+          <text x="120" y="290" text-anchor="middle" fill="#a29d93" font-size="12.5">try: checks, local tries</text>
+          <text x="120" y="310" text-anchor="middle" fill="#a29d93" font-size="12.5">send: notes, ideas</text>
+          <text x="120" y="330" text-anchor="middle" fill="#a29d93" font-size="12.5">talk: the lead chat</text>
+          <!-- askdnd -->
+          <rect x="330" y="140" width="400" height="280" rx="14" fill="#1b2230" stroke="#7ea6e0" stroke-width="2"/>
+          <text x="530" y="176" text-anchor="middle" fill="#ffffff" font-size="19" font-weight="700">askdnd: the one source of truth</text>
+          <text x="352" y="210" fill="#7ea6e0" font-size="13" font-weight="700">QUEUE</text>
+          <text x="352" y="230" fill="#ebe7df" font-size="13">every piece of work, in your one order</text>
+          <text x="352" y="262" fill="#7ea6e0" font-size="13" font-weight="700">STATES</text>
+          <text x="352" y="282" fill="#ebe7df" font-size="13">sent, ready, claimed, in review, live, yours…</text>
+          <text x="352" y="314" fill="#7ea6e0" font-size="13" font-weight="700">GATES</text>
+          <text x="352" y="334" fill="#ebe7df" font-size="13">nothing starts early, nothing merges in your round</text>
+          <text x="352" y="366" fill="#7ea6e0" font-size="13" font-weight="700">TIMERS</text>
+          <text x="352" y="386" fill="#ebe7df" font-size="13">a claim gone quiet, a red PR, an unread note</text>
+          <!-- reporters, top -->
+          <rect x="300" y="20" width="140" height="72" rx="10" fill="#1f2226" stroke="#4a4f57"/>
+          <text x="370" y="50" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">GitHub</text>
+          <text x="370" y="72" text-anchor="middle" fill="#a29d93" font-size="11.5">PRs: red, behind, merged</text>
+          <rect x="460" y="20" width="140" height="72" rx="10" fill="#1f2226" stroke="#4a4f57"/>
+          <text x="530" y="50" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">Railway</text>
+          <text x="530" y="72" text-anchor="middle" fill="#a29d93" font-size="11.5">deployed: mark live</text>
+          <rect x="620" y="20" width="140" height="72" rx="10" fill="#1f2226" stroke="#4a4f57"/>
+          <text x="690" y="50" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">Mac Mini</text>
+          <text x="690" y="72" text-anchor="middle" fill="#a29d93" font-size="11.5">tests; wakes a session</text>
+          <line x1="370" y1="94" x2="400" y2="138" stroke="#a29d93" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="530" y1="94" x2="530" y2="138" stroke="#a29d93" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="690" y1="94" x2="660" y2="138" stroke="#a29d93" stroke-width="1.5" marker-end="url(#ar)"/>
+          <text x="760" y="122" fill="#8f8a81" font-size="11.5">report in; askdnd changes the state</text>
+          <!-- you <-> askdnd -->
+          <line x1="222" y1="262" x2="326" y2="262" stroke="#e8b34b" stroke-width="1.8" marker-end="url(#ar)"/>
+          <line x1="326" y1="300" x2="222" y2="300" stroke="#e8b34b" stroke-width="1.8" marker-end="url(#ar)"/>
+          <text x="232" y="252" fill="#e8b34b" font-size="11.5">your marks, picks, OKs</text>
+          <text x="232" y="318" fill="#e8b34b" font-size="11.5">For you, the bar</text>
+          <!-- delivery -->
+          <rect x="800" y="232" width="150" height="96" rx="10" fill="#1f2226" stroke="#5bbf7f" stroke-dasharray="5 4"/>
+          <text x="875" y="262" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">Delivery</text>
+          <text x="875" y="284" text-anchor="middle" fill="#a29d93" font-size="11.5">today: wait (long-poll)</text>
+          <text x="875" y="302" text-anchor="middle" fill="#a29d93" font-size="11.5">later: channels push</text>
+          <text x="875" y="320" text-anchor="middle" fill="#a29d93" font-size="11.5">same outbox either way</text>
+          <line x1="732" y1="280" x2="796" y2="280" stroke="#5bbf7f" stroke-width="1.8" marker-end="url(#ar)"/>
+          <!-- claude -->
+          <rect x="990" y="150" width="170" height="110" rx="12" fill="#231f2c" stroke="#b9a3e3" stroke-width="2"/>
+          <text x="1075" y="182" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="700">Lead session</text>
+          <text x="1075" y="204" text-anchor="middle" fill="#a29d93" font-size="11.5">the chat you talk to</text>
+          <text x="1075" y="222" text-anchor="middle" fill="#a29d93" font-size="11.5">architect, designer</text>
+          <text x="1075" y="240" text-anchor="middle" fill="#a29d93" font-size="11.5">reviews, merges</text>
+          <rect x="990" y="300" width="170" height="110" rx="12" fill="#231f2c" stroke="#b9a3e3" stroke-dasharray="5 4"/>
+          <text x="1075" y="332" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="700">Workers</text>
+          <text x="1075" y="354" text-anchor="middle" fill="#a29d93" font-size="11.5">one task each, own copy</text>
+          <text x="1075" y="372" text-anchor="middle" fill="#a29d93" font-size="11.5">hold a claim, heartbeat</text>
+          <text x="1075" y="390" text-anchor="middle" fill="#a29d93" font-size="11.5">end at a pull request</text>
+          <line x1="952" y1="268" x2="986" y2="220" stroke="#b9a3e3" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="952" y1="294" x2="986" y2="340" stroke="#b9a3e3" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="1075" y1="298" x2="1075" y2="264" stroke="#b9a3e3" stroke-width="1.2" marker-end="url(#ar)"/>
+          <text x="1088" y="286" fill="#8f8a81" font-size="11">review</text>
+          <!-- claims back -->
+          <path d="M990,430 C900,500 740,500 640,424" fill="none" stroke="#b9a3e3" stroke-width="1.5" marker-end="url(#ar)"/>
+          <text x="760" y="490" fill="#b9a3e3" font-size="12">claim, heartbeat, done: every change goes through askdnd's rules</text>
+          <!-- not here -->
+          <rect x="20" y="430" width="420" height="104" rx="10" fill="#241a1a" stroke="#d64545" stroke-dasharray="5 4"/>
+          <text x="40" y="460" fill="#f08a8a" font-size="13" font-weight="700">NOT IN THE PICTURE, ON PURPOSE</text>
+          <text x="40" y="484" fill="#ebe7df" font-size="12.5">a listener chat that hands work out (askdnd does it)</text>
+          <text x="40" y="504" fill="#ebe7df" font-size="12.5">standing expert chats per area (the Map and tests are the expert)</text>
+          <text x="40" y="524" fill="#ebe7df" font-size="12.5">state kept in a chat's memory (it gets summarized away)</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>askdnd is the only place a state changes. Everything else reports in (GitHub, Railway, the Mini) or takes work out (the lead and the workers). The dashed delivery box is the only part channels replace.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h-life">
+    <h2 id="h-life">The life of one piece of work: what goes where, and when</h2>
+    <p class="note">Your three worries map onto three rules. <b>Never too early:</b> nothing is claimable until it's Ready. <b>Never busy when I shouldn't be:</b> claims are limited and held by askdnd, not by a chat deciding. <b>Never the wrong thing:</b> I take only the top of askdnd's one order, never my own pick.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>State</th><th>Who moves it on</th><th>The gate (it can't move until…)</th><th>If it stalls</th></tr></thead>
+        <tbody>
+          <tr><td><b>Sent</b></td><td><span class="who b">you</span> <span class="who g">the table</span></td><td>An admin files a player's note; yours file at once.</td><td>Unread 15 min while a session listens: amber on the bar.</td></tr>
+          <tr><td><b>Sorted</b></td><td><span class="who c">lead</span></td><td>It has a title, a Feature (so its Product Area) and a reply to you.</td><td>Unsorted shows in Claude's hands.</td></tr>
+          <tr><td><b>Ready</b></td><td><span class="who a">askdnd</span></td><td>An approved fix, or a scope you OK'd; its area isn't in your round; no freeze; what it depends on is done.</td><td>Nothing: it waits its turn in your order.</td></tr>
+          <tr><td><b>Claimed</b></td><td><span class="who c">lead or a worker</span></td><td>Top of the order; at most one claim per area; at most two at once, and none for a Look area while one waits on you.</td><td>No heartbeat for 20 min: the claim lapses, it goes back to Ready, and the bar says whose it was.</td></tr>
+          <tr><td><b>In review</b></td><td><span class="who c">lead</span></td><td>Pull request open, with its lane. The lead reviews at high effort, never the worker that wrote it.</td><td>Unreviewed 1 hour: in Claude's hands.</td></tr>
+          <tr><td><b>Merging</b></td><td><span class="who a">askdnd</span> <span class="who g">GitHub</span></td><td>Tests green, up to date (a GitHub job updates it), lane rules met.</td><td>Red or clashing: in Claude's hands at once, with the reason.</td></tr>
+          <tr><td><b>Live</b></td><td><span class="who g">Railway</span> → <span class="who a">askdnd</span></td><td>The deploy reports in; askdnd marks fixes live and releases their checks itself.</td><td>Deploy failed: a gap, and the Mini's check says what broke.</td></tr>
+          <tr><td><b>Tried by Claude</b></td><td><span class="who c">lead</span></td><td>My own try on askdnd.ai, or the Mini's, passes.</td><td>Fails: back to Ready, and you're told why.</td></tr>
+          <tr><td><b>Yours to try</b></td><td><span class="who b">you</span></td><td>Your mark: Passed, Something's wrong, Can't try.</td><td>Nothing: you choose when. Superseded tries are retired, never left.</td></tr>
+          <tr><td><b>Closed</b></td><td><span class="who b">you</span></td><td>Only a person closes a fix as working.</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid">
+      <div class="card"><span class="tag">Lives in askdnd</span><p>Every decision, pick, OK, mark and note; the order of work; every state and who holds it; what each pull request is doing. If I said it in chat, I write it onto the item.</p></div>
+      <div class="card"><span class="tag">Lives in the repo</span><p>How each feature works (the Map), the rules (tests), decisions (the log), the pages you read. A fresh worker reads its area's part in a minute; nothing depends on a chat remembering.</p></div>
+      <div class="card"><span class="tag">Lives in a chat</span><p>Only the conversation with you, and the work in hand. A chat can be summarized or closed at any time without losing anything that matters.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-chats">
+    <h2 id="h-chats">The chat setup: three ways, argued</h2>
+    <div class="grid">
+      <div class="card against">
+        <span class="tag">A · Today: one chat does everything</span>
+        <p>No handoffs, one memory, design stays with me.</p>
+        <p class="note">Against: one turn at a time; while I build, notes wait; when the chat is summarized or idle, nobody listens. Today's misses mostly came from here.</p>
+      </div>
+      <div class="card against">
+        <span class="tag">B · Your idea: experts per area, a listener chat, me as architect</span>
+        <p>Parallel work, and someone always "on".</p>
+        <ul class="note">
+          <li><b>A listener chat can't really listen.</b> A chat acts only during a turn, costs tokens while it waits, and is one more thing that can go quiet unseen: today's first miss, in two places.</li>
+          <li><b>Standing experts go stale.</b> A long chat gets summarized (this one has been); the real expertise is the Map, tests and issues, which a fresh session reads quickly. The per-area trial on Nov 17 left gaps.</li>
+          <li><b>Ten Product Areas, ten chats</b> to keep awake, and parallel writers collide: today a scheduled session's edits landed in my working copy.</li>
+          <li><b>The bottleneck is your time</b> to try and decide, not my hands. More builders means more waiting in For you and more checks superseded before you reach them.</li>
+        </ul>
+      </div>
+      <div class="card mine">
+        <span class="tag">C · My pick: askdnd dispatches, a lead, short-lived workers</span>
+        <p>askdnd hands out work by its rules. I stay the one you talk to: architect, designer, reviewer and the one who merges. A worker starts from askdnd's queue with a brief askdnd writes (the issue, its Map section, its checks), in its own copy of the code, holds a claim with a heartbeat, and ends at a pull request I review. The Mini notices when work waits and no session is open, and wakes one (or pings your phone).</p>
+        <p class="note">Against my own pick: workers cost more tokens than one chat, and a worker designing screens would give you piecemeal UI. So workers take only clear fixes and behind-the-scenes work; anything you'll look at stays with the lead. Start with one worker, not two, and earn the second.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-channels">
+    <h2 id="h-channels">When channels leave preview</h2>
+    <p>Channels push a message into a running session, so I hear you without waiting on a poll. In this design that only swaps the dashed delivery box: askdnd keeps an outbox per listener, today's wait reads it, a channel would push the same outbox, and the Mini covers the case where no session is open. The queue, states, gates and timers don't change.</p>
+    <p class="note">Devil's advocate on channels themselves: they'd have fixed one of today's five misses (my listener). The stuck pull requests, the check left without a replacement and the unopenable page are bookkeeping, and no delivery fixes bookkeeping. That's why the order below starts with askdnd, not with channels.</p>
+  </section>
+
+  <section aria-labelledby="h-order">
+    <h2 id="h-order">Build order: cheapest misses first</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Step</th><th>What it adds</th><th>Today's misses it ends</th></tr></thead>
+      <tbody>
+        <tr><td><b>1 · Pull requests in askdnd</b></td><td>Every PR's state (red, behind, clashing, auto-merge, whose) shown as owned work; a GitHub job keeps waiting ones up to date.</td><td>The three stuck pull requests</td></tr>
+        <tr><td><b>2 · Deploys mark themselves live</b></td><td>Railway tells askdnd; fixes go live and checks are released with no Claude step.</td><td>A deploy nobody followed</td></tr>
+        <tr><td><b>3 · Claims with a heartbeat</b></td><td>Every piece of work in hand has a holder and a last-seen time; my listener is a claim too.</td><td>Listener down; a session that ended mid-task</td></tr>
+        <tr><td><b>4 · Gaps refused where they're made</b></td><td>Retire without a replacement, a fix with no check: askdnd says no at the moment, not at the end of my turn.</td><td>The check left without one</td></tr>
+        <tr><td><b>5 · One worker from the queue</b></td><td>A worker in its own copy, from askdnd's brief, for Ship-lane work; I review and merge.</td><td>Notes waiting while I build</td></tr>
+        <tr><td><b>6 · The Mini wakes a session; channels when they're out</b></td><td>Work waiting with nobody listening starts a session or pings you.</td><td>No session open when you send something</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>1 · Who hands out the work</legend>
+      <label class="opt"><input type="radio" name="dispatch" value="askdnd"><span>A · askdnd, by its rules <span class="mine">my pick</span></span><small>Ready gates, one order, claims with heartbeats. Deterministic, always on, and you can see it.</small></label>
+      <label class="opt"><input type="radio" name="dispatch" value="chat"><span>B · A listener chat that distributes</span><small>Flexible judgment, but it can only act during a turn and can go quiet unseen.</small></label>
+      <label class="opt"><input type="radio" name="dispatch" value="lead"><span>C · The lead session decides as it goes</span><small>Today's way.</small></label>
+    </fieldset>
+    <fieldset><legend>2 · The chat setup</legend>
+      <label class="opt"><input type="radio" name="chats" value="lead-workers"><span>A · One lead plus short-lived workers <span class="mine">my pick</span></span><small>I'm architect, designer and reviewer; workers take clear fixes from the queue and end at a pull request.</small></label>
+      <label class="opt"><input type="radio" name="chats" value="experts"><span>B · Standing expert chats per Product Area, a distributor chat, me as architect</span><small>Your first idea; the pushback above is why I'd not.</small></label>
+      <label class="opt"><input type="radio" name="chats" value="one"><span>C · One chat, as today, made sturdier</span><small>Steps 1–4 only; no workers.</small></label>
+    </fieldset>
+    <fieldset><legend>3 · How much at once</legend>
+      <label class="opt"><input type="radio" name="wip" value="tied"><span>A · Tied to your queue <span class="mine">my pick</span></span><small>One worker to start (two once it's proven), one claim per area, none in an area you're trying, nothing new to look at while a round of yours waits.</small></label>
+      <label class="opt"><input type="radio" name="wip" value="per-area"><span>B · One per area with work</span><small>Fastest, but it piles checks in For you faster than you can try them.</small></label>
+      <label class="opt"><input type="radio" name="wip" value="one"><span>C · One thing at a time, always</span><small>Simplest; slower.</small></label>
+    </fieldset>
+    <fieldset><legend>4 · What to build first</legend>
+      <label class="opt"><input type="radio" name="first" value="bookkeeping"><span>A · The order above: askdnd's bookkeeping, then workers, then delivery <span class="mine">my pick</span></span><small>Ends four of today's five misses before any new chat exists.</small></label>
+      <label class="opt"><input type="radio" name="first" value="workers"><span>B · Workers first</span><small>More done sooner, on today's fragile bookkeeping.</small></label>
+      <label class="opt"><input type="radio" name="first" value="channels"><span>C · Wait for channels, then build around them</span><small>Ends one miss; the rest stay.</small></label>
+    </fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(where you disagree, what I've missed, a worry this doesn't answer)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or a Roadmap item's page), askdnd keeps them as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["dispatch", "chats", "wip", "first"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "How the work flows",
+  "kind": "plan",
+  "status": "Your picks",
+  "date": "Nov 23",
+  "what": "Roadmap item 39, A sturdier loop: askdnd as the dispatcher (queue, states, gates, timers), a lead session and short-lived workers, the life of one piece of work, the chat setups argued (including standing expert chats and a listener chat), channels as a plug-in delivery, a build order, and four picks.",
+  "source": "docs/mockups/loop-architecture/index.html",
+  "link": "https://claude.ai/artifact/WYpEBU8Q9QWu3uHksWQUby"
+ },
+ {
   "title": "A Roadmap item's page",
   "kind": "design",
   "status": "Your picks",
