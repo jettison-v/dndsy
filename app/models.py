@@ -1140,6 +1140,9 @@ class RequestTime(Base):
     count: Mapped[int] = mapped_column(Integer, default=0)
     total_ms: Mapped[int] = mapped_column(BigInteger, default=0)
     max_ms: Mapped[int] = mapped_column(Integer, default=0)
+    db_ms: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")  # (their database reads' time, Nov 23)
+    reads: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")  # (how many reads)
+    before_ms: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")  # (before the route: app/timing.py BEFORE)
     bands: Mapped[list] = mapped_column(JSONB, default=list)
 
 

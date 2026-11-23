@@ -201,7 +201,7 @@ def context_values():
     is complete). One process runs many tests, and a value one test set would otherwise reach the next."""
     from app import access, history, timing
 
-    return [(access.viewer, ""), (access.path_slug, None), (history._actor, ""), (history._source, ("edit", None)), (timing._now, None)]
+    return [(access.viewer, ""), (access.path_slug, None), (history._actor, ""), (history._source, ("edit", None)), (timing._now, None), (timing._came, 0.0)]
 
 
 @pytest.fixture(autouse=True)
