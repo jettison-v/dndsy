@@ -260,12 +260,13 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
 
 
 def pages(db: Session, it: FftItem) -> list[dict]:
-    """The pages a Roadmap item points to, each opening inside askdnd (its why, next step, steps and latest scope:
+    """The pages a Roadmap item points to, each opening inside askdnd (its why, next step, steps, additions and latest scope:
     issue 105, Brett's note Nov 23)."""
     from app import documents
 
     sc = rules.latest_scope(db, it)
-    words = [it.why or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id)))]
+    words = [it.why or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id))),
+             *(f"{a.words} {a.answer_words or ''}" for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id)))]
     if sc is not None:
         words += [sc.what or "", *(sc.inside or []), *(sc.not_now or []), *(str(q) for q in (sc.questions or []))]
     return documents.linked(*words)

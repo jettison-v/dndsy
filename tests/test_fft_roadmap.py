@@ -369,5 +369,9 @@ def test_an_items_pages_open_in_askdnd_from_its_window_and_page(db, admin):
     rules.add_step(db, "claude", stepped, f"Read the comparison: {entry['link']}", whose="brett")
     db.flush()
     assert want[0] in admin.get(f"/manage/item/r{stepped.id}").text
+    added = _scoped(db, "An addition names it")  # (a page Brett pastes into an addition; the review of #475)
+    rules.add_to_item(db, "user:1", added, f"Also read {other['source']}", user_id=None)
+    db.flush()
+    assert want[1] in admin.get(f"/manage/item/r{added.id}").text
     bare = _scoped(db, "No pages")
     assert 'data-sec="pages"' not in admin.get(f"/manage/item/r{bare.id}").text and "data-pages" not in admin.get(f"/manage/roadmap/{bare.id}").text
