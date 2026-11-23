@@ -7,7 +7,7 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
-from app import config
+from app import config, timing
 
 
 class Base(DeclarativeBase):
@@ -33,8 +33,6 @@ def _read_starts(conn, cursor, statement, parameters, context, executemany):
 def _read_ends(conn, cursor, statement, parameters, context, executemany):
     starts = conn.info.get("askdnd_read_at")
     if starts:
-        from app import timing
-
         timing.read(time.monotonic() - starts.pop())
 
 
@@ -55,8 +53,6 @@ def _read_failed(context) -> None:  # (a read that failed never leaves its start
 def get_db() -> Iterator[Session]:
     """FastAPI dependency: one database session per request. Its connection is taken at once, timed, so a slow request
     says whether it waited for one (app/timing.py: the pool running out looks like a slow server with nothing to do)."""
-    from app import timing
-
     timing.started()
     with SessionLocal() as session:
         with timing.step("waiting for a database connection"):

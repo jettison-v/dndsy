@@ -170,4 +170,23 @@ def test_a_routes_database_reads_and_its_wait_before_the_route_are_kept(db, play
     got = next(r for r in speed.week(db) if r["route"] == "/party")
     assert got["avg_reads"] == reads and got["avg_db_ms"] == int(db_ms) and "avg_before_ms" in got
     line = timing.said("GET", "/party", 2.5, {timing.DB: 1.2, timing.READS: 40, timing.BEFORE: 0.9})
-    assert "database 1200 ms (40 reads)" in line and "before the route 900 ms" in line and "the rest 400 ms" in line
+    assert "database 1200 ms (40 queries)" in line and "before the route 900 ms" in line and "the rest 1600 ms, its database time included" in line
+
+
+def test_the_wait_before_the_route_is_the_time_to_get_db():
+    """What came before the route's first database work (the tests replace get_db, so it's called here directly)."""
+    import time
+
+    from app import db as app_db
+    from app import timing
+
+    watch: dict = {}
+    t1, t2 = timing._now.set(watch), timing._came.set(time.monotonic() - 0.25)
+    try:
+        gen = app_db.get_db()
+        next(gen)
+        gen.close()
+    finally:
+        timing._now.reset(t1)
+        timing._came.reset(t2)
+    assert 0.25 <= watch[timing.BEFORE] < 5 and watch.get(timing.READS, 0) >= 0

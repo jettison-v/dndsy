@@ -23,7 +23,7 @@ STEP_MIN = 0.005  # seconds: a step quicker than this isn't worth a word
 CAME = "askdnd.came"  # the request's scope: when it reached askdnd, before it waited for a thread, a connection or a lock
 HELD = "held open"  # a step a route waits on by design (a long-poll, Nov 20): not counted towards slow
 DB = "database"  # the time the request's own database reads took (app/db.py counts every one)
-READS = "reads"  # how many: a count, never a time, so never in a sum of steps
+READS = "reads"  # how many statements (reads and writes): a count, never a time, so never in a sum of steps
 BEFORE = "before the route"  # from reaching askdnd to the route's first database work: the sign-in check, a free worker
 
 _now: contextvars.ContextVar[dict | None] = contextvars.ContextVar("askdnd_timing", default=None)
@@ -84,11 +84,11 @@ def _pool() -> str:
 def said(method: str, route: str, total: float, steps: dict) -> str:
     steps = dict(steps)
     reads = steps.pop(READS, 0)
-    parts = [f"{name} {round(sec * 1000)} ms" + (f" ({reads} reads)" if name == DB else "")
+    parts = [f"{name} {round(sec * 1000)} ms" + (f" ({reads} queries)" if name == DB else "")
              for name, sec in sorted(steps.items(), key=lambda kv: -kv[1]) if sec >= STEP_MIN]
-    other = total - sum(steps.values())
+    other = total - sum(sec for name, sec in steps.items() if name != DB)  # (the database's time is inside other steps too)
     if other >= STEP_MIN:
-        parts.append(f"the rest {round(other * 1000)} ms")
+        parts.append(f"the rest {round(other * 1000)} ms" + (", its database time included" if DB in steps else ""))
     return f"Slow request {round(total * 1000)} ms: {method} {route}" + (" · " + ", ".join(parts) if parts else "")
 
 
