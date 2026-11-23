@@ -55,7 +55,7 @@
   <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
   <td class="num" data-steps title="Its steps done">{% if r.steps %}{{ r.done }} of {{ r.steps }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
   <td class="num" data-passed>{% if r.checks %}{{ r.passed }} of {{ r.checks }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
-  <td class="dt-wrap wk-waits">{{ r.waits }}</td>
+  <td class="dt-wrap wk-waits"{% if r.ship %} data-waits="ship"{% endif %}>{{ r.waits }}</td>
   <td>{% call more_menu("More for " ~ r.it.title) %}<form method="post" action="/manage/roadmap/{{ r.it.id }}"><input type="hidden" name="do" value="{{ 'unhold' if r.it.held else 'hold' }}"><button type="submit" data-do="{{ 'unhold' if r.it.held else 'hold' }}">{{ "Let it go: back above the line" if r.it.held else "Hold: below the line" }}</button></form>{% endcall %}</td>
 </tr>
 {% endmacro %}

@@ -876,12 +876,18 @@ def scope_asked(db: Session) -> list[FftItem]:
 
 def builds_done(db: Session) -> list[tuple[FftItem, datetime]]:
     """Open Roadmap items whose every step is done, each with when its last step was ticked: finished, waiting for
-    Claude to ship it with its result (issue 72, Brett Nov 22: nothing told Claude when he ticked the last one)."""
-    last = (select(FftStep.item_id, func.max(FftStep.done_at)).group_by(FftStep.item_id)
+    Claude to ship it with its result (issue 72, Brett Nov 22: nothing told Claude when he ticked the last one). Not one
+    Brett paused or held, nor one whose plans still have open issues (those are Claude's work already)."""
+    last = (select(FftStep.item_id, func.max(FftStep.done_at).label("at")).group_by(FftStep.item_id)
             .having(func.count() == func.count(FftStep.done_at)).subquery())
-    q = (select(FftItem, last.c[1]).join(last, last.c.item_id == FftItem.id)
-         .where(FftItem.standing.is_(False), FftItem.section.in_(ROADMAP_SECTIONS)).order_by(FftItem.id))
-    return [(it, at) for it, at in db.execute(q).all()]
+    q = (select(FftItem, last.c.at).join(last, last.c.item_id == FftItem.id)
+         .where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next", "later")), FftItem.held.is_(False)).order_by(FftItem.id))
+    out = []
+    for it, at in db.execute(q).all():
+        plans = db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)))
+        if not any(area_open_issues(db, a) for a in plans):
+            out.append((it, at))
+    return out
 
 
 def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:

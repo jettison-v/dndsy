@@ -373,7 +373,17 @@ def test_a_build_with_every_step_done_is_claudes_to_ship(db, admin):
     assert [(g["thing"], g["id"]) for g in gap] == [("item", item.id)] and gap[0]["since"] == his.done_at
     row = admin.get("/manage/work").text
     row = row[row.index(f'data-build="{item.id}"'):]
-    assert "Claude: ship it, every step is done" in row[:row.index("</tr>")]
+    assert 'data-waits="ship"' in row[:row.index("</tr>")]
+    rules.hold_item(db, "user:1", item, True)
+    db.flush()
+    assert not [g for g in views.gaps(db) if g["kind"] == "steps_done"]  # (held below the line: Brett's to let go)
+    rules.hold_item(db, "user:1", item, False)
+    plan = rules.new_area(db, "claude", item, "Clearer checks")
+    open_issue = rules.new_issue(db, "claude", "A goal runs long", area_id=plan.id, feature="feedback")
+    db.flush()
+    assert not [g for g in views.gaps(db) if g["kind"] == "steps_done"]  # (its plan still has a fix to make)
+    rules.close(db, "claude", open_issue, "wont", "Fine as it is")
+    db.flush()
     rules.ship_item(db, "claude", item, result="Checks say their goal\nAll 24 rewritten")
     db.flush()
     assert not [g for g in views.gaps(db) if g["kind"] == "steps_done"]  # (shipped: History)
