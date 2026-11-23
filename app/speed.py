@@ -79,14 +79,21 @@ def flush(db: Session) -> int:
     return len(taken)
 
 
-def _quantile(bands: list[int], q: float) -> int:
-    """The time band's upper edge where `q` of the requests have finished (an estimate: the bands are its resolution)."""
+def _quantile(bands: list[int], q: float, top: float) -> int:
+    """Where `q` of the requests have finished, estimated inside its time band: the band's requests spread evenly from its
+    lower edge to its upper one (the last band's upper edge, and any band's, is never past `top`, the slowest request).
+    Nov 23, the first Monday: the band's upper edge alone read a 0.6 s page as 1 s, over the 0.8 s line."""
     total, seen = sum(bands), 0
+    if not total:
+        return 0
+    want = q * total
     for i, n in enumerate(bands):
+        if n and seen + n >= want:
+            low = BANDS_MS[i - 1] if i else 0
+            high = min(BANDS_MS[i] if i < len(BANDS_MS) else top, top)
+            return round(low + (high - low) * (want - seen) / n) if high > low else round(high)
         seen += n
-        if total and seen >= q * total:
-            return BANDS_MS[i] if i < len(BANDS_MS) else BANDS_MS[-1] * 2
-    return 0
+    return round(top)
 
 
 def week(db: Session, days: int = 7) -> list[dict]:
@@ -96,13 +103,14 @@ def week(db: Session, days: int = 7) -> list[dict]:
     since = config.table_today() - timedelta(days=days - 1)
     acc: dict[tuple[str, str], dict] = {}
     for r in db.scalars(select(RequestTime).where(RequestTime.day >= since)):
-        a = acc.setdefault((r.method, r.route), {"count": 0, "total": 0, "max": 0, "bands": [0] * (len(BANDS_MS) + 1)})
+        route = CAMPAIGN.sub("/c/{slug}", r.route)  # (rows saved before Nov 20 kept the campaign's name)
+        a = acc.setdefault((r.method, route), {"count": 0, "total": 0, "max": 0, "bands": [0] * (len(BANDS_MS) + 1)})
         a["count"] += r.count
         a["total"] += r.total_ms
         a["max"] = max(a["max"], r.max_ms)
-        a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [], strict=False)]
+        a["bands"] = [x + y for x, y in zip(a["bands"], r.bands or [0] * len(a["bands"]), strict=False)]  # (a row with none never wipes the rest)
     out = [{"method": m, "route": route, "count": a["count"], "avg_ms": round(a["total"] / a["count"]) if a["count"] else 0,
-            "p50_ms": min(_quantile(a["bands"], .5), a["max"]), "p90_ms": min(_quantile(a["bands"], .9), a["max"]), "max_ms": a["max"]}
+            "p50_ms": _quantile(a["bands"], .5, a["max"]), "p90_ms": _quantile(a["bands"], .9, a["max"]), "max_ms": a["max"]}
            for (m, route), a in acc.items()]
     return sorted(out, key=lambda r: (-r["p90_ms"], -r["count"]))
 
@@ -120,12 +128,19 @@ def review(db: Session) -> dict:
     for r in slow:
         title = f"Slow: {r['method']} {r['route']}"[:80]
         said = f"{title} (slowest tenth {r['p90_ms'] / 1000:.1f} s, average {r['avg_ms']} ms, {r['count']} requests this week)"
-        issue = db.scalar(select(FftIssue).where(FftIssue.title.startswith(title), FftIssue.state != "closed"))
+        issue = db.scalar(select(FftIssue).where(FftIssue.title.startswith(title + " ("), FftIssue.state != "closed"))  # (never a longer route that starts the same)
         if issue is None:
             issue = rules.new_issue(db, "askdnd", said[:120], feature="speed", kind="improvement")
         else:
             issue.title = said[:120]
         filed.append(issue.id)
+    seen = {f"Slow: {r['method']} {r['route']}"[:80]: r for r in rows}
+    for issue in db.scalars(select(FftIssue).where(FftIssue.feature == "speed", FftIssue.state != "closed",
+                                                   FftIssue.title.startswith("Slow: "), FftIssue.id.not_in(filed or [0]))):
+        r = next((v for k, v in seen.items() if issue.title.startswith(k + " (")), None)  # (an open one that isn't slow now)
+        nums = f"slowest tenth {r['p90_ms'] / 1000:.1f} s, average {r['avg_ms']} ms, {r['count']} requests." if r else ""
+        rules.add_line(db, "askdnd", "Not asked this week." if r is None else f"Too few requests this week to tell: {nums}"
+                       if r["p90_ms"] >= SLOW_P90_MS else f"Not slow this week: {nums}", issue=issue)
     db.execute(RequestTime.__table__.delete().where(RequestTime.day < config.table_today() - timedelta(days=KEEP_DAYS)))
     words = (f"{len(rows)} routes this week; {len(slow)} slow (the slowest tenth {SLOW_P90_MS} ms or more): "
              + ", ".join(f"{r['route']} {r['p90_ms'] / 1000:.1f} s" for r in slow[:5])) if slow else f"{len(rows)} routes this week; none slow."
