@@ -26,6 +26,7 @@
     <div><dt>Stage</dt><dd>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</dd></div>
     {% if r.next[1] %}<div><dt>Next step</dt><dd data-next="{{ r.next[0] }}">{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude") }} <span>{{ r.next[1] }}</span></dd></div>{% endif %}
     {% if r.status %}<div><dt>Where it stands</dt><dd class="rm-fact-words">{{ r.status }}</dd></div>{% endif %}
+    {% if pages %}<div><dt>{{ "Pages" if pages | length > 1 else "Page" }}</dt><dd class="rm-fact-words" data-pages>{% for p in pages %}<a href="{{ p.href }}" data-page="{{ p.id }}">{{ p.title }}</a>{{ " · " if not loop.last }}{% endfor %}</dd></div>{% endif %}
   </dl>
   {% set why = (it.why or "").splitlines() | map("trim") | select | list %}
   {% if why or it.why_from %}{# (its first line the headline, each line after it a point; the decisions behind it a quiet line) #}

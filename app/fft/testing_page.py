@@ -387,7 +387,7 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
         from app.fft import roadmap_page
         from app.fft.models import FftStep
 
-        return {"kind": "roadmap", "it": it, "scope": rules.latest_scope(db, it), "row": roadmap_page.row(db, it),
+        return {"kind": "roadmap", "it": it, "scope": rules.latest_scope(db, it), "row": roadmap_page.row(db, it), "pages": roadmap_page.pages(db, it),
                 "mine": list(db.scalars(select(FftStep).where(FftStep.item_id == it.id, FftStep.whose == "brett", FftStep.done_at.is_(None)).order_by(FftStep.place)))}
     if kind == "l" and (lt := db.get(FftLocalTry, ident)):
         return {"kind": "local", "lt": lt, "area": db.get(FftArea, lt.area_id) if lt.area_id else None, "open": LOCAL + "/dev/login?next=" + quote(lt.path, safe="/?=&")}

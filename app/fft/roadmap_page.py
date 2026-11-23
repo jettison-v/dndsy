@@ -189,7 +189,7 @@ def item(request: Request, item_id: int, tab: str = "scope", ver: int = 0, db: S
         "it": it, "r": r, "tab": tab, "tabs": TABS, "scopes": scopes, "shown": shown, "latest": latest,
         "line_comments": lines, "answers": answers, "question_keys": [f"q:{i}" for i in range(len(latest.questions) if latest else 0)], "held": held, "waits": rules.waits_on_brett(latest) and it.section in rules.ROADMAP_SECTIONS,
         "open": it.section in rules.ROADMAP_SECTIONS,
-        "adds": adds, "steps": steps, "plans": plans, "section_said": SECTION_SAID, "sections": rules.ROADMAP_SECTIONS,
+        "adds": adds, "steps": steps, "plans": plans, "pages": pages(db, it), "section_said": SECTION_SAID, "sections": rules.ROADMAP_SECTIONS,
         "events": [(e, views.event_words(e), work_page._who(db, e.actor, who)) for e in events],
         "toast": request.session.pop("toast", None)})
 
@@ -257,3 +257,16 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
     db.commit()
     request.session["toast"] = said
     return RedirectResponse(back, status_code=303)
+
+
+def pages(db: Session, it: FftItem) -> list[dict]:
+    """The pages a Roadmap item points to, each opening inside askdnd (its why, next step, steps, additions and latest scope:
+    issue 105, Brett's note Nov 23)."""
+    from app import documents
+
+    sc = rules.latest_scope(db, it)
+    words = [it.why or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id))),
+             *(f"{a.words} {a.answer_words or ''}" for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id)))]
+    if sc is not None:
+        words += [sc.what or "", *(sc.inside or []), *(sc.not_now or []), *(str(q) for q in (sc.questions or []))]
+    return documents.linked(*words)

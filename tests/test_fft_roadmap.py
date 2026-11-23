@@ -346,3 +346,32 @@ def test_an_items_why_is_a_line_then_points_with_the_decisions_behind_it(db, adm
     assert why.count("<li>") == 2 and "homebrew items easy" in why.split("<li>")[0] and "data-why-from" in why
     assert page.count("<dt>") == 4 and 'data-next="claude"' in page  # (Section, Size, Stage, Next step)
     assert 'role="tablist"' in page and 'id="t-steps"' in page
+
+
+def test_an_items_pages_open_in_askdnd_from_its_window_and_page(db, admin):
+    """Issue 105 (Brett's note, Nov 23: "This scope does not allow me to open the mockup where I need to ask questions in
+    order for you to set the scope"): the pages an item points to, by a claude.ai link or a docs/ path in its scope or
+    steps, open inside askdnd from its window in For you and from its page; a link Documents doesn't list is left out."""
+    from app import documents
+
+    entry = next(e for e in documents.library() if e.get("link"))
+    other = next(e for e in documents.library() if e["id"] != entry["id"])
+    it = _scoped(db)
+    rules.write_scope(db, "claude", it, what="One page for you to read.", inside=[f"The page: {entry['link']}", f"Built from {other['source']}",
+                                                                            "And https://claude.ai/artifact/NotInTheLibrary"])
+    db.flush()
+    want = [f'href="/manage/documents/{entry["id"]}"', f'href="/manage/documents/{other["id"]}"']
+    window = admin.get(f"/manage/item/r{it.id}").text
+    assert all(w in window for w in want) and 'data-sec="pages"' in window and "NotInTheLibrary" not in window.split('data-sec="pages"')[1].split("</section>")[0]
+    page = admin.get(f"/manage/roadmap/{it.id}").text
+    assert all(w in page for w in want) and "data-pages" in page
+    stepped = _scoped(db, "A step names it")  # (item 38's page was named only in Brett's step)
+    rules.add_step(db, "claude", stepped, f"Read the comparison: {entry['link']}", whose="brett")
+    db.flush()
+    assert want[0] in admin.get(f"/manage/item/r{stepped.id}").text
+    added = _scoped(db, "An addition names it")  # (a page Brett pastes into an addition; the review of #475)
+    rules.add_to_item(db, "user:1", added, f"Also read {other['source']}", user_id=None)
+    db.flush()
+    assert want[1] in admin.get(f"/manage/item/r{added.id}").text
+    bare = _scoped(db, "No pages")
+    assert 'data-sec="pages"' not in admin.get(f"/manage/item/r{bare.id}").text and "data-pages" not in admin.get(f"/manage/roadmap/{bare.id}").text
