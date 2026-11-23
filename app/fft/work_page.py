@@ -130,9 +130,11 @@ def build_row(db: Session, it: FftItem, pick: rules.Pick, frozen: bool) -> dict:
         s = "waiting"
     sc = rules.latest_scope(db, it)
     waits = ("Held: Claude doesn't take it" if s == "held" else f"You: {it.next_step}" if s == "yours"
-             else "Claude" + (f": {it.next_step}" if it.next_step else ": write its steps" if sc and sc.agreed_at and not steps else ""))
+             else "Claude" + (f": {it.next_step}" if it.next_step else ": write its steps" if sc and sc.agreed_at and not steps
+                              else ": ship it, every step is done" if s != "held" and steps and done == len(steps) else ""))  # (issue 72)
     return {"it": it, "kind": "i", "key": f"i{it.id}", "stage": s, "stage_said": STAGES[s], "steps": len(steps), "done": done,
             "checks": len(checks), "passed": sum(1 for c in checks if c["state"] == "passed"), "waits": waits,
+            "ship": s not in ("held", "yours") and bool(steps) and done == len(steps),
             "turn": "brett" if s == "yours" else "claude", "section": roadmap_page.SECTION_SAID.get(it.section, ""), "size": it.size}
 
 
@@ -266,7 +268,8 @@ LANE_NEEDS = {"ship": ("Nothing a person sees", "Merges when its tests and the r
                           "Waits for your try on your Mac, then merges", "You, before it merges")}
 STEPS = ("Read its area whole: every issue and failed check", "Design one fix, written before it's built",
          "Build it, one area at a time (its lock)", "Look at it: every person, page and width",
-         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round")
+         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round",
+         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74)
 
 
 def how() -> dict:

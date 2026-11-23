@@ -467,3 +467,24 @@ def test_a_check_needs_its_goal_and_what_you_should_see(api, db):
     assert (ok["before"], ok["now"], ok["people"]) == ("It didn't.", "It does.", True)
     v2 = api.post(f"/api/fft/checks/{ok['id']}", headers=_as(CLAUDE), json={"do": "version", "steps": ["Press [Save]."], "expect": "Saved.", "why": "clearer"}).json()
     assert (v2["before"], v2["now"]) == ("It didn't.", "It does.")
+
+
+def test_a_fix_that_fails_claudes_live_try_goes_back_to_to_fix(api, db):
+    """Issue 74 (found with issue 70, Nov 22): a fix went live and failed Claude's own live try, and Claude had no way to
+    say so: it read Ready to try. `back` sets it to To fix, tells Brett why, and its check leaves his For you."""
+    i = rules.new_issue(db, "claude", "Start Combat comes undone", feature="feedback")
+    rules.fix_ready(db, "claude", i, "https://github.com/jettison-v/dndsy/pull/466")
+    c = rules.write_check(db, "claude", title="Start Combat holds", steps=["Press [Start Combat]."], expect="It holds.",
+                          issue_ids=[i.id], **GOAL)
+    rules.preflight(db, "claude", c, True)
+    i.state = "ready"  # (its pull request merged and went live)
+    db.flush()
+    assert rules.check_state(db, c)["turn"] == "brett"
+    assert api.post(f"/api/fft/issues/{i.id}", headers=_as(CLAUDE), json={"do": "back"}).status_code == 400  # (it says why)
+    got = api.post(f"/api/fft/issues/{i.id}", headers=_as(CLAUDE), json={"do": "back", "words": "Failed my live try: 4 of 5."})
+    assert got.status_code == 200 and got.json()["state"] == "to_fix"
+    assert rules.check_state(db, c)["turn"] == "claude"  # (nothing superseded waits on Brett)
+    told = db.scalars(select(FftLine).where(FftLine.issue_id == i.id)).all()
+    assert [(x.who, x.to, x.text) for x in told] == [("claude", "", "Failed my live try: 4 of 5.")]
+    assert api.post(f"/api/fft/issues/{i.id}", headers=_as(CLAUDE), json={"do": "back", "words": "Again"}).status_code == 409  # (already To fix)
+    assert api.post(f"/api/fft/issues/{i.id}", headers=_as(RELAY), json={"do": "back", "words": "x"}).status_code == 403

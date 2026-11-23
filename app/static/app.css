@@ -4476,7 +4476,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-exp b { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; }
 /* A check's goal (Clearer checks, Roadmap item 6): Before and Now, two short lines; on the card a tap away */
 .cc-goal { display: grid; gap: var(--sp-1); }
-.cc-goal .plabel { margin: 0; }
 .cc-goal-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--sp-3); margin: 0; }
 .cc-goal-lines dt { color: var(--muted); font-size: var(--fs-sm); }
 .cc-goal-lines dd { margin: 0; }
@@ -4552,8 +4551,9 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
    a small label and its count over what's in it; where it stands has its edge in its state's colour; History folds */
 .rd-sec { display: grid; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-lg); min-width: 0; }
 .rd-sec-h { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line-soft); }
-.rd-sec-label { margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.rd-sec-h > h3.rd-sec-label { margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }  /* (as specific as a side panel's own h3 rule and after it, so a section there keeps its label: issue 68) */
 .rd-sec-in { display: grid; gap: var(--sp-3); padding: var(--sp-3); min-width: 0; }
+.rd-sec-in > :is(p, ul, ol, dl) { margin: 0; }  /* (its gap spaces what's in it: a paragraph's own margins doubled it, issue 68) */
 .rd-sec[data-tone] { border-left: 3px solid var(--line-strong); }
 .rd-sec[data-tone="ask"], .rd-sec[data-tone="again"] { border-left-color: var(--amber); }
 .rd-sec[data-tone="claude"], .rd-sec[data-tone="pick"] { border-left-color: var(--violet); }
@@ -4609,7 +4609,6 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-devices { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--muted); }
 .fft-devices b { color: var(--text); }
 .fft-problems { margin: 0; padding-left: 1.4em; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
-.fft-card-says { display: grid; gap: var(--sp-2); }
 .fft-why { margin: 0; }
 .fft-tl s { color: var(--muted); }
 .cc-foot { justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2); }

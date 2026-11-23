@@ -27,9 +27,9 @@
   {% endif %}
   {% if picked.issues %}<ol class="fft-problems" data-problems>{% for i in picked.issues %}{% set t = picked.turn %}
     <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
-  <section class="panel fft-card-says"><h3 class="plabel">On the page, the card says</h3>
+  {% call rd_section("On the page, the card says", attrs=' data-card-says') %}
     {% if v %}{{ walkthrough({"id": c.id, "steps": picked.steps}) }}{% endif %}
-    {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}</section>
+    {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}{% endcall %}
   {% if picked.why %}<p class="note fft-why"><b>Why</b> · {{ picked.why }}</p>{% endif %}
   <details class="fold fft-history" data-history><summary class="note">History · every try, fix and change</summary>
     <ol class="tl fft-tl">{% for h in picked.history %}<li class="tl-{{ h.tone }}"><span>{% if h.struck %}<s>{{ h.line }}</s> · {{ h.replaced }}{% else %}{{ h.line }}{% if h.why %}: {{ h.why }}{% endif %}{% endif %}</span> <span class="note tl-when"><time datetime="{{ h.at.isoformat() }}" data-clock="date">{{ h.at | ago }}</time></span></li>{% endfor %}</ol></details>
@@ -56,8 +56,8 @@
 <article class="reader-article fb-read fft-local" data-fft-local="{{ lt.id }}">
   <p class="note ts-where fft-local-kick">Ready on your Mac · <time datetime="{{ lt.created_at.isoformat() }}" data-clock="ago">{{ lt.created_at | ago }}</time>{% if picked.area %} · {{ picked.area.title }}{% endif %}{% if lt.pr %} · <a href="{{ lt.pr }}" target="_blank" rel="noopener">its pull request ↗</a>{% endif %}</p>
   <h2 class="nt-h">{{ lt.title }}</h2>
-  <section class="panel"><h3 class="plabel">What changed</h3><ul class="fft-local-list">{% for c in lt.changed %}<li>{{ c }}</li>{% endfor %}</ul>
-    {% if lt.look_at %}<p><b>Look at</b> · {{ lt.look_at }}</p>{% endif %}</section>
+  {% call rd_section("What changed", attrs=' data-local-changed') %}<ul class="fft-local-list">{% for c in lt.changed %}<li>{{ c }}</li>{% endfor %}</ul>
+    {% if lt.look_at %}<p><b>Look at</b> · {{ lt.look_at }}</p>{% endif %}{% endcall %}
   <div class="act-bar" data-local-acts>
     <a class="btn primary small" href="{{ picked.open }}" target="_blank" rel="noopener" data-do="open-local">Open on your Mac ↗</a>
     <form method="post" action="/manage/for-you/local/{{ lt.id }}"><input type="hidden" name="answer" value="good"><button class="btn small" type="submit" data-do="local-good">Looks good</button></form>

@@ -449,6 +449,9 @@ def gaps(db: Session) -> list[dict]:
     for it in db.scalars(select(FftItem).where(FftItem.section == "shipped", FftItem.result == "").order_by(FftItem.id)):  # (Brett, Nov 20)
         out.append({"kind": "no_result", "thing": "item", "id": it.id, "title": it.title,
                     "says": "Shipped with no result: write what it changed, with its numbers (feedback.py roadmap <id> set --result \"…\")."})
+    for it, last in rules.builds_done(db):  # (issue 72, Brett Nov 22: a build stayed in the queue after he ticked its last step)
+        out.append({"kind": "steps_done", "thing": "item", "id": it.id, "title": it.title, "since": last,
+                    "says": f"Every step is done: ship it with what it changed (feedback.py roadmap {it.id} ship --result \"…\"), or add the step that's left."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
@@ -459,7 +462,7 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
-             "scope_asked": "you asked for its scope"}  # (each kind of gap, as Development says it)
+             "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet"}  # (each kind of gap, as Development says it)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 

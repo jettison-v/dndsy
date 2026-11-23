@@ -1,7 +1,8 @@
 {# A scheduled job in the side panel (app/fft/work_page.py `job_panel`; issue 55, Brett, Nov 20: "a description in the
    sidebar with more detail on the task that is being completed"): what it does, what it checks, what happens when it
-   fails (app/data/jobs.json), and its latest runs. #}
-{% from "_admin_bits.html" import state_line %}
+   fails (app/data/jobs.json), and its latest runs, each the item window's section (issue 68: page panels drew no box,
+   only their spacing). #}
+{% from "_admin_bits.html" import state_line, rd_section %}
 <div class="peek-head fft-item-head" data-job-panel="{{ j.key }}">
   <div><div class="note">Scheduled job · {{ j.where }}</div><h2 id="peek-title" class="sr">{{ j.title }}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
@@ -14,11 +15,11 @@
   {% elif j.late %}{{ state_line("Late", "failed", j.when ~ " · its last run was longer ago than that") }}
   {% elif j.result == "failed" %}{{ state_line("Failed", "failed", j.words or j.when) }}
   {% else %}{{ state_line("OK", "passed", j.when) }}{% endif %}
-  <section class="panel" data-job-does><h3 class="plabel">What it does</h3><p>{{ j.does }}</p></section>
-  <section class="panel" data-job-checks><h3 class="plabel">What it checks</h3><p>{{ j.checks }}</p></section>
-  <section class="panel" data-job-fails><h3 class="plabel">When it fails</h3><p>{{ j.fails }}</p></section>
-  <section class="panel" data-job-runs><h3 class="plabel">Latest runs</h3>
+  {% call rd_section("What it does", attrs=' data-job-does') %}<p>{{ j.does }}</p>{% endcall %}
+  {% call rd_section("What it checks", attrs=' data-job-checks') %}<p>{{ j.checks }}</p>{% endcall %}
+  {% call rd_section("When it fails", attrs=' data-job-fails') %}<p>{{ j.fails }}</p>{% endcall %}
+  {% call rd_section("Latest runs", count=runs | length, attrs=' data-job-runs') %}
     {% if runs %}<ol class="tl fft-tl">{% for r in runs %}<li class="tl-{{ 'passed' if r.result == 'ok' else 'failed' }}"><span>{{ "OK" if r.result == "ok" else "Failed" }}{% if r.words %}: {{ r.words }}{% endif %}</span> <span class="note tl-when"><time datetime="{{ r.at.isoformat() }}" data-clock="date">{{ r.at | ago }}</time></span></li>{% endfor %}</ol>
-    {% else %}<p class="note">{{ "It doesn't report here." if j.reads == "elsewhere" else "None reported here yet." }}</p>{% endif %}</section>
+    {% else %}<p class="note">{{ "It doesn't report here." if j.reads == "elsewhere" else "None reported here yet." }}</p>{% endif %}{% endcall %}
 </article>
 </div>
