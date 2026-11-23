@@ -377,14 +377,20 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
+    pill = f'details.cond-pill:not(.cond-add):has-text("{name}")'
+    if page.locator(pill).count():  # (left over from a first try that missed: ended in askdnd too, not only on the sheet; Nov 23)
+        page.locator(f"{pill} > summary").first.click(timeout=5000)
+        page.locator(f'{pill} button:has-text("End")').first.click(timeout=5000)
+        t.expect("a condition left over is ended first", lambda: page.locator(pill).count() == 0, 15)
     page.locator("details.cond-add > summary").click(timeout=5000)
     page.locator(f'.ls-chip:has-text("{name}")').first.click(timeout=5000)
     t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
     t.expect("it reaches the real sheet", lambda: on_sheet_condition(sheet, name), SLOW)
     page.wait_for_timeout(1500)
-    page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
-    page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
-    t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 15)
+    page.evaluate("() => document.querySelectorAll('details.cond-add[open]').forEach(d => { d.open = false; })")  # (its picker never in the way)
+    page.locator(f"{pill} > summary").first.click(timeout=5000)
+    page.locator(f'{pill} button:has-text("End")').first.click(timeout=5000)
+    t.expect("it ends on Battle", lambda: page.locator(pill).count() == 0, 15)
     t.expect("it leaves the real sheet", lambda: not on_sheet_condition(sheet, name), SLOW)
 
 
