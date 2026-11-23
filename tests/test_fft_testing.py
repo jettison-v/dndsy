@@ -199,6 +199,29 @@ def test_a_check_for_the_iphone_marked_on_the_laptop_counts_for_the_iphone(admin
     assert "data-cc-elsewhere" not in admin.get("/manage/testing/card").text
 
 
+def test_end_round_ends_the_round_the_bar_shows_wherever_it_was_started(admin, db):
+    """Issue 106 (Brett's note, Nov 23: "The round does not seem to end even though I am clicking it"): the bar shows the
+    open round from askdnd, but End round ended only one this browser was holding; a round started on the other device
+    (or one this browser had let go of) stayed open, and the press did nothing."""
+    c = _check(db)
+    from app.models import User
+
+    me = db.scalar(select(User).where(User.email == "admin@example.com"))
+    r = rules.open_round(db, f"user:{me.id}", me.id, None, holds=False)  # (opened elsewhere: this browser holds nothing)
+    db.flush()
+    assert 'data-do="end-round"' in admin.get("/manage/for-you").text
+    admin.post("/manage/testing/round/end")
+    assert rules.round_open(db) is None and db.get(FftRound, r.id).ended_at is not None
+    assert 'data-do="end-round"' not in admin.get("/manage/for-you").text
+    admin.post(f"/manage/testing/checks/{c.id}/go")  # (and its own round of one still ends as before)
+    admin.post("/manage/testing/round/end")
+    assert rules.round_open(db) is None
+    admin.post(f"/manage/testing/checks/{c.id}/go")  # (ended from elsewhere: this browser's card goes too)
+    rules.end_round(db, "user:other", rules.round_open(db))
+    db.flush()
+    assert f'data-check-card="{c.id}"' not in admin.get("/manage/testing/card").text
+
+
 def test_a_round_over_every_area_holds_an_issue_in_none(admin, db):
     """R11: a sitting over every area holds an issue in no area; ending it lets it go."""
     issue = rules.new_issue(db, "claude", "Something else")
