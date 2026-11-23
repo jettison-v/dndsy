@@ -684,10 +684,12 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
 
 @router.post("/manage/testing/round/end")
 def round_end(request: Request, db: Session = Depends(get_db)):
-    _, denied = _admin(request)
+    user, denied = _admin(request)
     if denied:
         return denied
     to = _end(request, db)
+    if (row := rules.round_open(db)) is not None:  # (the round the bar shows, wherever it was started: issue 106)
+        rules.end_round(db, f"user:{views.person(db, user)['id']}", row)
     db.commit()
     request.session["toast"] = "Round ended: Claude's work in its area may merge again"
     return RedirectResponse(to, status_code=303)
