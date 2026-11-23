@@ -331,7 +331,7 @@ def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
 
 @router.post("/issues/{issue_id:int}")
 def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """One action at a time: title, feature (a key from app/data/taxonomy.json), move (area_id: a Roadmap build's batch), start, pr, close (reason, words, same_as), reopen, split (parts), line (words to
+    """One action at a time: title, feature (a key from app/data/taxonomy.json), move (area_id: a Roadmap build's batch), start, pr, close (reason, words, same_as), reopen, back (words: its live try failed), split (parts), line (words to
     "senders" or "brett"). Claude may not close an issue as working: only a person confirms a fix (R16)."""
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
@@ -359,6 +359,8 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
             rules.close(db, actor.name, i, reason, _str(body, "words"), same_as=same, seen=body.get("seen"))
         elif do == "reopen":
             rules.reopen(db, actor.name, i)
+        elif do == "back":  # (Claude's live try of its fix failed: back to To fix, issue 74)
+            rules.fix_failed(db, actor.name, i, _str(body, "words", need=True))
         elif do == "split":  # (issue 22: parts [{title, feature}], this issue keeping the first)
             parts = body.get("parts")
             if not isinstance(parts, list) or not parts or not all(isinstance(p, dict) and isinstance(p.get("title"), str) for p in parts):
@@ -372,7 +374,7 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
                 raise HTTPException(400, 'to: "senders" or "brett"')
             rules.add_line(db, actor.name, _str(body, "words", need=True), issue=i, to=to)
         else:
-            raise HTTPException(400, "do: title, feature, move, start, pr, close, reopen, split or line")
+            raise HTTPException(400, "do: title, feature, move, start, pr, close, reopen, back, split or line")
     except rules.RuleError as e:
         _rule(e)
     db.commit()

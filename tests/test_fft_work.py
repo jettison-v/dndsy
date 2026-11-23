@@ -337,3 +337,43 @@ def test_the_jobs_audit_github_reports_its_own_and_dependabot_is_on_github(admin
     dep = sched[sched.index('data-job="dependabot"'):][:800]
     assert "data-job-link" in dep and "Late" not in dep and "Not reported yet" not in dep
     assert all(f'data-job="{k}"' in sched for k in ("after_deploy", "digest", "restore", "dependabot"))
+
+
+def test_claudes_hands_is_the_bars_last_row_under_an_open_round(db, admin):
+    """Issue 65 (Brett, round 17: "I think this should be below 'A round is open' so the expansion is more natural"):
+    what's in Claude's hands is the status bar's last row, so opening it moves nothing above it."""
+    _, battle, _ = _plans(db)
+    rules.new_issue(db, "claude", "The Count wraps", area_id=battle.id)  # (no Feature yet: in Claude's hands)
+    me = views.person(db, {"email": "admin@example.com"})
+    rules.open_round(db, "user:x", me["id"], battle.id)
+    db.flush()
+    for path in ("/manage/work", "/manage/for-you"):
+        page = admin.get(path).text
+        bar = page[page.index('class="fft-banner fft-status"'):]
+        assert 'data-stat="round"' in bar and 'data-stat="hands"' in bar, path
+        assert bar.index('data-stat="round"') < bar.index('data-stat="hands"'), f"{path}: Claude's hands sits above the round"
+
+
+def test_a_build_with_every_step_done_is_claudes_to_ship(db, admin):
+    """Issue 72 (Brett, Nov 22: "Why is this still on the roadmap, given that all its items are complete?"): nothing told
+    Claude when he ticked a build's last step. A build with every step done is a gap until it's shipped, and its row in
+    Development says so."""
+    item = FftItem(title="Clearer checks", section="now", place=1)
+    db.add(item)
+    db.flush()
+    rules.write_scope(db, "claude", item, what="Checks say their goal.", inside=["The goal"])
+    rules.agree_scope(db, "user:1", item)  # (in Development's queue once Brett agrees its scope)
+    mine, his = rules.add_step(db, "claude", item, "Build it"), rules.add_step(db, "claude", item, "Try the checks", whose="brett")
+    rules.tick_step(db, "claude", mine)
+    db.flush()
+    assert not [g for g in views.gaps(db) if g["kind"] == "steps_done"]  # (his step is still to do)
+    rules.tick_step(db, "user:1", his)
+    db.flush()
+    gap = [g for g in views.gaps(db) if g["kind"] == "steps_done"]
+    assert [(g["thing"], g["id"]) for g in gap] == [("item", item.id)] and gap[0]["since"] == his.done_at
+    row = admin.get("/manage/work").text
+    row = row[row.index(f'data-build="{item.id}"'):]
+    assert "Claude: ship it, every step is done" in row[:row.index("</tr>")]
+    rules.ship_item(db, "claude", item, result="Checks say their goal\nAll 24 rewritten")
+    db.flush()
+    assert not [g for g in views.gaps(db) if g["kind"] == "steps_done"]  # (shipped: History)

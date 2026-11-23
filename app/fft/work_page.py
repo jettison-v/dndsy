@@ -130,7 +130,8 @@ def build_row(db: Session, it: FftItem, pick: rules.Pick, frozen: bool) -> dict:
         s = "waiting"
     sc = rules.latest_scope(db, it)
     waits = ("Held: Claude doesn't take it" if s == "held" else f"You: {it.next_step}" if s == "yours"
-             else "Claude" + (f": {it.next_step}" if it.next_step else ": write its steps" if sc and sc.agreed_at and not steps else ""))
+             else "Claude" + (f": {it.next_step}" if it.next_step else ": write its steps" if sc and sc.agreed_at and not steps
+                              else ": ship it, every step is done" if steps and done == len(steps) else ""))  # (issue 72)
     return {"it": it, "kind": "i", "key": f"i{it.id}", "stage": s, "stage_said": STAGES[s], "steps": len(steps), "done": done,
             "checks": len(checks), "passed": sum(1 for c in checks if c["state"] == "passed"), "waits": waits,
             "turn": "brett" if s == "yours" else "claude", "section": roadmap_page.SECTION_SAID.get(it.section, ""), "size": it.size}

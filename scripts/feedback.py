@@ -246,6 +246,8 @@ def issue(a) -> None:
         body["pr"] = w[0]
     elif a.do == "close":
         body |= {"reason": w[0], "words": w[1] if len(w) > 1 else "", "same_as": a.same_as}
+    elif a.do == "back":  # (its fix failed Claude's live try: back to To fix, and Brett is told why; issue 74)
+        body["words"] = " ".join(w)
     elif a.do == "tell":
         body = {"do": "line", "to": a.to, "words": w[0]}
     elif a.do == "split":  # (issue 22: each --part "title" [--part-feature key, in order]; this issue keeps its own)
@@ -663,7 +665,7 @@ def main() -> None:
     s.add_argument("--feature", default="")
     s = sub.add_parser("issue")
     s.add_argument("id")
-    s.add_argument("do", nargs="?", help="title, feature, kind, move, start, pr, close, reopen, split or tell (after new: the title)")
+    s.add_argument("do", nargs="?", help="title, feature, kind, move, start, pr, close, reopen, back (its fix failed your live try: why), split or tell (after new: the title)")
     s.add_argument("words", nargs="*")
     s.add_argument("--area", type=int)
     s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
@@ -782,7 +784,7 @@ def main() -> None:
     s.add_argument("--pr", action="append", default=[])
     s.add_argument("--rollback", action="store_true")
     a = p.parse_args()
-    known = {"issue": ("title", "feature", "kind", "move", "start", "pr", "close", "reopen", "split", "tell"), "check": ("version", "preflight", "retire", "link")}
+    known = {"issue": ("title", "feature", "kind", "move", "start", "pr", "close", "reopen", "back", "split", "tell"), "check": ("version", "preflight", "retire", "link")}
     if a.cmd in known and a.id != "new" and a.do and a.do not in known[a.cmd]:
         p.error(f"{a.cmd} {a.id}: one of {', '.join(known[a.cmd])}")
     if a.cmd == "item":
