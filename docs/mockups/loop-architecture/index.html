@@ -205,19 +205,19 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
   </section>
 
   <section aria-labelledby="h-group">
-    <h2 id="h-group">Grouping and sequencing: suggestions, not the order</h2>
-    <p>Your order says what matters most. It shouldn't force a wasteful sequence: two fixes in the same files are cheaper and safer done together, and a groundwork change should go before the things that sit on it. So askdnd keeps two layers.</p>
+    <h2 id="h-group">Your importance, my execution order</h2>
+    <p>Your direction (Nov 23): <i>"I want to communicate what is the most important from a business perspective, but you need to execute in the order that produces the best product."</i> So askdnd keeps two orders, each owned by one of us.</p>
     <div class="today">
-      <div class="card"><span class="tag">Priority: yours</span><p>The Roadmap's order and each item's place in it. Only you change it (drag it, or tell me and I write it down).</p></div>
-      <div class="card mine"><span class="tag">The working plan: suggested</span><p>How the Ready work is grouped and sequenced for efficiency and quality: <b>batches</b> (same Product Area or same files, one pull request, one try for you) and <b>order within them</b> (groundwork first, the riskiest change when you can try it soonest). I suggest; you see each suggestion with its reason, and can accept, change or undo it.</p></div>
+      <div class="card"><span class="tag">Importance: yours</span><p>The Roadmap's sections and order say what matters most to the business. Only you change it (drag it, or tell me and I write it down). It's the input, not the schedule.</p></div>
+      <div class="card mine"><span class="tag">Execution order: mine</span><p>Which Ready work goes first, and what goes together, for the best product: <b>batches</b> (same Product Area or same files, one pull request, one try for you), <b>groundwork first</b>, the riskiest change when you can try it soonest. askdnd shows the order and each place's reason; a session still takes only the top of it.</p></div>
     </div>
-    <h3>The fences on a suggestion</h3>
+    <h3>The fences, so the important things never starve</h3>
     <ul>
-      <li>Only <b>Ready</b> work: a suggestion never starts something early.</li>
-      <li>Never past a <b>blocker</b> (something broken at the table) or ahead of something you've marked urgent.</li>
-      <li>A batch never mixes <b>lanes</b>: something you must try locally (Careful) is never bundled with work that just ships.</li>
-      <li>Every regrouping or move says <b>why</b> (same files, depends on, one try instead of three) and shows where you see the work.</li>
-      <li>If you haven't answered, the <b>suggestion stands</b> only for grouping within a Product Area (already the rule today); a move across Roadmap items waits for your OK.</li>
+      <li>Only <b>Ready</b> work: the execution order never starts something early.</li>
+      <li><b>Something broken at the table</b> goes first, always.</li>
+      <li><b>Your pin wins:</b> "do this next" on anything puts it at the top of my order.</li>
+      <li><b>Now can't quietly slip:</b> when something lower in importance goes ahead of a Now item, askdnd says so on that item, with the reason; one left waiting a week turns amber.</li>
+      <li>A batch never mixes <b>lanes</b>: something you try locally is never bundled with work that just ships.</li>
     </ul>
   </section>
 
@@ -428,10 +428,10 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <label class="opt"><input type="radio" name="first" value="workers"><span>B · Workers first</span><small>More done sooner, on today's fragile bookkeeping.</small></label>
       <label class="opt"><input type="radio" name="first" value="channels"><span>C · Wait for channels, then build around them</span><small>Ends one miss; the rest stay.</small></label>
     </fieldset>
-    <fieldset><legend>5 · Grouping and sequencing</legend>
-      <label class="opt"><input type="radio" name="grouping" value="suggest"><span>A · I suggest, with reasons; grouping within an area stands, moves across items wait for your OK <span class="mine">my pick</span></span><small>Efficient batches without the order slipping out from under you.</small></label>
-      <label class="opt"><input type="radio" name="grouping" value="ask"><span>B · Every grouping and move waits for your OK</span><small>The most control; more for you to answer.</small></label>
-      <label class="opt"><input type="radio" name="grouping" value="strict"><span>C · Strict order, no regrouping</span><small>Simplest; misses the efficiency you're after.</small></label>
+    <fieldset><legend>5 · Who sets the order of work</legend>
+      <label class="opt"><input type="radio" name="grouping" value="claude-executes"><span>A · You set importance; Claude sets the execution order, with reasons and the fences above <span class="mine">your direction, Nov 23</span></span><small>Your pin wins, Now can't quietly slip, only Ready work.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="suggest"><span>B · I suggest groupings and moves; moves across items wait for your OK</span><small>More of your attention on sequencing.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="strict"><span>C · Strict importance order</span><small>Misses the efficiency you're after.</small></label>
     </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(where you disagree, what I've missed, a worry this doesn't answer)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
