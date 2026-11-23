@@ -84,6 +84,14 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
 .step .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 700 .74rem/1 var(--sans); color: var(--bg); }
 .step.you .n { background: var(--amber); } .step.app .n { background: var(--blue); } .step.mini .n { background: var(--muted); } .step.lead .n, .step.wk .n { background: var(--violet); }
 .step.alt { opacity: .9; } .step.alt .n { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+.ready { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.ready .card { gap: 6px; }
+.ready .k { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font: 700 .78rem/1 var(--sans); }
+.pickup { display: grid; gap: 8px; counter-reset: p; margin: 0; padding: 0; list-style: none; }
+.pickup li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.pickup li::before { counter-increment: p; content: counter(p); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--violet-soft); color: var(--violet); font: 700 .78rem/1 var(--sans); }
+.today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 640px) { .today { grid-template-columns: minmax(0, 1fr); } }
 .qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .qa .card p + p { margin-top: 2px; }
 @media (max-width: 640px) { .miss { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 1.6rem; } }
@@ -171,6 +179,29 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <div></div>
       <div></div>
     </div></div>
+  </section>
+
+  <section aria-labelledby="h-ready">
+    <h2 id="h-ready">What makes something Ready, and how it's picked up</h2>
+    <div class="today">
+      <div class="card"><span class="tag">Today</span><p>At the start of a session and before each round of work, I ask askdnd for the next thing (<code>feedback.py next</code>). It names the top of your order and lists what it skipped because it waits on you. But that's me following a rule: nothing stops me working on something else, and nothing records that I took it. Today's misses lived in that gap.</p></div>
+      <div class="card mine"><span class="tag">Proposed</span><p>Ready is a state askdnd works out from facts, never my judgment, and a session doesn't choose its work: it asks, and askdnd hands it over and records the claim.</p></div>
+    </div>
+    <h3>Ready means all four are true</h3>
+    <div class="ready">
+      <div class="card"><span class="k">1</span><b>It has your go-ahead</b><p class="note">An issue you filed, or a player's note you approved (your OK for its fix); for a Roadmap item, your Scope looks right.</p></div>
+      <div class="card"><span class="k">2</span><b>Nothing it waits on is open</b><p class="note">No question to you on it, no step of yours, nothing it depends on unfinished.</p></div>
+      <div class="card"><span class="k">3</span><b>It isn't in your way</b><p class="note">Its area isn't in a round you have open. Paused (game night) holds merging, not building, so it can still be Ready.</p></div>
+      <div class="card"><span class="k">4</span><b>Nobody holds it</b><p class="note">No session has a live claim on it.</p></div>
+    </div>
+    <p class="note">Anything that isn't Ready says why where you see it: waiting for your OK, your round, or your answer.</p>
+    <h3>How it's picked up</h3>
+    <ol class="pickup">
+      <li><span><b>A session asks askdnd for work.</b> The lead, when it finishes something or when its listener hears that something became Ready.</span></li>
+      <li><span><b>askdnd hands over the top Ready piece in your one order</b>: anything broken at the table first, then Roadmap items from the top, fixes grouped by Product Area. It records who has it.</span></li>
+      <li><span><b>The session checks in every few minutes while it works.</b> A claim that goes quiet for 20 minutes goes back to Ready, and the bar shows whose it was.</span></li>
+      <li><span><b>The claim ends when its pull request is attached.</b> From there askdnd moves it on by itself: In review, Live, yours to try.</span></li>
+    </ol>
   </section>
 
   <section aria-labelledby="h-qa">
