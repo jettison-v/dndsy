@@ -378,6 +378,7 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     page = t.battle(seat)
     connects(t, page)
     pill = f'details.cond-pill:not(.cond-add):has-text("{name}")'
+    page.locator("details.cond-add").wait_for(timeout=10000)  # (the condition row is drawn: its pills with it)
     if page.locator(pill).count():  # (left over from a first try that missed: ended in askdnd too, not only on the sheet; Nov 23)
         page.locator(f"{pill} > summary").first.click(timeout=5000)
         page.locator(f'{pill} button:has-text("End")').first.click(timeout=5000)
@@ -387,7 +388,8 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
     t.expect("it reaches the real sheet", lambda: on_sheet_condition(sheet, name), SLOW)
     page.wait_for_timeout(1500)
-    page.evaluate("() => document.querySelectorAll('details.cond-add[open]').forEach(d => { d.open = false; })")  # (its picker never in the way)
+    if page.locator("details.cond-add[open]").count():  # (its picker never in the way: closed as a person would)
+        page.keyboard.press("Escape")
     page.locator(f"{pill} > summary").first.click(timeout=5000)
     page.locator(f'{pill} button:has-text("End")').first.click(timeout=5000)
     t.expect("it ends on Battle", lambda: page.locator(pill).count() == 0, 15)
