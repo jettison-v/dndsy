@@ -204,6 +204,23 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
     </ol>
   </section>
 
+  <section aria-labelledby="h-group">
+    <h2 id="h-group">Grouping and sequencing: suggestions, not the order</h2>
+    <p>Your order says what matters most. It shouldn't force a wasteful sequence: two fixes in the same files are cheaper and safer done together, and a groundwork change should go before the things that sit on it. So askdnd keeps two layers.</p>
+    <div class="today">
+      <div class="card"><span class="tag">Priority: yours</span><p>The Roadmap's order and each item's place in it. Only you change it (drag it, or tell me and I write it down).</p></div>
+      <div class="card mine"><span class="tag">The working plan: suggested</span><p>How the Ready work is grouped and sequenced for efficiency and quality: <b>batches</b> (same Product Area or same files, one pull request, one try for you) and <b>order within them</b> (groundwork first, the riskiest change when you can try it soonest). I suggest; you see each suggestion with its reason, and can accept, change or undo it.</p></div>
+    </div>
+    <h3>The fences on a suggestion</h3>
+    <ul>
+      <li>Only <b>Ready</b> work: a suggestion never starts something early.</li>
+      <li>Never past a <b>blocker</b> (something broken at the table) or ahead of something you've marked urgent.</li>
+      <li>A batch never mixes <b>lanes</b>: something you must try locally (Careful) is never bundled with work that just ships.</li>
+      <li>Every regrouping or move says <b>why</b> (same files, depends on, one try instead of three) and shows where you see the work.</li>
+      <li>If you haven't answered, the <b>suggestion stands</b> only for grouping within a Product Area (already the rule today); a move across Roadmap items waits for your OK.</li>
+    </ul>
+  </section>
+
   <section aria-labelledby="h-qa">
     <h2 id="h-qa">Your questions</h2>
     <div class="qa">
@@ -411,6 +428,11 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <label class="opt"><input type="radio" name="first" value="workers"><span>B · Workers first</span><small>More done sooner, on today's fragile bookkeeping.</small></label>
       <label class="opt"><input type="radio" name="first" value="channels"><span>C · Wait for channels, then build around them</span><small>Ends one miss; the rest stay.</small></label>
     </fieldset>
+    <fieldset><legend>5 · Grouping and sequencing</legend>
+      <label class="opt"><input type="radio" name="grouping" value="suggest"><span>A · I suggest, with reasons; grouping within an area stands, moves across items wait for your OK <span class="mine">my pick</span></span><small>Efficient batches without the order slipping out from under you.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="ask"><span>B · Every grouping and move waits for your OK</span><small>The most control; more for you to answer.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="strict"><span>C · Strict order, no regrouping</span><small>Simplest; misses the efficiency you're after.</small></label>
+    </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(where you disagree, what I've missed, a worry this doesn't answer)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
@@ -422,7 +444,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
   // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["dispatch", "chats", "wip", "first"];
+  const NAMES = ["dispatch", "chats", "wip", "first", "grouping"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
