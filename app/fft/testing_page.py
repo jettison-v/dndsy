@@ -598,11 +598,10 @@ def round_start(request: Request, area: int = Form(0), need: str = Form(""), db:
     user, denied = _admin(request)
     if denied:
         return denied
-    device = device_of(request)
-    need = need if need in NEED_DEVICE else device
-    if NEED_DEVICE.get(need) != device:
-        request.session["toast"] = web.notice(f"Start this round {DEVICE_SAID.get(NEED_DEVICE.get(need, ''), 'on that device').replace('your ', 'on your ')}.", "info")
-        return RedirectResponse(FOR_YOU, status_code=303)
+    need = need if need in NEED_DEVICE else device_of(request)
+    # (the need's own device, wherever it's started: he reads the steps on the laptop and taps on the iPhone, and his
+    # marks count for the iPhone; issue 104, Nov 23)
+    device = NEED_DEVICE[need]
     groups = for_you(db, device)
     ids = list(dict.fromkeys(int(r["key"][1:]) for g in groups if not area or g["area_id"] == area for r in g["rows"]
                              if r["kind"] == "check" and r.get("here") and r.get("need") == need))
@@ -673,7 +672,10 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
     here = access.current_campaign(me["email"])
-    request.session[ROUND] = {"id": r.id, "checks": [c.id], "i": 0, "device": device_of(request), "home": here["id"] if here else None,
+    device = device_of(request)
+    mine = check_view(db, c, device)["mine"]  # (a check for another device counts for it: issue 104, Nov 23)
+    device = device if device in mine or not mine else mine[0]
+    request.session[ROUND] = {"id": r.id, "checks": [c.id], "i": 0, "device": device, "home": here["id"] if here else None,
                               "one": True, "owns": was is None or was.id != r.id}
     to = enter(request, db, c, page_of(db, c))
     db.commit()
@@ -1079,7 +1081,8 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     last = _last_failed(db, c, r["device"])
     sent = len(list(db.scalars(select(FftTryIssue.issue_id).where(FftTryIssue.try_id == last.id)))) if last else 0
     return templates.TemplateResponse(request, "_fft_card.html", {**cv, "n": r["i"] + 1, "of": len(r["checks"]), "device_said": DEVICE_SAID,
-                                                                   "device": r["device"], "failed": last, "sent": sent, **card_prefs(request)})
+                                                                   "device": r["device"], "elsewhere": r["device"] != device_of(request),
+                                                                   "failed": last, "sent": sent, **card_prefs(request)})
 
 
 def card_prefs(request: Request) -> dict:
