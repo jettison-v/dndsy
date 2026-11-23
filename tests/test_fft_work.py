@@ -357,6 +357,10 @@ def test_claudes_hands_is_the_bars_last_row_under_an_open_round(db, admin):
     for back, to in (("feedback", "/manage/feedback"), ("roadmap", "/manage/roadmap"), ("work", "/manage/work"), ("", "/manage/for-you")):
         r = admin.post("/manage/for-you/mode", data={"mode": "independent", "back": back}, follow_redirects=False)
         assert r.headers["location"].startswith(to), back
+    for here, to in (("/manage/feedback?tab=open&area=3", "/manage/feedback?tab=open&area=3"), ("https://elsewhere.example/x", "/manage/for-you"),
+                     ("//elsewhere.example/x", "/manage/for-you"), ("/manage/x//y", "/manage/for-you")):  # (only Backstage's own pages)
+        r = admin.post("/manage/for-you/mode", data={"mode": "independent", "here": here}, follow_redirects=False)
+        assert r.headers["location"] == to, here
 
 
 def test_a_build_with_every_step_done_is_claudes_to_ship(db, admin):
