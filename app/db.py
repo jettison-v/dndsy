@@ -1,12 +1,13 @@
 """Database engine and per-request sessions."""
 
+import time
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
-from app import config
+from app import config, timing
 
 
 class Base(DeclarativeBase):
@@ -25,11 +26,34 @@ loop_engine = create_engine(config.DATABASE_URL, poolclass=NullPool) if config.D
 LoopSession = sessionmaker(bind=loop_engine, expire_on_commit=False)
 
 
+def _read_starts(conn, cursor, statement, parameters, context, executemany):
+    conn.info.setdefault("askdnd_read_at", []).append(time.monotonic())
+
+
+def _read_ends(conn, cursor, statement, parameters, context, executemany):
+    starts = conn.info.get("askdnd_read_at")
+    if starts:
+        timing.read(time.monotonic() - starts.pop())
+
+
+# Every read's time, to the request in hand (app/timing.py; outside a request it does nothing). On every engine, so the
+# tests' own one counts too.
+event.listen(Engine, "before_cursor_execute", _read_starts)
+event.listen(Engine, "after_cursor_execute", _read_ends)
+
+
+@event.listens_for(Engine, "handle_error")
+def _read_failed(context) -> None:  # (a read that failed never leaves its start behind for the next one)
+    conn = context.connection
+    starts = conn.info.get("askdnd_read_at") if conn is not None else None
+    if starts:
+        starts.pop()
+
+
 def get_db() -> Iterator[Session]:
     """FastAPI dependency: one database session per request. Its connection is taken at once, timed, so a slow request
     says whether it waited for one (app/timing.py: the pool running out looks like a slow server with nothing to do)."""
-    from app import timing
-
+    timing.started()
     with SessionLocal() as session:
         with timing.step("waiting for a database connection"):
             session.connection()
