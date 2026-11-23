@@ -5357,7 +5357,8 @@ document.addEventListener('click', e => {
     fetch('/manage/testing/checks/' + c.id + '/wrong', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
       if (!j || checking !== c) return;
       c.try = c.another ? j.try : null;  // (✗ Another… adds to the try just failed; Something's wrong… starts a new one)
-      win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + j.title + ' · ' + j.device + ' · v' + j.version + ' · askdnd' + (j.where === 'live' ? '.ai' : ' (' + j.where + ')') + ' as of ' + j.app_version;
+      win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + j.title + ' · ' + j.device + ' · v' + j.version + ' · askdnd' + (j.where === 'live' ? '.ai' : ' (' + j.where + ')') + ' as of ' + j.app_version
+        + (j.elsewhere ? '. The picture below is of this screen: paste or drop one from ' + j.device + ' too.' : '');  // (a check tried on another device; issue 104)
       const opt = (value, label, small) => {
         const l = Object.assign(document.createElement('label'), { className: 'fft-opt' });
         const i = Object.assign(document.createElement('input'), { type: 'radio', name: 'fb-still', value });

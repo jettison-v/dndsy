@@ -82,9 +82,11 @@ def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
     assert "on your iPhone" in page and f'data-row="n{n.id}"' in page and f'data-row="r{road.id}"' in page and 'data-kind="question"' in page
     assert f'data-row="d{db.scalar(select(FftIdea.id))}"' in page
     assert 'data-need="laptop"' in page and 'data-need="iphone"' in page  # (a group per need, each its own round: Clearer checks)
-    assert page.count('name="need" value="laptop"') >= 1 and 'name="need" value="iphone"' not in page  # (only what this device can try starts here)
+    # (each need's round starts from any device, saying where its steps are done: he reads on the laptop and taps on the
+    # iPhone; issue 104, Nov 23, in place of "only what this device can try starts here")
+    assert page.count('name="need" value="laptop"') >= 1 and 'name="need" value="iphone"' in page and "data-need-elsewhere" in page
     on_phone = admin.get("/manage/for-you", headers=IPHONE).text
-    assert 'name="need" value="iphone"' in on_phone and 'name="need" value="laptop"' not in on_phone
+    assert 'name="need" value="iphone"' in on_phone and 'name="need" value="laptop"' in on_phone
 
 
 def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
@@ -168,6 +170,33 @@ def test_try_it_on_one_check_ends_with_it(admin, db):
     assert rules.round_open(db) is not None
     admin.post(f"/manage/testing/checks/{c.id}/try", data={"result": "passed"})
     assert rules.round_open(db) is None and "data-round-done" not in admin.get("/manage/testing/card").text
+
+
+def test_a_check_for_the_iphone_marked_on_the_laptop_counts_for_the_iphone(admin, db):
+    """Issue 104 (Brett, Nov 23: "I started the check on my laptop and executed it on my phone ... so I can read the check
+    on the laptop and do the taps on my phone"): ▶ Try it or ▶ Start round on an iPhone check from the laptop counts
+    his mark for the iPhone, and the card says to do the steps there. Before, it was a laptop try and the check stayed."""
+    phone = _check(db, title="On a phone", devices=["iphone"])
+    admin.post(f"/manage/testing/checks/{phone.id}/go")
+    card = admin.get("/manage/testing/card").text
+    assert f'data-check-card="{phone.id}"' in card and 'data-cc-elsewhere="iphone"' in card
+    assert admin.get(f"/manage/testing/checks/{phone.id}/wrong", headers={"Accept": "application/json"}).json()["elsewhere"] is True
+    admin.post(f"/manage/testing/checks/{phone.id}/try", data={"result": "passed", "seen": "to_try"})
+    t = db.scalar(select(FftTry).where(FftTry.check_id == phone.id))
+    assert t.device == "iphone" and rules.check_state(db, phone)["devices"]["iphone"] == "passed"
+    again = _check(db, title="Another on a phone", devices=["iphone"])
+    admin.post("/manage/testing/round", data={"need": "iphone"})  # (a round of iPhone checks, started on the laptop)
+    assert f'data-check-card="{again.id}"' in admin.get("/manage/testing/card").text
+    admin.post(f"/manage/testing/checks/{again.id}/try", data={"result": "passed", "seen": "to_try"})
+    assert db.scalar(select(FftTry).where(FftTry.check_id == again.id)).device == "iphone"
+    lap = _check(db, title="On the laptop")
+    admin.post(f"/manage/testing/checks/{lap.id}/go", headers=IPHONE)  # (and the other way round)
+    assert "data-cc-elsewhere" in admin.get("/manage/testing/card", headers=IPHONE).text
+    admin.post(f"/manage/testing/checks/{lap.id}/try", data={"result": "passed", "seen": "to_try"}, headers=IPHONE)
+    assert db.scalar(select(FftTry).where(FftTry.check_id == lap.id)).device == "laptop"
+    mine = _check(db, title="Mine here")  # (on its own device, nothing is said)
+    admin.post(f"/manage/testing/checks/{mine.id}/go")
+    assert "data-cc-elsewhere" not in admin.get("/manage/testing/card").text
 
 
 def test_a_round_over_every_area_holds_an_issue_in_none(admin, db):

@@ -29,8 +29,8 @@
       {% if g.section == "try" %}
       {% if loop.first or loop.previtem.need != g.need %}{% set nc = need_counts[g.need] %}{# (a group per need, each its own round: Clearer checks, Brett's pick 3) #}
       <tr class="dt-group fft-need" data-need="{{ g.need }}"><td colspan="4"><span class="fft-need-name">{{ need_said[g.need] }}</span> <span class="note">{{ nc.n }} check{{ "s" if nc.n != 1 }} · about {{ nc.minutes }} min</span>
-        {% if not round_open %}{% if need_device[g.need] != device %}<span class="note">· start it {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span>
-        {% elif round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
+        {% if not round_open %}{% if need_device[g.need] != device %}<span class="note" data-need-elsewhere>· do the steps {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span> {% endif %}
+        {% if round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
         {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}</td></tr>
       {% endif %}
       <tr class="dt-group" data-group="{{ g.key }}"><td colspan="4"><span class="fft-group-name">{{ g.title }}</span>

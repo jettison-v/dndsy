@@ -10,6 +10,7 @@
     <button type="button" class="btn link small"{% if not sample %} data-cc-fold{% endif %} aria-expanded="true" aria-label="Fold the card">—</button></div>
   <div class="cc-body"{% if folded %} hidden{% endif %}>
     <p class="cc-title">{{ c.title }}{% if c.makes %} <span class="tag draft">in a test campaign</span>{% endif %}</p>
+    {% if elsewhere %}<p class="note" data-cc-elsewhere="{{ device }}">Do the steps {{ device_said[device].replace("your ", "on your ") }}; mark them here, and they count for it.</p>{% endif %}
     {% if failed %}
     <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
     {% else %}

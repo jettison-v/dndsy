@@ -26,7 +26,9 @@ Every check reads the same way, in this order, so Brett knows what he's testing 
 
 **What it needs** decides its round: a device (`--device laptop`, `--device iphone`), or more than one person
 (`--people`: a second person or a second seat at once). For you groups Try by need (On your laptop, On your iPhone,
-With more than one person), each with its own ▶ Start round, and a round never mixes them.
+With more than one person), each with its own ▶ Start round, and a round never mixes them. A round or ▶ Try it can be
+started from any device: on another device the card says where to do the steps, and the marks count for the check's
+own device (Brett reads the steps on the laptop and taps on the iPhone; issue 104, Nov 23).
 
 ## The rules
 
