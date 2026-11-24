@@ -7,7 +7,7 @@ from datetime import timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, picks
+from app import access, config, picks
 from app.fft import rules, taxonomy
 from app.fft.models import (
     FftArea,
@@ -485,6 +485,10 @@ def gaps(db: Session) -> list[dict]:
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})
+    running = config.running_version()  # (deploys mark themselves live, item 39: a version askdnd can't place releases nothing)
+    if running and rules.now() - config.STARTED_AT > UNPLACED_AFTER and db.scalar(select(FftPull.id).limit(1)) and rules.version_pull(db, running) is None:
+        out.append({"kind": "version_unplaced", "thing": "deploy", "id": 0, "title": f"askdnd.ai runs {running[:7]}", "since": config.STARTED_AT,
+                    "says": "No pull request askdnd knows has this merge commit, so nothing in it was marked live: find which fixes it holds and run feedback.py live."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
@@ -496,7 +500,9 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
              "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet",
-             "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main"}  # (each kind of gap, as Development says it)
+             "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main",
+             "version_unplaced": "askdnd.ai runs a version no pull request explains"}  # (each kind of gap, as Development says it)
+UNPLACED_AFTER = timedelta(minutes=15)  # (GitHub reports a merge within a minute; a deploy takes about ten)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 

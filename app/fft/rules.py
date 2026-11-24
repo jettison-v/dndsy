@@ -2188,7 +2188,18 @@ def pull_upkeep(p: FftPull) -> bool:
 # the version askdnd.ai runs is a pull request's merge commit, and every pull request merged up to it is inside it.
 # app/main.py asks once a new version has run a minute (Railway has switched to it by then), and every GitHub report
 # asks again, so one merged just before the deploy is caught too. Each one released once: its issues become ready to
-# try (R4) and the checks that waited for it reach For you.
+# try (R4) and the checks that waited for it reach For you. It only adds: after a rollback in Railway, what was released
+# stays released until the rollback rule runs (R9, `rollback`); a version no pull request askdnd knows is a gap.
+
+def version_pull(db: Session, version: str) -> FftPull | None:
+    """The merged pull request whose merge commit is this version (askdnd.ai's commit, full or shortened), if GitHub has
+    reported it."""
+    version = (version or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{7,40}", version):
+        return None
+    return next((p for p in db.scalars(select(FftPull).where(FftPull.state == "merged", FftPull.merge_commit != ""))
+                 if p.merge_commit.startswith(version) or version.startswith(p.merge_commit)), None)
+
 
 def release_live(db: Session, actor: str, version: str) -> dict:
     """Release every merged pull request inside `version` (askdnd.ai's commit) not released yet. Returns what it did."""
@@ -2196,13 +2207,12 @@ def release_live(db: Session, actor: str, version: str) -> dict:
     out = {"live": [], "issues": [], "checks": []}
     if not re.fullmatch(r"[0-9a-f]{7,40}", version):
         return out
-    anchor = next((p for p in db.scalars(select(FftPull).where(FftPull.state == "merged", FftPull.merge_commit != ""))
-                   if p.merge_commit.startswith(version) or version.startswith(p.merge_commit)), None)
+    anchor = version_pull(db, version)
     if anchor is None or anchor.closed_at is None:
         return out  # (GitHub hasn't said which pull request it is yet: its next report asks again)
     at = now()
     for p in db.scalars(select(FftPull).where(FftPull.state == "merged", FftPull.live_at.is_(None), FftPull.closed_at <= anchor.closed_at)
-                        .order_by(FftPull.closed_at)):
+                        .order_by(FftPull.closed_at).with_for_update(skip_locked=True)):  # (one released by a release running now is skipped)
         p.live_at = at
         _event(db, actor, "pull_live", "pull", p.id, area_id=p.area_id, number=p.number, commit=version[:40])
         out["live"].append(p.number)

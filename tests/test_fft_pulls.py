@@ -277,3 +277,31 @@ def test_releasing_never_stops_the_server(monkeypatch):
 
     monkeypatch.setattr(rules, "release_live", boom)
     assert main.release_now() == {}
+
+
+def test_a_release_that_cant_finish_never_costs_githubs_report(api, db, github, monkeypatch):
+    """The report is kept, the release is undone alone, and the next report tries again."""
+    def stuck(*a, **k):
+        raise rules.RuleError("stale", "It's ready.")
+
+    monkeypatch.setattr(rules, "release_live", stuck)
+    got = api.post("/api/fft/github/pulls", headers=github, json={"pulls": [_pr(140)]})
+    assert got.status_code == 200 and (got.json()["seen"], got.json()["live"]) == ([140], [])
+    assert db.scalar(select(FftPull.number).where(FftPull.number == 140)) == 140
+
+
+def test_a_version_no_pull_request_explains_is_a_gap(db, monkeypatch):
+    """Nothing in it would ever be marked live: Claude finds what it holds by hand. Not before askdnd has run it 15 minutes
+    (GitHub reports a merge within a minute), and not before GitHub has reported anything at all."""
+    from datetime import timedelta
+
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", C2)
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(hours=1))
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}  # (no pull requests reported yet)
+    _merged(db, 150, C1, "2026-11-24T01:00:00Z")
+    assert "version_unplaced" in {g["kind"] for g in views.gaps(db)}
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(minutes=5))
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(hours=1))
+    _merged(db, 151, C2, "2026-11-24T02:00:00Z")
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}
