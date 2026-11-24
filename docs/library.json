@@ -13,7 +13,7 @@
   "kind": "design",
   "status": "Your picks",
   "date": "Nov 23",
-  "what": "Roadmap item 39: Development's Board, every piece of work in hand from Ready to yours to try, who holds it, its age and last check-in, stuck in amber; each piece's round trip as a timeline of every hop; the Ready column in Claude's order with Pin. Five picks.",
+  "what": "Roadmap item 39: Development's Board, every piece of work in hand from Ready to yours to try, who holds it, its age and last check-in, stuck in amber; each piece's round trip as a timeline of every hop; the Ready column in Claude's order with Pin. How the queue feeds it: a Waiting column with what each piece waits on, Try-it buttons (Claude asks for work, your OK, a failed try, a quiet claim), and a diagram of the gates and the loops back. Six picks.",
   "source": "docs/mockups/work-board/index.html",
   "link": "https://claude.ai/artifact/NY5pTLjXiBBubeH772479J"
  },
