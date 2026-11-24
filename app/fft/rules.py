@@ -4,6 +4,7 @@ the same transaction (`_event`). Nothing else sets a state. Callers commit; a re
 
 Words: an actor is "user:<id>", "claude", "mini" (the Mac Mini's runs) or "askdnd" (askdnd by itself)."""
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -2408,13 +2409,42 @@ def send_page(db: Session, actor: str, entry: dict, files: dict[str, bytes]) -> 
         doc = FftSentDoc(source=source)
         db.add(doc)
     doc.entry, doc.sent_at = clean, at
+    for gone in db.scalars(select(FftSentFile).where(FftSentFile.path.not_in(list(files)))):  # (a send replaces the page whole)
+        if (gone.path.startswith(home) if home.endswith("/") else gone.path == home):
+            db.delete(gone)
     for path, body in files.items():
         f = db.scalar(select(FftSentFile).where(FftSentFile.path == path))
         if f is None:
-            f = FftSentFile(path=path, body=body)
+            f = FftSentFile(path=path, body=body, digest="")
             db.add(f)
-        f.body, f.sent_at = body, at
+        f.body, f.digest, f.sent_at = body, hashlib.sha256(body).hexdigest(), at
     db.flush()
     _event(db, actor, "page_sent", "page", doc.id, source=source, title=clean["title"], files=sorted(files))
     documents.invalidate()
     return doc
+
+
+def prune_landed_pages(db: Session, actor: str = "askdnd") -> list[str]:
+    """After a deploy: a sent file the repo now has the same is removed, and a sent entry the repo lists the same, with
+    none of its files still waiting, too, so the repo's copy (and any later change to it) is the one shown. Returns the
+    sources that landed. Run in a deploy's first minute (app/main.py `release_now`)."""
+    from app import documents
+
+    left = []
+    for f in db.scalars(select(FftSentFile)):
+        if documents.repo_digest(f.path) == f.digest:
+            db.delete(f)
+        else:
+            left.append(f.path)
+    repo = {e["source"]: e for e in documents.repo_library()}
+    landed = []
+    for d in db.scalars(select(FftSentDoc)):
+        home = page_home(d.source)
+        waiting = any(p == home if not home.endswith("/") else p.startswith(home) for p in left)
+        if d.source in repo and documents.same_entry(d.entry or {}, repo[d.source]) and not waiting:
+            _event(db, actor, "page_landed", "page", d.id, source=d.source)
+            db.delete(d)
+            landed.append(d.source)
+    db.flush()
+    documents.invalidate()
+    return landed

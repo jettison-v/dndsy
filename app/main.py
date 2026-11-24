@@ -145,6 +145,7 @@ def release_now() -> dict:
     try:
         with SessionLocal() as db:
             got = fft_rules.release_live(db, "askdnd", config.running_version())
+            got["pages_landed"] = fft_rules.prune_landed_pages(db)  # (pages Claude sent that this deploy carries: item 39, 5 of 6)
             db.commit()
             return got
     except Exception:  # (never stops the server: GitHub's next report asks again)

@@ -31,6 +31,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("path", sa.String(300), nullable=False, unique=True),
         sa.Column("body", sa.LargeBinary(), nullable=False),
+        sa.Column("digest", sa.String(64), nullable=False),
         sa.Column("sent_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 

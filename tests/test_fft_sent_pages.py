@@ -6,7 +6,6 @@ Claude's key sends one, and only into the page's own folder."""
 import base64
 import importlib.util
 import re
-from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -73,25 +72,39 @@ def test_sending_again_replaces_it_and_a_design_folder_lists_its_boards(api, adm
     entry = documents.find(documents.doc_id("docs/mockups/sent-page/index.html"))
     assert documents.pages_of(entry) == ["mockups/sent-page/index.html"]
     assert "second" in _frame(admin, entry["id"]).text
-    folder = _send(api, entry=_entry(source="docs/mockups/sent-page/"), files={"mockups/sent-page/board-3.html": b"<main>b3</main>"}).json()
-    boards = documents.pages_of(documents.find(folder["id"]))
-    assert boards[0] == "mockups/sent-page/index.html" and set(boards) == {"mockups/sent-page/index.html", "mockups/sent-page/board-2.html",
-                                                                           "mockups/sent-page/board-3.html"}
+    folder = _send(api, entry=_entry(source="docs/mockups/sent-page/"), files={"mockups/sent-page/index.html": b"<main>i</main>",
+                                                                               "mockups/sent-page/board-3.html": b"<main>b3</main>"}).json()
+    boards = documents.pages_of(documents.find(folder["id"]))  # (a send replaces the page whole: board 2 and the picture went)
+    assert boards == ["mockups/sent-page/index.html", "mockups/sent-page/board-3.html"]
+    assert documents.read(None, "mockups/sent-page/shot.png") is None
 
 
-def test_the_newer_copy_is_shown_the_repos_once_it_has_landed(api, admin, db, monkeypatch):
-    """A page already in the repo: one sent after this server started is newer and shown; once a deploy (a new server)
-    is newer than what was sent, the repo's copy takes over again."""
+def test_a_sent_copy_is_shown_while_it_differs_and_goes_once_a_deploy_carries_it(api, admin, db):
+    """A page already in the repo: the sent copy is shown while it differs, even after a deploy that doesn't carry it (a
+    deploy of other work mustn't bring back the older page); once a deploy carries the same page and entry, the sent
+    copy is removed in its first minute, so the repo's copy, and any later change to it, is shown."""
     source = "docs/mockups/work-board/index.html"
-    repo_title = documents.find(documents.doc_id(source))["title"]
+    repo = documents.find(documents.doc_id(source))
     _send(api, entry=_entry(source=source, title="The Work Board, round 2"), files={"mockups/work-board/index.html": b"<main>round 2</main>"})
     e = documents.find(documents.doc_id(source))
     assert e["title"] == "The Work Board, round 2" and "round 2" in _frame(admin, e["id"]).text
-    monkeypatch.setattr(documents, "BOOT", rules.now() + timedelta(minutes=1))  # (a deploy after it was sent)
-    documents.invalidate()
+    assert rules.prune_landed_pages(db) == []  # (a deploy of other work: still waiting, still shown)
+    assert "round 2" in _frame(admin, e["id"]).text
+    on_disk = (ROOT / "docs" / "mockups" / "work-board" / "index.html").read_bytes()
+    _send(api, entry={k: repo[k] for k in documents.ENTRY_KEYS} | {"source": source}, files={"mockups/work-board/index.html": on_disk})
+    assert rules.prune_landed_pages(db) == [source]  # (the deploy that carries it)
+    assert db.query(FftEvent).filter_by(kind="page_landed").count() == 1
     e = documents.find(documents.doc_id(source))
-    assert e["title"] == repo_title and "round 2" not in _frame(admin, e["id"]).text
-    assert 'data-copy="repo"' in admin.get(f"/manage/documents/{e['id']}").text
+    assert not e.get("sent") and 'data-copy="repo"' in admin.get(f"/manage/documents/{e['id']}").text
+
+
+def test_a_deploy_prunes_what_landed_and_never_stops_for_it(monkeypatch):
+    """The deploy's first minute removes landed pages; a failure there is reported and askdnd carries on."""
+    from app import main
+
+    monkeypatch.setattr(rules, "release_live", lambda *a, **k: {})
+    monkeypatch.setattr(rules, "prune_landed_pages", lambda db: ["docs/x.html"])
+    assert main.release_now() == {"pages_landed": ["docs/x.html"]}
 
 
 @pytest.mark.parametrize(("entry", "files", "said"), [

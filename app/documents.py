@@ -8,12 +8,12 @@ storage, no requests as you), from an address that carries a signed key good for
 for a page's pictures and styles can't carry the sign-in), and with no referrer, so the key never leaves askdnd.
 """
 
+import hashlib
 import json
 import mimetypes
 import re
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 
@@ -61,9 +61,10 @@ def _library(mtime: float) -> tuple[dict, ...]:
 
 
 # Pages Claude sends before their repo copy lands (item 39, scope v7, Nov 24: a page is data, not code, so it reaches
-# Brett in seconds, not after a pull request and a deploy; rules.send_page keeps them). The newer copy is the one shown:
-# the repo's is as new as this server (a deploy starts a new one), a sent one as new as when it was sent.
-BOOT = datetime.now(UTC)
+# Brett in seconds, not after a pull request and a deploy; rules.send_page keeps them). A sent copy is shown while it
+# differs from the repo's; once a deploy carries the same page, rules.prune_landed_pages removes it, so the repo's
+# copy (and any later change to it) is shown again.
+ENTRY_KEYS = ("title", "kind", "status", "date", "what", "link")
 CACHE_SECONDS = 10
 
 
@@ -77,13 +78,13 @@ def _sent_from_db() -> dict:
 
 
 def sent_from(db) -> dict:
-    """{"docs": {source: (entry, sent_at)}, "files": {path: sent_at}}: what Claude sent, without the files' bodies."""
+    """{"docs": {source: (entry, sent_at)}, "files": {path: digest}}: what Claude sent, without the files' bodies."""
     from sqlalchemy import select
 
     from app.fft.models import FftSentDoc, FftSentFile
 
     return {"docs": {d.source: (dict(d.entry or {}), d.sent_at) for d in db.scalars(select(FftSentDoc))},
-            "files": dict(db.execute(select(FftSentFile.path, FftSentFile.sent_at)).all())}
+            "files": dict(db.execute(select(FftSentFile.path, FftSentFile.digest)).all())}
 
 
 loader: Callable[[], dict] = _sent_from_db
@@ -104,21 +105,26 @@ def _sent() -> dict:
     return _cache["rows"]
 
 
-def _newer(sent_at) -> bool:
-    return sent_at is not None and sent_at > BOOT
+def same_entry(a: dict, b: dict) -> bool:
+    return all(str(a.get(k) or "") == str(b.get(k) or "") for k in ENTRY_KEYS)
+
+
+def repo_library() -> tuple[dict, ...]:
+    """docs/library.json as the repo's copy has it, read again when it changes."""
+    return _library(LIBRARY.stat().st_mtime)
 
 
 def library() -> tuple[dict, ...]:
-    """docs/library.json, read again when it changes, with the pages Claude sent: a sent entry newer than the repo's
-    takes its place, and one the repo doesn't have yet comes first (the list is newest first)."""
-    repo = _library(LIBRARY.stat().st_mtime)
+    """docs/library.json with the pages Claude sent: a sent entry that differs from the repo's takes its place, and one
+    the repo doesn't have yet comes first (the list is newest first)."""
+    repo = repo_library()
     sent = _sent()["docs"]
     if not sent:
         return repo
     out, seen = [], set()
     for e in repo:
         s = sent.get(e["source"])
-        out.append({**s[0], "source": e["source"], "id": e["id"], "sent": True} if s and _newer(s[1]) else e)
+        out.append({**s[0], "source": e["source"], "id": e["id"], "sent": True} if s and not same_entry(s[0], e) else e)
         seen.add(e["source"])
     new = sorted(((src, ent, at) for src, (ent, at) in sent.items() if src not in seen), key=lambda x: x[2], reverse=True)
     return tuple([{**ent, "source": src, "id": doc_id(src), "sent": True} for src, ent, _ in new] + out)
@@ -160,13 +166,21 @@ def inside_docs(rel: str) -> Path | None:
     return path if path.exists() else None
 
 
-def _from_sent(rel: str) -> bool:
-    """Whether a file is read from what Claude sent: the repo has none, or the sent one is newer."""
-    at = _sent()["files"].get(rel)
-    if at is None:
-        return False
+@cache
+def _digest_of(path: Path, mtime: float) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def repo_digest(rel: str) -> str | None:
+    """The sha256 of the repo's copy of a file, or None when the repo has none."""
     path = inside_docs(rel)
-    return path is None or not path.is_file() or _newer(at)
+    return _digest_of(path, path.stat().st_mtime) if path is not None and path.is_file() else None
+
+
+def _from_sent(rel: str) -> bool:
+    """Whether a file is read from what Claude sent: the repo has none, or a different one (not landed yet)."""
+    digest = _sent()["files"].get(rel)
+    return digest is not None and repo_digest(rel) != digest
 
 
 def read(db, rel: str) -> bytes | None:

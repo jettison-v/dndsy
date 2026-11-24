@@ -492,7 +492,8 @@ class FftPull(_Stamped, Base):
 class FftSentDoc(_Stamped, Base):
     """A page Claude sent to askdnd before its repo copy lands (item 39, scope v7, Nov 24: a page is data, not code, so it
     reaches Brett in seconds, not after a pull request and a deploy): its Documents entry, as docs/library.json would
-    list it. Backstage › Documents shows it until the repo's copy is newer (app/documents.py). Changed only in rules.py."""
+    list it. Backstage › Documents shows it while it differs from the repo's copy, and the first minute of a deploy whose
+repo copy is the same removes it (rules.prune_landed_pages). Changed only in rules.py."""
 
     __tablename__ = "fft_sent_docs"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -509,4 +510,5 @@ class FftSentFile(_Stamped, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     path: Mapped[str] = mapped_column(String(300), unique=True)  # under docs/, without the "docs/"
     body: Mapped[bytes] = mapped_column(LargeBinary)
+    digest: Mapped[str] = mapped_column(String(64))  # sha256 of body: once the repo's copy is the same, it has landed
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
