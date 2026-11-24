@@ -2080,14 +2080,18 @@ def listener(db: Session, name: str, area_id: int | None = None) -> FftListener:
 
 
 QUIET_THINGS = frozenset({"pull"})  # (kept on the record, never in an inbox: GitHub reports every test run, Nov 24)
+# askdnd's own bookkeeping, kept on the record and never in an inbox (item 42's step, Nov 24: the listener woke for
+# "Area 19: unlocked" each time a pull request opened, and for "Page 7: landed" each deploy): a claim taken or let go,
+# and a sent page whose repo copy went live. What Claude must act on reaches it as a gap instead.
+QUIET_KINDS = frozenset({"area_locked", "area_unlocked", "page_landed"})
 
 
 def heard(e: FftEvent, listener_actor: str) -> bool:
     """Whether an inbox shows this event: not what the listener did itself (nor another session of its own, "claude:…",
     claiming or sending a page), nothing that only keeps the record (a pull request's every change: a red one or one that
-    conflicts reaches Claude as a gap instead), and a scheduled job only when it failed (Nov 24: the listener woke every
+    conflicts reaches Claude as a gap instead; a claim taken or let go; a sent page landing), and a scheduled job only when it failed (Nov 24: the listener woke every
     few minutes for GitHub's routine reports)."""
-    if e.actor == listener_actor or e.actor.split(":", 1)[0] == listener_actor or e.thing in QUIET_THINGS:
+    if e.actor == listener_actor or e.actor.split(":", 1)[0] == listener_actor or e.thing in QUIET_THINGS or e.kind in QUIET_KINDS:
         return False
     return not (e.kind == "job_ran" and (e.data or {}).get("result") != "failed")
 
@@ -2095,7 +2099,7 @@ def heard(e: FftEvent, listener_actor: str) -> bool:
 def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
     """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`."""
     q = select(FftEvent).where(FftEvent.id > li.read_id, FftEvent.at <= func.now() - SETTLE,
-                               FftEvent.thing.not_in(QUIET_THINGS)).order_by(FftEvent.id)  # (in the query: a page of 500 quiet ones would hide what's after them)
+                               FftEvent.thing.not_in(QUIET_THINGS), FftEvent.kind.not_in(QUIET_KINDS)).order_by(FftEvent.id)  # (in the query: a page of 500 quiet ones would hide what's after them)
     if li.area_id is not None:
         q = q.where(FftEvent.area_id == li.area_id)
     rows = list(db.scalars(q.limit(INBOX_PAGE)))

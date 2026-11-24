@@ -169,6 +169,25 @@ def test_what_github_reports_never_fills_claudes_inbox(api, db, github):
     assert any(g["kind"] == "pull_red" for g in api.get("/api/fft/gaps", headers={"X-Fft-Key": CLAUDE}).json()["items"])
 
 
+def test_askdnds_own_bookkeeping_never_wakes_the_listener(api, db, github):
+    """Roadmap item 42's step (Nov 24): a claim taken, one let go when its pull request opens, and a sent page whose repo
+    copy went live are kept on the record and never reach an inbox: the listener woke for "Area 19: unlocked" each time."""
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    issue = rules.new_issue(db, "brett", "Back clears what you typed", feature="feedback")
+    db.flush()
+    rules.claim(db, "claude:other", db.get(FftArea, issue.area_id))
+    api.post("/api/fft/github/pulls", headers=github, json={"pulls": [_pr(71, f"a{issue.area_id}-batch")]})
+    kinds = {e.kind for e in db.scalars(select(FftEvent).where(FftEvent.area_id == issue.area_id))}
+    assert {"area_locked", "area_unlocked"} <= kinds
+    rules._event(db, "askdnd", "page_landed", "page", 1, source="docs/mockups/x/index.html")
+    db.execute(update(FftEvent).values(at=rules.now() - timedelta(seconds=30)))
+    kinds = [i["kind"] for i in api.get("/api/fft/inbox", headers={"X-Fft-Key": CLAUDE}).json()["items"]]
+    assert kinds and not {"area_locked", "area_unlocked", "page_landed"} & set(kinds)  # (the new issue Brett wrote still reaches Claude)
+
+
 def test_a_plans_history_says_what_happened_to_its_pull_requests_in_words(db):
     """Opened, tests passed or failed, brought up to date, merged: in words, on its plan's History; a flicker of its merge
     state isn't one."""
