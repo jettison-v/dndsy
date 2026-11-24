@@ -57,3 +57,14 @@ def press(locator: Locator) -> None:
     not change (Nov 19, a Feedback test read the database before the reply was saved)."""
     locator.click()
     locator.page.wait_for_function("() => !document.documentElement.dataset.pressing")
+
+
+def click_now(page: Page, css: str, nth: int = 0) -> None:
+    """Click the nth button matching `css` as the page has it now: found and clicked in one step inside the page.
+    A locator's evaluate finds the element and runs its script in two, so a list that redraws itself in between (Table
+    rolls polls and hears live updates) left the click on a copy no longer on the page, where nothing happens (issue 113).
+    Fails if there's no such button."""
+    said = page.evaluate("""([css, nth]) => { const b = document.querySelectorAll(css)[nth];
+      if (!b) return 'nothing matches ' + css; b.click(); return ''; }""", [css, nth])
+    if said:
+        raise AssertionError(said)
