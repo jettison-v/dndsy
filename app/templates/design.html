@@ -403,8 +403,8 @@
     {% set demo_ctl %}<button class="btn primary small" type="button">▶ Start round</button>{% endset %}
     <div class="tbx-stack" id="titled-table">
     {% call table_box("demo-try", "Try", 2, "about 4 min · you use askdnd and mark what you saw", [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w1")], controls=demo_ctl) %}
-      <tr><td><span class="state-word" data-tone="ask">Try</span></td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
-      <tr><td><span class="state-word" data-tone="ask">Try</span></td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
+      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
+      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
     {% endcall %}
     {% call table_box("demo-decide", "Decide", 0, "one read and one press each", [], "Nothing to decide.") %}{% endcall %}
     </div>

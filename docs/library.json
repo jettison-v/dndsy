@@ -1,5 +1,14 @@
 [
  {
+  "title": "Talking both ways",
+  "kind": "plan",
+  "status": "Your picks",
+  "date": "Nov 24",
+  "what": "Roadmap item 39, Brett's goal 3: every way a message travels between Brett and Claude (chat, askdnd, claude.ai pages, the planning chat, his phone, the robots), where one can still sit unseen, and the fix. Twelve findings: two fixed today, one started, five that hold, four picks (an email when nobody's listening, chat saved to askdnd, the planning chat, Sentry errors as cards).",
+  "source": "docs/mockups/talking-both-ways/index.html",
+  "link": "https://claude.ai/artifact/Jr5XFHn7PU4yMZ25vhDLhS"
+ },
+ {
   "title": "askdnd Roadmap",
   "kind": "guide",
   "status": "Moved into askdnd, Nov 20",
