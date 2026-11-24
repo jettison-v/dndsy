@@ -289,6 +289,11 @@ def db(db_engine, monkeypatch):
             from app import usage
 
             monkeypatch.setattr(usage, "opener", lambda: contextlib.nullcontext(session))  # (counting a use: app/usage.py)
+            from app import documents
+
+            monkeypatch.setattr(documents, "loader", _until_changed(session, writes, lambda: documents.sent_from(session)))
+            monkeypatch.setattr(documents, "CACHE_SECONDS", -1)
+            documents.invalidate()  # (pages Claude sent, as this test's own database has them: item 39, scope v7)
             yield session
         trans.rollback()
 

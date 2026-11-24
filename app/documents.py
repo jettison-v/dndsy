@@ -11,16 +11,20 @@ for a page's pictures and styles can't carry the sign-in), and with no referrer,
 import json
 import mimetypes
 import re
+import time
+from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 
-from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, Response
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from markupsafe import Markup
 
 from app import config, web
 from app.auth import is_admin
+from app.db import get_db
 from app.render import markdown_to_html
 from app.templating import _static, templates
 
@@ -56,9 +60,68 @@ def _library(mtime: float) -> tuple[dict, ...]:
     return tuple({**e, "id": doc_id(e["source"])} for e in json.loads(LIBRARY.read_text()))
 
 
+# Pages Claude sends before their repo copy lands (item 39, scope v7, Nov 24: a page is data, not code, so it reaches
+# Brett in seconds, not after a pull request and a deploy; rules.send_page keeps them). The newer copy is the one shown:
+# the repo's is as new as this server (a deploy starts a new one), a sent one as new as when it was sent.
+BOOT = datetime.now(UTC)
+CACHE_SECONDS = 10
+
+
+def _sent_from_db() -> dict:
+    from app.db import SessionLocal, engine
+
+    if engine is None:
+        return {"docs": {}, "files": {}}
+    with SessionLocal() as db:
+        return sent_from(db)
+
+
+def sent_from(db) -> dict:
+    """{"docs": {source: (entry, sent_at)}, "files": {path: sent_at}}: what Claude sent, without the files' bodies."""
+    from sqlalchemy import select
+
+    from app.fft.models import FftSentDoc, FftSentFile
+
+    return {"docs": {d.source: (dict(d.entry or {}), d.sent_at) for d in db.scalars(select(FftSentDoc))},
+            "files": dict(db.execute(select(FftSentFile.path, FftSentFile.sent_at)).all())}
+
+
+loader: Callable[[], dict] = _sent_from_db
+_cache: dict = {"rows": {"docs": {}, "files": {}}, "at": 0.0}
+
+
+def invalidate() -> None:
+    _cache["at"] = 0.0
+
+
+def _sent() -> dict:
+    if time.monotonic() - _cache["at"] > CACHE_SECONDS:
+        try:
+            _cache["rows"] = loader()
+        except Exception:
+            pass  # database unavailable: the repo's pages still open
+        _cache["at"] = time.monotonic()
+    return _cache["rows"]
+
+
+def _newer(sent_at) -> bool:
+    return sent_at is not None and sent_at > BOOT
+
+
 def library() -> tuple[dict, ...]:
-    """docs/library.json, read again when it changes."""
-    return _library(LIBRARY.stat().st_mtime)
+    """docs/library.json, read again when it changes, with the pages Claude sent: a sent entry newer than the repo's
+    takes its place, and one the repo doesn't have yet comes first (the list is newest first)."""
+    repo = _library(LIBRARY.stat().st_mtime)
+    sent = _sent()["docs"]
+    if not sent:
+        return repo
+    out, seen = [], set()
+    for e in repo:
+        s = sent.get(e["source"])
+        out.append({**s[0], "source": e["source"], "id": e["id"], "sent": True} if s and _newer(s[1]) else e)
+        seen.add(e["source"])
+    new = sorted(((src, ent, at) for src, (ent, at) in sent.items() if src not in seen), key=lambda x: x[2], reverse=True)
+    return tuple([{**ent, "source": src, "id": doc_id(src), "sent": True} for src, ent, _ in new] + out)
 
 
 def find(did: str) -> dict | None:
@@ -82,24 +145,60 @@ def linked(*texts: str) -> list[dict]:
     return list(out.values())
 
 
+def safe(rel: str) -> bool:
+    """A path under docs/, never outside it and never a hidden file."""
+    if not rel or "\\" in rel or rel.startswith("/") or any(part.startswith(".") for part in Path(rel).parts):
+        return False
+    return (DOCS / rel).resolve().is_relative_to(DOCS)
+
+
 def inside_docs(rel: str) -> Path | None:
-    """A path under docs/, never outside it and never a hidden file; None otherwise."""
-    if not rel or "\\" in rel or any(part.startswith(".") for part in Path(rel).parts):
+    """A path under docs/ that's in the repo's copy; None otherwise."""
+    if not safe(rel):
         return None
     path = (DOCS / rel).resolve()
-    return path if path.is_relative_to(DOCS) and path.exists() else None
+    return path if path.exists() else None
+
+
+def _from_sent(rel: str) -> bool:
+    """Whether a file is read from what Claude sent: the repo has none, or the sent one is newer."""
+    at = _sent()["files"].get(rel)
+    if at is None:
+        return False
+    path = inside_docs(rel)
+    return path is None or not path.is_file() or _newer(at)
+
+
+def read(db, rel: str) -> bytes | None:
+    """A file's contents, from the newer copy: Claude's sent one or the repo's."""
+    if not safe(rel):
+        return None
+    if _from_sent(rel):
+        from sqlalchemy import select
+
+        from app.fft.models import FftSentFile
+
+        body = db.scalar(select(FftSentFile.body).where(FftSentFile.path == rel))
+        if body is not None:
+            return bytes(body)
+    path = inside_docs(rel)
+    return path.read_bytes() if path is not None and path.is_file() else None
 
 
 def pages_of(entry: dict) -> list[str]:
-    """What a document opens to: one file, or a design's boards (its HTML files, the main one first)."""
-    path = inside_docs(entry["source"].removeprefix("docs/"))
-    if path is None:
+    """What a document opens to: one file, or a design's boards (its HTML files, the main one first), from the repo's
+    copy and what Claude sent."""
+    rel = entry["source"].removeprefix("docs/")
+    sent = _sent()["files"]
+    if rel in sent or ((p := inside_docs(rel)) is not None and p.is_file()):
+        return [rel] if safe(rel) else []
+    if not safe(rel.rstrip("/")):
         return []
-    if path.is_file():
-        return [path.relative_to(DOCS).as_posix()]
-    boards = sorted((p for p in path.rglob("*.html") if not any(x.startswith(".") for x in p.relative_to(DOCS).parts)),
-                    key=lambda p: (p.stem.lower() not in ("main", "index"), p.relative_to(path).as_posix().lower()))
-    return [p.relative_to(DOCS).as_posix() for p in boards]
+    folder = rel.rstrip("/") + "/"
+    found = {p.relative_to(DOCS).as_posix() for p in (DOCS / folder).rglob("*.html")
+             if not any(x.startswith(".") for x in p.relative_to(DOCS).parts)} if inside_docs(folder.rstrip("/")) else set()
+    found |= {f for f in sent if f.startswith(folder) and f.endswith(".html")}
+    return sorted(found, key=lambda f: (Path(f).stem.lower() not in ("main", "index"), f.removeprefix(folder).lower()))
 
 
 def _signer() -> URLSafeTimedSerializer:
@@ -126,7 +225,7 @@ def library_page(request: Request):
 
 
 @router.get("/manage/documents/{did}")
-def document_page(request: Request, did: str, page: str = "", part: int = 0):
+def document_page(request: Request, did: str, page: str = "", part: int = 0, db=Depends(get_db)):
     """One document: a plan in the page, anything else in the sealed frame, a design's boards as tabs. `part=1`: the
     page alone in a window nearly as big as the screen (For you's Open mockup, Brett, Nov 17: "a large modal")."""
     _, stop = web.require(request, is_admin, "askdnd's documents are for admins.")
@@ -139,7 +238,7 @@ def document_page(request: Request, did: str, page: str = "", part: int = 0):
     current = next((p for p in pages if p == page), pages[0])  # (one of its own listed pages, never the address's text)
     body = None
     if current.endswith(".md"):
-        body = Markup(markdown_to_html((DOCS / current).read_text(), lambda _name: None))  # noqa: S704
+        body = Markup(markdown_to_html((read(db, current) or b"").decode(errors="replace"), lambda _name: None))  # noqa: S704
     if part:  # (a plan written as text too, in the window as itself: it showed the whole page there, unscrollable, Nov 19)
         return templates.TemplateResponse(request, "_document_window.html", {"e": entry, "body": body, "frame": None if body else file_url(current)})
     return templates.TemplateResponse(request, "manage_document.html", {
@@ -148,21 +247,21 @@ def document_page(request: Request, did: str, page: str = "", part: int = 0):
 
 
 @router.get("/manage/documents/f/{key}/{rel:path}")
-def document_file(key: str, rel: str):
+def document_file(key: str, rel: str, db=Depends(get_db)):
     """A page or one of its files, for the sealed frame: only under the folder its key was made for, only for an
     hour, never askdnd's origin (the sandbox), never sent on to anyone (no referrer)."""
     try:
         folder = _signer().loads(key, max_age=KEY_SECONDS)
     except BadSignature:
         return Response("This link has run out. Open the document again from Backstage › Global › Documents.", status_code=403)
-    path = inside_docs(rel)
-    if path is None or not path.is_file() or not (folder == "" or rel.startswith(folder + "/")) or (folder == "" and "/" in rel):
+    data = read(db, rel) if (folder == "" or rel.startswith(folder + "/")) and not (folder == "" and "/" in rel) else None
+    if data is None:
         return Response("Not found", status_code=404)
     headers = {"Content-Security-Policy": SANDBOX, "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff",
                "Cache-Control": "private, max-age=300"}
-    kind = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    kind = mimetypes.guess_type(Path(rel).name)[0] or "application/octet-stream"
     if kind == "text/html":
-        page = path.read_text(errors="replace")
+        page = data.decode(errors="replace")
         if not page.lstrip()[:15].lower().startswith("<!doctype"):  # (claude.ai pages are written without their skeleton)
             page = ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,'
                     'initial-scale=1"></head><body style="margin:0">' + page + "</body></html>")
@@ -171,4 +270,4 @@ def document_file(key: str, rel: str):
         at = page.lower().rfind("</body>")
         page = page[:at] + layer + page[at:] if at >= 0 else page + layer
         return HTMLResponse(page, headers=headers)
-    return FileResponse(path, media_type=kind, headers=headers)
+    return Response(data, media_type=kind, headers=headers)

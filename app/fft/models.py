@@ -6,7 +6,7 @@ they can be erased without breaking the record (T7)."""
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, false, func, true
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint, false, func, true
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -487,3 +487,26 @@ class FftPull(_Stamped, Base):
     live_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Opened for work nobody had claimed (item 39, 3 of 4): a gap until it closes or its plan is claimed
     unclaimed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+
+
+class FftSentDoc(_Stamped, Base):
+    """A page Claude sent to askdnd before its repo copy lands (item 39, scope v7, Nov 24: a page is data, not code, so it
+    reaches Brett in seconds, not after a pull request and a deploy): its Documents entry, as docs/library.json would
+    list it. Backstage › Documents shows it until the repo's copy is newer (app/documents.py). Changed only in rules.py."""
+
+    __tablename__ = "fft_sent_docs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(300), unique=True)  # its docs/ path, as library.json's `source`
+    entry: Mapped[dict] = mapped_column(JSONB, default=dict)  # title, kind, status, date, what, link
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class FftSentFile(_Stamped, Base):
+    """One file of a sent page (the page itself, or its boards, pictures and styles beside it), served in Documents'
+    sealed frame exactly as the repo's copy would be."""
+
+    __tablename__ = "fft_sent_files"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    path: Mapped[str] = mapped_column(String(300), unique=True)  # under docs/, without the "docs/"
+    body: Mapped[bytes] = mapped_column(LargeBinary)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
