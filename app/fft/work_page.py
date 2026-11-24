@@ -485,7 +485,11 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
     if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
-        ctx["on_board"] = on_board(board(db))
+        ob = on_board(board(db))
+        for r in q["rows"] + q["held"]:  # (a build with plans has no card of its own: its row says its first plan's column)
+            if r.get("sub") and f"i{r['a'].item_id}" not in ob and r["key"] in ob:
+                ob[f"i{r['a'].item_id}"] = ob[r["key"]]
+        ctx["on_board"] = ob
     elif tab == "how":
         ctx["how"] = how()
     db.commit()

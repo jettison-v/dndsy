@@ -189,3 +189,20 @@ def test_a_plan_with_two_pull_requests_on_their_way_shows_both(db):
     _pull(db, 490, f"a{i.area_id}-two", tests="failed")
     cards = {x["key"]: x for _, _, _, cards in work_page.board(db)["cols"] for x in cards}
     assert cards[f"a{i.area_id}"]["pr"] == 488 and cards[f"a{i.area_id}-p490"]["pr"] == 490 and cards[f"a{i.area_id}-p490"]["stuck"]
+
+
+def test_a_builds_row_in_your_order_says_its_plans_column(db, admin):
+    """A Roadmap build with a plan has no Board card of its own (its plan has): its row in Your order says its plan's
+    column, not the older stage words (Nov 24: item 39's row said Claude's next)."""
+    it = rules.new_item(db, "claude", "Agreed", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])
+    rules.agree_scope(db, "user:1", it)
+    rules.add_step(db, "claude", it, "Build it")
+    plan = rules.new_area(db, "claude", it, "Agreed: the build")
+    db.flush()
+    rules.lock_area(db, OWNER, plan)
+    db.flush()
+    page = admin.get("/manage/work?tab=queue").text
+    row = page.split(f'data-key="i{it.id}"', 1)[1].split("</tr>", 1)[0]
+    assert 'data-col-word="building"' in row
