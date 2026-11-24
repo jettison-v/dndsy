@@ -1,0 +1,391 @@
+<title>For you, as tables</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Issue 111 (Brett, Nov 24): "I am leaning towards 2 tables, maybe it needs to be 3. I do not know how many different
+   categories we have. "Try" is the bulk, most time-consuming, and launches into a whole new experience. Decide and From
+   the Roadmap are quick and feel more straight forward." Roadmap item 39, step 35. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+
+/* the screen picker */
+.pickers { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.picker { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.picker .of { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 2px; }
+.shot { display: inline-flex; gap: 6px; align-items: center; min-height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .84rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.shot[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.shot .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); } .mbar .sp { flex: 1; }
+.badge { display: inline-grid; place-items: center; min-width: 1.5em; height: 1.4em; padding: 0 .4em; border-radius: 999px; background: var(--amber); color: #15171a; font: 700 .72rem/1 var(--sans); }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 14px; min-width: 0; align-content: start; }
+.page h2.pt { font: 700 1.5rem/1.2 var(--sans); }
+.page .sub { color: var(--muted); font-size: .88rem; max-width: 80ch; }
+.bar { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: .86rem; padding: 8px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); display: inline-block; }
+.deploys { margin-left: auto; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.sum { font-size: .88rem; color: var(--muted); } .sum b { color: var(--text); }
+
+/* a table, each with its own head: title, count and its own controls, right above its column headings */
+.tbl { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.tbl-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.tbl-head h3 { font: 700 1.02rem/1.2 var(--sans); display: inline-flex; gap: 8px; align-items: center; }
+.tbl-head .what { color: var(--muted); font-size: .84rem; }
+.tbl-head .ctl { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tbl.try .tbl-head { background: linear-gradient(0deg, var(--surface), var(--surface-2)); }
+.tbl.try .tbl-head h3::before { content: ""; width: 4px; height: 1.1em; border-radius: 2px; background: var(--red-btn); }
+.tbl.dec .tbl-head h3::before { content: ""; width: 4px; height: 1.1em; border-radius: 2px; background: var(--violet); }
+.tbl.roadmap .tbl-head h3::before { content: ""; width: 4px; height: 1.1em; border-radius: 2px; background: var(--blue); }
+.tbl.answer .tbl-head h3::before { content: ""; width: 4px; height: 1.1em; border-radius: 2px; background: var(--violet); }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th { text-align: left; font: 600 .76rem/1.2 var(--sans); color: var(--faint); padding: 7px 12px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+th.num, td.num { text-align: right; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover td { background: var(--surface-2); }
+tr.grp td { background: var(--bg); padding: 6px 12px; font-size: .82rem; color: var(--muted); }
+tr.grp td b { color: var(--text); }
+tr.grp.need td { background: var(--surface-2); }
+tr.grp .elsewhere { color: var(--faint); }
+.w-kind { width: 104px; } .w-takes { width: 76px; } .w-act { width: 112px; } .w-from { width: 210px; }
+.t { color: var(--strong); display: block; font-weight: 500; }
+.why { color: var(--muted); font-size: .8rem; display: block; }
+.from { color: var(--muted); font-size: .82rem; }
+.word { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font: 600 .74rem/1.4 var(--sans); white-space: nowrap; background: var(--surface-3); color: var(--text); }
+.word.ask { background: var(--amber-soft); color: var(--amber); }
+.word.claude { background: var(--violet-soft); color: var(--violet); }
+.word.passed { background: var(--green-soft); color: var(--green); }
+.word.road { background: var(--blue-soft); color: var(--blue); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .8rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.link { border-color: transparent; background: transparent; color: var(--link); padding: 0 4px; }
+.empty-line { color: var(--faint); font-size: .86rem; padding: 10px 12px; }
+.tbl.is-empty .tbl-head { border-bottom: 0; padding-bottom: 0; }
+.said { color: var(--text); font-size: .86rem; min-height: 1.4em; border: 1px dashed var(--line-strong); border-radius: 10px; padding: 8px 12px; }
+.said b { color: var(--blue); }
+
+/* the kinds, and where each goes */
+.kinds { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.kinds table { min-width: 720px; }
+.kinds td.on { color: var(--strong); font-weight: 600; }
+.kinds .q { color: var(--faint); }
+
+.why-box { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why-box .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .btn { min-height: 34px; font-size: .86rem; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); } .side { display: none; }
+  .w-from, td.from-c, .w-takes, td.takes-c { display: none; }
+  .tbl-head .ctl { margin-left: 0; }
+  .w-kind, .w-act { width: 1%; } th, td { padding-left: 8px; padding-right: 8px; }
+}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Issue 111 · Roadmap item 39, step 35 · Nov 24 · a mockup</span>
+    <h1>For you, as tables</h1>
+    <p class="meta">You asked for For you as two tables, maybe three, and said you weren't sure how many kinds of thing it holds. <b>It holds ten kinds</b>, listed below the screen with where each one goes. Both layouts are drawn: switch between <b>two tables</b> and <b>three</b>, and between <b>Try first</b> and <b>the quick ones first</b>. The <b>Today</b> view shows what's in your For you right now; <b>Every kind</b> shows a busy day with all ten.</p>
+    <div class="terms">
+      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › For you, the same page and address. Only how its rows are laid out changes.</div>
+      <div class="term"><span class="tag">What changes</span>One long table with five group rows becomes separate tables. Each table has its own heading, count and buttons, sitting right above its column headings (your note 64).</div>
+      <div class="term"><span class="tag">Doesn't change</span>What lands in For you and why, the item window that a row opens, rounds and ▶ Try it, the status bar, and Backstage's count.</div>
+    </div>
+  </header>
+
+  <div class="pickers" role="group" aria-label="What the screen shows">
+    <div class="picker"><span class="of">Tables</span>
+      <button type="button" class="shot" data-set="tables" data-v="two" aria-pressed="false">A · Two</button>
+      <button type="button" class="shot" data-set="tables" data-v="three" aria-pressed="true">B · Three <span class="mine">my pick</span></button></div>
+    <div class="picker"><span class="of">First</span>
+      <button type="button" class="shot" data-set="first" data-v="try" aria-pressed="false">A · Try first</button>
+      <button type="button" class="shot" data-set="first" data-v="quick" aria-pressed="true">B · Quick ones first <span class="mine">my pick</span></button></div>
+    <div class="picker"><span class="of">Showing</span>
+      <button type="button" class="shot" data-set="data" data-v="today" aria-pressed="true">Today</button>
+      <button type="button" class="shot" data-set="data" data-v="busy" aria-pressed="false">Every kind</button>
+      <button type="button" class="shot" data-set="data" data-v="quiet" aria-pressed="false">Almost nothing</button></div>
+  </div>
+
+  <div class="app">
+    <div class="mbar"><span class="logo"></span><b>VTT test</b><span>Campaign</span><span>Table</span><span>Party ▾</span><span class="sp"></span><b>Backstage ▾</b> <span class="badge" id="badge">8</span></div>
+    <div class="shell">
+      <nav class="side" aria-label="Backstage"><span class="h">Our work</span><span class="on">For you</span><span>Feedback</span><span>Roadmap</span><span>Development</span><span class="h">General</span><span>Overview</span><span>Product areas</span><span>Documents</span></nav>
+      <div class="page">
+        <h2 class="pt">For you</h2>
+        <p class="sub">Everything waiting on you, and nothing else. Only admins can see this page.</p>
+        <div class="bar"><span class="dot"></span><b>Claude is listening</b><span class="note">main, heard 1 min ago</span><span class="deploys">Deploys: <b>When tests pass</b> ▾</span></div>
+        <p class="sum" id="sum"></p>
+        <div id="tables" style="display:grid;gap:14px"></div>
+        <p class="said" id="said" aria-live="polite">Click a row or a button to see what it does. A row opens its item in the item window at the right, as it does today.</p>
+      </div>
+    </div>
+  </div>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-kinds">
+    <h2 id="h-kinds">The ten kinds, and where each goes</h2>
+    <p class="meta">Each one is what you do with it. <b>Try</b> means you go and use askdnd and mark what you saw. The rest take <b>one read and one press</b> in the item window.</p>
+    <div class="kinds"><table>
+      <thead><tr><th>Kind</th><th>What you do</th><th>How long</th><th>A · Two tables</th><th>B · Three tables</th></tr></thead>
+      <tbody>
+        <tr><td><span class="word ask">On your Mac</span></td><td>Try a change on your Mac before it merges (Careful, or After my local try)</td><td>a few minutes</td><td class="on">Try</td><td class="on">Try</td></tr>
+        <tr><td><span class="word ask">Check</span></td><td>Follow its steps on askdnd.ai: Passed, Something's wrong… or Can't try…</td><td>2–5 min each, in a round</td><td class="on">Try</td><td class="on">Try</td></tr>
+        <tr><td><span class="word passed">Fixed</span></td><td>A fix that's live but came with no steps: does it work?</td><td>a minute or two</td><td class="on">Try</td><td class="on">Try</td></tr>
+        <tr><td><span class="word claude">Question</span></td><td>Claude asks; you tap an answer</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
+        <tr><td><span class="word claude">Decision</span></td><td>Look at a mockup, then one verdict</td><td>a few minutes</td><td>Answer</td><td>Decide</td></tr>
+        <tr><td><span class="word ask">Fix to OK</span></td><td>A player asked for something; the fix is ready to merge on your OK</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
+        <tr><td><span class="word">Note</span></td><td>A player's note: approve it, so Claude reads it</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
+        <tr><td><span class="word">Idea</span></td><td>A player's idea: place it on the Roadmap, or not</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
+        <tr><td><span class="word road">Scope</span></td><td>A Roadmap item's scope: Scope looks right, or Needs changes…</td><td>a few minutes' read</td><td>Answer</td><td>From the Roadmap</td></tr>
+        <tr><td><span class="word road">Step</span></td><td>A Roadmap item's next step that's yours (an audit, a second look)</td><td class="q">anything from a minute to an evening</td><td>Answer</td><td>From the Roadmap</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="why-box" aria-labelledby="h-why">
+    <span class="tag" id="h-why">Why I'd pick three, quick ones first</span>
+    <p class="meta"><b>Three tables:</b> Decide and From the Roadmap are both quick to <i>open</i>, but they're different work. A Decide row is done the moment you press, and it often unblocks something of mine. A Roadmap row is the Roadmap's own: a scope you read with care, or a step of yours that can be an evening's job (today's are "Audit the roll card" and "Take a second look at the table"). They also sort differently: Decide by area, the Roadmap by your order of importance. In one table, a two-minute answer and an evening's step look alike.</p>
+    <p class="meta"><b>Quick ones first:</b> answers take seconds, and a waiting answer is often what's holding my work, so they're worth clearing before a round that takes ten minutes or more. Try is the biggest table, so at the bottom it has room to grow, and starting a round takes you off this page anyway. If you'd rather start with what takes longest, pick <b>Try first</b>; that's how it's laid out today.</p>
+  </section>
+
+  <section class="why-box" aria-labelledby="h-settled">
+    <span class="tag" id="h-settled">Decided, unless you say otherwise</span>
+    <ul class="meta" style="margin:0;padding-left:1.2em;display:grid;gap:4px">
+      <li><b>An empty table stays</b> as its heading plus one line ("Nothing to decide"), without column headings, so the page keeps its shape and you can see it's empty. Pick <b>Almost nothing</b> to see it.</li>
+      <li><b>Try's heading holds its round:</b> ▶ Start round for the device you're on, with the count and minutes. Checks for another device or for more than one person get a group row of their own, saying where to do them.</li>
+      <li><b>Each table has its own columns.</b> Try: Kind, What and its goal, Takes. Decide: Kind, What, From. From the Roadmap: Kind, Item, What's yours.</li>
+      <li>The summary line, Backstage's count and the order inside each table stay as they are today.</li>
+    </ul>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>1 · How many tables</legend>
+      <label class="opt"><input type="radio" name="tables" value="two"><span>A · Two: Try, and Answer</span><small>Everything quick in one table (questions, decisions, fixes to OK, notes, ideas, scopes, Roadmap steps), each marked by its kind.</small></label>
+      <label class="opt"><input type="radio" name="tables" value="three"><span>B · Three: Try, Decide, From the Roadmap <span class="mine">my pick</span></span><small>The Roadmap's scopes and your steps get their own table, in your order of importance.</small></label>
+    </fieldset>
+    <fieldset><legend>2 · Which comes first</legend>
+      <label class="opt"><input type="radio" name="first" value="try"><span>A · Try first</span><small>As it is today: the long one at the top.</small></label>
+      <label class="opt"><input type="radio" name="first" value="quick"><span>B · The quick ones first <span class="mine">my pick</span></span><small>Clear answers in a minute, then start a round.</small></label>
+    </fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(a column to add or drop, a kind you'd put elsewhere, what an empty table should say)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Today's rows are what For you held on Nov 24; Every kind is a busy day, illustrative, with all ten kinds.
+  const TODAY = [
+    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "A Roadmap item opens the page you need to read", why: "Now: its window and its page open the comparison inside askdnd", min: 2 },
+    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "End round ends the round on the bar", why: "Now: End round ends the round the bar shows, wherever it was started", min: 2 },
+    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "Feedback's bar, and windows that keep the item window open", why: "Now: Feedback has the bar with even rows, and those windows leave the item window open", min: 2 },
+    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "A pause lets what's on its way finish", why: "Now: pausing starts nothing new; what was merged before still goes live", min: 2 },
+    { kind: "check", need: "laptop", area: "A sturdier loop: the build", t: "The Board shows every piece of work, and Your order keeps yours", why: "Now: Development opens on the Board; your order, lanes and holds are on Your order", min: 2 },
+    { kind: "scope", t: "Built vs. planned: review the deltas", why: "Scope version 3 waits for your OK", from: "Now · 2nd" },
+    { kind: "step", t: "The roll card: what's left", why: "Audit the roll card", from: "Next · 1st" },
+    { kind: "step", t: "Take a second look at askdnd's table, now on prod", why: "Take a second look at the table on askdnd.ai", from: "Next · 3rd" },
+  ];
+  const BUSY = [
+    { kind: "local", t: "Corner cards stay over the side panel", why: "Ready on your Mac: localhost:8004, until 4:30 PM", area: "Getting around", min: 3 },
+    ...TODAY.filter(r => r.kind === "check"),
+    { kind: "check", need: "iphone", area: "Battle", t: "Hit points window fits an iPhone", why: "Now: the window's numbers fit at 375 wide, no sideways scroll", min: 3 },
+    { kind: "check", need: "people", area: "The table", t: "A roll shows for the DM as it's made", why: "Now: the DM's Table rolls shows the player's roll within a second", min: 5 },
+    { kind: "fixed", area: "Search", t: "Search finds a spell by its old name", why: "Fixed and live, with no check: does it work?", min: 1 },
+    { kind: "question", t: "Should a hidden entry's name show in Search for the DM?", why: "Claude asks", from: "Search" },
+    { kind: "decision", t: "For you, as tables", why: "A decision: look, then one verdict", from: "Feedback and Testing" },
+    { kind: "merge", t: "Concentration shows on the token", why: "Fix ready: your OK to merge (players asked)", from: "Battle" },
+    { kind: "note", t: "The dice tray covers my spells on the iPad", why: "Player 2's note waits for you", from: "From the table" },
+    { kind: "idea", t: "Mark a spell as a favourite", why: "Player 3's idea to place", from: "From the table" },
+    ...TODAY.filter(r => r.kind !== "check"),
+  ];
+  const QUIET = [TODAY[5]];
+  const DATA = { today: TODAY, busy: BUSY, quiet: QUIET };
+  const WORD = { local: ["On your Mac", "ask"], check: ["Check", "ask"], fixed: ["Fixed", "passed"], question: ["Question", "claude"], decision: ["Decision", "claude"],
+                 merge: ["Fix to OK", "ask"], note: ["Note", ""], idea: ["Idea", ""], scope: ["Scope", "road"], step: ["Step", "road"] };
+  const ACT = { question: "Answer", decision: "Decide", merge: "Look", note: "Sort", idea: "Place", scope: "Read it", step: "Open", local: "Look", fixed: "Look" };
+  const NEED = { laptop: "On your laptop", iphone: "On your iPhone", people: "With more than one person" };
+  const TRY = ["local", "check", "fixed"], DECIDE = ["question", "decision", "merge", "note", "idea"], ROAD = ["scope", "step"];
+  const state = { tables: "three", first: "quick", data: "today" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const word = k => `<span class="word ${WORD[k][1]}">${WORD[k][0]}</span>`;
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const row = (r, cells) => `<tr class="row" tabindex="0" data-t="${esc(r.t)}" data-k="${r.kind}">${cells}</tr>`;
+  const act = r => r.kind === "check" ? `<button type="button" class="btn go" data-act="try">▶ Try it</button>` : `<button type="button" class="btn" data-act="open">${ACT[r.kind]}</button>`;
+
+  function tryTable(rows) {
+    const checks = rows.filter(r => r.kind === "check"), here = checks.filter(r => r.need === "laptop");
+    const mins = rows.reduce((s, r) => s + (r.min || 0), 0);
+    let body = "";
+    const local = rows.filter(r => r.kind === "local");
+    if (local.length) body += `<tr class="grp need"><td colspan="4"><b>On your Mac</b> · before it merges</td></tr>` + local.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.area)} · ${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`)).join("");
+    for (const need of Object.keys(NEED)) {
+      const these = checks.filter(r => r.need === need);
+      if (!these.length) continue;
+      const other = need !== "laptop";
+      if (other || local.length || checks.some(r => r.need !== "laptop")) {
+        body += `<tr class="grp need"><td colspan="4"><b>${NEED[need]}</b> · ${plural(these.length, "check", "checks")} · about ${these.reduce((s, r) => s + r.min, 0)} min`
+              + (other ? ` <span class="elsewhere">· do the steps ${need === "iphone" ? "on your iPhone" : "on your laptop with someone else"}</span> <button type="button" class="btn link" data-act="round">▶ Start round</button>` : "") + `</td></tr>`;
+      }
+      let area = null;
+      for (const r of these) {
+        if (r.area !== area) { area = r.area; body += `<tr class="grp"><td colspan="4">${esc(area)} <button type="button" class="btn link" data-act="area">▶ Just this area</button></td></tr>`; }
+        body += row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`);
+      }
+    }
+    const fixed = rows.filter(r => r.kind === "fixed");
+    if (fixed.length) body += `<tr class="grp need"><td colspan="4"><b>Live, with no steps</b> · use it and say if it works</td></tr>` + fixed.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.area)} · ${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`)).join("");
+    if (!rows.length) return `<section class="tbl try is-empty" data-table="try"><div class="tbl-head"><h3>Try <span class="count">0</span></h3><span class="what">you use askdnd and mark what you saw</span></div><p class="empty-line">Nothing to try. A check of Claude's reaches here once its change is live and Claude has tried it.</p></section>`;
+    const ctl = here.length ? `<span class="ctl"><span class="note">On your laptop: ${plural(here.length, "check", "checks")} · about ${here.reduce((s, r) => s + r.min, 0)} min</span><button type="button" class="btn go" data-act="round">▶ Start round</button></span>` : "";
+    return `<section class="tbl try" data-table="try"><div class="tbl-head"><h3>Try <span class="count">${rows.length}</span></h3><span class="what">${rows.length ? `about ${mins} min · you use askdnd and mark what you saw` : "you use askdnd and mark what you saw"}</span>${ctl}</div>
+      <div class="scroll"><table><thead><tr><th class="w-kind">Kind</th><th>What, and its goal</th><th class="num w-takes">Takes</th><th class="w-act"></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+  }
+  function quickTable(key, title, what, cols, rows, empty) {
+    let body = rows.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="from from-c">${esc(r.from || "")}</td><td>${act(r)}</td>`)).join("");
+    if (key === "answer" && rows.length) {  // (two tables: the quick table's own group rows, Decide then From the Roadmap)
+      const d = rows.filter(r => DECIDE.includes(r.kind)), m = rows.filter(r => ROAD.includes(r.kind));
+      const part = (label, list) => list.length ? `<tr class="grp"><td colspan="4"><b>${label}</b></td></tr>` + list.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="from from-c">${esc(r.from || "")}</td><td>${act(r)}</td>`)).join("") : "";
+      body = part("Decide", d) + part("From the Roadmap", m);
+    }
+    const head = `<div class="tbl-head"><h3>${title} <span class="count">${rows.length}</span></h3><span class="what">${what}</span></div>`;
+    if (!rows.length) return `<section class="tbl ${key} is-empty" data-table="${key}">${head}<p class="empty-line">${empty}</p></section>`;
+    return `<section class="tbl ${key}" data-table="${key}">${head}
+      <div class="scroll"><table><thead><tr><th class="w-kind">Kind</th><th>${cols[0]}</th><th class="w-from">${cols[1]}</th><th class="w-act"></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+  }
+  function draw() {
+    const rows = DATA[state.data];
+    const tr = rows.filter(r => TRY.includes(r.kind)), dc = rows.filter(r => DECIDE.includes(r.kind)), rm = rows.filter(r => ROAD.includes(r.kind));
+    const t = tryTable(tr);
+    const quick = state.tables === "two"
+      ? [quickTable("answer", "Answer", "one read and one press each", ["What", "From"], [...dc, ...rm], "Nothing to answer. Claude's questions, players' notes and Roadmap steps that are yours come here.")]
+      : [quickTable("dec", "Decide", "one read and one press each · often what Claude's waiting on", ["What", "From"], dc, "Nothing to decide. Claude's questions, fixes to OK and players' notes and ideas come here."),
+         quickTable("roadmap", "From the Roadmap", "a scope to OK, or a step that's yours · in your order", ["Item", "Where"], rm, "Nothing from the Roadmap. A scope waiting for your OK, or a step that's yours, comes here.")];
+    document.getElementById("tables").innerHTML = (state.first === "try" ? [t, ...quick] : [...quick, t]).join("");
+    const checks = rows.filter(r => r.kind === "check");
+    const bits = [[rows.filter(r => r.kind === "local").length, "change to try on your Mac", "changes to try on your Mac"],
+      [checks.length, "check", "checks", checks.length ? ` (about ${checks.reduce((s, r) => s + r.min, 0)} minutes)` : ""],
+      [rows.filter(r => r.kind === "fixed").length, "fix to look at", "fixes to look at"], [rows.filter(r => r.kind === "question").length, "question", "questions"],
+      [rows.filter(r => r.kind === "decision").length, "decision", "decisions"], [rows.filter(r => r.kind === "merge").length, "fix to OK", "fixes to OK"],
+      [rows.filter(r => r.kind === "note").length, "note to approve", "notes to approve"], [rows.filter(r => r.kind === "idea").length, "idea", "ideas"],
+      [rows.filter(r => r.kind === "scope").length, "scope to OK", "scopes to OK"], [rows.filter(r => r.kind === "step").length, "Roadmap step", "Roadmap steps"]];
+    document.getElementById("sum").innerHTML = `<b>${rows.length} ${rows.length === 1 ? "is" : "are"} your turn</b> · ` + bits.filter(b => b[0]).map(b => plural(b[0], b[1], b[2]) + (b[3] || "")).join(" · ");
+    document.getElementById("badge").textContent = rows.length;
+    document.querySelectorAll(".shot").forEach(b => b.setAttribute("aria-pressed", String(state[b.dataset.set] === b.dataset.v)));
+  }
+  const said = document.getElementById("said");
+  const SAY = {
+    try: t => `<b>▶ Try it</b> opens “${esc(t)}” on its page, with its steps in the round's card: a round of one. Nothing of Claude's waits.`,
+    round: () => `<b>▶ Start round</b> takes this device's checks one after another, page by page, as rounds do today. Its area's merges wait until you end it.`,
+    area: () => `<b>▶ Just this area</b> starts a round of that area's checks only.`,
+    open: t => `The item window opens at the right with “${esc(t)}”: read it, then one press (an answer, an OK, a place). ↑ ↓ go to the next row.`,
+  };
+  document.getElementById("tables").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"), r = e.target.closest("tr.row");
+    if (b) { said.innerHTML = SAY[b.dataset.act](r ? r.dataset.t : ""); return; }
+    if (r) said.innerHTML = SAY.open(r.dataset.t);
+  });
+  document.getElementById("tables").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("tr.row")) said.innerHTML = SAY.open(e.target.dataset.t); });
+  document.querySelectorAll(".shot").forEach(b => b.addEventListener("click", () => { state[b.dataset.set] = b.dataset.v; draw(); }));
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or For you's item window), askdnd keeps them as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["tables", "first"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

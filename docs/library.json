@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "For you, as tables",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 24",
+  "what": "Issue 111 (Roadmap item 39, step 35): For you as separate tables, each with its own heading, count and buttons right above its columns. Two tables (Try, Answer) or three (Try, Decide, From the Roadmap), quick ones first or Try first, drawn with today's rows, a busy day with all ten kinds, and an almost empty one; the ten kinds and where each goes. Two picks.",
+  "source": "docs/mockups/for-you-tables/index.html",
+  "link": "https://claude.ai/artifact/RLKw2BZ4G8nrKLC7cBWLWC"
+ },
+ {
   "title": "The Work Board",
   "kind": "design",
   "status": "Your pick: redrawn for scope v4",
