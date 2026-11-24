@@ -90,8 +90,8 @@ def test_for_you_is_everything_thats_yours_in_one_list(admin, db):
 
 
 def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
-    """Brett, Nov 19 (the work flow's slice 2): For you leaves Testing for its own page, grouped Try, Decide, Look at,
-    From the table, From the Roadmap; its count is on the Admin gear; old links to it still arrive."""
+    """Brett, Nov 19 (the work flow's slice 2): For you leaves Testing for its own page, in tables by what you do (since
+    issue 111: Decide, From the Roadmap, Try); its count is on the Admin gear; old links to it still arrive."""
     a = _area(db)
     c = _check(db, area=a)
     rules.ask(db, "claude", about="area", about_id=a.id, text="Left or right?", choices=[{"label": "Left"}, {"label": "Right"}], mine=0)
@@ -99,10 +99,10 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     db.add(FftItem(title="A click in Railway", place=2, next_whose="brett", next_step="Rename the service"))
     db.flush()
     page = admin.get("/manage/for-you").text
-    sections = re.findall(r'data-section="(\w+)"', page)
-    assert sections == ["try", "decide", "table", "roadmap"]  # (in that order; Look at only when there's something)
-    assert f'data-group="laptop:a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area on the row)
-    assert f"{a.title} · Claude asks" in page
+    tables = re.findall(r'data-table="(\w+)"', page)
+    assert tables == ["decide", "roadmap", "try"]  # (three tables, quick ones first: issue 111, Brett's picks Nov 24)
+    assert f'data-group="laptop:a{a.id}"' in page and 'data-group="decide"' not in page  # (Try by area; Decide one list, its area in From)
+    assert 'data-act="question"' in page and f">{a.title}</td>" in page
     assert 'data-fft-page="for-you"' in page and 'data-tab="stands"' not in page and 'data-do="start-round"' in page
     assert 'data-fft-tabs' not in page and 'data-item="for-you" aria-current="page"' in page  # (one way between them: the side list's Our work, Nov 20)
     for old in ("/manage/testing?show=foryou", f"/manage/testing?open=c{c.id}"):
@@ -119,6 +119,28 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     assert "4 waiting on you: " in admin.get("/manage/askdnd").text  # (its card on Overview says how much)
     menu = admin.get("/manage/feedback").text
     assert 'data-item="for-you"' in menu and 'data-manage-count="for-you"' in menu and 'data-manage-count="testing"' not in menu
+
+
+def test_for_you_is_three_tables_with_an_action_word_and_number_on_each_row(admin, db):
+    """Issue 111 (Brett's picks on docs/mockups/for-you-tables/, Nov 24): three tables, quick ones first, each with its own
+    head above its columns; ten kinds become five action words (Try locally, Try, Answer, Approve, Do); each row says its
+    number; a fix live with no check isn't his to look at (it's Claude's gap); an empty table keeps its head and a line."""
+    a = _area(db)
+    c = _check(db, area=a)
+    q = rules.ask(db, "claude", about="area", about_id=a.id, text="Left or right?", choices=[{"label": "Left"}, {"label": "Right"}], mine=0)
+    n = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="problem", text="Rests are wrong.")
+    bare = rules.new_issue(db, "claude", "Fixed, with nothing to try it by")
+    rules.start_fixing(db, "claude", bare)
+    rules.fix_live(db, "askdnd", bare, "abc")
+    db.flush()
+    page = admin.get("/manage/for-you").text
+    for key, words in ((f"c{c.id}", ("Try", f"check {c.id}")), (f"q{q.id}", ("Answer", f"question {q.id}")), (f"n{n.id}", ("Approve", f"note {n.id}"))):
+        row = page.split(f'data-row="{key}"', 1)[1].split("</tr>", 1)[0]
+        assert f">{words[0]}</span>" in row and f">{words[1]}</span>" in row, key
+    assert f'data-row="i{bare.id}"' not in page  # (Claude's: a fix with no check is its gap)
+    assert page.count('class="tbx-head"') == 3 and 'data-table="roadmap"' in page and "Nothing from the Roadmap." in page
+    assert page.index('data-table="decide"') < page.index('data-table="roadmap"') < page.index('data-table="try"')
+    assert "1 to answer · 1 to approve · 1 to try (about" in page
 
 
 def test_a_check_reads_as_the_card_will_show_it(admin, db):
