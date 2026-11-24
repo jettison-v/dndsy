@@ -224,6 +224,24 @@ def yours_waits(db: Session, a: FftArea) -> str:
     return " · ".join(b for b in bits if b)
 
 
+COLUMN_TONE = {"waiting": "quiet", "ready": "claude", "building": "claude", "shipping": "passed", "yours": "ask"}
+
+
+def on_board(b: dict) -> dict:
+    """Where each plan or build sits on the Board, for Your order's Stage: {key: {"col", "said", "tone", "kind", "stuck",
+    "yours"}}; "yours" when it also has checks waiting on Brett (its card in Yours to try)."""
+    said = {k: name for k, name, _ in COLUMNS}
+    out: dict = {}
+    for col, _name, _who, cards in b["cols"]:
+        for c in cards:
+            key = c["key"]
+            if key.endswith("-yours"):
+                out.setdefault(key.removesuffix("-yours"), {"col": col, "said": said[col], "tone": COLUMN_TONE[col], "kind": c["kind"], "stuck": False})["yours"] = True
+                continue
+            out[key] = out.get(key, {}) | {"col": col, "said": said[col], "tone": COLUMN_TONE[col], "kind": c["kind"], "stuck": bool(c.get("stuck"))}
+    return out
+
+
 def board(db: Session) -> dict:
     """The Board's five columns of cards (see above)."""
     cols: dict[str, list[dict]] = {k: [] for k, _, _ in COLUMNS}
@@ -255,11 +273,12 @@ def board(db: Session) -> dict:
         shown.add(a.id)
         if live_claim:
             cols["building"].append(_card(**base, why="Claude is building it", since=a.lock_until - rules.LOCK, stage="claimed"))
-        elif pulls:
-            p = pulls[0]
-            key, said, stuck = pull_stage(db, p)
+        elif pulls:  # (a card is one piece that ends in one pull request: a plan with two on their way shows both, Nov 24)
             placed.update(x.id for x in pulls)
-            cols["shipping"].append(_card(**base, why=f"Pull request #{p.number}", pr=p.number, stage=key, stage_said=said, stuck=stuck))
+            for n, p in enumerate(pulls):
+                key, said, stuck = pull_stage(db, p)
+                cols["shipping"].append(_card(**base | ({"key": f"a{a.id}-p{p.number}"} if n else {}), why=f"Pull request #{p.number}", pr=p.number,
+                                              stage=key, stage_said=said, stuck=stuck))
         elif turn == "brett":
             pass  # (its card is in Yours to try, below)
         elif turn == "claude" and a.id in ready:
@@ -408,10 +427,13 @@ LANE_NEEDS = {"ship": ("Nothing a person sees", "Merges when its tests and the r
               "look": ("Something people see", "Merges when green, after Claude tries it", "You, the batch, once it's live"),
               "careful": ("Who sees what, signing in, spending, the D&D Beyond bridge, a database change that alters data",
                           "Waits for your try on your Mac, then merges", "You, before it merges")}
-STEPS = ("Read its area whole: every issue and failed check", "Design one fix, written before it's built",
-         "Build it, one area at a time (its lock)", "Look at it: every person, page and width",
-         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round",
-         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74)
+STEPS = ("Claude asks askdnd for work, and askdnd hands over the top of Ready (a claim, one at a time)",
+         "Read its area whole: every issue and failed check",
+         "Design one fix; a design question is a mockup sent to askdnd at once and asked in For you (comment and pick here or on claude.ai)",
+         "Build it, then look at it: every person, page and width",
+         "The review at high effort, then one pull request: GitHub reports it to askdnd, and the Board shows its step",
+         "Merged when its tests pass and its lane allows; askdnd marks it live by itself, and its checks, tried by Claude first, reach For you",
+         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74; item 39, Nov 24)
 
 
 def how() -> dict:
@@ -462,6 +484,8 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
         ctx["jobs"] = jobs(db)
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
+    if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
+        ctx["on_board"] = on_board(board(db))
     elif tab == "how":
         ctx["how"] = how()
     db.commit()

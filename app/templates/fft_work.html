@@ -2,7 +2,7 @@
 {% from "_admin_bits.html" import state_word, more_menu %}
 {% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head %}
 {% from "_fft_bits.html" import hands_list %}
-{% from "_board.html" import board as work_board %}
+{% from "_board.html" import board as work_board, kind_tag %}
 {% block title %}Development · Backstage · askdnd{% endblock %}
 {% block head %}{% if tab == "queue" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -34,13 +34,18 @@
     <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in all_items if o.id != r.a.item_id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button><button class="btn link small" type="button" data-cancel="fft-moveto-{{ r.a.id }}">Cancel</button></div></form>
 {% endif %}
 {% endmacro %}
+{% macro board_stage(key, fallback) %}{# (Your order in the Board's words: its column, amber when stuck, and when it also has checks for you; step 36, Nov 24) #}
+{% set b = on_board.get(key) if on_board else none %}
+{% if b %}{{ state_word(b.said, b.tone, ' data-col-word="' ~ b.col ~ '"') }}{% if b.stuck %} <span class="state-word sw-ask" data-stuck>Stuck</span>{% endif %}{% if b.get("yours") and b.col != "yours" %} <span class="note" data-also-yours>+ yours to try</span>{% endif %}
+{% else %}{{ state_word(fallback[0], fallback[1]) }}{% endif %}
+{% endmacro %}
 {% macro plan_row(r, drag=True) %}
-<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}{{ ' wk-sub' if r.sub else ' wk-top' }}" data-key="a{{ r.a.id }}"{% if r.sub %} data-under="i{{ r.a.item_id }}"{% endif %} data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
+<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}{{ ' wk-sub' if r.sub else ' wk-top' }}" data-kind="{{ 'roadmap' if r.kind == 'Roadmap build' else 'feedback' }}" data-key="a{{ r.a.id }}"{% if r.sub %} data-under="i{{ r.a.item_id }}"{% endif %} data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
   <td class="wk-grip">{% if drag and not r.sub %}{{ grip() }}{% endif %}</td>
   <td class="dt-title"><a href="/manage/work/{{ r.a.id }}" class="wk-name">{% if r.sub %}› {% endif %}{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.a.title }}</a>
-    <span class="dt-why">{{ r.kind }}{% for t, n in r.features[:3] %} · {{ t }}{% if n > 1 %} {{ n }}{% endif %}{% endfor %}{% if r.features | length > 3 %} · …{% endif %}{% if r.locked %} · building ({{ r.locked }}){% endif %}</span></td>
+    <span class="dt-why">{{ kind_tag('roadmap' if r.kind == 'Roadmap build' else 'feedback') }}{% for t, n in r.features[:3] %} · {{ t }}{% if n > 1 %} {{ n }}{% endif %}{% endfor %}{% if r.features | length > 3 %} · …{% endif %}{% if r.locked %} · building ({{ r.locked }}){% endif %}</span></td>
   <td>{{ lane_menu(r) }}</td>
-  <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
+  <td class="dt-wrap" data-stage-word="{{ r.stage }}">{{ board_stage("a" ~ r.a.id, r.stage_said) }}</td>
   <td class="num" data-fixed>{% if r.issues %}{{ r.fixed }} of {{ r.issues }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
   <td class="num" data-passed>{% if r.checks %}{{ r.passed }} of {{ r.checks }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
   <td class="dt-wrap wk-waits">{{ r.waits }}</td>
@@ -48,12 +53,12 @@
 </tr>
 {% endmacro %}
 {% macro build_row(r, drag=True) %}{# A Roadmap build in the one queue (issue 62): its steps as progress; it opens the item on the Roadmap #}
-<tr class="wk-plan wk-build wk-top{{ ' is-next' if r.stage == 'next' }}" data-key="i{{ r.it.id }}" data-build="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
+<tr class="wk-plan wk-build wk-top{{ ' is-next' if r.stage == 'next' }}" data-kind="roadmap" data-key="i{{ r.it.id }}" data-build="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
   <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
   <td class="dt-title"><a href="/manage/roadmap/{{ r.it.id }}" class="wk-name">{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.it.title }}</a>
-    <span class="dt-why">Roadmap build · {{ r.section }}{% if r.size %} · Size {{ r.size }}{% endif %}</span></td>
+    <span class="dt-why">{{ kind_tag('roadmap') }} · {{ r.section }}{% if r.size %} · Size {{ r.size }}{% endif %}</span></td>
   <td><span class="dt-id">—</span></td>
-  <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
+  <td class="dt-wrap" data-stage-word="{{ r.stage }}">{{ board_stage("i" ~ r.it.id, r.stage_said) }}</td>
   <td class="num" data-steps title="Its steps done">{% if r.steps %}{{ r.done }} of {{ r.steps }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
   <td class="num" data-passed>{% if r.checks %}{{ r.passed }} of {{ r.checks }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
   <td class="dt-wrap wk-waits"{% if r.ship %} data-waits="ship"{% endif %}>{{ r.waits }}</td>
