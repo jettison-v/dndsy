@@ -40,7 +40,7 @@
 {% else %}{{ state_word(fallback[0], fallback[1]) }}{% endif %}
 {% endmacro %}
 {% macro plan_row(r, drag=True) %}
-<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}{{ ' wk-sub' if r.sub else ' wk-top' }}" data-kind="{{ 'roadmap' if r.kind == 'Roadmap build' else 'feedback' }}" data-key="a{{ r.a.id }}"{% if r.sub %} data-under="i{{ r.a.item_id }}"{% endif %} data-area="{{ r.a.id }}" data-href="/manage/work/{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
+<tr class="wk-plan{{ ' is-next' if r.stage == 'next' }}{{ ' wk-sub' if r.sub else ' wk-top' }}" data-kind="{{ 'roadmap' if r.kind == 'Roadmap build' else 'feedback' }}" data-key="a{{ r.a.id }}"{% if r.sub %} data-under="i{{ r.a.item_id }}"{% endif %} data-area="{{ r.a.id }}" data-panel-url="/manage/item/a{{ r.a.id }}" data-stage="{{ r.stage }}" tabindex="0">
   <td class="wk-grip">{% if drag and not r.sub %}{{ grip() }}{% endif %}</td>
   <td class="dt-title"><a href="/manage/work/{{ r.a.id }}" class="wk-name">{% if r.sub %}› {% endif %}{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.a.title }}</a>
     <span class="dt-why">{{ kind_tag('roadmap' if r.kind == 'Roadmap build' else 'feedback') }}{% for t, n in r.features[:3] %} · {{ t }}{% if n > 1 %} {{ n }}{% endif %}{% endfor %}{% if r.features | length > 3 %} · …{% endif %}{% if r.locked %} · building ({{ r.locked }}){% endif %}</span></td>
@@ -53,7 +53,7 @@
 </tr>
 {% endmacro %}
 {% macro build_row(r, drag=True) %}{# A Roadmap build in the one queue (issue 62): its steps as progress; it opens the item on the Roadmap #}
-<tr class="wk-plan wk-build wk-top{{ ' is-next' if r.stage == 'next' }}" data-kind="roadmap" data-key="i{{ r.it.id }}" data-build="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
+<tr class="wk-plan wk-build wk-top{{ ' is-next' if r.stage == 'next' }}" data-kind="roadmap" data-key="i{{ r.it.id }}" data-build="{{ r.it.id }}" data-panel-url="/manage/item/r{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
   <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
   <td class="dt-title"><a href="/manage/roadmap/{{ r.it.id }}" class="wk-name">{% if r.n %}<span data-sort-n>{{ r.n }}</span>. {% endif %}{{ r.it.title }}</a>
     <span class="dt-why">{{ kind_tag('roadmap') }} · {{ r.section }}{% if r.size %} · Size {{ r.size }}{% endif %}</span></td>
@@ -109,7 +109,7 @@
   <div class="table-scroll"><table class="dtable fft-table" data-done>
     <thead><tr><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Last change</th><th class="dt-w5">What it closed</th><th class="dt-w0"></th></tr></thead>
     <tbody>{% for d in done %}
-      <tr data-area="{{ d.a.id }}" data-href="/manage/work/{{ d.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ d.a.id }}">{{ d.a.title }}</a><span class="dt-why">{{ d.item.title if d.item else "" }}</span></td>
+      <tr data-area="{{ d.a.id }}" data-panel-url="/manage/item/a{{ d.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ d.a.id }}">{{ d.a.title }}</a><span class="dt-why">{{ d.item.title if d.item else "" }}</span></td>
         <td>{{ lane_said[d.lane] if d.lane else "—" }}</td>
         <td>{% if d.last %}<time datetime="{{ d.last.isoformat() }}" data-clock="ago">{{ d.last | ago }}</time>{% endif %}</td>
         <td>{{ d.closed }} issue{{ "s" if d.closed != 1 }} · {{ d.passed }} check{{ "s" if d.passed != 1 }} passed</td>
@@ -126,7 +126,7 @@
       <tr data-panel-url="/manage/item/{{ r.key }}?from={{ ck_from | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check">
         <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
         <td class="dt-title">{{ r.c.title }}{% if r.issues %}<span class="dt-why">issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}</span>{% endif %}</td>
-        <td>{% if r.area %}<a href="/manage/work/{{ r.area.id }}">{{ r.area.title }}</a>{% else %}<span class="dt-id">In no plan</span>{% endif %}</td>
+        <td>{% if r.area %}<a href="/manage/work/{{ r.area.id }}" data-panel-url="/manage/item/a{{ r.area.id }}">{{ r.area.title }}</a>{% else %}<span class="dt-id">In no plan</span>{% endif %}</td>
         {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
       </tr>{% endfor %}</tbody></table></div>{% endif %}
   {% if not history %}{{ history_link("?tab=checks&history=1") }}{% endif %}

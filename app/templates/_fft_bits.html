@@ -78,3 +78,16 @@
 </div>{% endfor %}
 {% endcall %}{% endif %}
 {%- endmacro %}
+
+{# A plan's facts on one line, in the Board's words (Brett's pick P3 on Our Work, page by page, Nov 24): its column (the
+   older stage word only when it isn't on the Board), Stuck, its lane, fixes, checks, minutes to try, whose turn. Its
+   window and its page. #}
+{% macro plan_facts(row, col, lane_said) -%}
+{% from "_admin_bits.html" import state_word %}
+<p class="wk-facts" data-facts>{% if col %}{{ state_word(col.said, col.tone, ' data-col-word="' ~ col.col ~ '"') }}{% if col.stuck %} {{ state_word("Stuck", "ask", " data-stuck") }}{% endif %}{% else %}{{ state_word(row.stage_said[0], row.stage_said[1], ' data-stage-word="' ~ row.stage ~ '"') }}{% endif %}
+  <span>{{ lane_said[row.lane] if row.lane else "No lane yet" }}</span>
+  {% if row.issues %}<span>{{ row.fixed }} of {{ row.issues }} fixed</span>{% endif %}
+  {% if row.checks %}<span>{{ row.passed }} of {{ row.checks }} passed</span>{% endif %}
+  {% if row.minutes %}<span>{{ row.minutes }} min to try</span>{% endif %}
+  <span>Waits on: <b>{{ row.waits }}</b></span></p>
+{%- endmacro %}

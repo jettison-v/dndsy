@@ -159,7 +159,7 @@
   <div class="table-scroll"><table class="dtable fft-table" data-plans>
     <thead><tr><th>Plan</th><th class="dt-w3">Stage</th><th class="num dt-w2">Fixed</th><th class="num dt-w2">Passed</th></tr></thead>
     <tbody>{% for p in plans %}
-      <tr data-href="/manage/work/{{ p.a.id }}" data-area="{{ p.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ p.a.id }}">{{ p.a.title }}</a></td>
+      <tr data-panel-url="/manage/item/a{{ p.a.id }}" data-area="{{ p.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ p.a.id }}">{{ p.a.title }}</a></td>
         <td>{{ state_word(p.stage_said[0], p.stage_said[1]) }}</td><td class="num">{% if p.issues %}{{ p.fixed }} of {{ p.issues }}{% else %}—{% endif %}</td><td class="num">{% if p.checks %}{{ p.passed }} of {{ p.checks }}{% else %}—{% endif %}</td></tr>
     {% endfor %}</tbody></table></div>{% endif %}
   </div>

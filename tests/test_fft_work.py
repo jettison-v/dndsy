@@ -53,9 +53,9 @@ def test_the_queue_shows_each_plan_with_its_stage_and_hold_puts_it_below_the_lin
     rules.start_fixing(db, "claude", fixing)
     db.flush()
     page = admin.get("/manage/work?tab=queue").text
-    assert re.findall(r'data-area="(\d+)" data-href', page) == [str(battle.id), str(party.id)]  # (in Brett's order)
-    assert f'data-area="{battle.id}" data-href="/manage/work/{battle.id}" data-stage="next"' in page  # (Claude's next)
-    assert f'data-area="{party.id}" data-href="/manage/work/{party.id}" data-stage="building"' in page
+    assert re.findall(r'data-area="(\d+)" data-panel-url', page) == [str(battle.id), str(party.id)]  # (in Brett's order)
+    assert f'data-area="{battle.id}" data-panel-url="/manage/item/a{battle.id}" data-stage="next"' in page  # (Claude's next)
+    assert f'data-area="{party.id}" data-panel-url="/manage/item/a{party.id}" data-stage="building"' in page
     assert rules.pick_next(db).area.id == battle.id
 
     admin.post(f"/manage/testing/areas/{battle.id}", data={"do": "hold", "back": "/manage/work"})
@@ -79,7 +79,7 @@ def test_an_issue_that_stops_bretts_round_marks_its_plan_a_blocker(db, admin):
     db.flush()
     assert rules.pick_next(db).blocker
     page = admin.get("/manage/work?tab=queue").text
-    assert f'data-area="{battle.id}" data-href="/manage/work/{battle.id}" data-stage="blocker"' in page
+    assert f'data-area="{battle.id}" data-panel-url="/manage/item/a{battle.id}" data-stage="blocker"' in page
 
 
 def test_holding_is_brett_only_and_changes_nothing_twice(db, admin, dm, player):
@@ -115,7 +115,7 @@ def test_a_plans_page_has_its_issues_test_round_and_timeline(db, admin):
     current = _check(db, battle, now, title="The Count on one line")
     db.flush()
     page = admin.get(f"/manage/work/{battle.id}").text
-    assert 'data-stats' in page and "Battle" in page and 'class="on" data-tab="overview"' in page
+    assert 'data-facts' in page and 'data-stats' not in page and "Battle" in page and 'class="on" data-tab="overview"' in page
     issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (done leaves the list: closed ones are its History)
     assert f'data-row="i{now.id}"' in issues and f'data-row="i{old.id}"' not in issues and "data-history" in issues
     assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues
@@ -269,7 +269,7 @@ def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admi
     assert page.index(f'data-build="{build.id}"') < page.index(f'data-area="{batch}"') and 'data-steps' in page
     pick = rules.pick_next(db)
     assert pick.item is not None and pick.item.id == build.id and pick.area is None  # (a build without a plan: as itself)
-    assert f'data-build="{build.id}" data-href="/manage/roadmap/{build.id}" data-stage="next"' in page
+    assert f'data-build="{build.id}" data-panel-url="/manage/item/r{build.id}" data-stage="next"' in page
     admin.post(f"/manage/roadmap/{build.id}", data={"do": "hold"})
     assert build.held and rules.pick_next(db).area.id == batch
     held = admin.get("/manage/work?tab=queue").text

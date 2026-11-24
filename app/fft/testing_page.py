@@ -393,6 +393,10 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
         return {"kind": "note", "n": n}
     if kind == "d" and (d := db.get(FftIdea, ident)):
         return {"kind": "idea", "d": d}
+    if kind == "a" and (a := db.get(FftArea, ident)):  # (a plan in the item window: Brett's pick M1, Nov 24)
+        from app.fft import work_page
+
+        return {"kind": "plan", **work_page.plan_view(db, a)}
     if kind == "r" and (it := db.get(FftItem, ident)):
         from app.fft import roadmap_page
         from app.fft.models import FftStep

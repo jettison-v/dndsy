@@ -206,3 +206,23 @@ def test_a_builds_row_in_your_order_says_its_plans_column(db, admin):
     page = admin.get("/manage/work?tab=queue").text
     row = page.split(f'data-key="i{it.id}"', 1)[1].split("</tr>", 1)[0]
     assert 'data-col-word="building"' in row
+
+
+def test_a_plan_opens_in_the_item_window_from_the_board_and_your_order(db, admin):
+    """Brett's picks M1 and P3 on Our Work, page by page (Nov 24): a plan opens in the item window, not a new page, from
+    the Board, Your order and a Roadmap item's Plans; its facts on one line in the Board's words; its issues open in the
+    same window; its page stays for a link. A Roadmap card opens the short window For you uses (M3)."""
+    i = _issue(db, "Back clears what you typed")
+    it = rules.new_item(db, "claude", "An idea", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])
+    db.flush()
+    board = admin.get("/manage/work").text
+    assert f'data-panel-url="/manage/item/a{i.area_id}" data-card="a{i.area_id}"' in board
+    assert f'data-panel-url="/manage/item/r{it.id}" data-card="i{it.id}"' in board  # (M3)
+    assert f'data-panel-url="/manage/item/a{i.area_id}"' in admin.get("/manage/work?tab=queue").text
+    win = admin.get(f"/manage/item/a{i.area_id}").text
+    assert f'data-fft-plan="{i.area_id}"' in win and 'data-col-word="ready"' in win and "data-stats" not in win
+    assert f'data-panel-url="/manage/item/i{i.id}"' in win and f'href="/manage/work/{i.area_id}"' in win  # (its issue here; its page for a link)
+    page = admin.get(f"/manage/work/{i.area_id}").text
+    assert 'data-col-word="ready"' in page and "data-stats" not in page  # (P3 on its page too)
