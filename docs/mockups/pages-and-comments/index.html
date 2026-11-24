@@ -99,7 +99,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
-    <span class="lbl">Roadmap item 39 · scope v6 · Nov 24 · a plan to look at</span>
+    <span class="lbl">Roadmap item 39 · scope v7 · Nov 24 · your pick: A, both ways</span>
     <h1>Pages and comments, both places</h1>
     <p class="meta">Two things you asked for. First, a page (a mockup, a plan, a guide) <b>reaches askdnd in seconds</b>, with no pull request, tests or deploy. Second, you can comment and pick <b>in askdnd or on claude.ai</b>, and the two <b>merge</b>. Both are drawn below, with what's hard about the second, the ways to do it, and my pick. Nothing from before this goes back and changes.</p>
     <div class="terms">
@@ -138,7 +138,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
 
   <section style="display:grid;gap:10px" aria-labelledby="h-both">
     <h2 id="h-both">2 · Comments and picks in both places</h2>
-    <p class="meta">Press the buttons in order, or in any order. The left pane is the page in askdnd, the middle is the same page on claude.ai, and the right is what askdnd keeps. <b>Claude checks in</b> is the step that merges them: it's me, at the start of each turn and whenever askdnd wakes me.</p>
+    <p class="meta">Press the buttons in order, or in any order. The left pane is the page in askdnd, the middle is the same page on claude.ai, and the right is what askdnd keeps. <b>Claude checks in</b> is the step that merges them: it's me, at the start of each turn, whenever askdnd wakes me, when you Send to Claude on a claude.ai comment, and at least every 10 minutes while I'm listening.</p>
     <div class="play" aria-label="Try it">
       <span class="of">Try it</span>
       <button type="button" class="btn" data-do="cc">You comment on claude.ai</button>
@@ -159,7 +159,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
   <section style="display:grid;gap:10px" aria-labelledby="h-cx">
     <h2 id="h-cx">What makes it harder than it looks</h2>
     <div class="cx">
-      <div class="term"><span class="tag hard">Only I can reach claude.ai</span>askdnd's server can't read or write claude.ai: only a Claude session can, through its own tools. So the two merge when I check in, not the instant you press. While a session is listening, that's within minutes; with no session open, claude.ai's side waits for the next one. Send to Claude on a claude.ai comment wakes me at once.</div>
+      <div class="term"><span class="tag hard">Only I can reach claude.ai</span>askdnd's server can't read or write claude.ai: only a Claude session can, through its own tools. So the two merge when I check in, not the instant you press. While I'm listening, I check claude.ai at least every 10 minutes, so it's within 10 minutes; Send to Claude on a claude.ai comment wakes me at once. With no session open, claude.ai's side waits for the next one.</div>
       <div class="term"><span class="tag no">I can't start a claude.ai comment</span>I can read claude.ai comments and reply to ones you've sent to me, but I can't open a new comment thread there. So an askdnd comment shows up inside the page on claude.ai, drawn by the page itself as a pin marked "in askdnd", rather than as a claude.ai comment.</div>
       <div class="term"><span class="tag hard">Pins sit differently</span>claude.ai pins a comment to an element on the page. askdnd pins it to a spot, plus the words nearest it. Moving a comment across, I place it by those words, so it lands next to the right thing, though not always on the exact pixel.</div>
       <div class="term"><span class="tag hard">Two answers to one question</span>If you pick in both places, the newest wins, both places show it, and askdnd keeps both in its history, so nothing is lost. A claude.ai pick answers askdnd's question the same way, marked "on claude.ai".</div>
@@ -172,7 +172,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
     <h2 id="h-opts">Three ways to do it</h2>
     <div class="opts">
       <div class="opt-card mine"><span class="mine-tag">my pick</span><h3>A · Both ways, merged at each check-in</h3>
-        <ul><li>What you asked for: comment and pick in either place, and both show everything.</li><li>claude.ai comments and picks come into askdnd; askdnd's show inside the page on claude.ai.</li><li>Merged when I check in; Send to Claude for at once.</li><li>askdnd keeps the record, with where each one came from.</li></ul></div>
+        <ul><li>What you asked for: comment and pick in either place, and both show everything.</li><li>claude.ai comments and picks come into askdnd; askdnd's show inside the page on claude.ai.</li><li>Merged when I check in: at least every 10 minutes while I'm listening, or at once with Send to Claude.</li><li>askdnd keeps the record, with where each one came from.</li></ul></div>
       <div class="opt-card"><h3>B · Into askdnd only</h3>
         <ul><li>claude.ai comments and picks come into askdnd at each check-in.</li><li>askdnd's never show on claude.ai, so the claude.ai copy falls behind.</li><li>A little less to build: the page doesn't draw askdnd's pins.</li></ul></div>
       <div class="opt-card"><h3>C · askdnd only</h3>
@@ -217,6 +217,11 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
     const kept = s.a.map(c => `<li><b>Comment ${c.n}</b> ${c.made === "a" ? "in askdnd" : "from claude.ai"}: “${esc(c.words)}”</li>`).join("");
     document.getElementById("p-r").innerHTML = (kept ? `<span class="tagw">Comments</span><ol class="hist">${kept}</ol>` : `<span class="empty">No comments kept yet.</span>`)
       + (s.hist.length ? `<span class="tagw">Answers, newest last</span><ol class="hist">${s.hist.map(h => `<li><b>${h.v}</b> ${h.where === "a" ? "in askdnd" : "on claude.ai"}, ${h.at}${h.now ? " · <b>the answer</b>" : ""}</li>`).join("")}</ol>` : "");
+    // (what's on claude.ai and not here yet: shown waiting, so it's plain that it arrives at the next check-in)
+    const waiting = s.c.filter(c => c.made === "c" && !s.a.includes(c)).map(c => `comment ${c.n}`);
+    const p = s.picks.c;
+    if (p && !s.hist.some(h => h.where === "c" && h.ts === p.ts)) waiting.push(`your pick, ${p.v}`);
+    if (waiting.length) document.getElementById("p-r").innerHTML += `<div class="cmt waits"><span class="pin c">…</span><span>On claude.ai, not here yet: ${waiting.join(" and ")}</span><span class="from">arrives at Claude's next check-in</span></div>`;
   }
   const DO = {
     cc() {
