@@ -152,3 +152,14 @@ def test_without_its_key_it_sends_nothing(github, monkeypatch):
 def test_dependabots_are_marked_as_a_bots():
     assert gr.row(_pr(1, author={"login": "app/dependabot", "is_bot": True}))["by_bot"] is True
     assert gr.row(_pr(1))["by_bot"] is False
+
+
+def test_a_merged_ones_merge_commit_is_sent_and_a_closed_ones_isnt(github):
+    """askdnd finds what's inside the version it runs by the merge commit (rules.release_live)."""
+    github["closed"] = [_pr(3, mergedAt="2026-11-24T01:00:00Z", closedAt="2026-11-24T01:00:00Z", mergeCommit={"oid": "d" * 40}),
+                        _pr(2, closedAt="2026-11-23T09:00:00Z", mergeCommit=None)]
+    got = {r["number"]: r for r in github["run"]("push")["sent"]}
+    assert got[3]["merge_commit"] == "d" * 40 and "merge_commit" not in got[2]
+    closed = {"number": 4, "title": "Done", "merged": True, "merge_commit_sha": "e" * 40, "closed_at": "2026-11-24T02:00:00Z",
+              "user": {"login": "someone", "type": "User"}, "head": {"ref": "a17-x", "sha": "c" * 40, "repo": {"fork": False}}}
+    assert {r["number"]: r for r in github["run"]("pull_request_target", {"action": "closed", "pull_request": closed})["sent"]}[4]["merge_commit"] == "e" * 40

@@ -100,3 +100,11 @@ TABLE_TIME = ZoneInfo("America/Los_Angeles")
 
 def table_today() -> date:
     return datetime.now(TABLE_TIME).date()
+
+
+def running_version() -> str:
+    """The commit askdnd.ai runs (Railway's), for marking what's live (app/fft/rules.py `release_live`); "" anywhere
+    else: staging runs another branch, and a local copy runs whatever's checked out."""
+    if STAGING:
+        return ""
+    return (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "").strip()

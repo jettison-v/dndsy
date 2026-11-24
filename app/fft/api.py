@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
+from app import config, web
 from app.db import get_db
 from app.fft import keys, rules, sending, steps, taxonomy, views
 from app.fft.models import (
@@ -772,8 +772,20 @@ def github_pulls(body=web.JsonBody, x_fft_key: str | None = Header(default=None)
         seen = rules.pulls_seen(db, actor.name, rows, snapshot=body.get("snapshot") is True)
     except rules.RuleError as e:
         raise _rule(e) from e
+    db.commit()  # (the report is kept whatever the release below does)
+    numbers, live = [p.number for p in seen], []
+    try:
+        with db.begin_nested():  # (a release that can't finish is undone alone: the next report tries again)
+            live = rules.release_live(db, "askdnd", config.running_version())["live"]  # (one merged just before the deploy)
+    except rules.RuleError:
+        from app import errors
+
+        if errors.on():
+            import sentry_sdk
+
+            sentry_sdk.capture_exception()
     db.commit()
-    return _ok({"seen": [p.number for p in seen]})
+    return _ok({"seen": numbers, "live": live})
 
 
 @router.get("/pulls")

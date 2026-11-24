@@ -7,7 +7,7 @@ from datetime import timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, picks
+from app import access, config, picks
 from app.fft import rules, taxonomy
 from app.fft.models import (
     FftArea,
@@ -332,7 +332,7 @@ def pull_worth_saying(ev) -> bool:
     flicker of its merge state."""
     d = ev.data or {}
     ch = d.get("changes") or {}
-    return ev.kind == "pull_new" or bool(d.get("to")) or bool(ch.get("updated")) or ch.get("tests") in ("passed", "failed")
+    return ev.kind in ("pull_new", "pull_live") or bool(d.get("to")) or bool(ch.get("updated")) or ch.get("tests") in ("passed", "failed")
 
 
 def event_words(ev) -> str:
@@ -341,6 +341,8 @@ def event_words(ev) -> str:
     d = ev.data or {}
     if ev.thing == "pull":  # (a pull request's record, item 39: on a plan's History; never an inbox, rules.heard)
         n = d.get("number")
+        if ev.kind == "pull_live":
+            return f"Pull request #{n} is live on askdnd.ai"
         if ev.kind == "pull_new":
             return f"Pull request #{n} " + {"merged": "merged", "closed": "closed"}.get(d.get("to") or "", "opened")
         if d.get("to"):
@@ -483,6 +485,10 @@ def gaps(db: Session) -> list[dict]:
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})
+    running = config.running_version()  # (deploys mark themselves live, item 39: a version askdnd can't place releases nothing)
+    if running and rules.now() - config.STARTED_AT > UNPLACED_AFTER and db.scalar(select(FftPull.id).limit(1)) and rules.version_pull(db, running) is None:
+        out.append({"kind": "version_unplaced", "thing": "deploy", "id": 0, "title": f"askdnd.ai runs {running[:7]}", "since": config.STARTED_AT,
+                    "says": "No pull request askdnd knows has this merge commit, so nothing in it was marked live: find which fixes it holds and run feedback.py live."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
@@ -494,7 +500,9 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
              "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet",
-             "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main"}  # (each kind of gap, as Development says it)
+             "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main",
+             "version_unplaced": "askdnd.ai runs a version no pull request explains"}  # (each kind of gap, as Development says it)
+UNPLACED_AFTER = timedelta(minutes=15)  # (GitHub reports a merge within a minute; a deploy takes about ten)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 
@@ -530,4 +538,5 @@ def pull_row(p: FftPull) -> dict:
     return {"number": p.number, "title": p.title, "branch": p.branch, "by_bot": p.by_bot, "state": p.state, "tests": p.tests,
             "merge_state": p.merge_state, "auto_merge": p.auto_merge, "issue": p.issue_id, "area": p.area_id, "item": p.item_id,
             "upkeep": rules.pull_upkeep(p), "reported_at": p.reported_at.isoformat() if p.reported_at else None,
-            "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None}
+            "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None,
+            "merge_commit": p.merge_commit, "live_at": p.live_at.isoformat() if p.live_at else None}

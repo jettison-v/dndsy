@@ -564,9 +564,9 @@ def deploy(a) -> None:
 
 
 def live(a) -> None:
-    """After a deploy (scripts/deploy_check.py runs it): every fix whose pull request is merged and inside the commit
-    askdnd runs now (its /health version) is live, so its issues are ready to try (R4): a fix is tried once it's where
-    Brett will try it, never before."""
+    """By hand only, for a fix askdnd couldn't place (a pull request from before GitHub reported them, Nov 24): askdnd marks
+    what's inside each deploy live by itself (app/fft/rules.py `release_live`, item 39). Every fix whose pull request is
+    merged and inside the commit askdnd runs now (its /health version) is live, so its issues are ready to try (R4)."""
     import re
     import subprocess
 
@@ -603,7 +603,8 @@ def pulls(a) -> None:
     items = call(a.base, "/pulls" + ("?open=0" if a.all else ""))["items"]
     for x in items:
         work = (f"issue {x['issue']}" if x["issue"] else f"area {x['area']}" if x["area"] else f"item {x['item']}" if x["item"] else "Upkeep")
-        bits = [x["state"], f"tests {x['tests'] or 'not reported'}", x["merge_state"] or "", "auto-merge" if x["auto_merge"] else ""]
+        bits = [x["state"], f"tests {x['tests'] or 'not reported'}", x["merge_state"] or "", "auto-merge" if x["auto_merge"] else "",
+                f"live {x['live_at'][:16].replace('T', ' ')} UTC" if x.get("live_at") else ""]
         print(f"  #{x['number']} {x['title']}  [{x['branch']}]\n      {' · '.join(b for b in bits if b)} · {work}")
     print(f"{len(items)} pull request{'s' if len(items) != 1 else ''}." if items else "No pull requests.")
 

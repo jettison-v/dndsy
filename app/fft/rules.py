@@ -2075,8 +2075,14 @@ def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
 
 PULL_STATES = ("open", "merged", "closed")
 PULL_TESTS = ("", "running", "passed", "failed")
-PULL_FIELDS = ("title", "branch", "by_bot", "state", "tests", "merge_state", "auto_merge", "head")
+PULL_FIELDS = ("title", "branch", "by_bot", "state", "tests", "merge_state", "auto_merge", "head", "merge_commit")
 _BRANCH_MARK = re.compile(r"^([air])(\d{1,7})-")
+
+
+def _names_pull(column, number: int):
+    """A link column that names this pull request (…/pull/480, …/pull/480/files, …/pull/480#…), never /pull/4800."""
+    tail = f"/pull/{number}"
+    return or_(column.like(f"%{tail}"), column.like(f"%{tail}/%"), column.like(f"%{tail}#%"))
 
 
 def pull_link(db: Session, p: FftPull) -> tuple[int | None, int | None, int | None]:
@@ -2089,9 +2095,7 @@ def pull_link(db: Session, p: FftPull) -> tuple[int | None, int | None, int | No
         area = db.get(FftArea, n) if kind == "a" else None
         item = db.get(FftItem, n) if kind == "r" else None
     if not (issue or area or item):
-        tail = f"/pull/{p.number}"
-        issue = db.scalar(select(FftIssue).where(or_(FftIssue.pr.like(f"%{tail}"), FftIssue.pr.like(f"%{tail}/%"),
-                                                      FftIssue.pr.like(f"%{tail}#%"))).order_by(FftIssue.id))
+        issue = db.scalar(select(FftIssue).where(_names_pull(FftIssue.pr, p.number)).order_by(FftIssue.id))
     if issue is not None and area is None and issue.area_id:
         area = db.get(FftArea, issue.area_id)
     if area is not None and item is None:
@@ -2107,6 +2111,8 @@ def _pull_value(field_: str, raw):
         raise RuleError("bad", f"state: one of {', '.join(PULL_STATES)}")
     if field_ == "tests" and v not in PULL_TESTS:
         raise RuleError("bad", f"tests: one of {', '.join(x or '(none)' for x in PULL_TESTS)}")
+    if field_ in ("head", "merge_commit") and v and not re.fullmatch(r"[0-9a-f]{7,40}", v):
+        raise RuleError("bad", f"{field_}: a commit's id")
     return v.lower() if field_ == "merge_state" else v
 
 
@@ -2152,8 +2158,10 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
             changed["updated"] = True
         if p.state == "open":
             p.closed_at = None  # (reopened)
+        elif closed_at is not None:
+            p.closed_at = closed_at  # (GitHub's own time wins: the order of merges says what's inside a deploy)
         elif p.closed_at is None:
-            p.closed_at = closed_at or at
+            p.closed_at = at
         link = pull_link(db, p)
         if link != (p.issue_id, p.area_id, p.item_id):
             p.issue_id, p.area_id, p.item_id = link
@@ -2174,3 +2182,44 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
 def pull_upkeep(p: FftPull) -> bool:
     """Nothing behind it: an Upkeep card of its own."""
     return not (p.issue_id or p.area_id or p.item_id)
+
+
+# Deploys mark themselves live (item 39, 2 of 4; scope v4, Brett's OK Nov 24). main only changes through pull requests, so
+# the version askdnd.ai runs is a pull request's merge commit, and every pull request merged up to it is inside it.
+# app/main.py asks once a new version has run a minute (Railway has switched to it by then), and every GitHub report
+# asks again, so one merged just before the deploy is caught too. Each one released once: its issues become ready to
+# try (R4) and the checks that waited for it reach For you. It only adds: after a rollback in Railway, what was released
+# stays released until the rollback rule runs (R9, `rollback`); a version no pull request askdnd knows is a gap.
+
+def version_pull(db: Session, version: str) -> FftPull | None:
+    """The merged pull request whose merge commit is this version (askdnd.ai's commit, full or shortened), if GitHub has
+    reported it."""
+    version = (version or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{7,40}", version):
+        return None
+    return next((p for p in db.scalars(select(FftPull).where(FftPull.state == "merged", FftPull.merge_commit != ""))
+                 if p.merge_commit.startswith(version) or version.startswith(p.merge_commit)), None)
+
+
+def release_live(db: Session, actor: str, version: str) -> dict:
+    """Release every merged pull request inside `version` (askdnd.ai's commit) not released yet. Returns what it did."""
+    version = (version or "").strip().lower()
+    out = {"live": [], "issues": [], "checks": []}
+    if not re.fullmatch(r"[0-9a-f]{7,40}", version):
+        return out
+    anchor = version_pull(db, version)
+    if anchor is None or anchor.closed_at is None:
+        return out  # (GitHub hasn't said which pull request it is yet: its next report asks again)
+    at = now()
+    for p in db.scalars(select(FftPull).where(FftPull.state == "merged", FftPull.live_at.is_(None), FftPull.closed_at <= anchor.closed_at)
+                        .order_by(FftPull.closed_at).with_for_update(skip_locked=True)):  # (one released by a release running now is skipped)
+        p.live_at = at
+        _event(db, actor, "pull_live", "pull", p.id, area_id=p.area_id, number=p.number, commit=version[:40])
+        out["live"].append(p.number)
+        for i in db.scalars(select(FftIssue).where(or_(FftIssue.id == (p.issue_id or 0), _names_pull(FftIssue.pr, p.number)),
+                                                   FftIssue.state.in_(("fixing", "to_fix"))).order_by(FftIssue.id)):
+            fix_live(db, actor, i, version)
+            out["issues"].append(i.id)
+        waits = [w.pr for w in db.scalars(select(FftCheckWait).where(_names_pull(FftCheckWait.pr, p.number)))]
+        out["checks"] += deployed(db, actor, waits)
+    return out

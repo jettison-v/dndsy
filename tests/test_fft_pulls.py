@@ -202,3 +202,106 @@ def test_a_pile_of_pull_request_changes_never_hides_a_note(api, db, github, monk
     db.execute(update(FftEvent).values(at=rules.now() - timedelta(seconds=30)))
     got = api.get("/api/fft/inbox/wait?seconds=1", headers={"X-Fft-Key": CLAUDE}).json()["items"]
     assert [e["kind"] for e in got] == ["item_new"]
+
+
+# ------------------------------------------------------------------ deploys mark themselves live (item 39, 2 of 4)
+
+C1, C2, C3 = "1" * 40, "2" * 40, "3" * 40
+
+
+def _merged(db, number, commit, at, **kw):
+    return _seen(db, {"number": number, "state": "merged", "merge_commit": commit, "closed_at": at, "branch": kw.pop("branch", "x")} | kw)[0]
+
+
+def test_a_deploy_releases_every_pull_request_merged_up_to_the_version_it_runs(db):
+    """A standing rule (R4, Brett Nov 20): a fix is tried once it's live, never before. askdnd.ai's version is a pull
+    request's merge commit; everything merged up to it is inside, nothing after it. Each released once: its issues ready
+    to try, the checks that waited for it reach For you."""
+    from app.fft.models import FftCheckWait
+
+    issue = rules.new_issue(db, "claude", "Back clears what you typed", feature="feedback")
+    db.flush()
+    rules.fix_ready(db, "claude", issue, URL + "101")
+    check = rules.write_check(db, "claude", title="t", steps=["s"], expect="e", issue_ids=[issue.id])
+    rules.wait_for_deploy(db, "claude", check, URL + "102")
+    _merged(db, 101, C1, "2026-11-24T01:00:00Z")
+    _merged(db, 102, C2, "2026-11-24T02:00:00Z")
+    _merged(db, 103, C3, "2026-11-24T03:00:00Z")
+    _seen(db, {"number": 104, "state": "closed", "closed_at": "2026-11-24T01:30:00Z"})  # (closed unmerged: never live)
+    got = rules.release_live(db, "askdnd", C2[:12])  # (askdnd.ai's /health shows 12 characters)
+    db.flush()
+    assert got == {"live": [101, 102], "issues": [issue.id], "checks": [check.id]}
+    assert issue.state == "ready" and db.scalar(select(FftCheckWait.id)) is None
+    assert rules.release_live(db, "askdnd", C2) == {"live": [], "issues": [], "checks": []}  # (once each)
+    assert rules.release_live(db, "askdnd", C3)["live"] == [103]
+    assert {p.number: p.live_at is not None for p in db.scalars(select(FftPull))} == {101: True, 102: True, 103: True, 104: False}
+
+
+def test_a_version_askdnd_doesnt_know_yet_releases_nothing(db):
+    """GitHub hasn't reported the merge yet, or it's a local copy or staging: nothing is marked live."""
+    _merged(db, 110, C1, "2026-11-24T01:00:00Z")
+    for version in ("", "local", "abc", "9" * 40):
+        assert rules.release_live(db, "askdnd", version)["live"] == []
+
+
+def test_githubs_next_report_releases_one_merged_just_before_the_deploy(api, db, github, monkeypatch):
+    """The deploy started before GitHub said which pull request its commit is: the next report (any run) releases it."""
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", C1)
+    got = api.post("/api/fft/github/pulls", headers=github, json={"pulls": [{"number": 120, "state": "merged", "merge_commit": C1,
+                                                                             "closed_at": "2026-11-24T01:00:00Z"}]})
+    assert got.json()["live"] == [120]
+    monkeypatch.setattr(config, "STAGING", True)  # (staging runs another branch: it never marks askdnd.ai's work live)
+    assert config.running_version() == ""
+
+
+def test_a_commit_that_isnt_one_is_refused(api, db, github):
+    bad = {"pulls": [{"number": 121, "state": "merged", "merge_commit": "not a commit"}]}
+    assert api.post("/api/fft/github/pulls", headers=github, json=bad).status_code == 400
+
+
+def test_githubs_close_time_wins_over_when_askdnd_first_noticed(db):
+    """Missing from a whole list, a pull request is closed at once; its merge time, when GitHub says it, replaces that,
+    since the order of merges says what's inside a deploy."""
+    _seen(db, _pr(130))
+    _seen(db, _pr(131), snapshot=True)  # (130 left the open list)
+    p = _merged(db, 130, C1, "2026-11-20T10:00:00Z")
+    assert (p.state, p.closed_at.isoformat()[:19]) == ("merged", "2026-11-20T10:00:00")
+
+
+def test_releasing_never_stops_the_server(monkeypatch):
+    """A failure is sent to Sentry and askdnd carries on: GitHub's next report asks again."""
+    from app import main
+
+    def boom(*a, **k):
+        raise RuntimeError("database down")
+
+    monkeypatch.setattr(rules, "release_live", boom)
+    assert main.release_now() == {}
+
+
+def test_a_release_that_cant_finish_never_costs_githubs_report(api, db, github, monkeypatch):
+    """The report is kept, the release is undone alone, and the next report tries again."""
+    def stuck(*a, **k):
+        raise rules.RuleError("stale", "It's ready.")
+
+    monkeypatch.setattr(rules, "release_live", stuck)
+    got = api.post("/api/fft/github/pulls", headers=github, json={"pulls": [_pr(140)]})
+    assert got.status_code == 200 and (got.json()["seen"], got.json()["live"]) == ([140], [])
+    assert db.scalar(select(FftPull.number).where(FftPull.number == 140)) == 140
+
+
+def test_a_version_no_pull_request_explains_is_a_gap(db, monkeypatch):
+    """Nothing in it would ever be marked live: Claude finds what it holds by hand. Not before askdnd has run it 15 minutes
+    (GitHub reports a merge within a minute), and not before GitHub has reported anything at all."""
+    from datetime import timedelta
+
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", C2)
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(hours=1))
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}  # (no pull requests reported yet)
+    _merged(db, 150, C1, "2026-11-24T01:00:00Z")
+    assert "version_unplaced" in {g["kind"] for g in views.gaps(db)}
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(minutes=5))
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}
+    monkeypatch.setattr(config, "STARTED_AT", rules.now() - timedelta(hours=1))
+    _merged(db, 151, C2, "2026-11-24T02:00:00Z")
+    assert "version_unplaced" not in {g["kind"] for g in views.gaps(db)}

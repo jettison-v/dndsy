@@ -27,7 +27,6 @@ import sys
 import time
 import urllib.request
 from datetime import datetime
-from pathlib import Path
 
 SERVICES = ["askdnd-v2", "askdnd-backup"]
 # The backup service's watch paths: it rebuilds only when one of these changes. Every app module the backup script loads
@@ -249,10 +248,8 @@ def main() -> None:
         now = version(want=sha)
         up = bool(now) and (sha.startswith(now) or now.startswith(sha))
         say(f"Beta runs {sha[:7]}." if up else f"Beta still runs {now or 'an unknown version'}, not {sha[:7]}.")
-    if up:  # (fixes now live: their issues are ready to try, Found, Fixed, Tried's R4; Testing brings their checks back)
-        r = subprocess.run([sys.executable, str(Path(__file__).with_name("feedback.py")), "live"], capture_output=True, text=True)
-        for line in (r.stdout + r.stderr).strip().splitlines():  # (both: a crash after some output still shows)
-            say(line)
+    if up:  # (askdnd marks what's inside it live by itself a minute after it starts, item 39: app/main.py `release_when_live`)
+        say("askdnd marks the fixes inside it live within a minute: feedback.py pulls --all shows each one's live time.")
     sys.exit(0 if ok and up else 1)
 
 

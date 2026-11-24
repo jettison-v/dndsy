@@ -120,11 +120,39 @@ async def lifespan(app: FastAPI):
     from app import speed  # each page's time, saved; the weekly look at the slowest (app/speed.py)
 
     timing_saved = asyncio.create_task(speed.loop()) if listener is not None else None
+    releasing = asyncio.create_task(release_when_live()) if config.running_version() and listener is not None else None
     yield
     await reparsing
-    for task in (listener, reading, mailing, timing_saved):
+    for task in (listener, reading, mailing, timing_saved, releasing):
         if task:
             task.cancel()
+
+
+RELEASE_AFTER = 60  # seconds a new version runs before it counts as live (Railway switches to it once it answers)
+
+
+async def release_when_live() -> None:
+    """Deploys mark themselves live (item 39, 2 of 4): a minute after this version starts, every pull request merged into
+    it is released: its issues ready to try, its waiting checks to For you (app/fft/rules.py `release_live`). GitHub's
+    next report asks again, so one it hasn't told askdnd about yet is caught then."""
+    await asyncio.sleep(RELEASE_AFTER)
+    await asyncio.to_thread(release_now)
+
+
+def release_now() -> dict:
+    from app.fft import rules as fft_rules
+
+    try:
+        with SessionLocal() as db:
+            got = fft_rules.release_live(db, "askdnd", config.running_version())
+            db.commit()
+            return got
+    except Exception:  # (never stops the server: GitHub's next report asks again)
+        if errors.on():
+            import sentry_sdk
+
+            sentry_sdk.capture_exception()
+        return {}
 
 
 def reparse_old_summaries() -> None:
