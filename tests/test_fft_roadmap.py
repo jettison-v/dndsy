@@ -375,3 +375,23 @@ def test_an_items_pages_open_in_askdnd_from_its_window_and_page(db, admin):
     assert want[1] in admin.get(f"/manage/item/r{added.id}").text
     bare = _scoped(db, "No pages")
     assert 'data-sec="pages"' not in admin.get(f"/manage/item/r{bare.id}").text and "data-pages" not in admin.get(f"/manage/roadmap/{bare.id}").text
+
+
+def test_an_item_ships_only_once_every_step_is_ticked_or_removed(db):
+    """Brett, Nov 24: R42 sat in History at 5 of 7, its next step Claude's. A step left open is ticked or removed before
+    the item ships; Not doing still closes an item whatever its steps."""
+    it = rules.new_idea(db, "claude", "A small build", section="now")
+    db.flush()
+    done, later = rules.add_step(db, "claude", it, "Build it"), rules.add_step(db, "claude", it, "Look again next month")
+    rules.tick_step(db, "claude", done)
+    with pytest.raises(rules.RuleError, match="1 step still open"):
+        rules.ship_item(db, "claude", it, result="Built")
+    assert it.section == "now"
+    rules.remove_step(db, "claude", later)
+    rules.ship_item(db, "claude", it, result="Built")
+    assert it.section == "shipped"
+    other = rules.new_idea(db, "claude", "Not now")
+    db.flush()
+    rules.add_step(db, "claude", other, "Something")
+    rules.ship_item(db, "claude", other, not_doing=True, result="Not needed")
+    assert other.section == "not_doing"
