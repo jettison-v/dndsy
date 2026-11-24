@@ -22,6 +22,7 @@ from app.fft.models import (
     FftLine,
     FftNote,
     FftPicture,
+    FftPull,
     FftQuestion,
 )
 from app.models import Character
@@ -755,6 +756,34 @@ def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=
         raise _rule(e) from e
     db.commit()
     return _ok({"job": key})
+
+
+@router.post("/github/pulls")
+def github_pulls(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """What GitHub sees of the pull requests (scripts/github_report.py; item 39): {"pulls": [{"number", "title", "branch",
+    "by_bot", "state", "tests", "merge_state", "auto_merge", "head", "updated"}], "snapshot": true when they're all the
+    open ones}. GitHub's key may send only this and its jobs."""
+    actor = keys.require(db, x_fft_key, "pulls")
+    body = body if isinstance(body, dict) else {}
+    rows = body.get("pulls")
+    if not isinstance(rows, list) or len(rows) > 200 or not all(isinstance(r, dict) for r in rows):
+        raise HTTPException(400, "pulls: a list of up to 200 pull requests")
+    try:
+        seen = rules.pulls_seen(db, actor.name, rows, snapshot=body.get("snapshot") is True)
+    except rules.RuleError as e:
+        raise _rule(e) from e
+    db.commit()
+    return _ok({"seen": [p.number for p in seen]})
+
+
+@router.get("/pulls")
+def pulls(open: int = 1, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The pull requests askdnd knows, newest first (`open=0`: the closed ones too), each with the work it's for."""
+    keys.require(db, x_fft_key, "read")
+    q = select(FftPull).order_by(FftPull.number.desc())
+    if open:
+        q = q.where(FftPull.state == "open")
+    return _ok({"items": [views.pull_row(p) for p in db.scalars(q.limit(200))]})
 
 
 @router.post("/keys")

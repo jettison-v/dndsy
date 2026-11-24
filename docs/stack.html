@@ -339,6 +339,7 @@ td { min-width: 0; }
           <tbody>
             <tr><td>Code, tests, docs</td><td>GitHub</td><td>On a short branch, opened as a pull request with what to try.</td></tr>
             <tr><td>Checks</td><td>GitHub Actions</td><td>The workflow file in the repo. Railway waits for them before deploying.</td></tr>
+            <tr><td>Report to askdnd</td><td>GitHub Actions</td><td>After each pull request event, test run and push to main, GitHub merges main into waiting pull requests set to merge by themselves, starts their tests again, and tells askdnd every open pull request (item 39, Nov 24). askdnd holds no GitHub key.</td></tr>
             <tr><td>askdnd-v2's code</td><td>Railway</td><td>Deploys itself when <code>main</code> changes. Claude follows it with <code>scripts/deploy_check.py</code> and reads its logs.</td></tr>
             <tr><td>Postgres</td><td>Railway</td><td>Its shape changes through migrations that ship with the code. Claude can look inside beta (<code>railway ssh</code>), and changes data there only with your OK.</td></tr>
             <tr><td>askdnd-backup</td><td>Railway (cron)</td><td>Same code as the website; rebuilt when a file it runs changes.</td></tr>
@@ -404,7 +405,7 @@ td { min-width: 0; }
         <tr><td><code>FEEDBACK_KEY</code></td><td>website, and your <code>.env</code> for Claude's <code>scripts/feedback.py</code> (Found, Fixed, Tried: Claude's key)</td><td>Random, generated on the Mac</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>FFT_RELAY_KEY</code></td><td>website and staging: staging's notes reach askdnd.ai with it, and only notes (they always wait for an admin)</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> (and <code>--staging</code>)</td></tr>
         <tr><td><code>FFT_MINI_KEY</code></td><td>website and the Mac Mini: the Mini records its own runs of checks with it, and reports its own scheduled jobs (the live test, iPhone Safari, After each deploy), nothing else</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> and on the Mini</td></tr>
-        <tr><td><code>FFT_GITHUB_KEY</code></td><td>GitHub's D&amp;D Beyond drift run: reports that one job to askdnd.ai's Development › Scheduled, nothing else</td><td>Made by askdnd (<code>POST /api/fft/keys</code> with Claude's key), kept there only as its hash</td><td>Claude: a GitHub repository secret, set with <code>gh secret set</code></td></tr>
+        <tr><td><code>FFT_GITHUB_KEY</code></td><td>GitHub's runs: the D&amp;D Beyond drift run reports that job to Development › Scheduled, and Report to askdnd (<code>scripts/github_report.py</code>) sends the pull requests it sees, nothing else. In the repository's secrets and Dependabot's (Dependabot's runs read only their own)</td><td>Made by askdnd (<code>POST /api/fft/keys</code> with Claude's key), kept there only as its hash</td><td>Claude: a GitHub secret, set with <code>gh secret set</code> (and <code>--app dependabot</code>)</td></tr>
         <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
       </tbody>
     </table></div>
@@ -429,5 +430,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-21 (the jobs audit: GitHub's FFT_GITHUB_KEY, which may only report the drift run; the Mac Mini's key also reports After each deploy).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-24 (Report to askdnd: GitHub tells askdnd about every pull request and keeps waiting ones up to date; FFT_GITHUB_KEY may now report pull requests too, and sits in Dependabot's secrets as well).</p>
 </main>

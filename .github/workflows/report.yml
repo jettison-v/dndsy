@@ -1,0 +1,47 @@
+# GitHub tells askdnd about the pull requests (scripts/github_report.py; item 39, A sturdier loop, Brett's OK Nov 24):
+# after each pull request event, each test run and each push to main, it brings waiting pull requests up to date with
+# main (those set to merge by themselves) and reports every open one to askdnd.ai, which links each to its work. A
+# pull request with nothing behind it becomes an Upkeep card there: no pull request without a card.
+#
+# Safe on pull_request_target: it checks out main's copy of the script, never a pull request's own code, and reads
+# titles only as data (never put into a command). FFT_GITHUB_KEY may report only pull requests and GitHub's own jobs
+# (app/fft/keys.py); Dependabot's runs read it from Dependabot's own secrets.
+name: Report to askdnd
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, closed, ready_for_review, converted_to_draft, auto_merge_enabled, auto_merge_disabled]
+  workflow_run:
+    workflows: [Tests]
+    types: [requested, completed]
+  push:
+    branches: [main]
+
+permissions:
+  contents: write  # (merging main into a waiting pull request)
+  pull-requests: write
+  actions: write  # (starting its tests again: an update this token makes starts no run by itself)
+  checks: read
+
+# One at a time, newest waiting: each run reads everything afresh, so a skipped one loses nothing
+concurrency:
+  group: report-to-askdnd
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Report to askdnd
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: scripts/github_report.py
+          sparse-checkout-cone-mode: false
+      - run: python3 scripts/github_report.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          FFT_GITHUB_KEY: ${{ secrets.FFT_GITHUB_KEY }}

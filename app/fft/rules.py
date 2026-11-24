@@ -5,6 +5,7 @@ the same transaction (`_event`). Nothing else sets a state. Callers commit; a re
 Words: an actor is "user:<id>", "claude", "mini" (the Mac Mini's runs) or "askdnd" (askdnd by itself)."""
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
@@ -28,6 +29,7 @@ from app.fft.models import (
     FftLocalTry,
     FftNote,
     FftNoteIssue,
+    FftPull,
     FftQuestion,
     FftRound,
     FftScope,
@@ -2049,3 +2051,115 @@ def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
     if rows and not peek:
         li.read_id = rows[-1].id
     return rows
+
+
+# ------------------------------------------------------------------ pull requests, as GitHub reports them
+#
+# Item 39, A sturdier loop (scope v4, Brett's OK Nov 24): askdnd learns from GitHub itself, so no pull request goes
+# unrecorded and none has to be remembered. GitHub runs scripts/github_report.py on each pull request event, each test
+# run and each push to main, and it sends what it sees; a whole list of the open ones (`snapshot`) also closes any this
+# record still holds open. Each is linked to its work: by its branch name first (`a12-…` an area, `i110-…` an issue,
+# `r39-…` a Roadmap item: the name a claim gives it), else by an issue that names it. One with nothing behind it is
+# Upkeep (Dependabot's always are): no pull request without a card.
+
+PULL_STATES = ("open", "merged", "closed")
+PULL_TESTS = ("", "running", "passed", "failed")
+PULL_FIELDS = ("title", "branch", "by_bot", "state", "tests", "merge_state", "auto_merge", "head")
+_BRANCH_MARK = re.compile(r"^([air])(\d{1,7})-")
+
+
+def pull_link(db: Session, p: FftPull) -> tuple[int | None, int | None, int | None]:
+    """The work a pull request is for: (issue, area, item), each None when it has none."""
+    issue = area = item = None
+    m = _BRANCH_MARK.match(p.branch or "")
+    if m:
+        kind, n = m.group(1), int(m.group(2))
+        issue = db.get(FftIssue, n) if kind == "i" else None
+        area = db.get(FftArea, n) if kind == "a" else None
+        item = db.get(FftItem, n) if kind == "r" else None
+    if not (issue or area or item):
+        tail = f"/pull/{p.number}"
+        issue = db.scalar(select(FftIssue).where(or_(FftIssue.pr.like(f"%{tail}"), FftIssue.pr.like(f"%{tail}/%"),
+                                                      FftIssue.pr.like(f"%{tail}#%"))).order_by(FftIssue.id))
+    if issue is not None and area is None and issue.area_id:
+        area = db.get(FftArea, issue.area_id)
+    if area is not None and item is None:
+        item = db.get(FftItem, area.item_id)
+    return (issue.id if issue else None, area.id if area else None, item.id if item else None)
+
+
+def _pull_value(field_: str, raw):
+    if field_ in ("by_bot", "auto_merge"):
+        return bool(raw)
+    v = str(raw or "").strip()
+    if field_ == "state" and v not in PULL_STATES:
+        raise RuleError("bad", f"state: one of {', '.join(PULL_STATES)}")
+    if field_ == "tests" and v not in PULL_TESTS:
+        raise RuleError("bad", f"tests: one of {', '.join(x or '(none)' for x in PULL_TESTS)}")
+    return v.lower() if field_ == "merge_state" else v
+
+
+def _when(raw) -> datetime | None:
+    """GitHub's time (ISO 8601, "Z" for UTC), or None when it sent none."""
+    if raw in (None, ""):
+        return None
+    try:
+        t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        raise RuleError("bad", "closed_at: a time GitHub gives (ISO 8601)") from None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False) -> list[FftPull]:
+    """What GitHub reports: each pull request as it is now (`number` and the PULL_FIELDS; `updated`: brought up to date
+    with main just now; `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
+    them has closed. Each change is an event (the round trip reads them)."""
+    seen, clean, out, at = set(), [], [], now()
+    for r in rows:  # (all checked before any is kept: a report with one bad row changes nothing)
+        try:
+            number = int(r.get("number"))
+        except (TypeError, ValueError):
+            raise RuleError("bad", "number: a pull request's number") from None
+        if number <= 0 or number in seen:
+            raise RuleError("bad", f"number {number}: once each, above 0")
+        seen.add(number)
+        vals = {f: _pull_value(f, r[f]) for f in PULL_FIELDS if f in r}
+        clean.append((number, {f: v[:200] if isinstance(v, str) else v for f, v in vals.items()}, bool(r.get("updated")), _when(r.get("closed_at"))))
+    for number, vals, updated, closed_at in clean:
+        p = db.scalar(select(FftPull).where(FftPull.number == number))
+        fresh = p is None
+        if fresh:
+            p = FftPull(number=number)
+            db.add(p)
+        changed = {}
+        for f, v in vals.items():
+            if fresh or getattr(p, f) != v:
+                changed[f] = v
+                setattr(p, f, v)
+        if updated:
+            p.updated_by_askdnd_at = at
+            changed["updated"] = True
+        if p.state == "open":
+            p.closed_at = None  # (reopened)
+        elif p.closed_at is None:
+            p.closed_at = closed_at or at
+        link = pull_link(db, p)
+        if link != (p.issue_id, p.area_id, p.item_id):
+            p.issue_id, p.area_id, p.item_id = link
+            changed["link"] = list(link)
+        p.reported_at = at
+        db.flush()
+        if fresh or changed:
+            _event(db, actor, "pull_new" if fresh else "pull_changed", "pull", p.id, area_id=p.area_id, number=number,
+                   **({"to": p.state} if "state" in changed or fresh else {}), changes={k: v for k, v in changed.items() if k != "title"})
+        out.append(p)
+    if snapshot:
+        for p in db.scalars(select(FftPull).where(FftPull.state == "open", FftPull.number.not_in(seen or {0}))):
+            p.state, p.closed_at = "closed", at
+            _event(db, actor, "pull_changed", "pull", p.id, area_id=p.area_id, number=p.number, to="closed", changes={"state": "closed", "missing": True})
+    return out
+
+
+def pull_upkeep(p: FftPull) -> bool:
+    """Nothing behind it: an Upkeep card of its own."""
+    return not (p.issue_id or p.area_id or p.item_id)

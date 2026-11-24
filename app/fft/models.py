@@ -457,3 +457,28 @@ class FftSeen(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     issue_id: Mapped[int] = mapped_column(ForeignKey("fft_issues.id", ondelete="CASCADE"), index=True)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class FftPull(_Stamped, Base):
+    """A pull request as GitHub last reported it (scripts/github_report.py, run by GitHub on each pull request event, each
+    test run and each push to main; item 39, scope v4, Nov 23): its state, its tests, whether it's behind main, and the
+    work it's linked to by its branch name (`a12-…` an area, `i110-…` an issue, `r39-…` a Roadmap item) or by an issue
+    that names it. One with nothing behind it is Upkeep: no pull request without a card. Changed only in rules.py."""
+
+    __tablename__ = "fft_pulls"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    number: Mapped[int] = mapped_column(Integer, unique=True)
+    title: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    branch: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    by_bot: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # (Dependabot's: upkeep, no claim)
+    state: Mapped[str] = mapped_column(String(10), default="open", server_default="open")  # open, merged, closed
+    tests: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", running, passed, failed
+    merge_state: Mapped[str] = mapped_column(String(12), default="", server_default="")  # GitHub's: clean, behind, blocked, dirty, …
+    auto_merge: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    head: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    updated_by_askdnd_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # (brought up to date with main)
+    reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    issue_id: Mapped[int | None] = mapped_column(ForeignKey("fft_issues.id", ondelete="SET NULL"), nullable=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True)
+    item_id: Mapped[int | None] = mapped_column(ForeignKey("fft_items.id", ondelete="SET NULL"), nullable=True)

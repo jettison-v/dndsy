@@ -1,0 +1,456 @@
+<title>The Work Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Roadmap item 39, A sturdier loop. Brett, Nov 23: "What other UI do I need to visual this in the system so I have
+   confidence in the execution and progress?" Two views: Development › Board, and each item's round trip. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); } .mbar .sp { flex: 1; }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.page h2.pt { font: 700 1.5rem/1.2 var(--sans); }
+.bar { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: .86rem; }
+.bar > div { padding: 8px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bar > div + div { border-top: 1px solid var(--line); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); display: inline-block; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { padding: 9px 12px; color: var(--muted); font-weight: 500; font-size: .9rem; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.tab .new { color: var(--amber); font: 700 .62rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.sum { font-size: .86rem; color: var(--muted); } .sum b { color: var(--text); } .sum .amb { color: var(--amber); font-weight: 600; }
+
+/* the board */
+.board-scroll { overflow-x: auto; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 8px; min-width: 900px; align-items: start; }
+.col { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px; display: grid; gap: 8px; align-content: start; min-height: 260px; }
+.col-h { display: flex; align-items: center; gap: 6px; padding: 2px 4px 4px; font: 700 .72rem/1.2 var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.col-h .who { margin-left: auto; font: 600 .7rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--faint); }
+.card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: grid; gap: 5px; font-size: .84rem; cursor: pointer; text-align: left; width: 100%; }
+.card:hover, .card:focus-visible { border-color: var(--line-strong); outline: none; }
+.card.stuck { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber); }
+.card .t { color: var(--strong); font-weight: 600; line-height: 1.3; }
+.card .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font: 600 .7rem/1.55 var(--sans); white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+.pill.lane-ship { background: var(--green-soft); color: var(--green); } .pill.lane-look { background: var(--blue-soft); color: var(--blue); } .pill.lane-careful { background: var(--amber-soft); color: var(--amber); }
+.pill.lead { background: var(--violet-soft); color: var(--violet); }
+.pill.warn { background: var(--amber-soft); color: var(--amber); }
+.card .why { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.card .why b { color: var(--text); font-weight: 600; }
+.beat { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: 1px; }
+.beat.quiet { background: var(--amber); }
+.waiting { border: 1px dashed var(--line-strong); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .86rem; }
+.waiting .w { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.waiting .w .on { color: var(--amber); font-weight: 600; }
+
+/* the item window with its round trip */
+.scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); }
+.peek { position: absolute; top: 46px; right: 0; bottom: 0; width: min(440px, 100%); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0, 0, 0, .45); display: flex; flex-direction: column; }
+.peek-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 16px 18px 6px; }
+.peek-head .x { border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; cursor: pointer; }
+.peek-body { padding: 6px 18px 18px; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.sec { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.sec h3 { font: 700 .72rem/1 var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); padding: 10px 12px 0; }
+.sec .in { padding: 8px 12px 12px; display: grid; gap: 8px; }
+.trip-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .86rem; }
+.trip { list-style: none; margin: 0; padding: 0; display: grid; }
+.trip li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 2px 10px; padding: 0 0 12px; position: relative; font-size: .84rem; }
+.trip li::before { content: ""; position: absolute; left: 7px; top: 14px; bottom: 0; width: 2px; background: var(--line-strong); }
+.trip li:last-child::before { display: none; }
+.trip .m { width: 12px; height: 12px; border-radius: 50%; background: var(--green); margin-top: 3px; position: relative; z-index: 1; border: 2px solid var(--surface-2); box-sizing: content-box; }
+.trip li.now .m { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.trip li.todo .m { background: var(--surface-3); }
+.trip li.slow .m { background: var(--amber); }
+.trip .s b { color: var(--strong); }
+.trip .s .by { color: var(--faint); font-size: .76rem; }
+.trip .tm { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.trip .gap { grid-column: 2 / -1; color: var(--faint); font-size: .74rem; }
+.trip li.slow .gap { color: var(--amber); }
+.trip li.todo .s { color: var(--faint); }
+
+.why-box { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why-box .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+/* the three kinds of card: an icon and word, and a coloured edge (Brett: "some visual identification would be helpful") */
+:root { --k-feedback: #e07a9b; --k-feedback-soft: rgba(224, 122, 155, .15); --k-roadmap: #7ea6e0; --k-roadmap-soft: rgba(126, 166, 224, .16); --k-upkeep: #a5b0bd; --k-upkeep-soft: rgba(165, 176, 189, .14); }
+.card { border-left-width: 3px; }
+.card.k-feedback { border-left-color: var(--k-feedback); } .card.k-roadmap { border-left-color: var(--k-roadmap); } .card.k-upkeep { border-left-color: var(--k-upkeep); }
+.card.stuck { border-color: var(--amber); box-shadow: none; border-left-width: 3px; }
+.kind { display: inline-flex; align-items: center; gap: 4px; font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.kind svg { width: 13px; height: 13px; flex: none; }
+.kind.k-feedback { color: var(--k-feedback); } .kind.k-roadmap { color: var(--k-roadmap); } .kind.k-upkeep { color: var(--k-upkeep); }
+.inside { color: var(--muted); font-size: .76rem; }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.kinds .term .kind { font-size: .74rem; }
+.stage { display: flex; gap: 4px; align-items: center; font: 600 .74rem/1.2 var(--sans); color: var(--violet); } .stage i { font-style: normal; color: var(--faint); font-weight: 500; }
+/* the queue's end of the board: Waiting, each card saying what it waits on; and the try-it buttons */
+.col[data-col="waiting"] { background: transparent; border-style: dashed; border-color: var(--line-strong); }
+.col[data-col="waiting"] .card { background: var(--surface); opacity: .92; }
+.waits { display: inline-flex; align-items: center; gap: 4px; color: var(--amber); font-size: .76rem; font-weight: 600; }
+.queue-edge { position: relative; }
+.col[data-col="ready"] { box-shadow: inset 0 0 0 1px var(--blue-soft); }
+.play { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
+.play .lbl2 { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+.play .said { flex-basis: 100%; color: var(--text); font-size: .86rem; min-height: 1.4em; }
+.play .said b { color: var(--blue); }
+.card.just { outline: 2px solid var(--blue); outline-offset: 1px; }
+.flowfig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.flowfig svg { display: block; width: 100%; min-width: 980px; height: auto; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 760px) { .shell { grid-template-columns: minmax(0, 1fr); } .side { display: none; } .peek { top: 40%; width: 100%; border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23 · a mockup</span>
+    <h1>The Work Board</h1>
+    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece from Waiting to yours to try and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's. <b>Redrawn to match scope v4</b> (Nov 23): five columns, one session building at a time, no Pin, no filter; workers are the next batch.</p>
+    <div class="terms">
+      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › Development, a new first tab, Board, in place of the Queue tab (Waiting and Ready are the queue), beside Checks, Scheduled and How we work.</div>
+      <div class="term"><span class="tag">Answers</span>What's moving, what's stuck and why, who has it, and where any one thing is right now.</div>
+      <div class="term"><span class="tag">Doesn't change</span>Your importance order (the Roadmap) and For you, which stays what waits on you.</div>
+    </div>
+    <p class="meta"><b>What a card is:</b> one piece of work that ends in one pull request, whatever it came from. Three kinds, each marked by an icon, a word and the colour of its left edge. <b>No pull request without a card:</b> one opened with nothing behind it gets an Upkeep card by itself.</p>
+    <div class="kinds">
+      <div class="term"><span class="kind k-feedback" data-icon="feedback">Feedback</span>A fix or an improvement from a note (yours, the table's, or found on a check). One card per Product Area batch, its issues listed inside.</div>
+      <div class="term"><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span>A slice of a Roadmap item's build, once you've OK'd its scope. Names the item it belongs to.</div>
+      <div class="term"><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span>Work no one asked for that keeps askdnd healthy: the live test, package updates, the weekly phone sweep, a nightly that failed.</div>
+    </div>
+  </header>
+
+  <div class="app" id="app">
+    <div class="mbar"><span class="logo"></span><b>askdnd</b><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Party ▾</span><span class="sp"></span><b>Backstage ▾</b></div>
+    <div class="shell">
+      <nav class="side" aria-label="Backstage"><span class="h">Our work</span><span>For you</span><span>Feedback</span><span>Roadmap</span><span class="on">Development</span><span class="h">General</span><span>Overview</span><span>Product areas</span><span>Documents</span></nav>
+      <div class="page">
+        <h2 class="pt">Development</h2>
+        <div class="bar">
+          <div><span class="dot"></span><b>Claude is listening</b><span class="note">one session, checked in 1 min ago</span><span style="margin-left:auto" class="note">Deploys: <b>When tests pass</b> ▾</span></div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Development"><span class="tab on">Board <span class="new">new</span></span><span class="tab">Checks <span class="count">6</span></span><span class="tab">Scheduled</span><span class="tab">How we work</span></div>
+        <div class="legend"><span class="kind k-feedback" data-icon="feedback">Feedback</span><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span>
+          <span class="sum" id="sum" style="margin-left:auto"></span></div>
+        <div class="play" aria-label="Try the queue">
+          <span class="lbl2">Try it</span>
+          <button type="button" class="btn" data-play="claim">Claude asks for work</button>
+          <button type="button" class="btn" data-play="pr">Claude opens its pull request</button>
+          <button type="button" class="btn" data-play="ok">Your OK on issue 75</button>
+          <button type="button" class="btn" data-play="fail">A try fails: Something's wrong on check 79</button>
+          <button type="button" class="btn" data-play="quiet">Claude's claim goes quiet</button>
+          <button type="button" class="btn quiet" data-play="reset" style="margin-left:auto">Start over</button>
+          <span class="said" id="said" aria-live="polite">Press a button to see what askdnd does. Try Claude asks for work first: one piece at a time.</span>
+        </div>
+        <div class="board-scroll"><div class="board" id="board">
+          <section class="col" data-col="waiting"><div class="col-h">Waiting <span class="count" data-c="waiting"></span><span class="who">on a gate</span></div></section>
+          <section class="col" data-col="ready"><div class="col-h">Ready <span class="count" data-c="ready"></span><span class="who">my order</span></div></section>
+          <section class="col" data-col="building"><div class="col-h">Building <span class="count" data-c="building"></span><span class="who">Claude, one at a time</span></div></section>
+          <section class="col" data-col="shipping"><div class="col-h">Shipping <span class="count" data-c="shipping"></span><span class="who">review, merge, live</span></div></section>
+          <section class="col" data-col="yours"><div class="col-h">Yours to try <span class="count" data-c="yours"></span><span class="who">you</span></div></section>
+        </div></div>
+      </div>
+    </div>
+    <div class="scrim" id="scrim" hidden></div>
+    <aside class="peek" id="peek" hidden role="dialog" aria-labelledby="peek-t">
+      <div class="peek-head"><div><p class="note" id="peek-k">Issue 110 · Feedback and Testing › Where it stands</p><h3 id="peek-t" style="font:700 1.1rem/1.3 var(--sans)">Title</h3></div><button class="x" type="button" id="peek-x" aria-label="Close">✕</button></div>
+      <div class="peek-body">
+        <div class="sec"><h3>Where it is</h3><div class="in"><div class="trip-line" id="trip-line"></div></div></div>
+        <div class="sec"><h3>Its round trip</h3><div class="in"><ol class="trip" id="trip"></ol></div></div>
+        <p class="note">Every hop comes from askdnd's own record: who did what, when. Nothing here is typed by hand.</p>
+      </div>
+    </aside>
+  </div>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-qflow">
+    <h2 id="h-qflow">How the queue feeds the board</h2>
+    <div class="flowfig"><svg viewBox="0 0 1180 370" role="img" aria-label="Three sources fill the queue: notes become Feedback, an OK'd scope becomes Roadmap slices, and upkeep comes from failed jobs and pull requests with nothing behind them. Gates move work from Waiting to Ready; Ready is ordered: broken at the table first, then a fix to what just shipped, then Claude's order. Claude asks and askdnd hands over the top, one piece at a time. GitHub and Railway report each move after that. Three loops come back: a quiet claim returns to the front of Ready, a failed try files an issue that is Ready at once, and a review that finds a problem sends the work back to Building.">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a29d93"/></marker></defs>
+      <g font-family="Inter, system-ui, sans-serif" font-size="12">
+        <rect x="10" y="20" width="200" height="58" rx="9" fill="#2a1d24" stroke="#e07a9b"/><text x="24" y="44" fill="#e07a9b" font-weight="700">Feedback</text><text x="24" y="64" fill="#ebe7df">a note filed and sorted</text>
+        <rect x="10" y="94" width="200" height="58" rx="9" fill="#1b2230" stroke="#7ea6e0"/><text x="24" y="118" fill="#7ea6e0" font-weight="700">Roadmap</text><text x="24" y="138" fill="#ebe7df">your Scope looks right → slices</text>
+        <rect x="10" y="168" width="200" height="58" rx="9" fill="#23262b" stroke="#a5b0bd"/><text x="24" y="192" fill="#a5b0bd" font-weight="700">Upkeep</text><text x="24" y="212" fill="#ebe7df">a failed job, a PR with nothing behind</text>
+        <line x1="212" y1="49" x2="268" y2="110" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="212" y1="123" x2="268" y2="123" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="212" y1="197" x2="268" y2="136" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
+        <rect x="272" y="40" width="200" height="170" rx="10" fill="none" stroke="#e8b34b" stroke-dasharray="5 4"/><text x="288" y="66" fill="#e8b34b" font-weight="700">Waiting · the gates</text>
+        <text x="288" y="90" fill="#ebe7df">your go-ahead</text><text x="288" y="112" fill="#ebe7df">nothing it waits on open</text><text x="288" y="134" fill="#ebe7df">not in your round</text><text x="288" y="156" fill="#ebe7df">nobody holds it</text><text x="288" y="186" fill="#8f8a81" font-size="11">all four met → Ready</text>
+        <line x1="474" y1="125" x2="514" y2="125" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
+        <rect x="518" y="40" width="210" height="170" rx="10" fill="#1b2230" stroke="#7ea6e0"/><text x="534" y="66" fill="#7ea6e0" font-weight="700">Ready · in order</text>
+        <text x="534" y="90" fill="#ebe7df">1  broken at the table</text><text x="534" y="112" fill="#ebe7df">2  a fix to what just shipped</text><text x="534" y="134" fill="#ebe7df">3  my order, from your importance</text><text x="534" y="186" fill="#8f8a81" font-size="11">Claude asks → askdnd hands over the top</text>
+        <line x1="730" y1="125" x2="770" y2="125" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
+        <rect x="774" y="80" width="396" height="90" rx="10" fill="#231f2c" stroke="#b9a3e3"/><text x="790" y="106" fill="#b9a3e3" font-weight="700">The board</text>
+        <text x="790" y="130" fill="#ebe7df">Building → Shipping (review, merge, live) → Your try → Closed</text><text x="790" y="152" fill="#8f8a81" font-size="11">GitHub and Railway report each move; nothing typed by hand</text>
+        <path d="M1040,172 C1040,280 620,290 620,214" fill="none" stroke="#e07a9b" stroke-width="1.5" marker-end="url(#a)"/><circle cx="830" cy="268" r="9" fill="#e07a9b"/><text x="830" y="272" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">2</text>
+        <path d="M850,172 C850,232 690,240 690,214" fill="none" stroke="#e8b34b" stroke-width="1.5" marker-end="url(#a)"/><circle cx="770" cy="232" r="9" fill="#e8b34b"/><text x="770" y="236" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">1</text>
+        <path d="M985,78 C985,40 860,40 860,78" fill="none" stroke="#b9a3e3" stroke-width="1.5" marker-end="url(#a)"/><circle cx="922" cy="44" r="9" fill="#b9a3e3"/><text x="922" y="48" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">3</text>
+        <text x="272" y="236" fill="#8f8a81" font-size="11">Pause holds merging, not building · a round holds its area's merges</text>
+        <text x="10" y="312" fill="#e8b34b">1  Claude's claim goes quiet for 20 minutes → back to the front of Ready, its branch kept</text>
+        <text x="10" y="334" fill="#e07a9b">2  Your try fails → its issue is filed, already OK'd, and Ready at once, ahead of new work</text>
+        <text x="10" y="356" fill="#b9a3e3">3  The review finds a problem → back to Building</text>
+      </g>
+    </svg></div>
+    <p class="note">The queue is everything not started: Waiting, then Ready. The board is its front and everything in flight. Every move is askdnd applying a rule to a fact (your OK arrived, a claim went quiet, tests passed), so nothing moves because someone remembered to move it.</p>
+  </section>
+
+  <div class="why-box">
+    <span class="tag">How to read it</span>
+    <p class="meta"><b>Ready</b> is in my execution order, each card saying why in one line; your Roadmap order is the input, and if you want something first, you say so in chat or on the item. <b>Building</b> holds one piece, with my last check-in (any call I make to askdnd counts, so a long test run doesn't look quiet); quiet for 20 minutes, it turns amber and goes back to Ready. The Monday phone sweep's session claims its own Upkeep card the same way. <b>Shipping</b> is everything with a pull request, its step under the title (In review, Merging, Live and being tried by me). <b>Yours to try</b> holds both kinds of try: your local try before a merge (Careful, or Look while Deploys is After my local try) and a check once it's live. A merge held by Pause says so on its card. A red pull request, one behind main, a try waiting too long, or a Now item behind less important work for a week turns amber where it sits. Click a card for its round trip.</p>
+  </div>
+
+  <section class="why-box" aria-labelledby="h-settled">
+    <span class="tag" id="h-settled">Settled by the scope</span>
+    <p class="meta">This page first asked six picks. The scope (v2, then v4) answers them, so they're no longer yours to answer here:</p>
+    <ol class="meta" style="margin:0;padding-left:1.3em;display:grid;gap:4px">
+      <li><b>Where:</b> Development's first tab, Board.</li>
+      <li><b>A card:</b> its kind, title, one line of why, and amber when stuck; the round trip has the rest.</li>
+      <li><b>The round trip:</b> in every item's window, from askdnd's own record.</li>
+      <li><b>Ready's order:</b> mine, with its why. No Pin: you say “this first” in chat or on the item. A Now item behind less important work for a week turns amber.</li>
+      <li><b>The kinds:</b> icon, word and coloured edge. No filter, until the board is long enough to need one.</li>
+      <li><b>The Queue tab:</b> folded into the Board.</li>
+    </ol>
+  </section>
+
+  <form class="decide" aria-label="Your pick">
+    <h2>Your pick</h2>
+    <fieldset><legend>1 · The board as drawn</legend>
+      <label class="opt"><input type="radio" name="board" value="right"><span>A · Looks right: build it as scope v4 says <span class="mine">my pick</span></span><small>Then press Scope looks right on item 39, and I start with GitHub reporting into askdnd.</small></label>
+      <label class="opt"><input type="radio" name="board" value="change"><span>B · Something to change</span><small>Say what below; I'll answer it on item 39 and write scope v3.</small></label>
+    </fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(what you'd want on a card, a column you'd add or drop, what would make you trust it more)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my pick</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Today's real work, the times illustrative: each card and its round trip
+  const CARDS = [
+    { id: "i75", kind: "feedback", col: "waiting", t: "Fight reports numbered by the extension", k: "The table › The fight", inside: "Issue 75", lane: "careful", waits: "your OK" },
+    { id: "spd", kind: "roadmap", col: "waiting", t: "Speed: the slow pages", k: "Performance: the whole tool · slice 2 of 3", lane: "ship", waits: "a day of speed numbers (tomorrow)" },
+    { id: "it38", kind: "roadmap", col: "waiting", t: "Built vs. planned: the changes you pick", k: "Built vs. planned: review the deltas", lane: "look", waits: "your picks" },
+    { id: "i66", kind: "feedback", col: "ready", t: "Corner cards stay over the side panel", k: "Getting around › Corner cards", inside: "Issue 66", lane: "careful", why: "<b>Your Now.</b> First Ready; a Careful change, so one try on your Mac" },
+    { id: "it5", kind: "roadmap", col: "ready", t: "Design review: Documents", k: "Design review: every Backstage page · slice 1 of 8", lane: "look", why: "<b>Next in your Now.</b> After 66: both touch Backstage's lists, so one look covers both" },
+    { id: "lt1", kind: "upkeep", col: "ready", t: "Live test: the No Name twin and the fight run's leftovers", k: "The nightly test", inside: "Two nightly second tries, one script", lane: "ship", why: "<b>Groundwork, grouped.</b> Same script, one pull request; quiets the nightly" },
+    { id: "sp2", kind: "roadmap", col: "building", t: "Speed: database time per page", k: "Performance: the whole tool · slice 1 of 3", lane: "ship", since: "2:10 PM", beat: "1 min ago" },
+    { id: "i110", kind: "feedback", col: "shipping", stage: "review", t: "A pause lets what's on its way finish", k: "Feedback and Testing › Where it stands", inside: "Issue 110", lane: "look", pr: "479", since: "review at high effort, 4 min" },
+    { id: "ps", kind: "upkeep", col: "shipping", stage: "review", t: "Weekly phone sweep", k: "Every Monday", inside: "Documents and the More button at phone width", lane: "look", pr: "473", since: "opened 8:54 AM" },
+    { id: "i107", kind: "feedback", col: "shipping", stage: "merging", t: "Feedback's bar, and windows over the item window", k: "Feedback and Testing", inside: "Issues 107, 108, 109", lane: "look", pr: "477", since: "tests 4 min" },
+    { id: "dep", kind: "upkeep", col: "shipping", stage: "merging", t: "Package updates", k: "Dependabot", inside: "12 updates; Playwright's test image moved with it", lane: "ship", pr: "469", since: "red 16 h, fixed 8:40 AM" },
+    { id: "i106", kind: "feedback", col: "shipping", stage: "live", t: "End round ends the round on the bar", k: "Feedback and Testing › Testing", inside: "Issue 106", lane: "look", since: "live 11:07 AM" },
+    { id: "c78", kind: "feedback", col: "yours", t: "Feedback's bar, windows that keep the item window open", k: "Check 78 · laptop", inside: "Issues 107, 108, 109", lane: "look", since: "waiting 45 min" },
+    { id: "c79", kind: "feedback", col: "yours", t: "A pause lets what's on its way finish", k: "Check 79 · laptop", inside: "Issue 110", lane: "look", since: "waiting 10 min" },
+    { id: "c77", kind: "feedback", col: "yours", t: "End round ends the round on the bar", k: "Check 77 · laptop", inside: "Issue 106", lane: "look", since: "waiting 4 h", late: true },
+  ];
+  const HOPS = ["Sent", "Sorted", "Ready", "Claimed", "Pull request", "Review", "Merge", "Live", "Claude's try", "Your try", "Closed"];
+  const AT = { waiting: 1, ready: 2, building: 3, yours: 9 };  // (the hop each column is at; Shipping's comes from its step)
+  const STAGE = { review: [5, "In review"], merging: [6, "Merging"], live: [8, "Live"] };
+  const TRIP = {
+    i110: [["3:36 PM", "you, in chat"], ["3:37", "Claude"], ["3:38", "your Yes, build it"], ["3:39", "Claude"], ["4:02", "#479, from GitHub", "23 min building"], ["4:06", "Claude, high effort"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
+    c77: [["10:43 AM", "you, a note"], ["10:45", "Claude"], ["10:45", "your note's OK"], ["10:46", "Claude"], ["10:58", "#476, from GitHub"], ["11:01", "Claude, high effort"], ["11:05", "GitHub, tests 4 min"], ["11:07", "Railway"], ["11:10", "Claude, on askdnd.ai"], ["11:10", "", "waiting on you 4 h"], ["", ""]],
+  };
+  const board = document.getElementById("board");
+  const lanes = { ship: "Ship", look: "Look", careful: "Careful" };
+  const KIND = { feedback: "Feedback", roadmap: "Roadmap", upkeep: "Upkeep" };
+  const ICON = {  // (a speech bubble, a flag, a wrench)
+    feedback: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H7l-3.2 2.6c-.3.2-.8 0-.8-.4V11h0A1.5 1.5 0 0 1 2 9.5z" fill="currentColor"/></svg>',
+    roadmap: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5a.75.75 0 0 1 .75.75V3h7.4c.6 0 .9.7.5 1.1L10.4 6l1.75 1.9c.4.4.1 1.1-.5 1.1h-7.4v5.25a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75z" fill="currentColor"/></svg>',
+    upkeep: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 1.6a4 4 0 0 0-4.6 5.2L1.9 11.2a1.4 1.4 0 0 0 2 2l4.4-4.4a4 4 0 0 0 5.2-4.6l-2 2-1.9-.5-.5-1.9z" fill="currentColor"/></svg>',
+  };
+  document.querySelectorAll("[data-icon]").forEach(el => el.insertAdjacentHTML("afterbegin", ICON[el.dataset.icon]));
+  const hop = c => (c.col === "shipping" ? STAGE[c.stage][0] : AT[c.col]);
+  function cardEl(c) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = `card k-${c.kind}` + (c.quiet || c.late ? " stuck" : "") + (c.just ? " just" : ""); b.dataset.id = c.id;
+    let h = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="t">${c.t}</span>`;
+    if (c.col === "shipping") h += `<span class="stage">${STAGE[c.stage][1]}${c.stage === "live" ? " <i>· Claude is trying it on askdnd.ai</i>" : ""}</span>`;
+    h += `<span class="note">${c.k}</span>${c.inside ? `<span class="inside">${c.inside}</span>` : ""}<span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
+    if (c.pr) h += `<span class="pill">#${c.pr}</span>`;
+    h += `</span>`;
+    if (c.waits) h += `<span class="waits">waits for ${c.waits}</span>`;
+    if (c.why) h += `<span class="why">${c.why}</span>`;
+    if (c.beat) h += `<span class="note"><span class="beat${c.quiet ? " quiet" : ""}"></span>since ${c.since} · checked in ${c.beat}${c.quiet ? " · <b style=\"color:var(--amber)\">gone quiet</b>" : ""}</span>`;
+    else if (c.since) h += `<span class="note">${c.since}${c.late ? " · <b style=\"color:var(--amber)\">waiting long</b>" : ""}</span>`;
+    b.innerHTML = h;
+    return b;
+  }
+  const rank = c => (c.broken ? 0 : c.front ? 1 : 2);  // (broken at the table, a fix to what just shipped or a lapsed claim, then my order)
+  const readyOrder = () => CARDS.filter(c => c.col === "ready").map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+  function draw() {
+    board.querySelectorAll(".card").forEach(x => x.remove());
+    const rest = CARDS.filter(c => c.col !== "ready" && c.col !== "gone");
+    [...readyOrder(), ...rest].forEach(c => board.querySelector(`[data-col="${c.col}"]`).append(cardEl(c)));
+    document.querySelectorAll("[data-c]").forEach(el => { el.textContent = CARDS.filter(c => c.col === el.dataset.c).length; });
+    const n = col => CARDS.filter(c => c.col === col).length, amber = CARDS.filter(c => c.col !== "gone" && (c.quiet || c.late)).length;
+    document.getElementById("sum").innerHTML = `<b>${n("waiting")} waiting</b> · <b>${n("ready")} ready</b> · <b>${n("building") + n("shipping")} in hand</b>${amber ? ` · <span class="amb">${amber} need${amber === 1 ? "s" : ""} a look</span>` : ""} · ${n("yours")} yours to try`;
+  }
+  // Try it: what askdnd does when something happens (each move is askdnd's rule applied to a fact, not anyone's memory)
+  const START = JSON.stringify(CARDS), said = document.getElementById("said");
+  const say = html => { said.innerHTML = html; };
+  const fresh = () => CARDS.forEach(x => { x.just = false; });
+  const PLAY = {
+    claim() {
+      const busy = CARDS.find(c => c.col === "building");
+      if (busy) return say(`<b>One at a time:</b> Claude is still building “${busy.t}”, so askdnd hands out nothing new. Press <b>Claude opens its pull request</b> to free Building.`);
+      const c = readyOrder()[0];
+      if (!c) return say("Nothing is Ready, so nothing starts: askdnd says so, and Claude waits for the next thing to become Ready.");
+      fresh();
+      Object.assign(c, { col: "building", since: "now", beat: "just now", just: true, why: "", front: false, quiet: false });
+      say(`<b>Claude asked; askdnd handed over the top of Ready:</b> “${c.t}”. It records the claim; the card moves to Building. Claude didn't choose it.`);
+    },
+    pr() {
+      const c = CARDS.find(x => x.col === "building");
+      if (!c) return say("Nothing is in Building. Press <b>Claude asks for work</b> first.");
+      fresh();
+      Object.assign(c, { col: "shipping", stage: "review", pr: "480", since: "opened just now", beat: "", just: true });
+      say(`<b>GitHub told askdnd:</b> pull request 480 opened, linked to “${c.t}” by its branch name. The card moves to Shipping, In review; from here GitHub and Railway report each step. Building is free, so Claude can ask for the next.`);
+    },
+    ok() {
+      const c = CARDS.find(x => x.id === "i75");
+      if (c.col !== "waiting") return say("Issue 75 is already past Waiting.");
+      fresh();
+      Object.assign(c, { col: "ready", waits: "", just: true, why: "<b>Your OK just now.</b> Placed after your Now's two; a Careful change, so your try on your Mac first" });
+      CARDS.splice(CARDS.indexOf(c), 1); CARDS.splice(CARDS.findIndex(x => x.id === "it5") + 1, 0, c);  // (into my order, not to the top)
+      say("<b>Your OK met the last gate:</b> issue 75 moves from Waiting to Ready, placed in my order with its reason. Nothing else had to happen.");
+    },
+    fail() {
+      const c = CARDS.find(x => x.id === "c79");
+      if (!c || c.col !== "yours") return say("Check 79 has already gone back.");
+      fresh();
+      c.col = "gone";
+      CARDS.push({ id: "i111", kind: "feedback", col: "ready", t: "Pause: the bar's line wraps oddly", k: "Feedback and Testing › Where it stands", inside: "Issue 111, from your try of check 79", lane: "look", just: true, front: true,
+                   why: "<b>Your try found it.</b> A fix to something just shipped goes ahead of new work" });
+      say("<b>Your Something's wrong… filed issue 111</b> with your words and picture, already OK'd (it's yours), so it's Ready at once, ahead of new work; check 79 leaves your column until the fix is live.");
+    },
+    quiet() {
+      const c = CARDS.find(x => x.col === "building");
+      if (!c) return say("Nothing is in Building, so no claim can go quiet.");
+      fresh();
+      Object.assign(c, { col: "ready", beat: "", just: true, front: true, why: "<b>Back from Claude</b> (quiet 20 min, the session ended mid-work): first in line, its branch kept" });
+      say("<b>The claim lapsed after 20 quiet minutes:</b> askdnd put the piece back at the front of Ready, its branch kept, and said so on the bar. The next time Claude asks, it gets this one.");
+    },
+    reset() { CARDS.splice(0, CARDS.length, ...JSON.parse(START)); say("Back to the start. Press a button to see what askdnd does."); },
+  };
+  document.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => { PLAY[b.dataset.play](); draw(); }));
+  const peek = document.getElementById("peek"), scrim = document.getElementById("scrim");
+  function open(id) {
+    const c = CARDS.find(x => x.id === id);
+    const at = hop(c);
+    document.getElementById("peek-t").textContent = c.t;
+    document.getElementById("peek-k").textContent = c.k;
+    const stuckNote = c.quiet ? " · gone quiet" : c.late ? " · waiting long" : "";
+    document.getElementById("trip-line").innerHTML = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="pill lane-${c.lane}">${lanes[c.lane]}</span><b>${HOPS[at]}</b><span class="note">step ${at + 1} of ${HOPS.length}${stuckNote}</span>`;
+    const trip = TRIP[id] || HOPS.map((_, i) => [i < at ? ["9:14 AM", "9:15", "9:16", "9:40", "10:20", "10:24", "10:28", "10:31", "10:35"][i] || "" : "", i < at ? ["you", "Claude", "askdnd", "Claude", "GitHub", "Claude", "GitHub", "Railway", "Claude"][i] || "" : ""]);
+    const ol = document.getElementById("trip");
+    ol.innerHTML = HOPS.map((h, i) => {
+      const [tm, by, gap] = trip[i] || ["", ""];
+      const state = i < at ? "" : i === at ? "now" : "todo";
+      const slow = gap && /quiet|waiting/.test(gap) ? " slow" : "";
+      return `<li class="${state}${slow}"><span class="m"></span><span class="s"><b>${h}</b>${by ? ` <span class="by">${by}</span>` : ""}</span><span class="tm">${tm}</span>${gap ? `<span class="gap">${gap}</span>` : ""}</li>`;
+    }).join("");
+    peek.hidden = false; scrim.hidden = false;
+  }
+  function close() { peek.hidden = true; scrim.hidden = true; }
+  board.addEventListener("click", e => { const card = e.target.closest(".card"); if (card) open(card.dataset.id); });
+  document.getElementById("peek-x").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+  addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or a Roadmap item's page), askdnd keeps them as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["board"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

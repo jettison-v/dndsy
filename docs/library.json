@@ -9,9 +9,18 @@
   "link": ""
  },
  {
+  "title": "The Work Board",
+  "kind": "design",
+  "status": "Your pick: redrawn for scope v4",
+  "date": "Nov 23",
+  "what": "Roadmap item 39, as scope v4 settles it: Development's Board in five columns (Waiting, Ready in Claude's order with a one-line why, Building one piece at a time, Shipping through review, merge and live, Yours to try), three kinds of card (Feedback, Roadmap, Upkeep), amber when stuck, and each piece's round trip. Try-it buttons show askdnd's moves; a diagram shows the gates and the loops back. One pick: build it as drawn.",
+  "source": "docs/mockups/work-board/index.html",
+  "link": "https://claude.ai/artifact/NY5pTLjXiBBubeH772479J"
+ },
+ {
   "title": "How the work flows",
   "kind": "plan",
-  "status": "Your picks",
+  "status": "Settled by scope v2, Nov 23",
   "date": "Nov 23",
   "what": "Roadmap item 39, A sturdier loop: askdnd as the dispatcher (queue, states, gates, timers), a lead session and short-lived workers, the life of one piece of work, the chat setups argued (including standing expert chats and a listener chat), channels as a plug-in delivery, a build order, and five picks.",
   "source": "docs/mockups/loop-architecture/index.html",
@@ -22,7 +31,7 @@
   "kind": "design",
   "status": "Your picks",
   "date": "Nov 21",
-  "what": "Issues 59, 60 and 61: a Roadmap item's page laid out for a laptop, drawn with Homebrew items (no scope) and Clearer checks (scope v3): reading-size type, labelled facts, a short why, the design system's tab bar, Scope it on an item with no scope, and ⋯ opening toward the page. Four picks.",
+  "what": "Issues 59, 60 and 61: a Roadmap item's page laid out for a laptop, drawn with Homebrew items (no scope) and Clearer checks (scope v3): reading-size type, labelled facts, a short why, the design system's tab bar, Scope it on an item with no scope, and ⋯ opening toward the page. Five picks.",
   "source": "docs/mockups/roadmap-item-page/index.html",
   "link": "https://claude.ai/artifact/3cQkMfWPVwHUXX178MJboC"
  },
@@ -1543,7 +1552,7 @@
   "kind": "design",
   "status": "Picked; built (slice 4)",
   "date": "Nov 20",
-  "what": "For you, Work and Feedback rebuilt in Backstage mode from how Linear, Jira, GitHub, TestRail and Productboard organize the same work: an inbox that says why, a queue of plans that own their issues and test rounds, triage, and one window for any item. Four picks.",
+  "what": "For you, Work and Feedback rebuilt in Backstage mode from how Linear, Jira, GitHub, TestRail and Productboard organize the same work: an inbox that says why, a queue of plans that own their issues and test rounds, triage, and one window for any item. Five picks.",
   "source": "docs/mockups/work-pages/index.html",
   "link": "https://claude.ai/artifact/SVw8N2c3o3saRDpr2WZfna"
  },
@@ -1561,7 +1570,7 @@
   "kind": "design",
   "status": "Replaced by The Work Pages, Nov 20",
   "date": "Nov 20",
-  "what": "Slice 4 drawn before it's built: Work as its own page with the cut line, Scheduled work and How we work; how For you, Work and Feedback connect; a link to one item opens it in a window (issue 44); issues 45 and 46 drawn fixed. Four picks.",
+  "what": "Slice 4 drawn before it's built: Work as its own page with the cut line, Scheduled work and How we work; how For you, Work and Feedback connect; a link to one item opens it in a window (issue 44); issues 45 and 46 drawn fixed. Five picks.",
   "source": "docs/mockups/work-page/index.html",
   "link": "https://claude.ai/artifact/Cti4BWM96jGf9HStrT5Q6E"
  },
@@ -1597,7 +1606,7 @@
   "kind": "design",
   "status": "Your picks",
   "date": "Nov 21",
-  "what": "Issue 24: comment on any part of a mockup in the window askdnd opens it in (a pin where you click, a column of comments with Claude's answers), each comment a line in the question's issue the moment it's sent; drawn with the Split… mockup inside. Four picks.",
+  "what": "Issue 24: comment on any part of a mockup in the window askdnd opens it in (a pin where you click, a column of comments with Claude's answers), each comment a line in the question's issue the moment it's sent; drawn with the Split… mockup inside. Five picks.",
   "source": "docs/mockups/mockup-comments/index.html",
   "link": "https://claude.ai/artifact/HcBwagafNNy5itfA2wEatZ"
  },

@@ -101,6 +101,10 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
   <header class="lede">
     <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23</span>
     <h1>How the work flows: askdnd runs it, Claude works it</h1>
+    <div class="answer" style="border-color:var(--amber);background:var(--amber-soft)" data-settled>
+      <span class="tag">Settled · Nov 23</span>
+      <p><b>Scope v2 settles this page; there's nothing here for you to answer.</b> After your devil's-advocate ask, it kept askdnd as the queue and its Ready rules, and your importance with my execution order. It cut the rest for now: workers, the dispatcher starting sessions, channels, and the Mac Mini paging you. One session builds one piece at a time, and askdnd learns from GitHub and Railway by itself. Those parts come back once the board shows the one session is the bottleneck. What it looks like now: <b>The Work Board</b> (Backstage › Global › Documents). This page stays as the record of the options weighed.</p>
+    </div>
     <p class="note">You asked for the architecture first, a picture of it, the chat setup, and real pushback. Your idea was expert chats per Product Area, a listener chat that hands work out, and me as architect and reviewer. This page is my answer, with picks at the bottom.</p>
     <div class="answer">
       <span class="tag">In short</span>
@@ -408,6 +412,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
 
   <form class="decide" aria-label="Your picks">
     <h2>Your picks</h2>
+    <p class="note" data-settled><b>Settled by scope v2:</b> 1 A (askdnd hands out the work), 2 C (one session, made sturdier), 3 C (one piece at a time, for now), 4 A (askdnd's bookkeeping first; workers only if the board shows the need), 5 A (you set importance, I set the execution order). Nothing to pick here.</p>
     <fieldset><legend>1 · Who hands out the work</legend>
       <label class="opt"><input type="radio" name="dispatch" value="askdnd"><span>A · askdnd, by its rules <span class="mine">my pick</span></span><small>Ready gates, one order, claims with heartbeats. Deterministic, always on, and you can see it.</small></label>
       <label class="opt"><input type="radio" name="dispatch" value="chat"><span>B · A listener chat that distributes</span><small>Flexible judgment, but it can only act during a turn and can go quiet unseen.</small></label>
