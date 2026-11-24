@@ -24,6 +24,7 @@ from app.fft.models import (
     FftPicture,
     FftPull,
     FftQuestion,
+    FftTry,
 )
 from app.models import Character
 
@@ -119,7 +120,10 @@ def check_view(db: Session, check: FftCheck) -> dict:
             "path": v.path if v else "", "steps": v.steps if v else [], "expect": v.expect if v else "", "why": v.why if v else "",
             "before": v.before if v else "", "now": v.now if v else "", "people": check.people,
             "preflight": check.preflight, "retired": check.retired, **rules.check_state(db, check),
-            "issues": list(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == check.id)))}
+            "issues": list(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == check.id))),
+            "tries": [{"id": t.id, "version": t.version, "result": t.result, "cant": t.cant_kind, "why": t.why, "device": t.device,
+                       "where": t.where, "at": t.created_at.isoformat() if t.created_at else ""}  # (what was said with a mark reaches Claude:
+                      for t in db.scalars(select(FftTry).where(FftTry.check_id == check.id).order_by(FftTry.id.desc()).limit(3))]}  # "the check is wrong" with why, Nov 24)
 
 
 # ------------------------------------------------------------------ reading
