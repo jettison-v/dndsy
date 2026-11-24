@@ -268,6 +268,28 @@ def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_d
     page.wait_for_function("!document.querySelector('[data-doc-comments] .doc-comment.held')")  # (sent: no longer held)
 
 
+def test_a_comment_made_on_claude_ai_is_pinned_by_its_words(people, server, browser_db):
+    """Item 39, 6 of 6: a comment brought in from claude.ai has no spot, only the words it was pinned to; askdnd lists it
+    as made on claude.ai and pins it at those words on the mockup."""
+    from app.documents import doc_id
+
+    path = "docs/mockups/work-board/index.html"  # (a mockup no other test pins)
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO fft_doc_comments (doc, page, n, x, y, near, words, origin, ext_id, workspace_id) VALUES "
+                          "(:p, '', 1, 0, 0, 'How the queue feeds the board', 'Shorter, please.', 'claude.ai', 't1:1', 1)"), {"p": path})
+    engine.dispose()
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")  # (the test's own watcher, reading storage inside the sealed frame)
+    page = admin.open(f"/manage/documents/{doc_id(path)}")
+    page.locator('[data-doc-comments] [data-origin="claude.ai"]').wait_for()
+    frame = page.frame_locator("iframe.doc-frame")
+    pin = frame.locator('.askdnd-pin[data-n="1"]')
+    pin.wait_for()
+    at, h1 = pin.bounding_box(), frame.locator("#h-qflow").bounding_box()
+    assert abs(at["y"] - h1["y"]) < 50 and abs(at["x"] - h1["x"]) < 50 and at["y"] > 1000  # (at the words, drawn just above them as every pin is; not the corner)
+
+
 def test_a_mockup_draws_its_own_picture_for_a_note(people, browser_db):
     """Issue 103 (Brett's note, Nov 23): a note's screenshot came out blank where a mockup was, as askdnd can't read
     inside its sealed frame; the frame's layer draws what it shows and hands the picture back."""

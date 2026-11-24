@@ -26,13 +26,30 @@
     return true;
   };
   const wide = () => Math.max(document.documentElement.scrollWidth, 1);
+  // A comment made on claude.ai has no spot, only the words it was pinned to (item 39, 6 of 6): it goes by those words
+  const byWords = (near) => {
+    const want = String(near || '').trim().slice(0, 60);
+    if (!want) return null;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || el.closest('[data-askdnd-pins], script, style, template, title, noscript')) continue;  // (words a person sees, never a script's)
+      if (t.nodeValue && t.nodeValue.includes(want)) {
+        const r = el.getBoundingClientRect();
+        if (!r.width && !r.height) continue;
+        return { x: (r.left + scrollX) / wide(), y: r.top + scrollY };
+      }
+    }
+    return null;
+  };
   const pinAt = (p, kind) => {
     const pin = document.createElement('span');
     pin.className = 'askdnd-pin' + kind;
     pin.textContent = String(p.n);
     if (kind === ' draft') pin.dataset.draft = String(p.n); else pin.dataset.n = String(p.n);
-    pin.style.left = (Number(p.x) * wide()) + 'px';
-    pin.style.top = Number(p.y) + 'px';
+    const at = (p.near && byWords(p.near)) || p;
+    pin.style.left = (Number(at.x) * wide()) + 'px';
+    pin.style.top = Number(at.y) + 'px';
     return pin;
   };
   const draw = () => {

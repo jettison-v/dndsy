@@ -1,6 +1,6 @@
 {# Comments pinned to a mockup (issue 24, Brett's picks Nov 21, docs/mockups/mockup-comments/; app/fft/testing_page.py
    `comments_rail`): the column beside the mockup, a numbered row per pin. Yours are held until Save my picks, which sends
-   them with your answer; then they say so. Comment (in the window's head) turns the mockup into a pin board: app.js
+   them with your answer; then they say so. Those made on claude.ai come in when Claude checks in (item 39, 6 of 6). Comment (in the window's head) turns the mockup into a pin board: app.js
    "comments on a mockup" and app/static/doc-layer.js. #}
 <aside class="doc-comments" data-doc-comments="{{ doc }}" data-open="{{ 'yes' if open else 'no' }}" data-pins="{{ pins | tojson | forceescape }}" aria-labelledby="doc-comments-h">
   <h2 class="doc-comments-h" id="doc-comments-h">Comments <span class="note">· {{ comments | length }}</span></h2>
@@ -15,7 +15,8 @@
   <article class="doc-comment{{ ' held' if not c.sent_at }}" data-comment="{{ c.id }}" data-pin="{{ c.n }}">
     <p class="doc-comment-where"><span class="doc-pin-n" aria-hidden="true">{{ c.n }}</span>{% if c.near %}<span class="note">near “{{ c.near }}”</span>{% else %}<span class="note">Pin {{ c.n }}</span>{% endif %}</p>
     <p class="doc-comment-words">{{ c.words }}</p>
-    {% if c.sent_at %}<p class="note">Sent with your picks · <time datetime="{{ c.sent_at.isoformat() }}" data-clock="ago">{{ c.sent_at | ago }}</time></p>
+    {% if c.origin == "claude.ai" %}<p class="note" data-origin="claude.ai">Made on claude.ai{% if c.made_at %} · <time datetime="{{ c.made_at.isoformat() }}" data-clock="ago">{{ c.made_at | ago }}</time>{% endif %}{% if not c.sent_at %} · goes with your picks{% endif %}</p>{# (brought in when Claude checks in: item 39, 6 of 6) #}
+    {% elif c.sent_at %}<p class="note">Sent with your picks · <time datetime="{{ c.sent_at.isoformat() }}" data-clock="ago">{{ c.sent_at | ago }}</time></p>
     {% else %}<p class="row tight"><span class="note">Goes with your picks</span><button class="btn link small" type="button" data-comment-drop="{{ c.id }}">Take back</button></p>{% endif %}
   </article>
   {% endfor %}
