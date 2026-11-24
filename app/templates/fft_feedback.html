@@ -17,30 +17,49 @@
     <a href="?tab=approve" class="{{ 'on' if tab == 'approve' }}" data-tab="approve">To sort{{ count_pill(counts["approve"]) }}</a>
     <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues">Issues{{ count_pill(counts["open"]) }}</a>
   </nav>
-  {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}
-  {% elif issues_on %}<div class="fb-kind-chips fft-views" role="group" aria-label="Show issues" data-views>
-    {% for key, label in (("open", "Open"), ("ready", "Ready to try")) %}<a href="?tab={{ key }}" class="chip{{ ' on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="true"{% endif %}>{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
-  </div>{% endif %}
   {% set g = grouped %}
-  {% macro here_with(chip_=chip, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
-  {% if g %}
-  {# The Product Taxonomy (Brett chose A on docs/mockups/product-taxonomy/): a chip per Product Area with work here; the
-     Features of the one pressed hang under it as a tray, not a second line of areas (Brett's comment on the mockup). #}
-  <div class="fb-kind-chips" role="group" aria-label="Show only">
-    {% for k, label in (("fix", "Fixes"), ("improvement", "Improvements"), ("players", "From players"), ("checks", "Found on a check")) %}<a href="{{ here_with(chip_=("" if k == chip else k)) }}" class="chip{{ ' on' if k == chip }}" data-chip="{{ k }}"{% if k == chip %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  {% macro here_with(tab_=tab, chip_=chip, area_=area, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab_ }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area_ %}&amp;area={{ area_ }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
+  {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}{% endif %}
+  {% if issues_on %}
+  {# Feedback's filters on one row (Brett's pick P1 A on docs/mockups/our-work-audit/, Nov 24): Open · Ready to try as the
+     two-way switch, then the design system's Filters ▾ (filters_above's button, its chip groups and its pills) as links,
+     since this list is filtered by the server: kind, who found it and Product Area (the picked one's Features hang under
+     it, Brett's comment on docs/mockups/product-taxonomy/) open under it as a menu, so the list starts under the row; what's
+     on shows beside it as pills with their ×, and Clear. #}
+  {% set kinds = (("fix", "Fixes"), ("improvement", "Improvements")) %}
+  {% set sources = (("players", "From players"), ("checks", "Found on a check")) %}
+  {% set on_n = (1 if chip else 0) + (1 if area else 0) + (1 if g and g.pa else 0) + (1 if g and g.feature else 0) %}
+  <div class="ls-above-row fft-filter-row" data-filter-row>
+    {% if tab != "closed" %}<span class="seg" role="group" aria-label="Show issues" data-views>
+      {% for key, label in (("open", "Open"), ("ready", "Ready to try")) %}<a href="{{ here_with(tab_=key) }}" data-tab="{{ key }}"{% if key == tab %} aria-current="true"{% endif %}>{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
+    </span>{% endif %}
+    {% if g %}
+    <details class="act-more fft-filter" data-filter-menu>
+      <summary class="ls-above-btn" aria-label="Filters">Filters {% if on_n %}<span class="ls-above-n">{{ on_n }}</span> {% endif %}<span class="ls-above-chev" aria-hidden="true"></span></summary>
+      <div class="act-menu fft-filter-menu" role="group" aria-label="Filters">
+        {% for label, opts in (("Kind", kinds), ("Who found it", sources)) %}
+        <div class="ls-group" role="group" aria-label="{{ label }}"><span class="ls-label">{{ label }}</span>
+          <span class="ls-chips">{% for k, said in opts %}<a class="ls-chip" href="{{ here_with(chip_=("" if k == chip else k)) }}" data-chip="{{ k }}" aria-pressed="{{ 'true' if k == chip else 'false' }}">{{ said }}</a>{% endfor %}</span>
+        </div>
+        {% endfor %}
+        {% if g.chips %}
+        <div class="ls-group" role="group" aria-label="Product Area" data-pa-chips><span class="ls-label">Product Area</span>
+          <span class="ls-chips">{% for c in g.chips %}{% set on = g.pa and g.pa.key == c.a.key %}<a class="ls-chip" href="{{ here_with(pa_=("" if on else c.a.key), feat_="") }}" data-pa="{{ c.a.key }}" aria-pressed="{{ 'true' if on else 'false' }}">{{ c.a.title }}{{ count_pill(c.n) }}</a>{% endfor %}</span>
+          {% if g.pa and g.feats %}<div class="fft-filter-feats" role="group" aria-label="{{ g.pa.title }}'s features" data-feat-tray="{{ g.pa.key }}"><span class="ls-label">{{ g.pa.title }}'s features</span>
+            <span class="ls-chips">{% for x in g.feats %}<a class="ls-chip" href="{{ here_with(feat_=("" if g.feature == x.f.key else x.f.key)) }}" data-feature="{{ x.f.key }}" aria-pressed="{{ 'true' if g.feature == x.f.key else 'false' }}">{{ x.f.title }}{{ count_pill(x.n) }}</a>{% endfor %}</span>
+          </div>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </details>
+    {% set chip_said = dict(kinds + sources) %}
+    {% if chip %}<a class="ls-pill" href="{{ here_with(chip_="") }}" data-filter-on="chip" aria-label="Remove {{ chip_said[chip] }}"><span>{{ chip_said[chip] }}</span><i aria-hidden="true">×</i></a>{% endif %}
+    {% if area %}<a class="ls-pill" href="{{ here_with(area_=0) }}" data-filter-on="area" aria-label="Remove {{ area_said or "this build" }}"><span>{{ area_said or "This build" }}</span><i aria-hidden="true">×</i></a>{% endif %}{# (a build's own issues, as its Where it stands links them) #}
+    {% if g.pa %}<a class="ls-pill" href="{{ here_with(pa_="", feat_="") }}" data-filter-on="pa" aria-label="Remove {{ g.pa.title }}"><span>{{ g.pa.title }}</span><i aria-hidden="true">×</i></a>{% endif %}
+    {% for x in g.feats if x.f.key == g.feature %}<a class="ls-pill" href="{{ here_with(feat_="") }}" data-filter-on="feature" aria-label="Remove {{ x.f.title }}"><span>{{ x.f.title }}</span><i aria-hidden="true">×</i></a>{% endfor %}
+    {% if on_n %}<a class="btn link small ls-clear" href="{{ here_with(chip_="", area_=0, pa_="", feat_="") }}" data-filter-clear>Clear</a>{% endif %}
+    {% endif %}
   </div>
-  {% if g.chips %}
-  {% set every_n = g.chips | sum(attribute="n") %}
-  <div class="fb-kind-chips fft-pa-chips" role="group" aria-label="Product Area" data-pa-chips>
-    <a href="{{ here_with(pa_="", feat_="") }}" class="chip{{ ' on' if not g.pa }}" data-pa=""{% if not g.pa %} aria-current="true"{% endif %}>Every Product Area{{ count_pill(every_n + g.unsorted) }}</a>
-    {% for c in g.chips %}<a href="{{ here_with(pa_=("" if g.pa and g.pa.key == c.a.key else c.a.key), feat_="") }}" class="chip{{ ' on' if g.pa and g.pa.key == c.a.key }}" data-pa="{{ c.a.key }}"{% if g.pa and g.pa.key == c.a.key %} aria-current="true"{% endif %}>{{ c.a.title }}{{ count_pill(c.n) }}</a>{% endfor %}
-  </div>
-  {% if g.pa %}
-  <div class="fb-kind-chips fft-feat-tray" role="group" aria-label="{{ g.pa.title }}'s features" data-feat-tray="{{ g.pa.key }}">
-    <span class="fft-feat-of">{{ g.pa.title }}'s features ›</span>
-    {% for x in g.feats %}<a href="{{ here_with(feat_=("" if g.feature == x.f.key else x.f.key)) }}" class="chip{{ ' on' if g.feature == x.f.key }}" data-feature="{{ x.f.key }}"{% if g.feature == x.f.key %} aria-current="true"{% endif %}>{{ x.f.title }}{{ count_pill(x.n) }}</a>{% endfor %}
-  </div>
-  {% endif %}{% endif %}
   {% endif %}
 
   {% if not rows %}{{ empty_state({"approve": "Nothing waits for your approval.", "open": "Nothing open. Press \\ on any page to send a note.", "ready": "Nothing ready to try.", "closed": "Nothing closed yet.", "ideas": "No ideas yet."}[tab]) }}{% else %}
