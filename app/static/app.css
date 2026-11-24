@@ -1602,11 +1602,12 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Work (app/fft/work_page.py, fft_work.html, fft_plan.html; The Work Pages, Nov 20): the plans as a table, a group row
    per Roadmap item (dragged by its grip, its plans by theirs), the cut line, held plans under it */
 .dtable .dt-w0 { width: 40px; }
-/* The Board (item 39; _board.html, Development's first tab and the design system): five columns of cards, scrolled
-   sideways in their own box when the window is narrow, stacked on a tablet or phone. A card's left edge and tag say its
+/* The Board (item 39; _board.html, Development's first tab and the design system): five columns of cards side by side
+   while the Board's own box has room for them (860px), stacked when it doesn't; never scrolled sideways, so Yours to
+   try is always in view. A card's left edge and tag say its
    kind; amber when it's stuck. */
-.bd-scroll { overflow-x: auto; }
-.bd-board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: var(--sp-2); align-items: start; min-width: 1060px; }
+.bd-scroll { container-type: inline-size; }
+.bd-board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); align-items: start; }
 .bd-col { display: grid; gap: var(--sp-2); align-content: start; min-width: 0; min-height: 160px; padding: var(--sp-2); border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line-soft); }
 .bd-col[data-col="waiting"] { background: transparent; border-style: dashed; border-color: var(--line-strong); }
 .bd-head { display: flex; align-items: center; gap: var(--sp-1); padding: 0 var(--sp-1); color: var(--muted); font-size: var(--fs-sm); }
@@ -1628,7 +1629,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .bd-why { color: var(--text); }
 .bd-foot { display: flex; gap: var(--sp-1); align-items: center; flex-wrap: wrap; }
 .bd-stuck-sum { color: var(--amber); font-weight: 600; }
-@media (max-width: 900px) { .bd-board { grid-template-columns: minmax(0, 1fr); min-width: 0; } }
+@container (max-width: 860px) { .bd-board { grid-template-columns: minmax(0, 1fr); } }  /* (by the Board's own width: Table rolls open beside it on a laptop, a tablet, a phone) */
 .wk-queue .grip { cursor: grab; color: var(--faint); vertical-align: -2px; }
 .wk-plan.is-next td:first-child { box-shadow: inset 3px 0 0 var(--violet); }  /* (Claude's next: its edge violet, as on the old Where it stands) */
 .wk-plan .wk-name { color: var(--text-strong); text-decoration: none; }
