@@ -120,13 +120,16 @@ async def lifespan(app: FastAPI):
     from app.fft import nudge  # an email to the admins when nobody's listening (app/fft/nudge.py; item 42)
 
     nudging = asyncio.create_task(nudge.loop()) if nudge.enabled() and listener is not None else None
+    from app.fft import sentry_in  # new Sentry errors filed as issues, once a day (app/fft/sentry_in.py; item 42)
+
+    filing = asyncio.create_task(sentry_in.loop()) if sentry_in.enabled() and listener is not None else None
     from app import speed  # each page's time, saved; the weekly look at the slowest (app/speed.py)
 
     timing_saved = asyncio.create_task(speed.loop()) if listener is not None else None
     releasing = asyncio.create_task(release_when_live()) if config.running_version() and listener is not None else None
     yield
     await reparsing
-    for task in (listener, reading, mailing, nudging, timing_saved, releasing):
+    for task in (listener, reading, mailing, nudging, filing, timing_saved, releasing):
         if task:
             task.cancel()
 
