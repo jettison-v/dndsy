@@ -365,6 +365,9 @@ def check(a) -> None:
     for n, s in enumerate(c["steps"], 1):
         print(f"  {n}. {s}")
     print(f"  Expect: {c['expect']}")
+    for t in c.get("tries") or []:  # (the latest marks, newest first, with what was said: a "the check is wrong" says why)
+        said = {"cant": f"can't ({t.get('cant') or 'later'})"}.get(t["result"], t["result"])
+        print(f"  Marked {said} on the {t['device']} ({t['where']}, v{t['version']}, {t['at'][:16]})" + (f": «{t['why']}»" if t.get("why") else ""))
 
 
 def ask(a) -> None:
