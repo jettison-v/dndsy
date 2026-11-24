@@ -21,6 +21,7 @@ def test_a_name_in_apply_tos_list_opens_the_hit_points_window(people, server, br
     engine.dispose()
     try:
         dm = people("dm")
+        dm.open("/c/main/campaign")  # (Table rolls lists the campaign last opened: another file on this worker may have left the DM in its own; issue 112)
         page = battle(dm, server)
         if page.evaluate("document.body.classList.contains('rolls-closed')"):
             page.locator(".rs-edge").click()
@@ -59,6 +60,7 @@ def test_healing_applied_moves_its_roll_up_but_throws_no_dice_and_the_hit_points
     first = roll("Cure Wounds")
     try:
         dm = people("dm")
+        dm.open("/c/main/campaign")  # (Table rolls lists the campaign last opened: issue 112)
         page = battle(dm, server)
         if page.evaluate("document.body.classList.contains('rolls-closed')"):
             page.locator(".rs-edge").click()
