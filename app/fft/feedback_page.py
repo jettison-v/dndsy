@@ -262,7 +262,7 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
         listed = grouped["rows"]
     pick = open if open[:1] in ("n", "i", "d") and open[1:].isdigit() else ""  # (an old link to one item: it opens in the item window)
     return templates.TemplateResponse(request, "fft_feedback.html", {
-        "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "chip": chip, "area": area, "pa": pa, "feature": feature,
+        "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "chip": chip, "area": area, "area_said": keyed.title if area and keyed is not None else "", "pa": pa, "feature": feature,
         "grouped": grouped, "taxonomy": taxonomy.areas(), "from_": from_key(tab, chip, area, pa, feature),
         "status": testing_page.status(db),  # (the bar every Our work page has: issue 109)
         "toast": request.session.pop("toast", None)})

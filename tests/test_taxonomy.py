@@ -156,6 +156,30 @@ def test_feedback_groups_issues_by_product_area_and_change_moves_one(db, admin):
     assert 'data-pa="battle"' in admin.get(f"/manage/feedback?tab=open&area={batch.id}").text  # (Where it stands' Open link)
 
 
+def test_feedbacks_filters_are_one_row_and_each_one_on_is_a_pill_clear_takes_off(db, admin):
+    """Brett's pick P1 A (docs/mockups/our-work-audit/, Nov 24): Open · Ready to try, Filters ▾ and what's on, one row;
+    each filter that's on is a pill whose × takes it off, a build's own list (Where it stands' link) too, and Clear takes
+    them all off."""
+    hp = rules.new_issue(db, "claude", "Temp HP box is cramped", feature="hp")
+    it = rules.new_item(db, "claude", "A build", section="now")
+    db.flush()
+    plan = rules.new_area(db, "claude", it, "A build: the build")
+    db.flush()
+    built = rules.new_issue(db, "claude", "Its button is off", area_id=plan.id)
+    db.flush()
+    page = admin.get("/manage/feedback?tab=open").text
+    row = page.split("data-filter-row", 1)[1].split("</details>", 1)[0]
+    assert 'data-views' in row and 'data-filter-menu' in row and 'data-chip="fix"' in row and 'data-pa="battle"' in row
+    assert "data-filter-on" not in page and "data-filter-clear" not in page  # (nothing on: no pills, no Clear)
+    on = admin.get("/manage/feedback?tab=open&chip=fix&pa=battle&feature=hp").text
+    assert [m for m in re.findall(r'data-filter-on="(\w+)"', on)] == ["chip", "pa", "feature"]
+    assert 'href="?tab=open&amp;pa=battle&amp;feature=hp" data-filter-on="chip"' in on
+    assert 'href="?tab=open" data-filter-clear' in on and 'data-tab="ready"' in on and 'href="?tab=ready&amp;chip=fix&amp;pa=battle&amp;feature=hp"' in on
+    build = admin.get(f"/manage/feedback?tab=open&area={plan.id}").text
+    assert f'data-row="i{built.id}"' in build and f'data-row="i{hp.id}"' not in build
+    assert 'href="?tab=open" data-filter-on="area"' in build and "A build: the build" in build and 'href="?tab=open" data-filter-clear' in build
+
+
 def test_product_areas_page_and_where_it_stands_show_the_list(db, admin):
     rules.new_issue(db, "claude", "Temp HP box is cramped", feature="hp")
     rules.new_issue(db, "claude", "Loose")

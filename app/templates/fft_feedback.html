@@ -18,7 +18,7 @@
     <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues">Issues{{ count_pill(counts["open"]) }}</a>
   </nav>
   {% set g = grouped %}
-  {% macro here_with(tab_=tab, chip_=chip, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab_ }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
+  {% macro here_with(tab_=tab, chip_=chip, area_=area, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab_ }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area_ %}&amp;area={{ area_ }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
   {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}{% endif %}
   {% if issues_on %}
   {# Feedback's filters on one row (Brett's pick P1 A on docs/mockups/our-work-audit/, Nov 24): Open · Ready to try as the
@@ -28,7 +28,7 @@
      on shows beside it as pills with their ×, and Clear. #}
   {% set kinds = (("fix", "Fixes"), ("improvement", "Improvements")) %}
   {% set sources = (("players", "From players"), ("checks", "Found on a check")) %}
-  {% set on_n = (1 if chip else 0) + (1 if g and g.pa else 0) + (1 if g and g.feature else 0) %}
+  {% set on_n = (1 if chip else 0) + (1 if area else 0) + (1 if g and g.pa else 0) + (1 if g and g.feature else 0) %}
   <div class="ls-above-row fft-filter-row" data-filter-row>
     {% if tab != "closed" %}<span class="seg" role="group" aria-label="Show issues" data-views>
       {% for key, label in (("open", "Open"), ("ready", "Ready to try")) %}<a href="{{ here_with(tab_=key) }}" data-tab="{{ key }}"{% if key == tab %} aria-current="true"{% endif %}>{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
@@ -54,9 +54,10 @@
     </details>
     {% set chip_said = dict(kinds + sources) %}
     {% if chip %}<a class="ls-pill" href="{{ here_with(chip_="") }}" data-filter-on="chip" aria-label="Remove {{ chip_said[chip] }}"><span>{{ chip_said[chip] }}</span><i aria-hidden="true">×</i></a>{% endif %}
+    {% if area %}<a class="ls-pill" href="{{ here_with(area_=0) }}" data-filter-on="area" aria-label="Remove {{ area_said or "this build" }}"><span>{{ area_said or "This build" }}</span><i aria-hidden="true">×</i></a>{% endif %}{# (a build's own issues, as its Where it stands links them) #}
     {% if g.pa %}<a class="ls-pill" href="{{ here_with(pa_="", feat_="") }}" data-filter-on="pa" aria-label="Remove {{ g.pa.title }}"><span>{{ g.pa.title }}</span><i aria-hidden="true">×</i></a>{% endif %}
     {% for x in g.feats if x.f.key == g.feature %}<a class="ls-pill" href="{{ here_with(feat_="") }}" data-filter-on="feature" aria-label="Remove {{ x.f.title }}"><span>{{ x.f.title }}</span><i aria-hidden="true">×</i></a>{% endfor %}
-    {% if on_n %}<a class="btn link small ls-clear" href="{{ here_with(chip_="", pa_="", feat_="") }}" data-filter-clear>Clear</a>{% endif %}
+    {% if on_n %}<a class="btn link small ls-clear" href="{{ here_with(chip_="", area_=0, pa_="", feat_="") }}" data-filter-clear>Clear</a>{% endif %}
     {% endif %}
   </div>
   {% endif %}
