@@ -1610,9 +1610,9 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .bd-board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); align-items: start; }
 .bd-col { display: grid; gap: var(--sp-2); align-content: start; min-width: 0; min-height: 160px; padding: var(--sp-2); border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line-soft); }
 .bd-col[data-col="waiting"] { background: transparent; border-style: dashed; border-color: var(--line-strong); }
-.bd-head { display: flex; align-items: center; gap: var(--sp-1); padding: 0 var(--sp-1); color: var(--muted); font-size: var(--fs-sm); }
+.bd-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--sp-1); padding: 0 var(--sp-1); color: var(--muted); font-size: var(--fs-sm); }
 .bd-label { font-weight: 600; color: var(--text); }
-.bd-who { margin-left: auto; color: var(--faint); font-size: var(--fs-xs); }
+.bd-who { flex-basis: 100%; color: var(--faint); font-size: var(--fs-xs); }  /* (its own line under the name: a narrow column never squeezes it beside it) */
 .bd-card { display: grid; gap: 3px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--kind-upkeep); color: var(--text); text-decoration: none; min-width: 0; }
 .bd-card:hover, .bd-card:focus-visible { border-color: var(--line-strong); background: var(--surface-3); }
 .bd-card[data-kind="feedback"] { border-left-color: var(--kind-feedback); }
