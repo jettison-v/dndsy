@@ -1730,6 +1730,11 @@ button.rm-box { cursor: pointer; }
 .wk-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-4); }
 .crumb { color: var(--muted); text-decoration: none; font-weight: 600; }
 .crumb:hover { color: var(--text); }
+/* Your answers behind a Roadmap item (_fft_bits.html page_answers; Nov 24): each page's picks, in its window and on its page */
+.fft-page-answer { display: grid; gap: var(--sp-1); }
+.fft-page-answer + .fft-page-answer { border-top: 1px solid var(--line); padding-top: var(--sp-2); }
+.fft-picks-list { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }
+.fft-answer-words { margin: 0; white-space: pre-line; color: var(--muted); }
 /* A table with its own head (_tables.html table_box; issue 111, Nov 24): its title, count, a line of what it holds and
    its buttons, right above its column headings; with no rows, the head and one line. Several stack with the page's gap. */
 .tbx { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }

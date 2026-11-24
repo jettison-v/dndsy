@@ -121,3 +121,26 @@ def test_the_listener_wakes_claude_to_check_claude_ai(monkeypatch, capsys):
     monkeypatch.setattr(fb.time, "sleep", lambda s: None)
     fb.wait(type("A", (), {"hours": 8, "wake": 10, "base": "", "listener": "", "every": 30})())
     assert "time to check claude.ai" in capsys.readouterr().out
+
+
+def test_your_picks_show_beside_the_scope_you_ok(api, admin, db):
+    """Brett, Nov 24: "I cannot even see my answers during the final approval": a Roadmap item that points to a mockup
+    shows your latest picks on it, in its window from For you and on its page's scope, saying where you saved them."""
+    it = rules.new_item(db, "claude", "Our Work", section="now")
+    db.flush()
+    rules.set_item(db, "claude", it, why_from=f"From your picks on {DOC}")
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])
+    q = rules.ask(db, "claude", about="document", about_id=None, text="Which?", doc_path=DOC)
+    db.flush()
+    _in(api, picks=PICKS | {"notes": "Looks right."})
+    window = admin.get(f"/manage/item/r{it.id}").text
+    assert f'data-page-answer="{q.id}"' in window and "1 A" in window and "on claude.ai" in window and "Looks right." in window
+    page = admin.get(f"/manage/roadmap/{it.id}?tab=scope").text
+    assert f'data-page-answer="{q.id}"' in page
+
+
+def test_a_question_with_a_mockup_says_its_picks_are_the_answer(admin, db):
+    q = rules.ask(db, "claude", about="document", about_id=None, text="Which?", doc_path=DOC)
+    db.flush()
+    window = admin.get(f"/manage/item/q{q.id}").text
+    assert "data-picks-answer" in window and "Nothing to type" in window
