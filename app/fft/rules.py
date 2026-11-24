@@ -2028,6 +2028,7 @@ def _settled(db: Session, actor: str, q: FftQuestion) -> None:
 # ------------------------------------------------------------------ listeners (T8)
 
 SETTLE = timedelta(seconds=5)  # read only events this old, so one saved out of order isn't skipped
+INBOX_PAGE = 500  # (events an inbox reads at a time)
 
 
 def listener(db: Session, name: str, area_id: int | None = None) -> FftListener:
@@ -2052,10 +2053,11 @@ def heard(e: FftEvent, listener_actor: str) -> bool:
 
 def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
     """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`."""
-    q = select(FftEvent).where(FftEvent.id > li.read_id, FftEvent.at <= func.now() - SETTLE).order_by(FftEvent.id)
+    q = select(FftEvent).where(FftEvent.id > li.read_id, FftEvent.at <= func.now() - SETTLE,
+                               FftEvent.thing.not_in(QUIET_THINGS)).order_by(FftEvent.id)  # (in the query: a page of 500 quiet ones would hide what's after them)
     if li.area_id is not None:
         q = q.where(FftEvent.area_id == li.area_id)
-    rows = list(db.scalars(q.limit(500)))
+    rows = list(db.scalars(q.limit(INBOX_PAGE)))
     li.heard_at = now()
     if rows and not peek:
         li.read_id = rows[-1].id

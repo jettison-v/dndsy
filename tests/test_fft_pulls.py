@@ -186,3 +186,19 @@ def test_a_plans_history_says_what_happened_to_its_pull_requests_in_words(db):
                     "Pull request #90 brought up to date with main", "Pull request #90 merged"]
     shown = [views.pull_worth_saying(e) for e in db.scalars(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id))]
     assert shown == [True, False, True, True, True]
+
+
+def test_a_pile_of_pull_request_changes_never_hides_a_note(api, db, github, monkeypatch):
+    """An inbox reads a page at a time (500): the quiet ones are left out of the read itself, so a night of test runs
+    can't fill the page and hide what comes after them. Here the page is 2 and three quiet events come first."""
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    monkeypatch.setattr(rules, "INBOX_PAGE", 2)
+    for _ in range(3):
+        rules._event(db, "github", "pull_changed", "pull", 1, number=1, changes={"merge_state": "unknown"})
+    rules.new_item(db, "user:1", "After the pile")  # (Brett's: Claude's inbox leaves out what Claude did itself)
+    db.execute(update(FftEvent).values(at=rules.now() - timedelta(seconds=30)))
+    got = api.get("/api/fft/inbox/wait?seconds=1", headers={"X-Fft-Key": CLAUDE}).json()["items"]
+    assert [e["kind"] for e in got] == ["item_new"]
