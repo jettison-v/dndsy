@@ -427,10 +427,13 @@ LANE_NEEDS = {"ship": ("Nothing a person sees", "Merges when its tests and the r
               "look": ("Something people see", "Merges when green, after Claude tries it", "You, the batch, once it's live"),
               "careful": ("Who sees what, signing in, spending, the D&D Beyond bridge, a database change that alters data",
                           "Waits for your try on your Mac, then merges", "You, before it merges")}
-STEPS = ("Read its area whole: every issue and failed check", "Design one fix, written before it's built",
-         "Build it, one area at a time (its lock)", "Look at it: every person, page and width",
-         "The review at high effort, then one pull request", "Its checks, tried by Claude first, then your test round",
-         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74)
+STEPS = ("Claude asks askdnd for work, and askdnd hands over the top of Ready (a claim, one at a time)",
+         "Read its area whole: every issue and failed check",
+         "Design one fix; a design question is a mockup sent to askdnd at once and asked in For you (comment and pick here or on claude.ai)",
+         "Build it, then look at it: every person, page and width",
+         "The review at high effort, then one pull request: GitHub reports it to askdnd, and the Board shows its step",
+         "Merged when its tests pass and its lane allows; askdnd marks it live by itself, and its checks, tried by Claude first, reach For you",
+         "Live, Claude tries it again: a fix that fails goes back to To fix, and you're told why")  # (issue 74; item 39, Nov 24)
 
 
 def how() -> dict:
