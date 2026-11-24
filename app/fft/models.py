@@ -517,3 +517,18 @@ class FftSentFile(_Stamped, Base):
     body: Mapped[bytes] = mapped_column(LargeBinary)
     digest: Mapped[str] = mapped_column(String(64))  # sha256 of body: once the repo's copy is the same, it has landed
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class FftChat(_Stamped, Base):
+    """Something Brett said to Claude in the Code tab, saved as it arrived (a Claude Code hook, `feedback.py chat said`;
+    his pick 2A on Talking both ways, Nov 24: "We need to work here"). Claude files each onto its Roadmap item or issue,
+    or as just chat; one left unfiled is a gap. Changed only in rules.py."""
+
+    __tablename__ = "fft_chats"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    words: Mapped[str] = mapped_column(Text)
+    session: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    said_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    filed_as: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", item, issue, chat
+    filed_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    filed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

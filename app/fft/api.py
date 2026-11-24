@@ -969,3 +969,42 @@ def docs_in(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db:
         _rule(e)
     db.commit()
     return _ok({"comments": added, "picks": picks})
+
+
+# What Brett says in chat (item 42, his pick 2A): saved as it arrives, filed by Claude
+
+
+@router.post("/chat")
+def chat_said(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """{"words", "session", "at"}: a message Brett sent Claude in the Code tab, from the Claude Code hook."""
+    keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    c = rules.chat_said(db, "claude:chat", _str(body, "words", 20000), _str(body, "session", 64), body.get("at"))
+    db.commit()
+    return _ok({"id": c.id if c else None})
+
+
+@router.get("/chat")
+def chat_list(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """What Brett said in chat and Claude hasn't filed yet, oldest first."""
+    from app.fft.models import FftChat
+
+    keys.require(db, x_fft_key, "read")
+    rows = db.scalars(select(FftChat).where(FftChat.filed_as == "").order_by(FftChat.id))
+    return _ok({"chat": [{"id": c.id, "at": c.said_at.isoformat(), "words": c.words} for c in rows]})
+
+
+@router.post("/chat/{chat_id:int}")
+def chat_file(chat_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """{"as": "item" | "issue" | "chat", "id"}: filed onto a Roadmap item, an issue, or as just chat."""
+    from app.fft.models import FftChat
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    c = db.get(FftChat, chat_id) or _missing()
+    try:
+        rules.chat_file(db, actor.name, c, _str(body, "as", 10, need=True), body.get("id") if isinstance(body.get("id"), int) else None)
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"id": c.id, "filed_as": c.filed_as, "filed_id": c.filed_id})

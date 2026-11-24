@@ -502,10 +502,15 @@ def gaps(db: Session) -> list[dict]:
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
+    from app.fft.models import FftChat
+
+    for c in db.scalars(select(FftChat).where(FftChat.filed_as == "").order_by(FftChat.id)):  # (item 42: nothing said only in chat is lost)
+        out.append({"kind": "chat_unfiled", "thing": "chat", "id": c.id, "title": title_of(c.words), "since": c.said_at,
+                    "says": f"Brett said this in chat: file it (feedback.py chat file {c.id} item <id> | issue <id> | chat)."})
     return _since(db, out)
 
 
-GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself",
+GAP_WORDS = {"chat_unfiled": "something you said in chat, not filed yet", "no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself",
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
