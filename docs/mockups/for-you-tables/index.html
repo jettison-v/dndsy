@@ -131,31 +131,46 @@ tr.grp .elsewhere { color: var(--faint); }
   .tbl-head .ctl { margin-left: 0; }
   .w-kind, .w-act { width: 1%; } th, td { padding-left: 8px; padding-right: 8px; }
 }
+/* round 2: the number column, the action words, the framework comparison */
+.w-no { width: 104px; } td.no { color: var(--faint); font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.word.act-try { background: var(--red-soft); color: var(--red); }
+.word.act-answer { background: var(--violet-soft); color: var(--violet); }
+.word.act-approve { background: var(--amber-soft); color: var(--amber); }
+.word.act-do { background: var(--blue-soft); color: var(--blue); }
+.mk { color: var(--link); font-size: .78rem; font-weight: 600; margin-left: 6px; white-space: nowrap; }
+.changes { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.fw { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.fw table { min-width: 760px; }
+.fw td.good { color: var(--green); } .fw td.meh { color: var(--amber); }
+@media (max-width: 760px) { .w-no, td.no { display: none; } }
 </style>
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
-    <span class="lbl">Issue 111 · Roadmap item 39, step 35 · Nov 24 · a mockup</span>
+    <span class="lbl">Issue 111 · Roadmap item 39, step 35 · Nov 24 · round 2</span>
     <h1>For you, as tables</h1>
-    <p class="meta">You asked for For you as two tables, maybe three, and said you weren't sure how many kinds of thing it holds. <b>It holds ten kinds</b>, listed below the screen with where each one goes. Both layouts are drawn: switch between <b>two tables</b> and <b>three</b>, and between <b>Try first</b> and <b>the quick ones first</b>. The <b>Today</b> view shows what's in your For you right now; <b>Every kind</b> shows a busy day with all ten.</p>
-    <div class="terms">
-      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › For you, the same page and address. Only how its rows are laid out changes.</div>
-      <div class="term"><span class="tag">What changes</span>One long table with five group rows becomes separate tables. Each table has its own heading, count and buttons, sitting right above its column headings (your note 64).</div>
-      <div class="term"><span class="tag">Doesn't change</span>What lands in For you and why, the item window that a row opens, rounds and ▶ Try it, the status bar, and Backstage's count.</div>
+    <p class="meta">Redrawn from your picks and four comments. <b>Three tables, quick ones first</b>, as you picked. <b>Ten kinds become five action words</b>, each saying what you'll do. <b>Every row carries its number.</b> Your question about a table framework is answered at the bottom. Switch between <b>Today</b>, <b>Every kind</b> and <b>Almost nothing</b> to see each state.</p>
+    <div class="why-box">
+      <span class="tag">What changed since round 1</span>
+      <ul class="meta changes">
+        <li><b>Approve</b> replaces Fix to OK, Note and Idea (your comments): to you they're all the same thing, a yes or no on something someone sent. A Roadmap scope is an Approve too.</li>
+        <li><b>Try locally</b> replaces On your Mac (your comment: stay agnostic). It says what you do, not which machine. You suggested Test locally; the second pick asks which family of words.</li>
+        <li><b>Answer</b> covers Question and Decision: both are one answer, and a row with a mockup says <span style="color:var(--link)">Open mockup</span>.</li>
+        <li><b>Fixed</b> is gone: every fix comes with its check, and a fix without one is a gap for me, so it never reaches you.</li>
+        <li><b>The action word is the column</b>: one word on the left says what the row needs, so the per-row buttons went (a row opens its item, as today). Only ▶ Try it stays, since it starts at once.</li>
+        <li><b>No.</b> column: check 80, question 15, item 38, the numbers I use when I write to you.</li>
+      </ul>
     </div>
   </header>
 
   <div class="pickers" role="group" aria-label="What the screen shows">
-    <div class="picker"><span class="of">Tables</span>
-      <button type="button" class="shot" data-set="tables" data-v="two" aria-pressed="false">A · Two</button>
-      <button type="button" class="shot" data-set="tables" data-v="three" aria-pressed="true">B · Three <span class="mine">my pick</span></button></div>
-    <div class="picker"><span class="of">First</span>
-      <button type="button" class="shot" data-set="first" data-v="try" aria-pressed="false">A · Try first</button>
-      <button type="button" class="shot" data-set="first" data-v="quick" aria-pressed="true">B · Quick ones first <span class="mine">my pick</span></button></div>
     <div class="picker"><span class="of">Showing</span>
       <button type="button" class="shot" data-set="data" data-v="today" aria-pressed="true">Today</button>
       <button type="button" class="shot" data-set="data" data-v="busy" aria-pressed="false">Every kind</button>
       <button type="button" class="shot" data-set="data" data-v="quiet" aria-pressed="false">Almost nothing</button></div>
+    <div class="picker"><span class="of">Words</span>
+      <button type="button" class="shot" data-set="words" data-v="try" aria-pressed="true">Try <span class="mine">my pick</span></button>
+      <button type="button" class="shot" data-set="words" data-v="test" aria-pressed="false">Test</button></div>
   </div>
 
   <div class="app">
@@ -168,174 +183,157 @@ tr.grp .elsewhere { color: var(--faint); }
         <div class="bar"><span class="dot"></span><b>Claude is listening</b><span class="note">main, heard 1 min ago</span><span class="deploys">Deploys: <b>When tests pass</b> ▾</span></div>
         <p class="sum" id="sum"></p>
         <div id="tables" style="display:grid;gap:14px"></div>
-        <p class="said" id="said" aria-live="polite">Click a row or a button to see what it does. A row opens its item in the item window at the right, as it does today.</p>
+        <p class="said" id="said" aria-live="polite">Click a row to see what it does. A row opens its item in the item window at the right, as it does today; ↑ ↓ go to the next.</p>
       </div>
     </div>
   </div>
 
   <section style="display:grid;gap:10px" aria-labelledby="h-kinds">
-    <h2 id="h-kinds">The ten kinds, and where each goes</h2>
-    <p class="meta">Each one is what you do with it. <b>Try</b> means you go and use askdnd and mark what you saw. The rest take <b>one read and one press</b> in the item window.</p>
+    <h2 id="h-kinds">Ten kinds, now five words</h2>
+    <p class="meta">All five are action words, each one thing you do, and each in one table.</p>
     <div class="kinds"><table>
-      <thead><tr><th>Kind</th><th>What you do</th><th>How long</th><th>A · Two tables</th><th>B · Three tables</th></tr></thead>
+      <thead><tr><th>Word</th><th>What you do</th><th>Was</th><th>Table</th></tr></thead>
       <tbody>
-        <tr><td><span class="word ask">On your Mac</span></td><td>Try a change on your Mac before it merges (Careful, or After my local try)</td><td>a few minutes</td><td class="on">Try</td><td class="on">Try</td></tr>
-        <tr><td><span class="word ask">Check</span></td><td>Follow its steps on askdnd.ai: Passed, Something's wrong… or Can't try…</td><td>2–5 min each, in a round</td><td class="on">Try</td><td class="on">Try</td></tr>
-        <tr><td><span class="word passed">Fixed</span></td><td>A fix that's live but came with no steps: does it work?</td><td>a minute or two</td><td class="on">Try</td><td class="on">Try</td></tr>
-        <tr><td><span class="word claude">Question</span></td><td>Claude asks; you tap an answer</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
-        <tr><td><span class="word claude">Decision</span></td><td>Look at a mockup, then one verdict</td><td>a few minutes</td><td>Answer</td><td>Decide</td></tr>
-        <tr><td><span class="word ask">Fix to OK</span></td><td>A player asked for something; the fix is ready to merge on your OK</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
-        <tr><td><span class="word">Note</span></td><td>A player's note: approve it, so Claude reads it</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
-        <tr><td><span class="word">Idea</span></td><td>A player's idea: place it on the Roadmap, or not</td><td>seconds</td><td>Answer</td><td>Decide</td></tr>
-        <tr><td><span class="word road">Scope</span></td><td>A Roadmap item's scope: Scope looks right, or Needs changes…</td><td>a few minutes' read</td><td>Answer</td><td>From the Roadmap</td></tr>
-        <tr><td><span class="word road">Step</span></td><td>A Roadmap item's next step that's yours (an audit, a second look)</td><td class="q">anything from a minute to an evening</td><td>Answer</td><td>From the Roadmap</td></tr>
+        <tr><td><span class="word act-try" data-w="local">Try locally</span></td><td>Try a change on your own computer before it merges (Careful, or Deploys set to After my local try)</td><td>On your Mac</td><td>Try</td></tr>
+        <tr><td><span class="word act-try" data-w="try">Try</span></td><td>Follow a check's steps on askdnd.ai: Passed, Something's wrong… or Can't try…</td><td>Check</td><td>Try</td></tr>
+        <tr><td><span class="word act-answer">Answer</span></td><td>Tap an answer to Claude's question; open its mockup first when it has one</td><td>Question, Decision</td><td>Decide</td></tr>
+        <tr><td><span class="word act-approve">Approve</span></td><td>Yes or no on something sent to you: a player's note or idea, a fix players asked for, a Roadmap scope</td><td>Note, Idea, Fix to OK, Scope</td><td>Decide, or From the Roadmap for a scope</td></tr>
+        <tr><td><span class="word act-do">Do</span></td><td>A Roadmap step that's yours: an audit, a second look</td><td>Step</td><td>From the Roadmap</td></tr>
+        <tr><td class="q">gone</td><td class="q">A live fix with no check: every fix brings its check, and one without is my gap</td><td class="q">Fixed</td><td class="q">none</td></tr>
       </tbody>
     </table></div>
   </section>
 
-  <section class="why-box" aria-labelledby="h-why">
-    <span class="tag" id="h-why">Why I'd pick three, quick ones first</span>
-    <p class="meta"><b>Three tables:</b> Decide and From the Roadmap are both quick to <i>open</i>, but they're different work. A Decide row is done the moment you press, and it often unblocks something of mine. A Roadmap row is the Roadmap's own: a scope you read with care, or a step of yours that can be an evening's job (today's are "Audit the roll card" and "Take a second look at the table"). They also sort differently: Decide by area, the Roadmap by your order of importance. In one table, a two-minute answer and an evening's step look alike.</p>
-    <p class="meta"><b>Quick ones first:</b> answers take seconds, and a waiting answer is often what's holding my work, so they're worth clearing before a round that takes ten minutes or more. Try is the biggest table, so at the bottom it has room to grow, and starting a round takes you off this page anyway. If you'd rather start with what takes longest, pick <b>Try first</b>; that's how it's laid out today.</p>
-  </section>
-
-  <section class="why-box" aria-labelledby="h-settled">
-    <span class="tag" id="h-settled">Decided, unless you say otherwise</span>
-    <ul class="meta" style="margin:0;padding-left:1.2em;display:grid;gap:4px">
-      <li><b>An empty table stays</b> as its heading plus one line ("Nothing to decide"), without column headings, so the page keeps its shape and you can see it's empty. Pick <b>Almost nothing</b> to see it.</li>
-      <li><b>Try's heading holds its round:</b> ▶ Start round for the device you're on, with the count and minutes. Checks for another device or for more than one person get a group row of their own, saying where to do them.</li>
-      <li><b>Each table has its own columns.</b> Try: Kind, What and its goal, Takes. Decide: Kind, What, From. From the Roadmap: Kind, Item, What's yours.</li>
-      <li>The summary line, Backstage's count and the order inside each table stay as they are today.</li>
-    </ul>
+  <section style="display:grid;gap:10px" aria-labelledby="h-fw">
+    <h2 id="h-fw">Your question: a table framework?</h2>
+    <p class="meta">You asked whether an open-source table library would help with live updates and the layout trouble we keep having. Here are the four well-known ones, measured against how askdnd is built: the server writes each page's HTML, and pieces update in place without a reload.</p>
+    <div class="fw"><table>
+      <thead><tr><th>Option</th><th>What it is</th><th>Fits askdnd's pages</th><th>What it would cost us</th></tr></thead>
+      <tbody>
+        <tr><td><b>Tabulator</b></td><td>A complete table in plain JavaScript (MIT licence): sorting, filtering, columns that fold away on a phone</td><td class="good">The best fit of the four: needs no framework</td><td>It draws rows in the browser from data, so every table would also need its data sent separately, and tests that read askdnd's HTML wouldn't see its rows</td></tr>
+        <tr><td><b>AG Grid</b> (Community)</td><td>A spreadsheet-grade grid, free edition (MIT)</td><td class="meh">Works without a framework, but large</td><td>Heavy for lists of 5–50 rows, and the same split as Tabulator</td></tr>
+        <tr><td><b>TanStack Table</b></td><td>The logic of a table with no look of its own; you draw every cell yourself</td><td class="meh">Made for React, Vue and the like; askdnd uses none</td><td>We'd still write all the markup, so it fixes none of the layout trouble</td></tr>
+        <tr><td><b>askdnd's own table piece</b></td><td>One table in the design system, used by every Backstage list, with its widths, wrapping and phone layout settled once</td><td class="good">It's how pages are built today</td><td>The work of making the piece and moving lists onto it; nothing new to learn or load</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta"><b>My take:</b> the trouble we've had comes from tables being built one at a time: a column that wraps here, a width that differs there. A library would add a second way to draw tables beside askdnd's own (the one-way-for-each-thing rule) and split every list into a page and its data. One table piece in the design system fixes the cause. If, once it's in, a list needs sorting or filtering beyond it, Tabulator is the one I'd try first.</p>
   </section>
 
   <form class="decide" aria-label="Your picks">
     <h2>Your picks</h2>
-    <fieldset><legend>1 · How many tables</legend>
-      <label class="opt"><input type="radio" name="tables" value="two"><span>A · Two: Try, and Answer</span><small>Everything quick in one table (questions, decisions, fixes to OK, notes, ideas, scopes, Roadmap steps), each marked by its kind.</small></label>
-      <label class="opt"><input type="radio" name="tables" value="three"><span>B · Three: Try, Decide, From the Roadmap <span class="mine">my pick</span></span><small>The Roadmap's scopes and your steps get their own table, in your order of importance.</small></label>
+    <fieldset><legend>1 · The five words</legend>
+      <label class="opt"><input type="radio" name="words" value="try"><span>A · Try locally, Try, Answer, Approve, Do <span class="mine">my pick</span></span><small>Keeps Found, Fixed, Tried and ▶ Try it: the same family across the product.</small></label>
+      <label class="opt"><input type="radio" name="words" value="test"><span>B · Test locally, Test, Answer, Approve, Do</span><small>Your suggestion; the Try buttons and Tried become Test and Tested to match.</small></label>
     </fieldset>
-    <fieldset><legend>2 · Which comes first</legend>
-      <label class="opt"><input type="radio" name="first" value="try"><span>A · Try first</span><small>As it is today: the long one at the top.</small></label>
-      <label class="opt"><input type="radio" name="first" value="quick"><span>B · The quick ones first <span class="mine">my pick</span></span><small>Clear answers in a minute, then start a round.</small></label>
+    <fieldset><legend>2 · Tables across Backstage</legend>
+      <label class="opt"><input type="radio" name="tables" value="piece"><span>A · One table piece in the design system <span class="mine">my pick</span></span><small>Built with For you's three tables, then each Backstage list moves onto it during the Design review (item 5).</small></label>
+      <label class="opt"><input type="radio" name="tables" value="tabulator"><span>B · Try Tabulator first</span><small>A trial on For you's tables before deciding; I'd report what it fixed and what it cost.</small></label>
     </fieldset>
-    <label for="notes"><b>Anything else</b> <span class="note">(a column to add or drop, a kind you'd put elsewhere, what an empty table should say)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <label for="notes"><b>Anything else</b> <span class="note">(a word you'd change, a column to add or drop)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
 </div>
 
 <script>
 (() => {
-  // Today's rows are what For you held on Nov 24; Every kind is a busy day, illustrative, with all ten kinds.
+  // Today's rows are what For you held on Nov 24 (checks 76–80, items 38, 15, 17); Every kind is a busy day, illustrative.
   const TODAY = [
-    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "A Roadmap item opens the page you need to read", why: "Now: its window and its page open the comparison inside askdnd", min: 2 },
-    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "End round ends the round on the bar", why: "Now: End round ends the round the bar shows, wherever it was started", min: 2 },
-    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "Feedback's bar, and windows that keep the item window open", why: "Now: Feedback has the bar with even rows, and those windows leave the item window open", min: 2 },
-    { kind: "check", need: "laptop", area: "Feedback and Testing", t: "A pause lets what's on its way finish", why: "Now: pausing starts nothing new; what was merged before still goes live", min: 2 },
-    { kind: "check", need: "laptop", area: "A sturdier loop: the build", t: "The Board shows every piece of work, and Your order keeps yours", why: "Now: Development opens on the Board; your order, lanes and holds are on Your order", min: 2 },
-    { kind: "scope", t: "Built vs. planned: review the deltas", why: "Scope version 3 waits for your OK", from: "Now · 2nd" },
-    { kind: "step", t: "The roll card: what's left", why: "Audit the roll card", from: "Next · 1st" },
-    { kind: "step", t: "Take a second look at askdnd's table, now on prod", why: "Take a second look at the table on askdnd.ai", from: "Next · 3rd" },
+    { kind: "try", no: "check 76", need: "laptop", area: "Feedback and Testing", t: "A Roadmap item opens the page you need to read", why: "Now: its window and its page open the comparison inside askdnd", min: 2 },
+    { kind: "try", no: "check 77", need: "laptop", area: "Feedback and Testing", t: "End round ends the round on the bar", why: "Now: End round ends the round the bar shows, wherever it was started", min: 2 },
+    { kind: "try", no: "check 78", need: "laptop", area: "Feedback and Testing", t: "Feedback's bar, and windows that keep the item window open", why: "Now: Feedback has the bar with even rows, and those windows leave the item window open", min: 2 },
+    { kind: "try", no: "check 79", need: "laptop", area: "Feedback and Testing", t: "A pause lets what's on its way finish", why: "Now: pausing starts nothing new; what was merged before still goes live", min: 2 },
+    { kind: "try", no: "check 80", need: "laptop", area: "A sturdier loop: the build", t: "The Board shows every piece of work, and Your order keeps yours", why: "Now: Development opens on the Board; your order, lanes and holds are on Your order", min: 2 },
+    { kind: "approve", road: true, no: "item 38", t: "Built vs. planned: review the deltas", why: "Its scope, version 3", from: "Now · 2nd" },
+    { kind: "approve", road: true, no: "item 39", t: "A sturdier loop: nothing missed between askdnd and Claude", why: "Its scope, version 6", from: "Now · 3rd" },
+    { kind: "do", road: true, no: "item 15", t: "The roll card: what's left", why: "Audit the roll card", from: "Next · 1st" },
+    { kind: "do", road: true, no: "item 17", t: "Take a second look at askdnd's table, now on prod", why: "Take a second look at the table on askdnd.ai", from: "Next · 3rd" },
   ];
   const BUSY = [
-    { kind: "local", t: "Corner cards stay over the side panel", why: "Ready on your Mac: localhost:8004, until 4:30 PM", area: "Getting around", min: 3 },
-    ...TODAY.filter(r => r.kind === "check"),
-    { kind: "check", need: "iphone", area: "Battle", t: "Hit points window fits an iPhone", why: "Now: the window's numbers fit at 375 wide, no sideways scroll", min: 3 },
-    { kind: "check", need: "people", area: "The table", t: "A roll shows for the DM as it's made", why: "Now: the DM's Table rolls shows the player's roll within a second", min: 5 },
-    { kind: "fixed", area: "Search", t: "Search finds a spell by its old name", why: "Fixed and live, with no check: does it work?", min: 1 },
-    { kind: "question", t: "Should a hidden entry's name show in Search for the DM?", why: "Claude asks", from: "Search" },
-    { kind: "decision", t: "For you, as tables", why: "A decision: look, then one verdict", from: "Feedback and Testing" },
-    { kind: "merge", t: "Concentration shows on the token", why: "Fix ready: your OK to merge (players asked)", from: "Battle" },
-    { kind: "note", t: "The dice tray covers my spells on the iPad", why: "Player 2's note waits for you", from: "From the table" },
-    { kind: "idea", t: "Mark a spell as a favourite", why: "Player 3's idea to place", from: "From the table" },
-    ...TODAY.filter(r => r.kind !== "check"),
+    { kind: "local", no: "issue 66", area: "Getting around", t: "Corner cards stay over the side panel", why: "Ready on your computer until 4:30 PM", min: 3 },
+    ...TODAY.filter(r => r.kind === "try"),
+    { kind: "try", no: "check 81", need: "iphone", area: "Battle", t: "Hit points window fits an iPhone", why: "Now: the window's numbers fit at 375 wide, no sideways scroll", min: 3 },
+    { kind: "try", no: "check 82", need: "people", area: "The table", t: "A roll shows for the DM as it's made", why: "Now: the DM's Table rolls shows the player's roll within a second", min: 5 },
+    { kind: "answer", no: "question 16", t: "Should a hidden entry's name show in Search for the DM?", why: "Claude asks", from: "Search" },
+    { kind: "answer", no: "question 17", t: "For you, as tables: which words?", why: "A mockup to look at first", mockup: true, from: "Feedback and Testing" },
+    { kind: "approve", no: "issue 75", t: "Fight reports numbered by the extension", why: "A fix players asked for: your yes merges it", from: "The fight" },
+    { kind: "approve", no: "note 70", t: "The dice tray covers my spells on the iPad", why: "Player 2's note: your yes sends it to Claude", from: "From the table" },
+    { kind: "approve", no: "idea 9", t: "Mark a spell as a favourite", why: "Player 3's idea: your yes puts it on the Roadmap", from: "From the table" },
+    ...TODAY.filter(r => r.kind !== "try"),
   ];
   const QUIET = [TODAY[5]];
   const DATA = { today: TODAY, busy: BUSY, quiet: QUIET };
-  const WORD = { local: ["On your Mac", "ask"], check: ["Check", "ask"], fixed: ["Fixed", "passed"], question: ["Question", "claude"], decision: ["Decision", "claude"],
-                 merge: ["Fix to OK", "ask"], note: ["Note", ""], idea: ["Idea", ""], scope: ["Scope", "road"], step: ["Step", "road"] };
-  const ACT = { question: "Answer", decision: "Decide", merge: "Look", note: "Sort", idea: "Place", scope: "Read it", step: "Open", local: "Look", fixed: "Look" };
+  const WORDS = { try: { local: "Try locally", try: "Try", go: "▶ Try it", table: "Try", round: "▶ Start round" },
+                  test: { local: "Test locally", try: "Test", go: "▶ Test it", table: "Test", round: "▶ Start round" } };
+  const ACT = { answer: ["Answer", "act-answer"], approve: ["Approve", "act-approve"], do: ["Do", "act-do"] };
   const NEED = { laptop: "On your laptop", iphone: "On your iPhone", people: "With more than one person" };
-  const TRY = ["local", "check", "fixed"], DECIDE = ["question", "decision", "merge", "note", "idea"], ROAD = ["scope", "step"];
-  const state = { tables: "three", first: "quick", data: "today" };
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const word = k => `<span class="word ${WORD[k][1]}">${WORD[k][0]}</span>`;
+  const state = { data: "today", words: "try" };
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const W = () => WORDS[state.words];
+  const word = r => r.kind === "local" ? `<span class="word act-try">${W().local}</span>` : r.kind === "try" ? `<span class="word act-try">${W().try}</span>` : `<span class="word ${ACT[r.kind][1]}">${ACT[r.kind][0]}</span>`;
   const row = (r, cells) => `<tr class="row" tabindex="0" data-t="${esc(r.t)}" data-k="${r.kind}">${cells}</tr>`;
-  const act = r => r.kind === "check" ? `<button type="button" class="btn go" data-act="try">▶ Try it</button>` : `<button type="button" class="btn" data-act="open">${ACT[r.kind]}</button>`;
+  const COLS = 5;
 
   function tryTable(rows) {
-    const checks = rows.filter(r => r.kind === "check"), here = checks.filter(r => r.need === "laptop");
-    const mins = rows.reduce((s, r) => s + (r.min || 0), 0);
+    const checks = rows.filter(r => r.kind === "try"), here = checks.filter(r => r.need === "laptop"), local = rows.filter(r => r.kind === "local");
+    const head = `<div class="tbl-head"><h3>${W().table} <span class="count">${rows.length}</span></h3><span class="what">${rows.length ? `about ${rows.reduce((s, r) => s + r.min, 0)} min · you use askdnd and mark what you saw` : "you use askdnd and mark what you saw"}</span>`
+      + (here.length ? `<span class="ctl"><span class="note">On your laptop: ${plural(here.length, "check", "checks")} · about ${here.reduce((s, r) => s + r.min, 0)} min</span><button type="button" class="btn go" data-act="round">${W().round}</button></span>` : "") + `</div>`;
+    if (!rows.length) return `<section class="tbl try is-empty">${head}<p class="empty-line">Nothing to ${W().try.toLowerCase()}. A check reaches here once its change is live and Claude has tried it.</p></section>`;
+    const line = r => row(r, `<td>${word(r)}</td><td class="no">${r.no}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${r.kind === "try" ? `<button type="button" class="btn go" data-act="go">${W().go}</button>` : ""}</td>`);
     let body = "";
-    const local = rows.filter(r => r.kind === "local");
-    if (local.length) body += `<tr class="grp need"><td colspan="4"><b>On your Mac</b> · before it merges</td></tr>` + local.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.area)} · ${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`)).join("");
+    if (local.length) body += `<tr class="grp need"><td colspan="${COLS}"><b>On your computer</b> · before it merges</td></tr>` + local.map(line).join("");
     for (const need of Object.keys(NEED)) {
       const these = checks.filter(r => r.need === need);
       if (!these.length) continue;
       const other = need !== "laptop";
       if (other || local.length || checks.some(r => r.need !== "laptop")) {
-        body += `<tr class="grp need"><td colspan="4"><b>${NEED[need]}</b> · ${plural(these.length, "check", "checks")} · about ${these.reduce((s, r) => s + r.min, 0)} min`
-              + (other ? ` <span class="elsewhere">· do the steps ${need === "iphone" ? "on your iPhone" : "on your laptop with someone else"}</span> <button type="button" class="btn link" data-act="round">▶ Start round</button>` : "") + `</td></tr>`;
+        body += `<tr class="grp need"><td colspan="${COLS}"><b>${NEED[need]}</b> · ${plural(these.length, "check", "checks")} · about ${these.reduce((s, r) => s + r.min, 0)} min`
+              + (other ? ` <span class="elsewhere">· do the steps ${need === "iphone" ? "on your iPhone" : "on your laptop with someone else"}</span> <button type="button" class="btn link" data-act="round">${W().round}</button>` : "") + `</td></tr>`;
       }
       let area = null;
       for (const r of these) {
-        if (r.area !== area) { area = r.area; body += `<tr class="grp"><td colspan="4">${esc(area)} <button type="button" class="btn link" data-act="area">▶ Just this area</button></td></tr>`; }
-        body += row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`);
+        if (r.area !== area) { area = r.area; body += `<tr class="grp"><td colspan="${COLS}">${esc(area)} <button type="button" class="btn link" data-act="area">▶ Just this area</button></td></tr>`; }
+        body += line(r);
       }
     }
-    const fixed = rows.filter(r => r.kind === "fixed");
-    if (fixed.length) body += `<tr class="grp need"><td colspan="4"><b>Live, with no steps</b> · use it and say if it works</td></tr>` + fixed.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.area)} · ${esc(r.why)}</span></td><td class="num takes-c">${r.min} min</td><td>${act(r)}</td>`)).join("");
-    if (!rows.length) return `<section class="tbl try is-empty" data-table="try"><div class="tbl-head"><h3>Try <span class="count">0</span></h3><span class="what">you use askdnd and mark what you saw</span></div><p class="empty-line">Nothing to try. A check of Claude's reaches here once its change is live and Claude has tried it.</p></section>`;
-    const ctl = here.length ? `<span class="ctl"><span class="note">On your laptop: ${plural(here.length, "check", "checks")} · about ${here.reduce((s, r) => s + r.min, 0)} min</span><button type="button" class="btn go" data-act="round">▶ Start round</button></span>` : "";
-    return `<section class="tbl try" data-table="try"><div class="tbl-head"><h3>Try <span class="count">${rows.length}</span></h3><span class="what">${rows.length ? `about ${mins} min · you use askdnd and mark what you saw` : "you use askdnd and mark what you saw"}</span>${ctl}</div>
-      <div class="scroll"><table><thead><tr><th class="w-kind">Kind</th><th>What, and its goal</th><th class="num w-takes">Takes</th><th class="w-act"></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    return `<section class="tbl try">${head}<div class="scroll"><table><thead><tr><th class="w-kind"></th><th class="w-no">No.</th><th>What, and its goal</th><th class="num w-takes">Takes</th><th class="w-act"></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
   }
   function quickTable(key, title, what, cols, rows, empty) {
-    let body = rows.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="from from-c">${esc(r.from || "")}</td><td>${act(r)}</td>`)).join("");
-    if (key === "answer" && rows.length) {  // (two tables: the quick table's own group rows, Decide then From the Roadmap)
-      const d = rows.filter(r => DECIDE.includes(r.kind)), m = rows.filter(r => ROAD.includes(r.kind));
-      const part = (label, list) => list.length ? `<tr class="grp"><td colspan="4"><b>${label}</b></td></tr>` + list.map(r => row(r, `<td>${word(r.kind)}</td><td><span class="t">${esc(r.t)}</span><span class="why">${esc(r.why)}</span></td><td class="from from-c">${esc(r.from || "")}</td><td>${act(r)}</td>`)).join("") : "";
-      body = part("Decide", d) + part("From the Roadmap", m);
-    }
     const head = `<div class="tbl-head"><h3>${title} <span class="count">${rows.length}</span></h3><span class="what">${what}</span></div>`;
-    if (!rows.length) return `<section class="tbl ${key} is-empty" data-table="${key}">${head}<p class="empty-line">${empty}</p></section>`;
-    return `<section class="tbl ${key}" data-table="${key}">${head}
-      <div class="scroll"><table><thead><tr><th class="w-kind">Kind</th><th>${cols[0]}</th><th class="w-from">${cols[1]}</th><th class="w-act"></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    if (!rows.length) return `<section class="tbl ${key} is-empty">${head}<p class="empty-line">${empty}</p></section>`;
+    const body = rows.map(r => row(r, `<td>${word(r)}</td><td class="no">${r.no}</td><td><span class="t">${esc(r.t)}${r.mockup ? `<span class="mk">Open mockup</span>` : ""}</span><span class="why">${esc(r.why)}</span></td><td class="from from-c">${esc(r.from || "")}</td>`)).join("");
+    return `<section class="tbl ${key}">${head}<div class="scroll"><table><thead><tr><th class="w-kind"></th><th class="w-no">No.</th><th>${cols[0]}</th><th class="w-from">${cols[1]}</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
   }
   function draw() {
     const rows = DATA[state.data];
-    const tr = rows.filter(r => TRY.includes(r.kind)), dc = rows.filter(r => DECIDE.includes(r.kind)), rm = rows.filter(r => ROAD.includes(r.kind));
-    const t = tryTable(tr);
-    const quick = state.tables === "two"
-      ? [quickTable("answer", "Answer", "one read and one press each", ["What", "From"], [...dc, ...rm], "Nothing to answer. Claude's questions, players' notes and Roadmap steps that are yours come here.")]
-      : [quickTable("dec", "Decide", "one read and one press each · often what Claude's waiting on", ["What", "From"], dc, "Nothing to decide. Claude's questions, fixes to OK and players' notes and ideas come here."),
-         quickTable("roadmap", "From the Roadmap", "a scope to OK, or a step that's yours · in your order", ["Item", "Where"], rm, "Nothing from the Roadmap. A scope waiting for your OK, or a step that's yours, comes here.")];
-    document.getElementById("tables").innerHTML = (state.first === "try" ? [t, ...quick] : [...quick, t]).join("");
-    const checks = rows.filter(r => r.kind === "check");
-    const bits = [[rows.filter(r => r.kind === "local").length, "change to try on your Mac", "changes to try on your Mac"],
-      [checks.length, "check", "checks", checks.length ? ` (about ${checks.reduce((s, r) => s + r.min, 0)} minutes)` : ""],
-      [rows.filter(r => r.kind === "fixed").length, "fix to look at", "fixes to look at"], [rows.filter(r => r.kind === "question").length, "question", "questions"],
-      [rows.filter(r => r.kind === "decision").length, "decision", "decisions"], [rows.filter(r => r.kind === "merge").length, "fix to OK", "fixes to OK"],
-      [rows.filter(r => r.kind === "note").length, "note to approve", "notes to approve"], [rows.filter(r => r.kind === "idea").length, "idea", "ideas"],
-      [rows.filter(r => r.kind === "scope").length, "scope to OK", "scopes to OK"], [rows.filter(r => r.kind === "step").length, "Roadmap step", "Roadmap steps"]];
-    document.getElementById("sum").innerHTML = `<b>${rows.length} ${rows.length === 1 ? "is" : "are"} your turn</b> · ` + bits.filter(b => b[0]).map(b => plural(b[0], b[1], b[2]) + (b[3] || "")).join(" · ");
+    const tr = rows.filter(r => r.kind === "try" || r.kind === "local"), dc = rows.filter(r => !r.road && (r.kind === "answer" || r.kind === "approve")), rm = rows.filter(r => r.road);
+    document.getElementById("tables").innerHTML = [
+      quickTable("dec", "Decide", "one read and one press each · often what Claude's waiting on", ["What", "From"], dc, "Nothing to decide. Claude's questions, and notes, ideas and fixes sent for your yes, come here."),
+      quickTable("roadmap", "From the Roadmap", "a scope to approve, or a step that's yours · in your order", ["Item", "Where"], rm, "Nothing from the Roadmap. A scope waiting for your yes, or a step that's yours, comes here."),
+      tryTable(tr),
+    ].join("");
+    const n = k => rows.filter(r => r.kind === k).length;
+    const checks = rows.filter(r => r.kind === "try");
+    const bits = [[n("local"), `to ${W().local.toLowerCase()}`, `to ${W().local.toLowerCase()}`], [checks.length, `to ${W().try.toLowerCase()}`, `to ${W().try.toLowerCase()}`, checks.length ? ` (about ${checks.reduce((s, r) => s + r.min, 0)} minutes)` : ""],
+      [n("answer"), "to answer", "to answer"], [n("approve"), "to approve", "to approve"], [n("do"), "to do", "to do"]];
+    document.getElementById("sum").innerHTML = `<b>${rows.length} ${rows.length === 1 ? "is" : "are"} your turn</b> · ` + bits.filter(b => b[0]).map(b => `${b[0]} ${b[1]}${b[3] || ""}`).join(" · ");
     document.getElementById("badge").textContent = rows.length;
     document.querySelectorAll(".shot").forEach(b => b.setAttribute("aria-pressed", String(state[b.dataset.set] === b.dataset.v)));
+    document.querySelectorAll("[data-w]").forEach(el => { el.textContent = W()[el.dataset.w]; });
   }
   const said = document.getElementById("said");
   const SAY = {
-    try: t => `<b>▶ Try it</b> opens “${esc(t)}” on its page, with its steps in the round's card: a round of one. Nothing of Claude's waits.`,
-    round: () => `<b>▶ Start round</b> takes this device's checks one after another, page by page, as rounds do today. Its area's merges wait until you end it.`,
+    go: t => `<b>${esc(W().go)}</b> opens “${esc(t)}” on its page, with its steps in the round's card: a round of one. Nothing of Claude's waits.`,
+    round: () => `<b>${W().round}</b> takes this device's checks one after another, page by page, as rounds do today. Its area's merges wait until you end it.`,
     area: () => `<b>▶ Just this area</b> starts a round of that area's checks only.`,
-    open: t => `The item window opens at the right with “${esc(t)}”: read it, then one press (an answer, an OK, a place). ↑ ↓ go to the next row.`,
+    open: (t, k) => `The item window opens at the right with “${esc(t)}”${k === "approve" ? ": read it, then Approve or say no" : k === "answer" ? ": its question with answers to tap (and its mockup, when it has one)" : k === "do" ? ": the step that's yours, and Done when it is" : ""}. ↑ ↓ go to the next row.`,
   };
   document.getElementById("tables").addEventListener("click", e => {
     const b = e.target.closest("[data-act]"), r = e.target.closest("tr.row");
     if (b) { said.innerHTML = SAY[b.dataset.act](r ? r.dataset.t : ""); return; }
-    if (r) said.innerHTML = SAY.open(r.dataset.t);
+    if (r) said.innerHTML = SAY.open(r.dataset.t, r.dataset.k);
   });
-  document.getElementById("tables").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("tr.row")) said.innerHTML = SAY.open(e.target.dataset.t); });
+  document.getElementById("tables").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("tr.row")) said.innerHTML = SAY.open(e.target.dataset.t, e.target.dataset.k); });
   document.querySelectorAll(".shot").forEach(b => b.addEventListener("click", () => { state[b.dataset.set] = b.dataset.v; draw(); }));
   draw();
 })();
@@ -344,7 +342,7 @@ tr.grp .elsewhere { color: var(--faint); }
   // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["tables", "first"];
+  const NAMES = ["words", "tables"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
@@ -371,7 +369,7 @@ tr.grp .elsewhere { color: var(--faint); }
     btn.disabled = true;
     const at = new Date().toISOString(), doc = { notes, at };
     list.forEach(p => { doc[p.name] = p.value; });
-    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    try { await db.collection("answers").doc("round2").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
     catch (err) { show("Couldn't save it. Try again."); }
     btn.disabled = false;
   });
@@ -380,7 +378,7 @@ tr.grp .elsewhere { color: var(--faint); }
     try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
     if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
     try {
-      const d = await db.collection("answers").doc("verdict").get();
+      const d = await db.collection("answers").doc("round2").get();
       if (!d.exists) { show("Nothing saved yet"); return; }
       const a = d.data();
       fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);

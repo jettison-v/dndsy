@@ -9,11 +9,20 @@
   "link": ""
  },
  {
+  "title": "Pages and comments, both places",
+  "kind": "plan",
+  "status": "Your pick",
+  "date": "Nov 24",
+  "what": "Roadmap item 39, scope v6: a page (mockup, plan, guide) reaches askdnd with one call instead of a merge, and comments and picks work in askdnd or on claude.ai, merged each time Claude checks in. A try-it of the merge, what makes it hard (only Claude can reach claude.ai; Claude can't start a claude.ai comment), three ways, one pick.",
+  "source": "docs/mockups/pages-and-comments/index.html",
+  "link": "https://claude.ai/artifact/FUbLUv1G9khxkSwXReDTRn"
+ },
+ {
   "title": "For you, as tables",
   "kind": "design",
-  "status": "Your picks",
+  "status": "Round 2: your picks",
   "date": "Nov 24",
-  "what": "Issue 111 (Roadmap item 39, step 35): For you as separate tables, each with its own heading, count and buttons right above its columns. Two tables (Try, Answer) or three (Try, Decide, From the Roadmap), quick ones first or Try first, drawn with today's rows, a busy day with all ten kinds, and an almost empty one; the ten kinds and where each goes. Two picks.",
+  "what": "Issue 111 (Roadmap item 39, step 35), redrawn from Brett's picks and four comments: three tables, quick ones first; ten kinds become five action words (Try locally, Try, Answer, Approve, Do); each row's number; and the table framework question answered (Tabulator, AG Grid, TanStack Table, or askdnd's own table piece). Two picks.",
   "source": "docs/mockups/for-you-tables/index.html",
   "link": "https://claude.ai/artifact/RLKw2BZ4G8nrKLC7cBWLWC"
  },

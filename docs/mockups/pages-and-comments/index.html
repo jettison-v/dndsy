@@ -1,0 +1,309 @@
+<title>Pages and Comments, Both Places</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Roadmap item 39, scope v6. Brett, Nov 24: "Draw it first. Ideally, both paths - askdnd or claude.ai comments - would
+   function seamlessly. I would like to be able to make updates in either place and have them merge. This does not have
+   to be retroactive. Are there complexities with this approach?" */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --clay: #d97757; --clay-soft: rgba(217, 119, 87, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.fig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.fig svg { display: block; width: 100%; min-width: 900px; height: auto; }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
+
+/* the try-it: three panes */
+.play { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
+.play .of { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.sync { border-color: var(--violet); color: var(--violet); }
+.said { flex-basis: 100%; color: var(--text); font-size: .88rem; min-height: 1.4em; }
+.said b { color: var(--blue); }
+.panes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.pane { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); overflow: hidden; min-width: 0; }
+.pane-h { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-weight: 700; color: var(--strong); font-size: .9rem; }
+.pane-h .where { margin-left: auto; font: 600 .72rem/1 var(--sans); color: var(--faint); }
+.pane.askdnd .pane-h { border-bottom: 2px solid var(--red-btn); background: var(--chrome); }
+.pane.claude .pane-h { border-bottom: 2px solid var(--clay); background: var(--chrome); }
+.pane.record .pane-h { border-bottom: 2px solid var(--violet); background: var(--chrome); }
+.pane-b { padding: 10px 12px; display: grid; gap: 8px; font-size: .84rem; min-height: 220px; align-content: start; }
+.mock { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 10px; color: var(--faint); font-size: .8rem; position: relative; min-height: 70px; }
+.pin { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 700 .7rem/1 var(--sans); color: #15171a; margin-right: 4px; vertical-align: -4px; }
+.pin.a { background: var(--red); } .pin.c { background: var(--clay); }
+.cmt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 6px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.cmt .from { grid-column: 2; color: var(--faint); font-size: .74rem; }
+.cmt.new { outline: 2px solid var(--blue); outline-offset: 1px; }
+.cmt.waits { opacity: .6; border: 1px dashed var(--amber); }
+.picks { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.picks .v { color: var(--strong); font-weight: 600; }
+.picks .at { color: var(--faint); font-size: .74rem; margin-left: auto; }
+.empty { color: var(--faint); font-size: .8rem; }
+.hist { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; color: var(--muted); font-size: .8rem; }
+.hist li b { color: var(--text); }
+.tagw { font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+
+/* complexities and options */
+.cx { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.cx .term .tag.ok { color: var(--green); } .cx .term .tag.hard { color: var(--amber); } .cx .term .tag.no { color: var(--red); }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.opt-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 6px; font-size: .9rem; align-content: start; }
+.opt-card.mine { border-color: var(--amber); }
+.opt-card h3 { font: 700 1rem/1.3 var(--sans); }
+.opt-card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; color: var(--muted); font-size: .86rem; }
+.mine-tag { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.why-box { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why-box .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 900px) { .panes { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 39 · scope v6 · Nov 24 · a plan to look at</span>
+    <h1>Pages and comments, both places</h1>
+    <p class="meta">Two things you asked for. First, a page (a mockup, a plan, a guide) <b>reaches askdnd in seconds</b>, with no pull request, tests or deploy. Second, you can comment and pick <b>in askdnd or on claude.ai</b>, and the two <b>merge</b>. Both are drawn below, with what's hard about the second, the ways to do it, and my pick. Nothing from before this goes back and changes.</p>
+    <div class="terms">
+      <div class="term"><span class="tag">Lives in</span>Backstage › Global › Documents and the Open mockup button on a question in For you; on claude.ai, the same page at its link.</div>
+      <div class="term"><span class="tag">What it fixes</span>In two weeks the Documents list changed 77 times and mockups 58, and each change needed a merge before you could see it in askdnd. Comments made on claude.ai never reached askdnd at all.</div>
+      <div class="term"><span class="tag">Doesn't change</span>The repo keeps every page (they outlive any account), code still goes through pull requests, and Scope looks right stays in askdnd.</div>
+    </div>
+  </header>
+
+  <figure>
+    <h2>1 · A page reaches askdnd</h2>
+    <div class="fig"><svg viewBox="0 0 1180 250" role="img" aria-label="Today a page goes from Claude's branch through a pull request, tests, a merge and a deploy before askdnd can open it, about 20 minutes to a day. Proposed: Claude sends the page to askdnd with one call and askdnd opens it at once; the repo copy follows with the next pull request and takes over, comments and picks kept under the page's name.">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a29d93"/></marker></defs>
+      <g font-family="Inter, system-ui, sans-serif" font-size="12">
+        <text x="10" y="24" fill="#a29d93" font-weight="700" letter-spacing="1">TODAY</text>
+        <rect x="10" y="36" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="24" y="64" fill="#ebe7df">Claude writes it</text>
+        <rect x="178" y="36" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="192" y="64" fill="#ebe7df">pull request</text>
+        <rect x="346" y="36" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="360" y="64" fill="#ebe7df">tests, ~6 min</text>
+        <rect x="514" y="36" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="528" y="64" fill="#ebe7df">merge</text>
+        <rect x="682" y="36" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="696" y="64" fill="#ebe7df">deploy, ~5 min</text>
+        <rect x="850" y="36" width="160" height="46" rx="8" fill="#2a1d1d" stroke="#d64545"/><text x="864" y="64" fill="#f08a8a" font-weight="700">askdnd opens it</text>
+        <line x1="142" y1="59" x2="174" y2="59" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="310" y1="59" x2="342" y2="59" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="478" y1="59" x2="510" y2="59" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="646" y1="59" x2="678" y2="59" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="814" y1="59" x2="846" y2="59" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
+        <text x="1022" y="56" fill="#e8b34b">20 min to a day,</text><text x="1022" y="74" fill="#e8b34b">since a mockup alone</text><text x="1022" y="92" fill="#e8b34b">doesn't merge</text>
+        <text x="10" y="142" fill="#a29d93" font-weight="700" letter-spacing="1">PROPOSED</text>
+        <rect x="10" y="154" width="130" height="46" rx="8" fill="#272b30" stroke="#4a4f57"/><text x="24" y="182" fill="#ebe7df">Claude writes it</text>
+        <rect x="178" y="154" width="200" height="46" rx="8" fill="#231f2c" stroke="#b9a3e3"/><text x="192" y="176" fill="#b9a3e3" font-weight="700">one call to askdnd</text><text x="192" y="192" fill="#8f8a81" font-size="11">Claude's key; the page and its entry</text>
+        <rect x="416" y="154" width="160" height="46" rx="8" fill="#2a1d1d" stroke="#d64545"/><text x="430" y="182" fill="#f08a8a" font-weight="700">askdnd opens it</text>
+        <line x1="142" y1="177" x2="174" y2="177" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/><line x1="380" y1="177" x2="412" y2="177" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
+        <text x="590" y="174" fill="#5bbf7f">seconds, sealed as today</text>
+        <path d="M75,202 C75,240 760,240 760,206" fill="none" stroke="#4a4f57" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a)"/>
+        <rect x="764" y="154" width="250" height="46" rx="8" fill="#272b30" stroke="#4a4f57" stroke-dasharray="5 4"/><text x="778" y="176" fill="#ebe7df">repo copy, with the next pull request</text><text x="778" y="192" fill="#8f8a81" font-size="11">takes over; comments and picks stay</text>
+      </g>
+    </svg></div>
+    <figcaption>The page still lands in the repo, with whatever pull request comes next. Until then askdnd opens the copy Claude sent. Your comments and picks are kept under the page's name, so they stay with it when the repo copy arrives.</figcaption>
+  </figure>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-both">
+    <h2 id="h-both">2 · Comments and picks in both places</h2>
+    <p class="meta">Press the buttons in order, or in any order. The left pane is the page in askdnd, the middle is the same page on claude.ai, and the right is what askdnd keeps. <b>Claude checks in</b> is the step that merges them: it's me, at the start of each turn and whenever askdnd wakes me.</p>
+    <div class="play" aria-label="Try it">
+      <span class="of">Try it</span>
+      <button type="button" class="btn" data-do="cc">You comment on claude.ai</button>
+      <button type="button" class="btn" data-do="ca">You comment in askdnd</button>
+      <button type="button" class="btn" data-do="pc">You pick Three on claude.ai</button>
+      <button type="button" class="btn" data-do="pa">You change it to Two in askdnd</button>
+      <button type="button" class="btn sync" data-do="sync">Claude checks in</button>
+      <button type="button" class="btn" data-do="reset" style="margin-left:auto">Start over</button>
+      <span class="said" id="said" aria-live="polite">Start with You comment on claude.ai.</span>
+    </div>
+    <div class="panes">
+      <div class="pane askdnd"><div class="pane-h">askdnd <span class="where">Documents › For you, as tables</span></div><div class="pane-b" id="p-a"></div></div>
+      <div class="pane claude"><div class="pane-h">claude.ai <span class="where">the same page, at its link</span></div><div class="pane-b" id="p-c"></div></div>
+      <div class="pane record"><div class="pane-h">What askdnd keeps <span class="where">on the issue or item</span></div><div class="pane-b" id="p-r"></div></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-cx">
+    <h2 id="h-cx">What makes it harder than it looks</h2>
+    <div class="cx">
+      <div class="term"><span class="tag hard">Only I can reach claude.ai</span>askdnd's server can't read or write claude.ai: only a Claude session can, through its own tools. So the two merge when I check in, not the instant you press. While a session is listening, that's within minutes; with no session open, claude.ai's side waits for the next one. Send to Claude on a claude.ai comment wakes me at once.</div>
+      <div class="term"><span class="tag no">I can't start a claude.ai comment</span>I can read claude.ai comments and reply to ones you've sent to me, but I can't open a new comment thread there. So an askdnd comment shows up inside the page on claude.ai, drawn by the page itself as a pin marked "in askdnd", rather than as a claude.ai comment.</div>
+      <div class="term"><span class="tag hard">Pins sit differently</span>claude.ai pins a comment to an element on the page. askdnd pins it to a spot, plus the words nearest it. Moving a comment across, I place it by those words, so it lands next to the right thing, though not always on the exact pixel.</div>
+      <div class="term"><span class="tag hard">Two answers to one question</span>If you pick in both places, the newest wins, both places show it, and askdnd keeps both in its history, so nothing is lost. A claude.ai pick answers askdnd's question the same way, marked "on claude.ai".</div>
+      <div class="term"><span class="tag ok">Not fragile in the bad way</span>Nothing breaks if a check-in is missed: each one compares the full lists on both sides and copies what's missing, so a late one catches up. Every comment carries where it came from, so nothing is copied twice or bounces back and forth.</div>
+      <div class="term"><span class="tag ok">Small to build</span>One askdnd call to receive a page; one to add a comment or pick made elsewhere; the page's picks block taught to show pins from askdnd; and a check-in step in my routine. No new service and no new key.</div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-opts">
+    <h2 id="h-opts">Three ways to do it</h2>
+    <div class="opts">
+      <div class="opt-card mine"><span class="mine-tag">my pick</span><h3>A · Both ways, merged at each check-in</h3>
+        <ul><li>What you asked for: comment and pick in either place, and both show everything.</li><li>claude.ai comments and picks come into askdnd; askdnd's show inside the page on claude.ai.</li><li>Merged when I check in; Send to Claude for at once.</li><li>askdnd keeps the record, with where each one came from.</li></ul></div>
+      <div class="opt-card"><h3>B · Into askdnd only</h3>
+        <ul><li>claude.ai comments and picks come into askdnd at each check-in.</li><li>askdnd's never show on claude.ai, so the claude.ai copy falls behind.</li><li>A little less to build: the page doesn't draw askdnd's pins.</li></ul></div>
+      <div class="opt-card"><h3>C · askdnd only</h3>
+        <ul><li>Scope v6 as written: you comment in askdnd; claude.ai only if you ask for a page there.</li><li>The simplest, with nothing to merge.</li><li>Loses what you asked for: commenting wherever you happen to be.</li></ul></div>
+    </div>
+  </section>
+
+  <section class="why-box" aria-labelledby="h-why">
+    <span class="tag" id="h-why">Why A</span>
+    <p class="meta">The one real limit, that it merges when I check in rather than instantly, is the same for A and B. A adds only the page drawing askdnd's pins, which is small, and it's what makes either place complete on its own. Its fragile spots are contained. A missed check-in is caught up by the next one, and every copy carries its origin, so nothing doubles. If it turns out noisy in use, dropping to B is just turning off the pins on claude.ai.</p>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your pick</h2>
+    <fieldset><legend>1 · Comments and picks</legend>
+      <label class="opt"><input type="radio" name="sync" value="both"><span>A · Both ways, merged at each check-in <span class="mine">my pick</span></span><small>Then I write it into item 39 as scope v7, for your Scope looks right.</small></label>
+      <label class="opt"><input type="radio" name="sync" value="into"><span>B · Into askdnd only</span><small>claude.ai's come in; askdnd's stay in askdnd.</small></label>
+      <label class="opt"><input type="radio" name="sync" value="one"><span>C · askdnd only</span><small>Scope v6 as written.</small></label>
+    </fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(how quickly a claude.ai comment should reach askdnd, a case I've missed)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my pick</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const S0 = () => ({ a: [], c: [], picks: { a: null, c: null }, hist: [], n: 0, t: 0 });
+  let s = S0();
+  const clock = () => { s.t += 3; const m = 40 + s.t; return `${9 + Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} AM`; };
+  const ts = () => s.t;
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const said = document.getElementById("said");
+  const cmt = (c, here) => {
+    const copy = c.made !== here;
+    return `<div class="cmt${c.fresh === here ? " new" : ""}"><span class="pin ${c.made === "a" ? "a" : "c"}">${c.n}</span><span>${esc(c.words)}</span><span class="from">${copy ? (here === "c" ? "drawn by the page · made in askdnd" : "brought in · made on claude.ai") : (c.made === "a" ? "made here" : "a claude.ai comment")} · ${c.at}</span></div>`;
+  };
+  const pickRow = p => p ? `<div class="picks"><span class="tagw">Your pick</span><span class="v">${p.v}</span><span class="at">${p.where === "a" ? "saved in askdnd" : "saved on claude.ai"} · ${p.at}</span></div>` : `<div class="picks"><span class="tagw">Your pick</span><span class="empty">nothing saved yet</span></div>`;
+  function draw() {
+    const page = `<div class="mock">The mockup's page: tables, picks, Save my pick${s.a.length || s.c.length ? "" : "<br>(no pins yet)"}</div>`;
+    document.getElementById("p-a").innerHTML = page + (s.a.map(c => cmt(c, "a")).join("") || "") + pickRow(s.picks.a);
+    document.getElementById("p-c").innerHTML = page + (s.c.map(c => cmt(c, "c")).join("") || "") + pickRow(s.picks.c);
+    const kept = s.a.map(c => `<li><b>Comment ${c.n}</b> ${c.made === "a" ? "in askdnd" : "from claude.ai"}: “${esc(c.words)}”</li>`).join("");
+    document.getElementById("p-r").innerHTML = (kept ? `<span class="tagw">Comments</span><ol class="hist">${kept}</ol>` : `<span class="empty">No comments kept yet.</span>`)
+      + (s.hist.length ? `<span class="tagw">Answers, newest last</span><ol class="hist">${s.hist.map(h => `<li><b>${h.v}</b> ${h.where === "a" ? "in askdnd" : "on claude.ai"}, ${h.at}${h.now ? " · <b>the answer</b>" : ""}</li>`).join("")}</ol>` : "");
+  }
+  const DO = {
+    cc() {
+      s.n += 1; const c = { n: s.n, words: "Call it Approve, not Fix to OK", made: "c", at: clock(), fresh: "c" };
+      s.c.push(c);
+      said.innerHTML = "<b>On claude.ai:</b> your comment is a claude.ai comment, pinned to that cell. askdnd doesn't have it yet. It comes across the next time I check in (Send to Claude would wake me now).";
+    },
+    ca() {
+      s.n += 1; const c = { n: s.n, words: "Show each row's number", made: "a", at: clock(), fresh: "a" };
+      s.a.push(c);
+      said.innerHTML = "<b>In askdnd:</b> kept at once, on the issue the mockup asks about. The claude.ai copy shows it after my next check-in.";
+    },
+    pc() {
+      const at = clock(); s.picks.c = { v: "Three", where: "c", at, ts: ts() };
+      said.innerHTML = "<b>On claude.ai:</b> saved in the page's own store. askdnd's question is still open until I check in.";
+    },
+    pa() {
+      const at = clock(); s.picks.a = { v: "Two", where: "a", at, ts: ts() };
+      s.hist.forEach(h => { h.now = false; }); s.hist.push({ v: "Two", where: "a", at, ts: ts(), now: true });
+      said.innerHTML = "<b>In askdnd:</b> your pick answers its question at once. If you picked on claude.ai too, the next check-in keeps whichever is newest.";
+    },
+    sync() {
+      let moved = 0;
+      s.c.filter(c => c.made === "c" && !s.a.includes(c)).forEach(c => { s.a.push(c); c.fresh = "a"; moved += 1; });
+      s.a.filter(c => c.made === "a" && !s.c.includes(c)).forEach(c => { s.c.push(c); c.fresh = "c"; moved += 1; });
+      s.a.sort((x, y) => x.n - y.n); s.c.sort((x, y) => x.n - y.n);
+      const { a, c } = s.picks;
+      if (c && !s.hist.some(h => h.where === "c" && h.at === c.at)) s.hist.push({ v: c.v, where: "c", at: c.at, ts: c.ts });
+      const newest = [a, c].filter(Boolean).sort((x, y) => y.ts - x.ts)[0];
+      if (newest) { s.picks.a = newest; s.picks.c = newest; s.hist.sort((x, y) => x.ts - y.ts); s.hist.forEach(h => { h.now = h.v === newest.v && h.at === newest.at; }); }
+      said.innerHTML = `<b>I checked in:</b> I compared both sides, copied ${moved ? moved + " comment" + (moved === 1 ? "" : "s") : "no comments"} across, each marked with where it was made${newest ? `, and both places now show your newest pick, <b>${newest.v}</b>` : ""}. Nothing is copied twice: a comment carries its origin, so it never bounces back.`;
+    },
+    reset() { s = S0(); said.textContent = "Start with You comment on claude.ai."; },
+  };
+  document.querySelectorAll("[data-do]").forEach(b => b.addEventListener("click", () => {
+    [...s.a, ...s.c].forEach(c => { c.fresh = ""; });
+    DO[b.dataset.do](); draw();
+  }));
+  draw();
+})();
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["sync"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
