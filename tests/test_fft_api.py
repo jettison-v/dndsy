@@ -313,6 +313,18 @@ def test_a_new_check_can_be_tried_through_a_characters_eyes(api, db):
     assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "x", "steps": ["Look."], "expect": "x", "as_character": 999999}).status_code == 400
 
 
+def test_what_brett_says_with_a_mark_reaches_claude(api, db):
+    """Nov 24: Brett marked a check "the check is wrong" with why, and nothing handed Claude the why (only his pages showed
+    it). A check read through the API carries its latest marks, newest first, with what was said."""
+    r = api.post("/api/fft/checks", headers=_as(CLAUDE), json={**GOAL, "title": "A comment reaches askdnd", "steps": ["Look."], "expect": "It shows."})
+    check = db.get(FftCheck, r.json()["id"])
+    rules.record_try(db, "user:1", check, result="cant", cant_kind="wrong", why="Step 3's button isn't there")
+    db.flush()
+    got = api.get(f"/api/fft/checks?id={check.id}", headers=_as(CLAUDE)).json()["items"]
+    tries = next(c for c in got if c["id"] == check.id)["tries"]
+    assert tries[0]["result"] == "cant" and tries[0]["cant"] == "wrong" and tries[0]["why"] == "Step 3's button isn't there"
+
+
 def test_claudes_lines_go_to_the_senders_or_only_to_brett_and_questions_are_checked(api, db):
     """The review of PR #417: where Claude's lines go was untested (swapped, a line meant for Brett would show to every
     player who sent a note on the issue), and so were a question's checks."""
