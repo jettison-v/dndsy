@@ -2082,9 +2082,13 @@ QUIET_THINGS = frozenset({"pull"})  # (kept on the record, never in an inbox: Gi
 
 
 def heard(e: FftEvent, listener_actor: str) -> bool:
-    """Whether an inbox shows this event: not what the listener did itself, and nothing that only keeps the record
-    (a pull request's every change: a red one or one that conflicts reaches Claude as a gap instead)."""
-    return e.actor != listener_actor and e.thing not in QUIET_THINGS
+    """Whether an inbox shows this event: not what the listener did itself (nor another session of its own, "claude:…",
+    claiming or sending a page), nothing that only keeps the record (a pull request's every change: a red one or one that
+    conflicts reaches Claude as a gap instead), and a scheduled job only when it failed (Nov 24: the listener woke every
+    few minutes for GitHub's routine reports)."""
+    if e.actor == listener_actor or e.actor.split(":", 1)[0] == listener_actor or e.thing in QUIET_THINGS:
+        return False
+    return not (e.kind == "job_ran" and (e.data or {}).get("result") != "failed")
 
 
 def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
