@@ -507,7 +507,7 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     lt = rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill beside the turn."], "A fight running.", "/party")
     db.flush()
     page = admin.get("/manage/for-you").text
-    assert 'data-section="local"' in page and f'data-row="l{lt.id}"' in page and "1 change to try on your Mac" in page
+    assert 'data-group="local"' in page and f'data-row="l{lt.id}"' in page and "1 to try locally" in page  # (Try's first group: issue 111)
     window = admin.get(f"/manage/item/l{lt.id}?from=foryou").text
     assert f'data-fft-local="{lt.id}"' in window and "localhost:8004/dev/login?next=/party" in window and "The Count is a pill" in window
     player.post(f"/manage/for-you/local/{lt.id}", data={"answer": "good"})

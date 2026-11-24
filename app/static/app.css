@@ -1727,6 +1727,17 @@ button.rm-box { cursor: pointer; }
 .wk-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-4); }
 .crumb { color: var(--muted); text-decoration: none; font-weight: 600; }
 .crumb:hover { color: var(--text); }
+/* A table with its own head (_tables.html table_box; issue 111, Nov 24): its title, count, a line of what it holds and
+   its buttons, right above its column headings; with no rows, the head and one line. Several stack with the page's gap. */
+.tbx { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.tbx-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); }
+.tbx-name { flex: none; margin: 0; display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-md); font-weight: 700; color: var(--text-strong); }
+.tbx-what { flex: 1 1 12em; min-width: 0; color: var(--muted); font-size: var(--fs-xs); }
+.tbx-ctl { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.tbx .dtable { border: 0; border-radius: 0; }
+.tbx.is-empty .tbx-head { border-bottom: 0; }
+.tbx-empty { margin: 0; padding: 0 var(--sp-3) var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
+.tbx-stack { display: grid; gap: var(--sp-4); }
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
    which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px), the title taking the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */

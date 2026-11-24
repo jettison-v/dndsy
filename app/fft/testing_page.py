@@ -171,10 +171,17 @@ def history(db: Session, c: FftCheck) -> list[dict]:
 # ------------------------------------------------------------------ For you: everything that's Brett's turn
 
 
-SECTIONS = (("local", "Try on your Mac"), ("try", "Try"), ("decide", "Decide"), ("look", "Look at"), ("table", "From the table"), ("roadmap", "From the Roadmap"))
+# For you's three tables, quick ones first (issue 111, Brett's picks on docs/mockups/for-you-tables/, Nov 24): Decide (one
+# read and one press), From the Roadmap (in his order), then Try (the long one, its rounds)
+SECTIONS = (("decide", "Decide"), ("roadmap", "From the Roadmap"), ("try", "Try"))
 SECTION_ORDER = {k: n for n, (k, _) in enumerate(SECTIONS)}
-SECTION_OF = {"local": "local", "check": "try", "question": "decide", "decision": "decide", "merge": "look", "ready": "look", "note": "table", "idea": "table",
+SECTION_OF = {"local": "try", "check": "try", "question": "decide", "decision": "decide", "merge": "decide", "note": "decide", "idea": "decide",
               "roadmap": "roadmap", "scope": "roadmap"}
+# What each row asks of him, as one action word (his comments on the mockup: action words, fewer of them, Approve for
+# what's sent for his yes, a local try named for what it is), with its tone
+ACT = {"local": ("Try locally", "ask"), "check": ("Try", "ask"), "question": ("Answer", "claude"), "decision": ("Answer", "claude"),
+       "merge": ("Approve", "passed"), "note": ("Approve", "passed"), "idea": ("Approve", "passed"), "scope": ("Approve", "passed"), "roadmap": ("Do", "quiet")}
+NUMBER = {"c": "check", "q": "question", "i": "issue", "n": "note", "d": "idea", "r": "item", "l": "local try"}  # (the numbers Claude writes)
 
 
 NEED_ORDER = {k: n for n, (k, _) in enumerate(NEEDS)}
@@ -189,6 +196,7 @@ def for_you(db: Session, device: str) -> list[dict]:
     order: list = []
 
     def put(gkey, gtitle, row, area_id=None):
+        row = row | {"no": f"{NUMBER[row['key'][:1]]} {row['key'][1:]}"}
         if gkey not in groups:
             groups[gkey] = {"key": gkey, "title": gtitle, "section": SECTION_OF[row["kind"]], "rows": [], "area_id": area_id, "checks": 0}
             order.append(gkey)
@@ -227,31 +235,33 @@ def for_you(db: Session, device: str) -> list[dict]:
                                           "sub": "A decision: look, then one verdict" if decision else "Claude asks"}))
     for i in db.scalars(select(FftIssue).where(FftIssue.state == "merge_ok").order_by(FftIssue.id)):
         rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "merge", "sub": "Fix ready: your OK to merge (players asked)"}))
-    for i in db.scalars(select(FftIssue).where(FftIssue.state == "ready", FftIssue.confirm_by.is_(None)).order_by(FftIssue.id)):
-        if not db.scalar(select(FftCheckIssue.check_id).where(FftCheckIssue.issue_id == i.id)):
-            rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "ready", "sub": "Fixed and live, with no check: does it work?"}))
+    # (a fix live with no check isn't his to look at: it's Claude's gap until its check is written, issue 111)
     for lt in db.scalars(select(FftLocalTry).where(FftLocalTry.answer == "").order_by(FftLocalTry.id)):  # (while he's Available)
-        rows.append((area_key(lt.area_id), lt.area_id, {"key": f"l{lt.id}", "title": lt.title, "kind": "local", "sub": "Ready on your Mac"}))
+        rows.append((area_key(lt.area_id), lt.area_id, {"key": f"l{lt.id}", "title": lt.title, "kind": "local", "sub": "Ready on your computer, before it merges"}))
     for _, aid, row in sorted(rows, key=lambda r: (SECTION_ORDER[SECTION_OF[r[2]["kind"]]], r[0] if r[2]["kind"] == "check" else (0, *r[0]))):
         a = areas.get(aid) if aid else None
         if row["kind"] == "check":  # (a group per need, then per area: ▶ Start round and ▶ Just this area)
             put(f"{row['need']}:a{aid or 0}", a.title if a else "In no area yet", row, aid)
             groups[f"{row['need']}:a{aid or 0}"]["need"] = row["need"]
-        else:  # (one group each, the area named on the row)
-            put(SECTION_OF[row["kind"]], dict(SECTIONS)[SECTION_OF[row["kind"]]], row | {"sub": f"{a.title} · {row['sub']}" if a else row["sub"]})
-    for n in db.scalars(select(FftNote).where(FftNote.state == "waiting").order_by(FftNote.id)):
-        put("table", "From the table", {"key": f"n{n.id}", "title": views.title_of(n.text), "kind": "note", "sub": f"{n.first_name}'s note waits for you"})
+        elif row["kind"] == "local":  # (Try's first group: on his computer, before it merges)
+            put("local", "On your computer · before it merges", row | {"sub": f"{a.title} · {row['sub']}" if a else row["sub"]})
+        else:  # (one group each, the area in its From column)
+            put(SECTION_OF[row["kind"]], dict(SECTIONS)[SECTION_OF[row["kind"]]], row | {"from": a.title if a else ""})
+    for n in db.scalars(select(FftNote).where(FftNote.state == "waiting").order_by(FftNote.id)):  # (from the table: a yes or no, in Decide)
+        put("decide", "Decide", {"key": f"n{n.id}", "title": views.title_of(n.text), "kind": "note", "sub": f"{n.first_name}'s note: your yes sends it to Claude", "from": "The table"})
     for d in db.scalars(select(FftIdea).where(FftIdea.state == "new").order_by(FftIdea.id)):
         who = db.scalar(select(FftNote.first_name).where(FftNote.idea_id == d.id))
-        put("table", "From the table", {"key": f"d{d.id}", "title": d.title, "kind": "idea", "sub": f"{who}'s idea to place" if who else "An idea to place"})
+        put("decide", "Decide", {"key": f"d{d.id}", "title": d.title, "kind": "idea", "sub": f"{who}'s idea: place it" if who else "An idea to place", "from": "The table"})
     for it in db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(rules.ROADMAP_SECTIONS))
                          .order_by(rules.item_rank(), FftItem.place, FftItem.id)):  # (a scope waiting for his OK, or a step of his: Nov 20)
         sc = rules.latest_scope(db, it)
         if rules.waits_on_brett(sc):
-            put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "scope", "sub": f"Scope version {sc.version} waits for your OK"})
+            put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "scope", "sub": f"Scope version {sc.version} waits for your OK",
+                                                "from": it.section.capitalize()})
         elif it.next_whose == "brett":
-            put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "roadmap", "sub": it.next_step or "Its next step is yours"})
-    return [groups[k] for k in order]
+            put("roadmap", "From the Roadmap", {"key": f"r{it.id}", "title": it.title, "kind": "roadmap", "sub": it.next_step or "Its next step is yours",
+                                                "from": it.section.capitalize()})
+    return sorted((groups[k] for k in order), key=lambda g: SECTION_ORDER[g["section"]])  # (in the page's order: ↑ ↓ follow it)
 
 
 def summary(groups: list[dict]) -> dict:
@@ -259,13 +269,10 @@ def summary(groups: list[dict]) -> dict:
     rows = list({r["key"]: r for r in every}.values())  # (a check to try on two devices is one check, in two groups)
     count = lambda kind: sum(1 for r in rows if r["kind"] == kind)
     checks = [r for r in rows if r["kind"] == "check"]
-    bits = [(count("local"), "change to try on your Mac", "changes to try on your Mac", ""),
-            (len(checks), "check", "checks", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else ""),
-            (count("question"), "question", "questions", ""), (count("decision"), "decision", "decisions", ""),
-            (count("merge"), "fix to OK", "fixes to OK", ""), (count("ready"), "fix to look at", "fixes to look at", ""),
-            (count("note"), "note to approve", "notes to approve", ""), (count("idea"), "idea", "ideas", ""),
-            (count("scope"), "scope to OK", "scopes to OK", ""), (count("roadmap"), "Roadmap step", "Roadmap steps", "")]
-    return {"n": len(rows), "line": " · ".join(f"{n} {one if n == 1 else many}{extra}" for n, one, many, extra in bits if n)}
+    act = lambda *kinds: sum(count(k) for k in kinds)
+    bits = [(act("question", "decision"), "to answer", ""), (act("merge", "note", "idea", "scope"), "to approve", ""), (count("roadmap"), "to do", ""),
+            (count("local"), "to try locally", ""), (len(checks), "to try", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else "")]
+    return {"n": len(rows), "line": " · ".join(f"{n} {words}{extra}" for n, words, extra in bits if n)}
 
 
 # ------------------------------------------------------------------ the page
@@ -346,9 +353,11 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
     return templates.TemplateResponse(request, "fft_testing.html", {
         "round_flight": any(g["area_ids"] & whole or None in g["area_ids"] for g in flight),
         "flight_areas": set().union(*[g["area_ids"] for g in flight]) if flight else set(),
-        "show": show, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "summary": summary(groups), "from_": show,
+        "show": show, "sections": SECTIONS, "act": ACT, "groups": groups, "pick": pick, "summary": summary(groups), "from_": show,
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
         "need_said": dict(NEEDS), "need_device": NEED_DEVICE, "need_counts": need_counts(groups),
+        "device_need": device if device in NEED_DEVICE else "", "several_needs": len({g.get("need") for g in groups if g["section"] == "try"}) > 1,
+        "try_minutes": sum(r.get("minutes") or 0 for g in groups if g["section"] == "try" for r in g["rows"]),
         "me_id": me["id"], "listening": views.listening(db), "here_path": FOR_YOU, "status": status(db),
         "toast": request.session.pop("toast", None)})
 
