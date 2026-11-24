@@ -2,6 +2,7 @@
 {% from "_admin_bits.html" import state_word, more_menu %}
 {% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head %}
 {% from "_fft_bits.html" import hands_list %}
+{% from "_board.html" import board as work_board %}
 {% block title %}Development · Backstage · askdnd{% endblock %}
 {% block head %}{% if tab == "queue" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -62,7 +63,7 @@
 <main class="page manage-page" data-fft-page="work">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Development</h1></div>
-  <p class="subtitle">Everything being built, in your order: the Roadmap's builds (once you've agreed their scope) and each Product Area's fixes. Claude takes the rows above the line, top first. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
+  <p class="subtitle">Every piece of work, from waiting to yours to try (Board), and the order Claude takes it in (Queue): the Roadmap's builds once you've agreed their scope, each Product Area's fixes, and pull requests with nothing behind them. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work", late_panel = True %}{% include "_fft_status.html" %}{% endwith %}
   {% if status.late %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
     <h3 class="plabel" id="fft-missed-h">Waiting on Claude too long · {{ status.late | length }}</h3>
@@ -74,7 +75,11 @@
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "queue" %}{{ count_pill(q.above) }}{% endif %}</a>{% endfor %}
   </nav>
 
-  {% if tab == "queue" %}
+  {% if tab == "board" %}
+  <p class="note fft-foryou-sum" data-summary>{% for key, label, who, cards in board.cols %}<b>{{ cards | length }}</b> {{ label | lower }}{{ " · " if not loop.last }}{% endfor %}{% if board.stuck %} · <span class="bd-stuck-sum">{{ board.stuck }} stuck</span>{% endif %}</p>
+  {{ work_board(board.cols, lane_said, board_empty) }}
+
+  {% elif tab == "queue" %}
   <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.next %} · Claude's next: <b>{{ q.next }}</b>{% endif %} · drag to reorder</p>
   <div class="table-scroll" id="wk-queue">
   <table class="dtable dt-wide fft-table wk-queue">

@@ -35,6 +35,8 @@
   --set-bronze: #7a4e06; --set-fire: #f43c04; --set-ice: #9fd8f0; --set-radiant: #fff2cc; --set-necrotic: #4a0000; --set-poison: #504099;
   --set-black: #111111; --set-white: #eeeeee; --set-rainbow: #e05a9a; --felt-hi: #2c3a2c; --felt-lo: #171c17;
   --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);  /* Reminders (the bell) */
+  /* The Board's three kinds of card (item 39; Brett's pick on The Work Board): Feedback, Roadmap, Upkeep */
+  --kind-feedback: #e07a9b; --kind-roadmap: var(--blue); --kind-upkeep: #a5b0bd;
   /* Action economy: the only colored headings (DESIGN.md › Section headings) */
   --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8;
   /* askdnd's three fonts (docs/DESIGN.md › Fonts; Brett, Nov 13): nothing else, tests/test_design_system.py */
@@ -1600,6 +1602,33 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Work (app/fft/work_page.py, fft_work.html, fft_plan.html; The Work Pages, Nov 20): the plans as a table, a group row
    per Roadmap item (dragged by its grip, its plans by theirs), the cut line, held plans under it */
 .dtable .dt-w0 { width: 40px; }
+/* The Board (item 39; _board.html, Development's first tab and the design system): five columns of cards, scrolled
+   sideways in their own box when the window is narrow, stacked on a tablet or phone. A card's left edge and tag say its
+   kind; amber when it's stuck. */
+.bd-scroll { overflow-x: auto; }
+.bd-board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: var(--sp-2); align-items: start; min-width: 1060px; }
+.bd-col { display: grid; gap: var(--sp-2); align-content: start; min-width: 0; min-height: 160px; padding: var(--sp-2); border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line-soft); }
+.bd-col[data-col="waiting"] { background: transparent; border-style: dashed; border-color: var(--line-strong); }
+.bd-head { display: flex; align-items: center; gap: var(--sp-1); padding: 0 var(--sp-1); color: var(--muted); font-size: var(--fs-sm); }
+.bd-label { font-weight: 600; color: var(--text); }
+.bd-who { margin-left: auto; color: var(--faint); font-size: var(--fs-xs); }
+.bd-card { display: grid; gap: 3px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--kind-upkeep); color: var(--text); text-decoration: none; min-width: 0; }
+.bd-card:hover, .bd-card:focus-visible { border-color: var(--line-strong); background: var(--surface-3); }
+.bd-card[data-kind="feedback"] { border-left-color: var(--kind-feedback); }
+.bd-card[data-kind="roadmap"] { border-left-color: var(--kind-roadmap); }
+.bd-card[data-stuck] { border-color: var(--amber); border-left-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-soft); }
+.bd-kind { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--kind-upkeep); }
+.bd-kind svg { width: 12px; height: 12px; flex: none; }
+.bd-kind[data-kind-tag="feedback"] { color: var(--kind-feedback); }
+.bd-kind[data-kind-tag="roadmap"] { color: var(--kind-roadmap); }
+.bd-title { font-weight: 600; color: var(--text-strong); overflow-wrap: anywhere; }
+.bd-stage { font-size: var(--fs-xs); font-weight: 600; color: var(--violet); }
+.bd-card[data-stuck] .bd-stage { color: var(--amber); }
+.bd-sub, .bd-why { font-size: var(--fs-xs); color: var(--muted); overflow-wrap: anywhere; }
+.bd-why { color: var(--text); }
+.bd-foot { display: flex; gap: var(--sp-1); align-items: center; flex-wrap: wrap; }
+.bd-stuck-sum { color: var(--amber); font-weight: 600; }
+@media (max-width: 900px) { .bd-board { grid-template-columns: minmax(0, 1fr); min-width: 0; } }
 .wk-queue .grip { cursor: grab; color: var(--faint); vertical-align: -2px; }
 .wk-plan.is-next td:first-child { box-shadow: inset 3px 0 0 var(--violet); }  /* (Claude's next: its edge violet, as on the old Where it stands) */
 .wk-plan .wk-name { color: var(--text-strong); text-decoration: none; }

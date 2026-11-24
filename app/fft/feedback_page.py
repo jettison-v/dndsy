@@ -32,6 +32,7 @@ from app.fft.models import (
     FftLine,
     FftNote,
     FftPicture,
+    FftPull,
     FftQuestion,
     FftSeen,
     FftTry,
@@ -187,9 +188,12 @@ def note_view(db: Session, note: FftNote, viewer_id: int | None) -> dict:
 def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
     notes = notes_of_issue(db, issue)
     turn, name = views.issue_turn(db, issue)
-    events = list(db.scalars(select(FftEvent).where(or_((FftEvent.thing == "issue") & (FftEvent.thing_id == issue.id),
-                                                        (FftEvent.thing == "note") & FftEvent.thing_id.in_([n.id for n in notes] or [0])))
-                             .order_by(FftEvent.id.desc())))
+    pulls = [p.id for p in db.scalars(select(FftPull).where(or_(FftPull.issue_id == issue.id, rules._names_pull_any(issue.pr))))]  # (its round trip, item 39)
+    events = [e for e in db.scalars(select(FftEvent).where(or_((FftEvent.thing == "issue") & (FftEvent.thing_id == issue.id),
+                                                               (FftEvent.thing == "note") & FftEvent.thing_id.in_([n.id for n in notes] or [0]),
+                                                               (FftEvent.thing == "pull") & FftEvent.thing_id.in_(pulls or [0])))
+                                    .order_by(FftEvent.id.desc()))
+              if e.thing != "pull" or views.pull_worth_saying(e)]
     asked = [views.question_view(q) for q in db.scalars(select(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id == issue.id)
                                                            .order_by(FftQuestion.id))]
     return {"i": issue, "turn": turn, "pill": views.turn_pill(turn, name), "sentence": views.issue_sentence(db, issue), "asked": asked,

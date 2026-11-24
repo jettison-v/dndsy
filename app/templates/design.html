@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_board.html" import board as work_board %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head %}
 {% from "_moments.html" import moment_list %}
@@ -228,6 +229,12 @@
       {{ ri(c, "spell:Shield", "Shield", picks, False, star=True, fav=True, chips=["1st level"], what="An invisible barrier: +5 AC until your next turn.", mech="Reaction · Self", url="/manage/design/panel") }}
       {{ ri(c, "action:Flurry", "Flurry of Blows", picks, False, uses={"max": 2, "left": 1}, what="Two Unarmed Strikes as a Bonus Action.", url="/manage/design/panel") }}
     </div>
+  </section>
+
+  <section class="section" id="board">
+    <h2>Board</h2>
+    <p class="note">Five columns of cards, each card one piece of work that ends in one pull request (Development › Board; item 39). Its kind is a tag and a coloured left edge: Feedback, Roadmap or Upkeep. Amber when it's stuck. A card opens its plan, its Roadmap item or its pull request.</p>
+    <div class="ds-sample">{{ work_board(board_sample, lane_said, board_empty) }}</div>
   </section>
 
   <section class="section" id="marks">
