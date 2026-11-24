@@ -1,5 +1,16 @@
 [
  {
+  "title": "Backstage, round 1: what needs you",
+  "kind": "design",
+  "status": "Your picks",
+  "state": "waiting",
+  "date": "Nov 24",
+  "what": "Roadmap item 5, round 1 of 4: Overview, Backups and Usage drawn today and as recommended, with the shared fixes applied: what needs you first, a backup panel that says what happened and what to check, a monthly spending limit, tiles that say what they count. Eight picks.",
+  "line": "Overview, Backups and Usage: what needs you first, eight picks",
+  "source": "docs/mockups/backstage-round-1/index.html",
+  "link": "https://claude.ai/artifact/KeWL7fkn1kvEGi7ZdY3UPA"
+ },
+ {
   "title": "Backstage, page by page: what we found",
   "kind": "design",
   "status": "Your picks",
