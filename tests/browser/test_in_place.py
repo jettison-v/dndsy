@@ -120,7 +120,7 @@ def test_a_count_never_blinks_through_a_press(people, server, browser_db):
         conn.execute(text("INSERT INTO fft_check_versions (check_id, version, path, steps, expect, why, workspace_id) VALUES (:c, 1, '/party', CAST(:s AS jsonb), 'It shows.', '', 1)"), {"c": cid, "s": json.dumps(["Look."])})
     engine.dispose()
     admin = people("admin")
-    page = admin.open("/manage/work")
+    page = admin.open("/manage/work?tab=queue")
     page.wait_for_function("() => { const c = document.querySelector('.manage-side [data-manage-count=\"for-you\"]'); return c && !c.hidden && c.textContent.trim(); }")
     page.evaluate("""() => { window.__blinks = 0; const look = () => { const c = document.querySelector('.manage-side [data-manage-count="for-you"]');
       if (!c || c.hidden || !c.textContent.trim()) window.__blinks++; window.__frames = requestAnimationFrame(look); }; look(); }""")
