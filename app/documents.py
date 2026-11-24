@@ -159,11 +159,14 @@ def safe(rel: str) -> bool:
 
 
 def inside_docs(rel: str) -> Path | None:
-    """A path under docs/ that's in the repo's copy; None otherwise."""
-    if not safe(rel):
+    """A path under docs/ that's in the repo's copy; None otherwise. (Its own checks, next to the use: CodeQL's path
+    check doesn't follow them into `safe`, #486.)"""
+    if not rel or "\\" in rel or rel.startswith("/") or any(part.startswith(".") for part in Path(rel).parts):
         return None
     path = (DOCS / rel).resolve()
-    return path if path.exists() else None
+    if not path.is_relative_to(DOCS) or not path.exists():
+        return None
+    return path
 
 
 @cache
