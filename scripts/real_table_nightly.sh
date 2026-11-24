@@ -37,7 +37,8 @@ for _ in $(seq 240); do mkdir "$T/logs/.seats-busy" 2>/dev/null && { trap 'rmdir
   # Real iPhone and iPad Safari in the iOS Simulator (docs/live-test-plan.md › iPhone Safari, Nov 8): the seats' pages,
   # read-only, its own Sentry issue. Only the plain nightly (a named run or --try-alert is about part 1)
   if [ $# -eq 0 ]; then
-    if .venv/bin/python iphone_check.py --sentry; then report iphone ok "Every page held together"
+    # (it closes the seats once their sign-ins are read: a simulator beside the seats' Chrome maxed the Mini out; issue 114)
+    if .venv/bin/python iphone_check.py --sentry --close-seats; then report iphone ok "Every page held together"
     else status=1; report iphone failed "A miss: see Sentry and the night's log"; fi
   fi
   ./real_table_seats.sh close

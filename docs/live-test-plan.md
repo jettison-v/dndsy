@@ -101,8 +101,11 @@ Plan, Party, Help and Your notes, each tab too, signed in as that seat (the sign
 checks: the layout tests' checks; tapping the page's first text box with a finger, which mustn't zoom the page and must
 stay in sight above the keyboard; and the end of the page above the bottom bar. A screenshot of each page, and of each
 tapped box with the keyboard up, goes to `~/askdnd-tests/logs/iphone/` (the newest run only). It changes nothing. The
-nightly runs it after part 1 while the seats are open (about 15 minutes); what it finds goes to Sentry as "iPhone
-Safari: …" (environment `live-test`, its own issue). A device that couldn't run at all (Appium or the simulator, never
+nightly runs it after part 1 with `--close-seats` (about 15 minutes): it reads each seat's sign-in, then closes the
+seats' Chrome before the first simulator starts, so a simulator never runs beside them (issue 114, Nov 24: with both
+running the Mini maxed out around 5:00, iOS in the simulator killed its own processes and macOS showed a crash dialog
+every morning; the Mini's crash dialogs are also off, `defaults write com.apple.CrashReporter DialogType none`, the
+reports still kept). What it finds goes to Sentry as "iPhone Safari: …" (environment `live-test`, its own issue). A device that couldn't run at all (Appium or the simulator, never
 something a page showed) gets one more try from a fresh start, the simulator booted again and Appium restarted if it
 stopped (Nov 10: Appium stopped one night, the iPad's Safari was slow to reach the debugger the next morning).
 
