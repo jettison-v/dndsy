@@ -17,6 +17,7 @@ from app.fft import taxonomy
 from app.fft.models import (
     FftAddition,
     FftArea,
+    FftChat,
     FftCheck,
     FftCheckIssue,
     FftCheckVersion,
@@ -2590,3 +2591,46 @@ def docs_to_check(db: Session, days: int = 7) -> list[dict]:
             q = doc_question(db, e["source"], open_only=True)
             out.append({"doc": e["source"], "title": e["title"], "link": e["link"], "open_question": q.id if q else None})
     return out
+
+
+# ------------------------------------------------------------------ what Brett says in chat (item 42, his pick 2A)
+# Brett, Nov 24: "We need to work here until we are completed … I am not sure what you want me to do in askdnd right now
+# that I have not already done here." Each message he sends in the Code tab is saved as it arrives; Claude files it onto
+# its item or issue (or as just chat), and one left unfiled is a gap, so nothing said only in chat is lost. His OK on a
+# scope stays his own press in askdnd: saving his words never gives it.
+
+CHAT_SKIP = ("[Artifact comment sent to Claude]",)  # (a claude.ai comment comes in through the page's check-in, not twice)
+CHAT_FILED = ("item", "issue", "chat")
+
+
+def chat_said(db: Session, actor: str, words: str, session: str = "", at=None) -> FftChat | None:
+    """His message, as he sent it. Nothing for an empty one or a claude.ai comment relayed as a message."""
+    words = (words or "").strip()
+    if not words or words.startswith(CHAT_SKIP):
+        return None
+    c = FftChat(words=words[:20000], session=(session or "")[:64], said_at=_made_at(at) or now())
+    db.add(c)
+    db.flush()
+    return c
+
+
+def chat_file(db: Session, actor: str, c: FftChat, as_: str, thing_id: int | None = None) -> FftChat:
+    """Filed: onto a Roadmap item (an addition in his words, said in chat), onto an issue (a line of his to Claude, which
+    Claude answers there), or as just chat (a reply that needs no record: "Pressed it", "Thanks")."""
+    if c.filed_as:
+        raise RuleError("stale", f"Chat {c.id} is filed already ({c.filed_as}).")
+    if as_ not in CHAT_FILED:
+        raise RuleError("bad", "File it onto an item, an issue, or as just chat.")
+    if as_ == "item":
+        it = db.get(FftItem, thing_id or 0)
+        if it is None:
+            raise RuleError("bad", "Which Roadmap item?")
+        add_to_item(db, actor, it, c.words, where="chat")
+    elif as_ == "issue":
+        i = db.get(FftIssue, thing_id or 0)
+        if i is None:
+            raise RuleError("bad", "Which issue?")
+        add_line(db, actor, c.words, issue=i, who="admin", to="claude")
+    c.filed_as, c.filed_id, c.filed_at = as_, thing_id if as_ != "chat" else None, now()
+    _event(db, actor, "chat_filed", "chat", c.id, filed_as=as_, onto=thing_id)
+    return c

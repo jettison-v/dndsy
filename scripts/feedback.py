@@ -86,13 +86,13 @@ def key() -> str:
     sys.exit("No FEEDBACK_KEY: set it with scripts/set-secret.sh FEEDBACK_KEY (the same on askdnd.ai and here).")
 
 
-def call(base: str, path: str, body: dict | None = None, raw: bool = False):
+def call(base: str, path: str, body: dict | None = None, raw: bool = False, timeout: int = 60):
     req = urllib.request.Request(base.rstrip("/") + "/api/fft" + path, method="POST" if body is not None else "GET",
                                  data=json.dumps(body).encode() if body is not None else None,
                                  headers={"X-Fft-Key": key(), "Accept": "application/json", "Content-Type": "application/json",
                                           "User-Agent": "askdnd-feedback-script"})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             data = r.read()
     except urllib.error.HTTPError as e:
         try:
@@ -625,6 +625,32 @@ def sync(a) -> None:
     print(f"Brought in {got['comments']} comment{'s' if got['comments'] != 1 else ''} from claude.ai; picks: {got['picks']}")
 
 
+def chat(a) -> None:
+    """What Brett says in chat (item 42, his pick 2A). `chat said`: run by the Claude Code hook as each message arrives
+    (reads the hook's JSON on stdin; never fails his message: any error is swallowed, and askdnd's id is said back so
+    Claude can file it). `chat`: what's unfiled. `chat file <id> item <n> | issue <n> | chat`: file one."""
+    if a.do == "said":
+        try:
+            hook = json.loads(sys.stdin.read() or "{}")
+            got = call(a.base, "/chat", {"words": hook.get("prompt", ""), "session": hook.get("session_id", "")}, timeout=5)  # (never holds his message long)
+            if got.get("id"):
+                print(f"askdnd saved this message as chat {got['id']}: file it onto its item or issue, or as just chat (feedback.py chat file {got['id']} …).")
+        except BaseException:  # (a hook must never stop his message reaching Claude)
+            pass
+        return
+    if a.do == "file":
+        if not a.id or not a.as_:
+            sys.exit("chat file <id> item <n> | issue <n> | chat")
+        got = call(a.base, f"/chat/{a.id}", {"as": a.as_, "id": int(a.thing) if a.thing else None})
+        print(f"Chat {got['id']} filed: {got['filed_as']}" + (f" {got['filed_id']}" if got["filed_id"] else ""))
+        return
+    rows = call(a.base, "/chat")["chat"]
+    for c in rows:
+        print(f"{c['id']:>4}  {c['at'][:16]}  {c['words'][:160]}")
+    if not rows:
+        print("Everything said in chat is filed.")
+
+
 def deploy(a) -> None:
     print(call(a.base, "/deploy", {"commit": a.commit, "prs": a.pr, "rollback": a.rollback}))
 
@@ -882,6 +908,11 @@ def main() -> None:
     s.add_argument("do", choices=["list", "in", "out"])
     s.add_argument("doc", nargs="?")
     s.add_argument("--file")
+    s = sub.add_parser("chat", help="what Brett says in chat: chat | chat said (the hook) | chat file <id> item <n>|issue <n>|chat")
+    s.add_argument("do", nargs="?", choices=[None, "said", "file"])
+    s.add_argument("id", nargs="?")
+    s.add_argument("as_", nargs="?", metavar="as", choices=[None, "item", "issue", "chat"])
+    s.add_argument("thing", nargs="?")
     s = sub.add_parser("page", help="page send docs/<path>: a page to askdnd's Documents at once, before its pull request")
     s.add_argument("do", choices=["send"])
     s.add_argument("path")
@@ -897,7 +928,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync, "chat": chat}[a.cmd](a)
 
 
 if __name__ == "__main__":
