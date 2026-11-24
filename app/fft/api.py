@@ -787,8 +787,8 @@ def claim(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: S
 @router.post("/github/pulls")
 def github_pulls(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """What GitHub sees of the pull requests (scripts/github_report.py; item 39): {"pulls": [{"number", "title", "branch",
-    "by_bot", "state", "tests", "merge_state", "auto_merge", "head", "updated"}], "snapshot": true when they're all the
-    open ones}. GitHub's key may send only this and its jobs."""
+    "by_bot", "state", "tests", "merge_state", "auto_merge", "head", "updated" (an older reporter's)}], "snapshot": true
+    when they're all the open ones}. GitHub's key may send only this and its jobs."""
     actor = keys.require(db, x_fft_key, "pulls")
     body = body if isinstance(body, dict) else {}
     rows = body.get("pulls")

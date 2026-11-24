@@ -161,6 +161,8 @@ def test_one_set_to_merge_that_falls_behind_main_is_claudes_to_bring_up_to_date(
     assert [g["title"].split()[0] for g in behind] == ["#320"] and "gh pr update-branch 320" in behind[0]["says"]
     rules.set_lane(db, "user:1", db.get(FftArea, i.area_id), "careful", "Brett chose it", admin=True)
     assert not [g for g in views.gaps(db) if g["kind"] == "pull_behind"]
+    _pull(db, 322, "dependabot/uv/x", by_bot=True, merge_state="behind", auto_merge=True)  # (Dependabot rebases its own)
+    assert "dependabot rebase" in next(g["says"] for g in views.gaps(db) if g["kind"] == "pull_behind")
 
 
 def test_a_builds_plan_with_claudes_steps_left_never_vanishes(db):

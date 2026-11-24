@@ -27,6 +27,7 @@ permissions:  # (it only reads)
   contents: read
   pull-requests: read
   checks: read
+  actions: read  # (each check's workflow, which `gh pr list --json statusCheckRollup` reads)
 
 # One at a time, newest waiting: each run reads everything afresh, so a skipped one loses nothing
 concurrency:

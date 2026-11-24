@@ -125,7 +125,7 @@ def test_a_report_askdnd_cant_read_changes_nothing(api, db, github):
 
 
 def test_brought_up_to_date_is_recorded(db):
-    """GitHub's run merged main into it: when, for the round trip and the board."""
+    """An older reporter's run merged main into it (until Nov 24; now a gap for Claude): when, for the round trip."""
     p = _seen(db, _pr(40, merge_state="behind"))[0]
     assert p.updated_by_askdnd_at is None
     p = _seen(db, _pr(40, merge_state="", tests="running") | {"updated": True})[0]

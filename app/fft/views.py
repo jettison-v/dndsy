@@ -491,7 +491,7 @@ def gaps(db: Session) -> list[dict]:
                         "says": f"Pull request #{p.number} passed and can merge, but isn't set to: merge it, or turn auto-merge on (GitHub turns it off after a failed try)."})
         if p.merge_state == "behind" and p.auto_merge and not frozen and not _held_back(db, p):  # (Nov 24: GitHub's robot can't do it)
             out.append({"kind": "pull_behind", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
-                        "says": f"Pull request #{p.number} is set to merge but is behind main: bring it up to date (gh pr update-branch {p.number}), so its tests run again and it merges."})
+                        "says": f"Pull request #{p.number} is set to merge but is behind main: " + (f"ask Dependabot to rebase it (a comment on #{p.number}: '@dependabot rebase'; a push of ours stops it rebasing its own)" if p.by_bot else f"bring it up to date (gh pr update-branch {p.number})") + ", so its tests run again and it merges."})
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})

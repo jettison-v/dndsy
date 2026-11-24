@@ -2166,7 +2166,7 @@ def _when(raw) -> datetime | None:
 
 def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False) -> list[FftPull]:
     """What GitHub reports: each pull request as it is now (`number` and the PULL_FIELDS; `updated`: brought up to date
-    with main just now; `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
+    with main just now, which only an older reporter sent: since Nov 24 Claude does it, a gap); `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
     them has closed. Each change is an event (the round trip reads them)."""
     seen, clean, out, at = set(), [], [], now()
     for r in rows:  # (all checked before any is kept: a report with one bad row changes nothing)
