@@ -63,7 +63,7 @@
 <main class="page manage-page" data-fft-page="work">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Development</h1></div>
-  <p class="subtitle">Every piece of work, from waiting to yours to try (Board), and the order Claude takes it in (Queue): the Roadmap's builds once you've agreed their scope, each Product Area's fixes, and pull requests with nothing behind them. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
+  <p class="subtitle">Every piece of work, from waiting to yours to try, in the order Claude takes it (Board), and your order of importance, with each plan's lane and hold (Your order): the Roadmap's builds once you've agreed their scope, each Product Area's fixes, and pull requests with nothing behind them. What's your turn is in <a href="/manage/for-you">For you</a>. Only admins can see this page.</p>
   {% with bar = status, back = "work", late_panel = True %}{% include "_fft_status.html" %}{% endwith %}
   {% if status.late %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
     <h3 class="plabel" id="fft-missed-h">Waiting on Claude too long · {{ status.late | length }}</h3>

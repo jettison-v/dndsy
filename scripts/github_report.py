@@ -1,15 +1,15 @@
 """GitHub tells askdnd about the pull requests (item 39, A sturdier loop; scope v4, Brett's OK Nov 24).
 
 Run by .github/workflows/report.yml on GitHub itself, after each pull request event, each test run and each push to main,
-with only Python's own library and GitHub's `gh`. It does two things:
+with only Python's own library and GitHub's `gh`. It reports every open pull request to askdnd (POST
+/api/fft/github/pulls, FFT_GITHUB_KEY), as a whole list so askdnd also closes any it still holds open, and how the last
+few closed ones ended (merged or not), so a replaced run loses nothing: each one's title, branch, tests, whether it's
+behind main, and whether it merges by itself. askdnd links each to its work (app/fft/rules.py `pulls_seen`).
 
-1. Keeps waiting pull requests up to date: each open pull request set to merge by itself that is behind main gets main
-   merged in, and its tests are started again (an update GitHub's own token makes starts no run of its own). Without
-   this, main's "up to date before merging" rule left them waiting. It's done on every run, not only after main
-   moves: a run waiting for its turn can be replaced by a newer one.
-2. Reports every open pull request to askdnd (POST /api/fft/github/pulls, FFT_GITHUB_KEY), as a whole list so askdnd
-   also closes any it still holds open, and how the last few closed ones ended (merged or not), so a replaced run
-   loses nothing: each one's title, branch, tests, whether it's behind main, and whether it merges by itself. askdnd links each to its work (app/fft/rules.py `pulls_seen`).
+It changes nothing on GitHub (Nov 24: it used to merge main into a waiting pull request that fell behind, but runs
+started by GitHub's own robot wait for a person's approval, so #485's tests never counted). One set to merge by itself
+that falls behind is a gap for Claude instead (app/fft/views.py `pull_behind`), brought up to date under a person's
+own sign-in, so its tests run as usual.
 
 It never checks out a pull request's own code: it reads what GitHub says about them. A pull request from a fork isn't
 ours, so it's left out. A report that can't reach askdnd is a warning on the run, never a failure: the next run sends
@@ -94,22 +94,6 @@ def closed_ones() -> list[dict]:
             for p in got if not p.get("isCrossRepository")]
 
 
-def bring_up_to_date(prs: list[dict], repo: str) -> set[int]:
-    """Merge main into each open pull request set to merge by itself that's behind it, and start its tests again."""
-    done = set()
-    for p in prs:
-        if not p.get("autoMergeRequest") or (p.get("mergeStateStatus") or "").upper() != "BEHIND":
-            continue
-        try:
-            gh("api", "-X", "PUT", f"repos/{repo}/pulls/{p['number']}/update-branch", "-f", f"expected_head_sha={p['headRefOid']}")
-            gh("workflow", "run", "tests.yml", "--ref", p["headRefName"])
-            done.add(p["number"])
-            print(f"#{p['number']}: brought up to date with main; its tests started again")
-        except subprocess.CalledProcessError as e:
-            print(f"::warning::#{p['number']} couldn't be brought up to date: {(e.stderr or '').strip()[:300]}")
-    return done
-
-
 def send(rows: list[dict], key: str) -> None:
     req = urllib.request.Request(f"{ASKDND}/api/fft/github/pulls", data=json.dumps({"pulls": rows, "snapshot": True}).encode(), method="POST",
                                  headers={"X-Fft-Key": key, "Content-Type": "application/json", "User-Agent": "askdnd-github"})
@@ -120,18 +104,10 @@ def send(rows: list[dict], key: str) -> None:
         print(f"::warning::Couldn't report to askdnd ({e}); the next run sends the whole list again")
 
 
-def gather(event: str, payload: dict, repo: str) -> list[dict]:
-    """Every open pull request (each behind one set to merge by itself brought up to date first: on every run, since a
-    run waiting for its turn can be replaced by a newer one), then how the last few closed ones ended. One closed
-    since it was listed as open counts as closed: the closed state wins."""
-    prs = open_ones()
-    updated = bring_up_to_date(prs, repo)
-    rows = {}
-    for p in prs:
-        r = row(p)
-        if p["number"] in updated:
-            r.update(updated=True, tests="running", merge_state="")
-        rows[p["number"]] = r
+def gather(event: str, payload: dict) -> list[dict]:
+    """Every open pull request, then how the last few closed ones ended. One closed since it was listed as open counts
+    as closed: the closed state wins."""
+    rows = {p["number"]: row(p) for p in open_ones()}
     for r in closed_ones():
         rows[r["number"]] = r
     closed = payload.get("pull_request") if event == "pull_request_target" and payload.get("action") == "closed" else None
@@ -152,7 +128,7 @@ def main() -> None:
     except (OSError, ValueError):
         payload = {}
     try:
-        rows = gather(event, payload, os.environ.get("GITHUB_REPOSITORY", ""))
+        rows = gather(event, payload)
     except (subprocess.CalledProcessError, ValueError) as e:
         print(f"::warning::Couldn't read the pull requests from GitHub ({getattr(e, 'stderr', '') or e}); the next run tries again")
         return

@@ -1648,7 +1648,7 @@ def unlock_area(db: Session, owner: str, area: FftArea) -> None:
 
 
 def order_items(db: Session, actor: str, ids: list[int]) -> None:
-    """Brett's one order: the Roadmap's items, top first (dragged on Development's Queue, which lists only those with plans:
+    """Brett's one order: the Roadmap's items, top first (dragged on Development's Your order tab, which lists only those with plans:
     the items dragged come first in their new order, the rest keep theirs after them)."""
     rows = {it.id: it for it in db.scalars(select(FftItem))}
     moved = [x for x in dict.fromkeys(ids) if x in rows]
@@ -2166,7 +2166,7 @@ def _when(raw) -> datetime | None:
 
 def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False) -> list[FftPull]:
     """What GitHub reports: each pull request as it is now (`number` and the PULL_FIELDS; `updated`: brought up to date
-    with main just now; `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
+    with main just now, which only an older reporter sent: since Nov 24 Claude does it, a gap); `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
     them has closed. Each change is an event (the round trip reads them)."""
     seen, clean, out, at = set(), [], [], now()
     for r in rows:  # (all checked before any is kept: a report with one bad row changes nothing)

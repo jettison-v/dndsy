@@ -339,7 +339,7 @@ td { min-width: 0; }
           <tbody>
             <tr><td>Code, tests, docs</td><td>GitHub</td><td>On a short branch, opened as a pull request with what to try.</td></tr>
             <tr><td>Checks</td><td>GitHub Actions</td><td>The workflow file in the repo. Railway waits for them before deploying.</td></tr>
-            <tr><td>Report to askdnd</td><td>GitHub Actions</td><td>After each pull request event, test run and push to main, GitHub merges main into waiting pull requests set to merge by themselves, starts their tests again, and tells askdnd every open pull request (item 39, Nov 24). askdnd holds no GitHub key.</td></tr>
+            <tr><td>Report to askdnd</td><td>GitHub Actions</td><td>After each pull request event, test run and push to main, GitHub tells askdnd every open pull request (item 39, Nov 24). It only reads: one waiting to merge that falls behind main is Claude's to bring up to date. askdnd holds no GitHub key.</td></tr>
             <tr><td>askdnd-v2's code</td><td>Railway</td><td>Deploys itself when <code>main</code> changes. Claude follows it with <code>scripts/deploy_check.py</code> and reads its logs.</td></tr>
             <tr><td>Postgres</td><td>Railway</td><td>Its shape changes through migrations that ship with the code. Claude can look inside beta (<code>railway ssh</code>), and changes data there only with your OK.</td></tr>
             <tr><td>askdnd-backup</td><td>Railway (cron)</td><td>Same code as the website; rebuilt when a file it runs changes.</td></tr>
@@ -430,5 +430,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-24 (Report to askdnd: GitHub tells askdnd about every pull request and keeps waiting ones up to date; FFT_GITHUB_KEY may now report pull requests too, and sits in Dependabot's secrets as well).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-24 (Report to askdnd: GitHub tells askdnd about every pull request, reading only; FFT_GITHUB_KEY may now report pull requests too, and sits in Dependabot's secrets as well).</p>
 </main>
