@@ -1618,6 +1618,9 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .bd-card[data-kind="feedback"] { border-left-color: var(--kind-feedback); }
 .bd-card[data-kind="roadmap"] { border-left-color: var(--kind-roadmap); }
 .bd-card[data-stuck] { border-color: var(--amber); border-left-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-soft); }
+/* Your order in the Board's look (step 36, Nov 24): each row's kind as the Board's coloured edge, its stage the Board's column */
+.wk-queue tr.wk-top[data-kind] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-feedback); }
+.wk-queue tr.wk-top[data-kind="roadmap"] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-roadmap); }
 .bd-kind { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--kind-upkeep); }
 .bd-kind svg { width: 12px; height: 12px; flex: none; }
 .bd-kind[data-kind-tag="feedback"] { color: var(--kind-feedback); }

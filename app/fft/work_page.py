@@ -224,6 +224,24 @@ def yours_waits(db: Session, a: FftArea) -> str:
     return " · ".join(b for b in bits if b)
 
 
+COLUMN_TONE = {"waiting": "quiet", "ready": "claude", "building": "claude", "shipping": "passed", "yours": "ask"}
+
+
+def on_board(b: dict) -> dict:
+    """Where each plan or build sits on the Board, for Your order's Stage: {key: {"col", "said", "tone", "kind", "stuck",
+    "yours"}}; "yours" when it also has checks waiting on Brett (its card in Yours to try)."""
+    said = {k: name for k, name, _ in COLUMNS}
+    out: dict = {}
+    for col, _name, _who, cards in b["cols"]:
+        for c in cards:
+            key = c["key"]
+            if key.endswith("-yours"):
+                out.setdefault(key.removesuffix("-yours"), {"col": col, "said": said[col], "tone": COLUMN_TONE[col], "kind": c["kind"], "stuck": False})["yours"] = True
+                continue
+            out[key] = out.get(key, {}) | {"col": col, "said": said[col], "tone": COLUMN_TONE[col], "kind": c["kind"], "stuck": bool(c.get("stuck"))}
+    return out
+
+
 def board(db: Session) -> dict:
     """The Board's five columns of cards (see above)."""
     cols: dict[str, list[dict]] = {k: [] for k, _, _ in COLUMNS}
@@ -462,6 +480,8 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
         ctx["jobs"] = jobs(db)
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
+    if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
+        ctx["on_board"] = on_board(board(db))
     elif tab == "how":
         ctx["how"] = how()
     db.commit()

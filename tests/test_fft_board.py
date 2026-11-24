@@ -166,3 +166,17 @@ def test_a_plan_claimed_outside_the_queue_still_shows_and_an_items_pull_request_
     _pull(db, 440, f"r{built.id}-board")
     assert _where(db)["shipping"] == [f"a{one.id}"]
     assert f"a{two.id}" in _where(db)["ready"]
+
+
+def test_your_order_says_each_plans_place_in_the_boards_words(db, admin):
+    """Step 36 (Brett, Nov 24: "It may need some changes to match the Board's newer style"): Your order keeps his order,
+    lanes and holds, and says each plan's stage as the Board does, its column, with the Board's kind on the row."""
+    first, second = _issue(db, "First"), _issue(db, "Second", feature="hp")
+    b = db.get(FftArea, second.area_id)
+    rules.lock_area(db, OWNER, b)
+    db.flush()
+    page = admin.get("/manage/work?tab=queue").text
+    row = lambda aid: page.split(f'data-key="a{aid}"', 1)[1].split("</tr>", 1)[0]
+    assert 'data-col-word="ready"' in row(first.area_id) and 'data-col-word="building"' in row(b.id)
+    assert 'data-kind-tag="feedback"' in row(first.area_id)
+    assert f'data-kind="feedback" data-key="a{first.area_id}"' in page
