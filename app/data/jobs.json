@@ -1,129 +1,140 @@
 {
-  "_about": "Jobs that run on their own, listed on Backstage › Global › Development › Scheduled (app/fft/work_page.py; The Work Pages, Nov 20). Each reports its run with POST /api/fft/jobs/<key> (Claude's key reports any; the Mac Mini's and GitHub's only their own, app/fft/keys.py JOBS_OF; scripts/feedback.py job <key> ok|failed \"what it found\"). every_hours: a run older than one and a half times this is Late. does, checks, fails: what its side panel says (issue 55, Brett, Nov 20: a description of each). reads: where else its runs are kept (backup: the job_runs table); \"elsewhere\": it doesn't report here (Dependabot: its pull requests reach Claude), so it's never Late, and link says where to see it. The jobs audit (Brett's picks, Nov 21, docs/mockups/jobs-audit/) chose which run and how often.",
-  "jobs": [
-    {
-      "key": "nightly",
-      "title": "The live test",
-      "what": "Part 1 on the real D&D Beyond, then through the DM",
-      "when": "Nightly, 4:00",
-      "where": "Mac Mini",
-      "every_hours": 24,
-      "does": "Opens the three test seats on the real D&D Beyond and runs part 1 of the live test against askdnd.ai: a closed sheet, hit points, conditions, casting, rests, items and more, each changed in askdnd and read back on D&D Beyond; then the same again through the DM. Its sheets are tidied after every run.",
-      "checks": "That what askdnd changes reaches D&D Beyond and comes back, on real accounts, as the table plays.",
-      "fails": "A run that misses is tried once more; missed twice becomes an issue in Sentry (environment live-test), which alerts you. A night it doesn't report shows here as Late."
-    },
-    {
-      "key": "after_deploy",
-      "title": "After each deploy",
-      "what": "Four short runs of the live test against the new version",
-      "when": "Within minutes of each deploy",
-      "where": "Mac Mini",
-      "every_hours": 168,
-      "does": "Every 5 minutes the Mac Mini asks askdnd.ai which version it runs; when it changes, it opens the test seats and runs four short parts of the live test (a closed sheet, hit points, a condition, a cast) against the new version.",
-      "checks": "That a deploy didn't break the table's way to D&D Beyond: a change made in askdnd reaches D&D Beyond and comes back.",
-      "fails": "A miss goes to Sentry as \"Live test after deploying …\", which alerts you, and it reports Failed here. It's Late only after a week without a deploy it checked."
-    },
-    {
-      "key": "iphone",
-      "title": "iPhone Safari",
-      "what": "The seats' pages in real iPhone and iPad Safari",
-      "when": "Nightly, after the live test",
-      "where": "Mac Mini",
-      "every_hours": 24,
-      "does": "While the seats are open after the live test, opens the DM's and a player's pages in Apple's iPhone and iPad Simulator, in real Safari: a small iPhone, a large one and an iPad mini.",
-      "checks": "Safari's own bars, the keyboard, tapping a text box, and pages that fit: what desktop browsers can't show.",
-      "fails": "What it finds goes to Sentry as \"iPhone Safari: … missed\", which alerts you."
-    },
-    {
-      "key": "drift",
-      "title": "D&D Beyond drift",
-      "what": "Today's test sheets against the fixtures' shape",
-      "when": "Daily, 12:30 UTC",
-      "where": "GitHub",
-      "every_hours": 24,
-      "does": "GitHub reads today's three test sheets from D&D Beyond as askdnd does and compares them with the copies the tests use.",
-      "checks": "That a field the copies have isn't gone or changed kind, and that askdnd's parser still reads every character whole (name, level, Hit Points, AC, abilities, saves, skills, classes, actions, items, spells).",
-      "fails": "The run fails, GitHub emails you, and it reports Failed here with its own key (one that may report only this job); Claude refreshes the copies and fixes the parser."
-    },
-    {
-      "key": "backup",
-      "title": "Backups",
-      "what": "The database, to S3",
-      "when": "Nightly",
-      "where": "Railway",
-      "every_hours": 24,
-      "does": "Railway's backup service copies askdnd.ai's database to S3 every night, then sweeps files nothing has used for longer than backups are kept (its run line counts what it removed).",
-      "checks": "That a whole copy was made and stored; staging is refreshed from these copies.",
-      "fails": "Manage's Overview flags a failed or missed night; here it shows as Failed or Late.",
-      "reads": "job_runs"
-    },
-    {
-      "key": "restore",
-      "title": "Restore drill",
-      "what": "The newest backup loaded into staging, to prove it restores",
-      "when": "Monthly, the 1st",
-      "where": "Claude",
-      "every_hours": 744,
-      "does": "A scheduled Claude session on the 1st of each month loads the newest nightly backup into staging (scripts/refresh_staging.sh) and opens staging to see it answers with that data.",
-      "checks": "That a backup isn't only made but can be restored: the whole database comes back and askdnd runs on it.",
-      "fails": "It reports Failed here with what went wrong, and Claude looks before the next backup is needed. Staging is all it touches; askdnd.ai never is."
-    },
-    {
-      "key": "digest",
-      "title": "The Inbox digest",
-      "what": "An email to each person with something waiting for them",
-      "when": "Daily, from 6 PM",
-      "where": "askdnd itself",
-      "every_hours": 24,
-      "does": "Once a day, past the digest's hour, askdnd looks at each campaign for each person who gets the digest and emails those with something new in its Inbox.",
-      "checks": "That what's waiting for the DM and reviewers (the table's suggestions, Claude's drafts) reaches them without opening askdnd.",
-      "fails": "An email that doesn't go out is tried again at its next look, and the day is reported here as Failed with how many; a day it doesn't look shows as Late."
-    },
-    {
-      "key": "notes",
-      "title": "New notes",
-      "what": "Sorts what came in overnight against what's merged",
-      "when": "Daily, 6:00",
-      "where": "Claude",
-      "every_hours": 24,
-      "does": "A scheduled Claude session each morning reads what came in overnight against what's merged and what the code does now. On a morning when nothing came in, it reports that and stops.",
-      "checks": "That nothing you or the table sent waits unread, and that a note about something already fixed says so.",
-      "fails": "It reports each morning here, an empty one included; a morning it doesn't run shows as Late. It changes nothing without your OK."
-    },
-    {
-      "key": "speed",
-      "title": "Slowest pages",
-      "what": "Each page's time on askdnd.ai this week; a slow one becomes an issue (Behind the scenes › Speed)",
-      "when": "Mondays",
-      "where": "askdnd itself",
-      "every_hours": 168,
-      "does": "askdnd keeps every page's time on askdnd.ai each day; on Mondays it reads the week.",
-      "checks": "Each page whose slowest tenth takes 0.8 s or more, asked at least 20 times in the week.",
-      "fails": "A slow page becomes an issue under Behind the scenes › Speed, kept up to date while it's open."
-    },
-    {
-      "key": "phones",
-      "title": "The phone sweep",
-      "what": "Every page at 375 and 768 as admin, DM and player; one pull request",
-      "when": "Mondays",
-      "where": "Claude",
-      "every_hours": 168,
-      "does": "A scheduled Claude session every Monday looks at every page at phone and tablet widths as the admin, the DM and a player.",
-      "checks": "Anything that scrolls sideways, spills, overlaps, wraps a one-line control or is hard to tap.",
-      "fails": "Every finding is fixed in one pull request, and a check for your iPhone comes to For you; the session reports its run here, and a Monday it doesn't run shows as Late."
-    },
-    {
-      "key": "dependabot",
-      "title": "Dependabot",
-      "what": "Updates to the libraries askdnd uses, as pull requests",
-      "when": "Weekly",
-      "where": "GitHub",
-      "every_hours": 168,
-      "reads": "elsewhere",
-      "link": "https://github.com/jettison-v/dndsy/pulls?q=is%3Apr+author%3Aapp%2Fdependabot",
-      "does": "GitHub's Dependabot opens a pull request each week for each library with a newer version.",
-      "checks": "That askdnd doesn't fall behind on fixes and security updates in the code it builds on.",
-      "fails": "Its pull requests reach Claude, who merges them when the tests pass (a major version gets a real check first). It doesn't report here, so it's never Late; its pull requests are on GitHub."
-    }
-  ]
+ "_about": "Jobs that run on their own, listed on Backstage › Global › Development › Scheduled (app/fft/work_page.py; The Work Pages, Nov 20). Each reports its run with POST /api/fft/jobs/<key> (Claude's key reports any; the Mac Mini's and GitHub's only their own, app/fft/keys.py JOBS_OF; scripts/feedback.py job <key> ok|failed \"what it found\"). every_hours: a run older than one and a half times this is Late. does, checks, fails: what its side panel says (issue 55, Brett, Nov 20: a description of each). reads: where else its runs are kept (backup: the job_runs table); \"elsewhere\": it doesn't report here (Dependabot: its pull requests reach Claude), so it's never Late, and link says where to see it. The jobs audit (Brett's picks, Nov 21, docs/mockups/jobs-audit/) chose which run and how often.",
+ "jobs": [
+  {
+   "key": "nightly",
+   "title": "The live test",
+   "what": "Part 1 on the real D&D Beyond, then through the DM",
+   "when": "Nightly, 4:00",
+   "where": "Mac Mini",
+   "every_hours": 24,
+   "does": "Opens the three test seats on the real D&D Beyond and runs part 1 of the live test against askdnd.ai: a closed sheet, hit points, conditions, casting, rests, items and more, each changed in askdnd and read back on D&D Beyond; then the same again through the DM. Its sheets are tidied after every run.",
+   "checks": "That what askdnd changes reaches D&D Beyond and comes back, on real accounts, as the table plays.",
+   "fails": "A run that misses is tried once more; missed twice becomes an issue in Sentry (environment live-test), which alerts you. A night it doesn't report shows here as Late."
+  },
+  {
+   "key": "after_deploy",
+   "title": "After each deploy",
+   "what": "Four short runs of the live test against the new version",
+   "when": "Within minutes of each deploy",
+   "where": "Mac Mini",
+   "every_hours": 168,
+   "does": "Every 5 minutes the Mac Mini asks askdnd.ai which version it runs; when it changes, it opens the test seats and runs four short parts of the live test (a closed sheet, hit points, a condition, a cast) against the new version.",
+   "checks": "That a deploy didn't break the table's way to D&D Beyond: a change made in askdnd reaches D&D Beyond and comes back.",
+   "fails": "A miss goes to Sentry as \"Live test after deploying …\", which alerts you, and it reports Failed here. It's Late only after a week without a deploy it checked."
+  },
+  {
+   "key": "iphone",
+   "title": "iPhone Safari",
+   "what": "The seats' pages in real iPhone and iPad Safari",
+   "when": "Nightly, after the live test",
+   "where": "Mac Mini",
+   "every_hours": 24,
+   "does": "While the seats are open after the live test, opens the DM's and a player's pages in Apple's iPhone and iPad Simulator, in real Safari: a small iPhone, a large one and an iPad mini.",
+   "checks": "Safari's own bars, the keyboard, tapping a text box, and pages that fit: what desktop browsers can't show.",
+   "fails": "What it finds goes to Sentry as \"iPhone Safari: … missed\", which alerts you."
+  },
+  {
+   "key": "drift",
+   "title": "D&D Beyond drift",
+   "what": "Today's test sheets against the fixtures' shape",
+   "when": "Daily, 12:30 UTC",
+   "where": "GitHub",
+   "every_hours": 24,
+   "does": "GitHub reads today's three test sheets from D&D Beyond as askdnd does and compares them with the copies the tests use.",
+   "checks": "That a field the copies have isn't gone or changed kind, and that askdnd's parser still reads every character whole (name, level, Hit Points, AC, abilities, saves, skills, classes, actions, items, spells).",
+   "fails": "The run fails, GitHub emails you, and it reports Failed here with its own key (one that may report only this job); Claude refreshes the copies and fixes the parser."
+  },
+  {
+   "key": "backup",
+   "title": "Backups",
+   "what": "The database, to S3",
+   "when": "Nightly",
+   "where": "Railway",
+   "every_hours": 24,
+   "does": "Railway's backup service copies askdnd.ai's database to S3 every night, then sweeps files nothing has used for longer than backups are kept (its run line counts what it removed).",
+   "checks": "That a whole copy was made and stored; staging is refreshed from these copies.",
+   "fails": "Manage's Overview flags a failed or missed night; here it shows as Failed or Late.",
+   "reads": "job_runs"
+  },
+  {
+   "key": "restore",
+   "title": "Restore drill",
+   "what": "The newest backup loaded into staging, to prove it restores",
+   "when": "Monthly, the 1st",
+   "where": "Claude",
+   "every_hours": 744,
+   "does": "A scheduled Claude session on the 1st of each month loads the newest nightly backup into staging (scripts/refresh_staging.sh) and opens staging to see it answers with that data.",
+   "checks": "That a backup isn't only made but can be restored: the whole database comes back and askdnd runs on it.",
+   "fails": "It reports Failed here with what went wrong, and Claude looks before the next backup is needed. Staging is all it touches; askdnd.ai never is."
+  },
+  {
+   "key": "digest",
+   "title": "The Inbox digest",
+   "what": "An email to each person with something waiting for them",
+   "when": "Daily, from 6 PM",
+   "where": "askdnd itself",
+   "every_hours": 24,
+   "does": "Once a day, past the digest's hour, askdnd looks at each campaign for each person who gets the digest and emails those with something new in its Inbox.",
+   "checks": "That what's waiting for the DM and reviewers (the table's suggestions, Claude's drafts) reaches them without opening askdnd.",
+   "fails": "An email that doesn't go out is tried again at its next look, and the day is reported here as Failed with how many; a day it doesn't look shows as Late."
+  },
+  {
+   "key": "notes",
+   "title": "New notes",
+   "what": "Sorts what came in overnight against what's merged",
+   "when": "Daily, 6:00",
+   "where": "Claude",
+   "every_hours": 24,
+   "does": "A scheduled Claude session each morning reads what came in overnight against what's merged and what the code does now. On a morning when nothing came in, it reports that and stops.",
+   "checks": "That nothing you or the table sent waits unread, and that a note about something already fixed says so.",
+   "fails": "It reports each morning here, an empty one included; a morning it doesn't run shows as Late. It changes nothing without your OK."
+  },
+  {
+   "key": "speed",
+   "title": "Slowest pages",
+   "what": "Each page's time on askdnd.ai this week; a slow one becomes an issue (Behind the scenes › Speed)",
+   "when": "Mondays",
+   "where": "askdnd itself",
+   "every_hours": 168,
+   "does": "askdnd keeps every page's time on askdnd.ai each day; on Mondays it reads the week.",
+   "checks": "Each page whose slowest tenth takes 0.8 s or more, asked at least 20 times in the week.",
+   "fails": "A slow page becomes an issue under Behind the scenes › Speed, kept up to date while it's open."
+  },
+  {
+   "key": "phones",
+   "title": "The phone sweep",
+   "what": "Every page at 375 and 768 as admin, DM and player; one pull request",
+   "when": "Mondays",
+   "where": "Claude",
+   "every_hours": 168,
+   "does": "A scheduled Claude session every Monday looks at every page at phone and tablet widths as the admin, the DM and a player.",
+   "checks": "Anything that scrolls sideways, spills, overlaps, wraps a one-line control or is hard to tap.",
+   "fails": "Every finding is fixed in one pull request, and a check for your iPhone comes to For you; the session reports its run here, and a Monday it doesn't run shows as Late."
+  },
+  {
+   "key": "sentry",
+   "title": "Errors filed from Sentry",
+   "what": "New errors at the table, filed as issues",
+   "when": "Daily",
+   "where": "askdnd",
+   "every_hours": 24,
+   "does": "Asks Sentry, with a read-only key, for errors first seen in the last two days that aren't resolved, and files each new one as an issue in Behind the scenes › Errors, with how often it happened and its Sentry link.",
+   "checks": "That an error a player hits reaches the Board and Claude, not only Sentry's own alerts.",
+   "fails": "Sentry not answering shows here as failed; askdnd tries again the next day. Off until the read-only key is set."
+  },
+  {
+   "key": "dependabot",
+   "title": "Dependabot",
+   "what": "Updates to the libraries askdnd uses, as pull requests",
+   "when": "Weekly",
+   "where": "GitHub",
+   "every_hours": 168,
+   "reads": "elsewhere",
+   "link": "https://github.com/jettison-v/dndsy/pulls?q=is%3Apr+author%3Aapp%2Fdependabot",
+   "does": "GitHub's Dependabot opens a pull request each week for each library with a newer version.",
+   "checks": "That askdnd doesn't fall behind on fixes and security updates in the code it builds on.",
+   "fails": "Its pull requests reach Claude, who merges them when the tests pass (a major version gets a real check first). It doesn't report here, so it's never Late; its pull requests are on GitHub."
+  }
+ ]
 }
