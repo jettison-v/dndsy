@@ -2099,9 +2099,20 @@ def _pull_value(field_: str, raw):
     return v.lower() if field_ == "merge_state" else v
 
 
+def _when(raw) -> datetime | None:
+    """GitHub's time (ISO 8601, "Z" for UTC), or None when it sent none."""
+    if raw in (None, ""):
+        return None
+    try:
+        t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        raise RuleError("bad", "closed_at: a time GitHub gives (ISO 8601)") from None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
 def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False) -> list[FftPull]:
     """What GitHub reports: each pull request as it is now (`number` and the PULL_FIELDS; `updated`: brought up to date
-    with main just now). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
+    with main just now; `closed_at`: when a closed one closed). With `snapshot`, `rows` are all the open ones, so one this record holds open that isn't among
     them has closed. Each change is an event (the round trip reads them)."""
     seen, clean, out, at = set(), [], [], now()
     for r in rows:  # (all checked before any is kept: a report with one bad row changes nothing)
@@ -2113,8 +2124,8 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
             raise RuleError("bad", f"number {number}: once each, above 0")
         seen.add(number)
         vals = {f: _pull_value(f, r[f]) for f in PULL_FIELDS if f in r}
-        clean.append((number, {f: v[:200] if isinstance(v, str) else v for f, v in vals.items()}, bool(r.get("updated"))))
-    for number, vals, updated in clean:
+        clean.append((number, {f: v[:200] if isinstance(v, str) else v for f, v in vals.items()}, bool(r.get("updated")), _when(r.get("closed_at"))))
+    for number, vals, updated, closed_at in clean:
         p = db.scalar(select(FftPull).where(FftPull.number == number))
         fresh = p is None
         if fresh:
@@ -2128,8 +2139,10 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
         if updated:
             p.updated_by_askdnd_at = at
             changed["updated"] = True
-        if p.state != "open" and p.closed_at is None:
-            p.closed_at = at
+        if p.state == "open":
+            p.closed_at = None  # (reopened)
+        elif p.closed_at is None:
+            p.closed_at = closed_at or at
         link = pull_link(db, p)
         if link != (p.issue_id, p.area_id, p.item_id):
             p.issue_id, p.area_id, p.item_id = link

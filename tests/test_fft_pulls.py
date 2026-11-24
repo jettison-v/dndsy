@@ -131,3 +131,25 @@ def test_brought_up_to_date_is_recorded(db):
     p = _seen(db, _pr(40, merge_state="", tests="running") | {"updated": True})[0]
     assert p.updated_by_askdnd_at is not None
     assert db.scalar(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id.desc())).data["changes"]["updated"] is True
+
+
+def test_a_reopened_one_is_open_again_and_a_closed_one_keeps_githubs_time(db):
+    p = _seen(db, {"number": 50, "state": "closed", "closed_at": "2026-11-20T10:00:00Z"})[0]
+    assert p.closed_at.isoformat().startswith("2026-11-20T10:00:00")
+    p = _seen(db, _pr(50))[0]
+    assert (p.state, p.closed_at) == ("open", None)
+    with pytest.raises(rules.RuleError):
+        _seen(db, {"number": 51, "state": "closed", "closed_at": "yesterday"})
+
+
+def test_a_red_one_is_late_from_when_its_tests_failed_not_its_last_change(db):
+    """Its merge state changing later doesn't restart the 15 minutes before it shows as waiting on Claude too long."""
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    p = _seen(db, _pr(60, tests="failed"))[0]
+    db.execute(update(FftEvent).where(FftEvent.thing == "pull", FftEvent.thing_id == p.id).values(at=rules.now() - timedelta(hours=1)))
+    _seen(db, _pr(60, tests="failed", merge_state="unknown"))
+    red = next(g for g in views.gaps(db) if g["kind"] == "pull_red")
+    assert red["since"] <= rules.now() - timedelta(minutes=59)

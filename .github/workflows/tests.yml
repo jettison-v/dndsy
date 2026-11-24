@@ -68,7 +68,7 @@ jobs:
           echo "Not frozen."
 
   server:
-    name: Server tests
+    name: Server tests  # (an identifier: main's protection and scripts/github_report.py `TESTS` find it by this name)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -148,7 +148,7 @@ jobs:
           fi
 
   browser:
-    name: Browser tests
+    name: Browser tests  # (an identifier: main's protection and scripts/github_report.py `TESTS` find it by this name)
     needs: browser-part
     if: always()
     runs-on: ubuntu-latest

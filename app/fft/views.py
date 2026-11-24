@@ -13,6 +13,7 @@ from app.fft.models import (
     FftArea,
     FftCheck,
     FftCheckIssue,
+    FftEvent,
     FftIdea,
     FftIssue,
     FftItem,
@@ -454,8 +455,10 @@ def gaps(db: Session) -> list[dict]:
         out.append({"kind": "steps_done", "thing": "item", "id": it.id, "title": it.title, "since": last,
                     "says": f"Every step is done: ship it with what it changed (feedback.py roadmap {it.id} ship --result \"…\"), or add the step that's left."})
     for p in db.scalars(select(FftPull).where(FftPull.state == "open").order_by(FftPull.number)):  # (item 39: GitHub reports them)
-        if p.tests == "failed":
-            out.append({"kind": "pull_red", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+        if p.tests == "failed":  # (since its tests failed: a later change to it, such as its merge state, doesn't restart the wait)
+            red = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == "pull", FftEvent.thing_id == p.id,
+                                                                FftEvent.data["changes"]["tests"].astext == "failed"))
+            out.append({"kind": "pull_red", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}", **({"since": red} if red else {}),
                         "says": f"Pull request #{p.number}'s tests failed: fix it, or close it if it's no longer wanted."})
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
@@ -477,8 +480,6 @@ GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happene
 
 def _since(db: Session, out: list[dict]) -> list[dict]:
     """When each gap began: the last thing that happened to it (its newest event), else when it was made."""
-    from app.fft.models import FftEvent
-
     for g in out:
         if g.get("since"):
             continue

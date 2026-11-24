@@ -3,18 +3,20 @@
 Run by .github/workflows/report.yml on GitHub itself, after each pull request event, each test run and each push to main,
 with only Python's own library and GitHub's `gh`. It does two things:
 
-1. Keeps waiting pull requests up to date: after main moves (or auto-merge is turned on), each open pull request set to
-   merge by itself that is behind main gets main merged in, and its tests are started again (an update GitHub's own
-   token makes starts no run of its own). Without this, main's "up to date before merging" rule left them waiting.
+1. Keeps waiting pull requests up to date: each open pull request set to merge by itself that is behind main gets main
+   merged in, and its tests are started again (an update GitHub's own token makes starts no run of its own). Without
+   this, main's "up to date before merging" rule left them waiting. It's done on every run, not only after main
+   moves: a run waiting for its turn can be replaced by a newer one.
 2. Reports every open pull request to askdnd (POST /api/fft/github/pulls, FFT_GITHUB_KEY), as a whole list so askdnd
-   also closes any it still holds open, plus the one just closed: its title, branch, tests, whether it's behind main,
-   and whether it merges by itself. askdnd links each to its work (app/fft/rules.py `pulls_seen`).
+   also closes any it still holds open, and how the last few closed ones ended (merged or not), so a replaced run
+   loses nothing: each one's title, branch, tests, whether it's behind main, and whether it merges by itself. askdnd links each to its work (app/fft/rules.py `pulls_seen`).
 
 It never checks out a pull request's own code: it reads what GitHub says about them. A pull request from a fork isn't
 ours, so it's left out. A report that can't reach askdnd is a warning on the run, never a failure: the next run sends
 the whole list again.
 """
 
+import http.client
 import json
 import os
 import subprocess
@@ -26,6 +28,8 @@ import urllib.request
 ASKDND = os.getenv("ASKDND_URL", "https://askdnd.ai")
 TESTS = ("Server tests", "Browser tests")  # (the checks main's protection asks for; the freeze job is left out: a pause isn't a red test)
 FIELDS = "number,title,headRefName,author,isCrossRepository,autoMergeRequest,mergeStateStatus,headRefOid,statusCheckRollup"
+CLOSED_FIELDS = "number,title,headRefName,author,isCrossRepository,headRefOid,mergedAt,closedAt"
+RECENT = 20  # (how many lately closed pull requests each run reports)
 FAILED = {"failure", "timed_out", "action_required", "startup_failure", "error"}
 
 
@@ -52,23 +56,38 @@ def tests_of(rollup: list | None) -> str:
     return ""
 
 
-def row(pr: dict, state: str = "open") -> dict:
+def row(pr: dict, state: str = "open", closed_at: str | None = None) -> dict:
+    """What askdnd keeps of one. A closed one's tests, merge state and auto-merge aren't sent: GitHub no longer says,
+    so askdnd keeps them as they last were."""
     author = pr.get("author") or {}
-    return {"number": pr["number"], "title": (pr.get("title") or "")[:200], "branch": (pr.get("headRefName") or "")[:200],
-            "by_bot": bool(author.get("is_bot")) or (author.get("login") or "").endswith("[bot]") or (author.get("login") or "").startswith("app/"),
-            "state": state, "tests": tests_of(pr.get("statusCheckRollup")), "merge_state": (pr.get("mergeStateStatus") or "").lower(),
-            "auto_merge": bool(pr.get("autoMergeRequest")), "head": (pr.get("headRefOid") or "")[:40]}
+    login = author.get("login") or ""
+    out = {"number": pr["number"], "title": (pr.get("title") or "")[:200], "branch": (pr.get("headRefName") or "")[:200],
+           "by_bot": bool(author.get("is_bot")) or login.endswith("[bot]") or login.startswith("app/"), "state": state,
+           "head": (pr.get("headRefOid") or "")[:40]}
+    if state == "open":
+        out |= {"tests": tests_of(pr.get("statusCheckRollup")), "merge_state": (pr.get("mergeStateStatus") or "").lower(),
+                "auto_merge": bool(pr.get("autoMergeRequest"))}
+    elif closed_at:
+        out["closed_at"] = closed_at
+    return out
 
 
-def open_ones(settle: bool) -> list[dict]:
-    """The open pull requests that are ours. `settle`: GitHub works out "behind" a moment after main moves, so ask
-    again (up to three times) while any of them is still UNKNOWN."""
+def open_ones() -> list[dict]:
+    """The open pull requests that are ours. GitHub works out "behind" a moment after main moves, so while one set to
+    merge by itself is still UNKNOWN, ask again (up to three times)."""
     for attempt in range(3):
         prs = [p for p in json.loads(gh("pr", "list", "--state", "open", "--limit", "100", "--json", FIELDS)) if not p.get("isCrossRepository")]
-        if not settle or not any((p.get("mergeStateStatus") or "").upper() == "UNKNOWN" for p in prs) or attempt == 2:
+        if attempt == 2 or not any(p.get("autoMergeRequest") and (p.get("mergeStateStatus") or "").upper() == "UNKNOWN" for p in prs):
             return prs
         time.sleep(10)
     return prs
+
+
+def closed_ones() -> list[dict]:
+    """The pull requests closed lately, merged or not: a run that would have reported one may have been replaced by a
+    newer one while it waited (one waits per group), so every run says how the last few ended."""
+    got = json.loads(gh("pr", "list", "--state", "closed", "--limit", str(RECENT), "--json", CLOSED_FIELDS))
+    return [row(p, "merged" if p.get("mergedAt") else "closed", closed_at=p.get("closedAt")) for p in got if not p.get("isCrossRepository")]
 
 
 def bring_up_to_date(prs: list[dict], repo: str) -> set[int]:
@@ -93,35 +112,45 @@ def send(rows: list[dict], key: str) -> None:
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             print(f"askdnd has {len(json.loads(r.read()).get('seen', []))} pull request(s)")
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+    except (OSError, ValueError, http.client.HTTPException) as e:  # (URLError, HTTPError and timeouts are OSErrors)
         print(f"::warning::Couldn't report to askdnd ({e}); the next run sends the whole list again")
+
+
+def gather(event: str, payload: dict, repo: str) -> list[dict]:
+    """Every open pull request (each behind one set to merge by itself brought up to date first: on every run, since a
+    run waiting for its turn can be replaced by a newer one), then how the last few closed ones ended. One closed
+    since it was listed as open counts as closed: the closed state wins."""
+    prs = open_ones()
+    updated = bring_up_to_date(prs, repo)
+    rows = {}
+    for p in prs:
+        r = row(p)
+        if p["number"] in updated:
+            r.update(updated=True, tests="running", merge_state="")
+        rows[p["number"]] = r
+    for r in closed_ones():
+        rows[r["number"]] = r
+    closed = payload.get("pull_request") if event == "pull_request_target" and payload.get("action") == "closed" else None
+    if closed and not (closed.get("head", {}).get("repo") or {}).get("fork"):
+        user = closed.get("user") or {}
+        rows[closed["number"]] = row({"number": closed["number"], "title": closed.get("title"), "headRefName": closed.get("head", {}).get("ref"),
+                                      "author": {"login": user.get("login"), "is_bot": user.get("type") == "Bot"}, "headRefOid": closed.get("head", {}).get("sha")},
+                                     "merged" if closed.get("merged") else "closed", closed_at=closed.get("closed_at"))
+    return list(rows.values())
 
 
 def main() -> None:
     event = os.environ.get("GITHUB_EVENT_NAME", "")
-    repo = os.environ.get("GITHUB_REPOSITORY", "")
     try:
         with open(os.environ.get("GITHUB_EVENT_PATH", "")) as f:
             payload = json.load(f)
     except (OSError, ValueError):
         payload = {}
-    action = payload.get("action", "")
-    catch_up = event == "push" or (event == "pull_request_target" and action == "auto_merge_enabled")
-    prs = open_ones(settle=catch_up)
-    updated = bring_up_to_date(prs, repo) if catch_up else set()
-    rows = []
-    for p in prs:
-        r = row(p)
-        if p["number"] in updated:
-            r.update(updated=True, tests="running", merge_state="")
-        rows.append(r)
-    closed = payload.get("pull_request") if event == "pull_request_target" and action == "closed" else None
-    if closed and not (closed.get("head", {}).get("repo") or {}).get("fork"):
-        rows.append(row({"number": closed["number"], "title": closed.get("title"), "headRefName": closed.get("head", {}).get("ref"),
-                         "author": {"login": (closed.get("user") or {}).get("login"), "is_bot": (closed.get("user") or {}).get("type") == "Bot"},
-                         "headRefOid": closed.get("head", {}).get("sha")}, "merged" if closed.get("merged") else "closed"))
-        for gone in ("tests", "merge_state", "auto_merge"):  # (kept as they were: GitHub doesn't say once it's closed)
-            rows[-1].pop(gone)
+    try:
+        rows = gather(event, payload, os.environ.get("GITHUB_REPOSITORY", ""))
+    except (subprocess.CalledProcessError, ValueError) as e:
+        print(f"::warning::Couldn't read the pull requests from GitHub ({getattr(e, 'stderr', '') or e}); the next run tries again")
+        return
     key = os.environ.get("FFT_GITHUB_KEY", "")
     if not key:
         print("No FFT_GITHUB_KEY: nothing reported")
