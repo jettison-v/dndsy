@@ -1,54 +1,70 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word %}
-{% from "_lists.html" import empty_state %}
+{% from "_tables.html" import table_box %}
 {% block title %}For you · Backstage · askdnd{% endblock %}
 {% block content %}
-{# Backstage › Global › For you (app/fft/testing_page.py; screens 1–8 of docs/mockups/found-fixed-tried/; its own page,
-   Nov 19, the work flow's slice 2; a table since The Work Pages, Nov 20): everything that's your turn, grouped by what
-   you do with it (Try, Decide, Look at, From the table, From the Roadmap). A row opens its item in the item window; a
-   round takes the checks for this device page by page. Where it stands, Claude's and Done are Work's now. #}
+{# Backstage › Global › For you (app/fft/testing_page.py; its own page, Nov 19, the work flow's slice 2): everything that's
+   your turn, in three tables, quick ones first (issue 111, Brett's picks on docs/mockups/for-you-tables/, Nov 24):
+   Decide (one read and one press), From the Roadmap (in his order), then Try (the long one, its rounds). Each its own
+   head right above its columns (_tables.html table_box); each row one action word and its number; a row opens its item
+   in the item window at the right (app/fft/item_page.py), ↑ ↓ for the next; ▶ Try it starts a try at once. #}
 <main class="page manage-page" data-fft-page="for-you">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>For you</h1></div>{# (an open round's End round is in the status bar and on its card: issue 51, Nov 20, one place each) #}
-  <p class="subtitle">Everything waiting on you, and nothing else: checks to try, Claude's questions, fixes to look at, and the table's notes and ideas. Only admins can see this page.</p>
+  <p class="subtitle">Everything waiting on you, and nothing else: what to decide, steps from the Roadmap, and what to try. Only admins can see this page.</p>
   {% with bar = status, back = "foryou" %}{% include "_fft_status.html" %}{% endwith %}
-  {% if not groups %}{{ empty_state("Nothing is your turn. Claude's working on what's next.") }}
-  {% else %}
-  {# A table, one row an item (Backstage mode; The Work Pages, Nov 20): grouped by what you do, every row saying why it's
-     here; a row opens its item in the item window at the right (app/fft/item_page.py), ↑ ↓ for the next. #}
-  {% set kinds = {"check": ("Check", "ask"), "question": ("Question", "claude"), "decision": ("Decision", "claude"), "merge": ("Fix to OK", "ask"), "ready": ("Fixed", "passed"), "local": ("On your Mac", "ask"), "note": ("Note", "quiet"), "idea": ("Idea", "quiet"), "roadmap": ("Step", "ask"), "scope": ("Scope", "ask")} %}
-  <p class="note fft-foryou-sum" data-summary><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b> · {{ summary.line }}</p>
-  <div class="table-scroll" id="ts-list">
-  <table class="dtable fft-table" data-fft-list="{{ show }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-    <thead><tr><th class="dt-w3">Kind</th><th>What, and its goal</th><th class="num dt-w2">Takes</th><th class="dt-w4"></th></tr></thead>
-    <tbody>
-    {% for g in groups %}
-      {% if (loop.first or loop.previtem.section != g.section) %}
-      <tr class="dt-group" data-section="{{ g.section }}"><td colspan="4"><span class="fft-section">{{ sections[g.section] }}</span></td></tr>
-      {% endif %}
-      {% if g.section == "try" %}
-      {% if loop.first or loop.previtem.need != g.need %}{% set nc = need_counts[g.need] %}{# (a group per need, each its own round: Clearer checks, Brett's pick 3) #}
-      <tr class="dt-group fft-need" data-need="{{ g.need }}"><td colspan="4"><span class="fft-need-name">{{ need_said[g.need] }}</span> <span class="note">{{ nc.n }} check{{ "s" if nc.n != 1 }} · about {{ nc.minutes }} min</span>
-        {% if not round_open %}{% if need_device[g.need] != device %}<span class="note" data-need-elsewhere>· do the steps {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span> {% endif %}
-        {% if round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
-        {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}</td></tr>
-      {% endif %}
-      <tr class="dt-group" data-group="{{ g.key }}"><td colspan="4"><span class="fft-group-name">{{ g.title }}</span>
-        {% if g.checks and g.area_id and not round_open %}{% if g.area_id in flight_areas %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?area={{ g.area_id }}&amp;need={{ g.need }}" data-do="area-round">▶ Just this area</button>{% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="area" value="{{ g.area_id }}"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}{% endif %}</td></tr>
-      {% endif %}
-      {% for r in g.rows %}{% set k = kinds.get(r.kind, ("Item", "quiet")) %}
-      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
-        <td>{{ state_word(k[0], k[1]) }}</td>
-        <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
-        <td class="num">{% if r.minutes %}{{ r.minutes }} min{% endif %}</td>
-        <td>{% if r.kind == "check" %}<form method="post" action="/manage/testing/checks/{{ r.key[1:] }}/go" class="inline"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
-          {% else %}<button class="btn small" type="button" data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" data-do="open">{{ {"question": "Answer", "decision": "Decide", "note": "Sort", "idea": "Place", "merge": "Look", "ready": "Look", "local": "Look", "roadmap": "Open", "scope": "Read it"}.get(r.kind, "Open") }}</button>{% endif %}</td>
-      </tr>
+  {% if summary.n %}<p class="note fft-foryou-sum" data-summary><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b> · {{ summary.line }}</p>{% endif %}
+  <div class="tbx-stack"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
+  {% for key, title in sections %}
+    {% set gs = groups | selectattr("section", "equalto", key) | list %}
+    {% set n = gs | map(attribute="rows") | map("length") | sum %}
+    {% if key == "try" %}
+      {% set nc = need_counts[device_need] if device_need else none %}
+      {% set try_ctl %}{% if nc and nc.n and not round_open %}<span class="note">{{ need_said[device_need] }}: {{ nc.n }} check{{ "s" if nc.n != 1 }} · about {{ nc.minutes }} min</span>
+        {% if round_flight %}<button class="btn primary small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ device_need }}" data-do="start-round">▶ Start round</button>
+        {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ device_need }}"><button class="btn primary small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}{% endset %}
+      {% call table_box("try", title, n, ("about " ~ try_minutes ~ " min · " if try_minutes else "") ~ "you use askdnd and mark what you saw",
+                        [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w1"), ("", "dt-w2")],
+                        "Nothing to try. A check reaches here once its change is live and Claude has tried it.", try_ctl, ' data-fft-list="foryou"') %}
+      {% for g in gs %}
+        {% if g.key == "local" %}<tr class="dt-group" data-group="local"><td colspan="5"><span class="fft-group-name">{{ g.title }}</span></td></tr>
+        {% else %}
+          {% if (loop.first or loop.previtem.need != g.need) and (g.need != device_need or several_needs) %}{% set gc = need_counts[g.need] %}{# (another device's checks, or more than one kind here: a row of their own with their round) #}
+          <tr class="dt-group fft-need" data-need="{{ g.need }}"><td colspan="5"><span class="fft-need-name">{{ need_said[g.need] }}</span> <span class="note">{{ gc.n }} check{{ "s" if gc.n != 1 }} · about {{ gc.minutes }} min</span>
+            {% if not round_open and g.need != device_need %}<span class="note" data-need-elsewhere>· do the steps {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span>
+            {% if round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
+            {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}</td></tr>
+          {% endif %}
+          <tr class="dt-group" data-group="{{ g.key }}"><td colspan="5"><span class="fft-group-name">{{ g.title }}</span>
+            {% if g.checks and g.area_id and not round_open %}{% if g.area_id in flight_areas %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?area={{ g.area_id }}&amp;need={{ g.need }}" data-do="area-round">▶ Just this area</button>{% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="area" value="{{ g.area_id }}"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}{% endif %}</td></tr>
+        {% endif %}
+        {% for r in g.rows %}
+        <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
+          <td>{{ state_word(act[r.kind][0], act[r.kind][1], ' data-act="' ~ r.kind ~ '"') }}</td>
+          <td><span class="dt-id">{{ r.no }}</span></td>
+          <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
+          <td class="num">{% if r.minutes %}{{ r.minutes }} min{% endif %}</td>
+          <td>{% if r.kind == "check" %}<form method="post" action="/manage/testing/checks/{{ r.key[1:] }}/go" class="inline"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>{% endif %}</td>
+        </tr>
+        {% endfor %}
       {% endfor %}
-    {% endfor %}
-    </tbody>
-  </table>
+      {% endcall %}
+    {% else %}
+      {% call table_box(key, title, n, "one read and one press each · often what Claude's waiting on" if key == "decide" else "a scope to approve, or a step that's yours · in your order",
+                        [("", "dt-w2"), ("No.", "dt-w2"), ("What" if key == "decide" else "Item", ""), ("From" if key == "decide" else "Where", "dt-w4")],
+                        "Nothing to decide. Claude's questions, and notes, ideas and fixes sent for your yes, come here." if key == "decide"
+                        else "Nothing from the Roadmap. A scope waiting for your yes, or a step that's yours, comes here.", "", ' data-fft-list="foryou"') %}
+      {% for g in gs %}{% for r in g.rows %}
+        <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
+          <td>{{ state_word(act[r.kind][0], act[r.kind][1], ' data-act="' ~ r.kind ~ '"') }}</td>
+          <td><span class="dt-id">{{ r.no }}</span></td>
+          <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
+          <td class="dt-wrap note">{{ r.from }}</td>
+        </tr>
+      {% endfor %}{% endfor %}
+      {% endcall %}
+    {% endif %}
+  {% endfor %}
   </div>
-  {% endif %}
 </main>
 {% endblock %}
