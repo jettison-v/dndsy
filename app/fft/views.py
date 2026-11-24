@@ -4,6 +4,7 @@ note's sender is told on Notes you sent. The same words on every page; nothing h
 
 from datetime import timedelta
 
+from markupsafe import Markup
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -569,3 +570,25 @@ def pull_row(p: FftPull) -> dict:
             "upkeep": rules.pull_upkeep(p), "reported_at": p.reported_at.isoformat() if p.reported_at else None,
             "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None,
             "merge_commit": p.merge_commit, "live_at": p.live_at.isoformat() if p.live_at else None}
+
+
+# Short marks, one letter a kind (Brett's pick P4 on Our Work, page by page, and his comment, Nov 24: "It might be better
+# to use I instead of Issue or P Instead of Plan so these do not get so verbose and difficult to read"): I76 an issue,
+# C80 a check, Q17 a question, R39 a Roadmap item, P12 a plan, N70 a note; the full word on hover. The same marks in
+# what Claude writes.
+MARK = {"i": ("I", "issue"), "c": ("C", "check"), "q": ("Q", "question"), "r": ("R", "Roadmap item"), "a": ("P", "plan"),
+        "n": ("N", "note"), "d": ("D", "idea"), "l": ("L", "local try")}
+
+
+def mark_of(key: str) -> tuple[str, str]:
+    """("I76", "issue 76") for an item's key ("i76"); the key itself when it isn't one."""
+    k, n = (key or "")[:1], (key or "")[1:]
+    if k not in MARK or not n.isdigit():
+        return key, key
+    return f"{MARK[k][0]}{n}", f"{MARK[k][1]} {n}"
+
+
+def mark(key: str) -> Markup:
+    """The short mark as the pages show it: <abbr> with the full word on hover, marked for tests and pages."""
+    short, said = mark_of(key)
+    return Markup('<abbr class="mark" title="{}" data-mark="{}">{}</abbr>').format(said, key, short)

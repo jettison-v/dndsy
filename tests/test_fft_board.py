@@ -206,3 +206,20 @@ def test_a_builds_row_in_your_order_says_its_plans_column(db, admin):
     page = admin.get("/manage/work?tab=queue").text
     row = page.split(f'data-key="i{it.id}"', 1)[1].split("</tr>", 1)[0]
     assert 'data-col-word="building"' in row
+
+
+def test_short_marks_on_cards_and_the_roadmap_list(db, admin):
+    """Brett's picks P2 and P4 on Our Work, page by page (Nov 24): Board cards and the Roadmap list carry short marks (P12,
+    R39), the full word on hover; the Roadmap list's titles are plain, the row opens the item."""
+    i = _issue(db, "Back clears what you typed")
+    it = rules.new_item(db, "claude", "An idea", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])  # (its card waits for your OK: a Roadmap card, R not I)
+    db.flush()
+    board = admin.get("/manage/work").text
+    assert f'title="plan {i.area_id}" data-mark="a{i.area_id}">P{i.area_id}</abbr>' in board
+    assert f'data-mark="r{it.id}">R{it.id}</abbr>' in board
+    road = admin.get("/manage/roadmap").text
+    assert f'title="Roadmap item {it.id}" data-mark="r{it.id}">R{it.id}</abbr>' in road
+    row = road.split(f'data-item="{it.id}"', 1)[1].split("</tr>", 1)[0]
+    assert "<a " not in row.split("</td>", 3)[2]  # (its title plain: the row opens it)

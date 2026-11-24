@@ -134,9 +134,10 @@ def test_for_you_is_three_tables_with_an_action_word_and_number_on_each_row(admi
     rules.fix_live(db, "askdnd", bare, "abc")
     db.flush()
     page = admin.get("/manage/for-you").text
-    for key, words in ((f"c{c.id}", ("Try", f"check {c.id}")), (f"q{q.id}", ("Answer", f"question {q.id}")), (f"n{n.id}", ("Approve", f"note {n.id}"))):
+    for key, words in ((f"c{c.id}", ("Try", f"C{c.id}", f"check {c.id}")), (f"q{q.id}", ("Answer", f"Q{q.id}", f"question {q.id}")),
+                       (f"n{n.id}", ("Approve", f"N{n.id}", f"note {n.id}"))):
         row = page.split(f'data-row="{key}"', 1)[1].split("</tr>", 1)[0]
-        assert f">{words[0]}</span>" in row and f">{words[1]}</span>" in row, key
+        assert f">{words[0]}</span>" in row and f'title="{words[2]}" data-mark="{key}">{words[1]}</abbr>' in row, key  # (P4: short marks, the word on hover)
     assert f'data-row="i{bare.id}"' not in page  # (Claude's: a fix with no check is its gap)
     assert page.count('class="tbx-head"') == 3 and 'data-table="roadmap"' in page and "Nothing from the Roadmap." in page
     assert page.index('data-table="decide"') < page.index('data-table="roadmap"') < page.index('data-table="try"')
