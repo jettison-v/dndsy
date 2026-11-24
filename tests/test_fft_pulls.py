@@ -153,3 +153,36 @@ def test_a_red_one_is_late_from_when_its_tests_failed_not_its_last_change(db):
     _seen(db, _pr(60, tests="failed", merge_state="unknown"))
     red = next(g for g in views.gaps(db) if g["kind"] == "pull_red")
     assert red["since"] <= rules.now() - timedelta(minutes=59)
+
+
+def test_what_github_reports_never_fills_claudes_inbox(api, db, github):
+    """Every test run changes a pull request: kept on the record, never in an inbox (Nov 24: the first live reports woke
+    Claude's listener for each one). A red one reaches Claude as a gap instead."""
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    assert api.post("/api/fft/github/pulls", headers=github, json={"pulls": [_pr(70, tests="failed")]}).status_code == 200
+    db.execute(update(FftEvent).values(at=rules.now() - timedelta(seconds=30)))
+    assert api.get("/api/fft/inbox", headers={"X-Fft-Key": CLAUDE}).json()["items"] == []
+    assert api.get("/api/fft/inbox/wait?seconds=1", headers={"X-Fft-Key": CLAUDE}).json()["items"] == []
+    assert any(g["kind"] == "pull_red" for g in api.get("/api/fft/gaps", headers={"X-Fft-Key": CLAUDE}).json()["items"])
+
+
+def test_a_plans_history_says_what_happened_to_its_pull_requests_in_words(db):
+    """Opened, tests passed or failed, brought up to date, merged: in words, on its plan's History; a flicker of its merge
+    state isn't one."""
+    issue = rules.new_issue(db, "claude", "Back clears what you typed", feature="feedback")
+    db.flush()
+    br = f"a{issue.area_id}-batch"
+    _seen(db, _pr(90, br))
+    _seen(db, _pr(90, br, merge_state="unknown"))
+    _seen(db, _pr(90, br, tests="passed"))
+    _seen(db, _pr(90, br, tests="running") | {"updated": True})
+    _seen(db, {"number": 90, "state": "merged"})
+    evs = db.scalars(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id))
+    said = [views.event_words(e) for e in evs]
+    assert said == ["Pull request #90 opened", "Pull request #90 changed", "Pull request #90's tests passed",
+                    "Pull request #90 brought up to date with main", "Pull request #90 merged"]
+    shown = [views.pull_worth_saying(e) for e in db.scalars(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id))]
+    assert shown == [True, False, True, True, True]

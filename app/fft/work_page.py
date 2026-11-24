@@ -398,7 +398,8 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     now_ = [r for r in checks if r["c"].id in row["check_ids"]]  # (this plan's checks now; those that passed before, its History)
     shown_checks = [r for r in checks if r["c"].id not in row["check_ids"]] if history else now_
     shown_issues = [i for i in issues if (i.state == "closed") == bool(history)]
-    events = list(db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200)))
+    events = [e for e in db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200))
+              if e.thing != "pull" or views.pull_worth_saying(e)]
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
                                                           FftQuestion.about_id.in_([i.id for i in issues] or [0]))))
     who: dict = {}

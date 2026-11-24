@@ -130,7 +130,7 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
     """What this listener hasn't read (T8): each listener its own read mark; an area's own listener hears only it."""
     li = rules.listener(db, listener, area_id=area or None)
     actor = keys.require(db, x_fft_key, "read")
-    rows = [e for e in rules.unread(db, li, peek=bool(peek)) if e.actor != actor.name]  # (not what it did itself)
+    rows = [e for e in rules.unread(db, li, peek=bool(peek)) if rules.heard(e, actor.name)]
     out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
             "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
     db.commit()
@@ -155,7 +155,7 @@ def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x
 
     def peek() -> list[dict]:
         li = rules.listener(db, listener, area_id=area or None)
-        rows = [e for e in rules.unread(db, li, peek=True) if e.actor != actor.name]
+        rows = [e for e in rules.unread(db, li, peek=True) if rules.heard(e, actor.name)]
         out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
                 "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
         db.commit()  # (gives the connection back while it waits)

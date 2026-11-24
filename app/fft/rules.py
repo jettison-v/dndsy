@@ -2041,6 +2041,15 @@ def listener(db: Session, name: str, area_id: int | None = None) -> FftListener:
     return li
 
 
+QUIET_THINGS = frozenset({"pull"})  # (kept on the record, never in an inbox: GitHub reports every test run, Nov 24)
+
+
+def heard(e: FftEvent, listener_actor: str) -> bool:
+    """Whether an inbox shows this event: not what the listener did itself, and nothing that only keeps the record
+    (a pull request's every change: a red one or one that conflicts reaches Claude as a gap instead)."""
+    return e.actor != listener_actor and e.thing not in QUIET_THINGS
+
+
 def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
     """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`."""
     q = select(FftEvent).where(FftEvent.id > li.read_id, FftEvent.at <= func.now() - SETTLE).order_by(FftEvent.id)
