@@ -220,3 +220,15 @@ def test_a_build_brett_holds_never_jumps_the_line(db):
     it.held = True
     db.flush()
     assert rules.pick_next(db).reason != "shipped_fix"
+
+
+def test_the_listener_hears_news_not_its_own_sessions_or_routine_jobs(db):
+    """Nov 24: the listener woke every few minutes for its own claims ("claude:main") and GitHub's routine job reports;
+    a failed job and anything a person did still wake it."""
+    from app.fft.models import FftEvent
+
+    said = [FftEvent(actor="claude:main", kind="area_locked", thing="area", thing_id=1, data={}),
+            FftEvent(actor="github", kind="job_ran", thing="tool", thing_id=0, data={"job": "drift", "result": "ok"}),
+            FftEvent(actor="github", kind="job_ran", thing="tool", thing_id=0, data={"job": "drift", "result": "failed"}),
+            FftEvent(actor="user:1", kind="question_answered", thing="question", thing_id=3, data={})]
+    assert [rules.heard(e, "claude") for e in said] == [False, False, True, True]
