@@ -53,7 +53,7 @@ def test_a_message_said_in_chat_is_a_gap_until_filed_onto_its_item_or_issue(api,
 def test_a_relayed_comment_the_apps_own_notices_and_an_empty_message_arent_saved(api, db):
     assert _said(api, "[Artifact comment sent to Claude]\nArtifact: …").json()["id"] is None  # (it comes in through its page)
     assert _said(api, "  ").json()["id"] is None
-    for notice in ("<task-notification>\n<task-id>b1</task-id>", "<system-reminder>\n[SYSTEM NOTIFICATION - NOT USER INPUT]", "<system-reminder id=\"8e13\">\nAnother Claude session sent a message", "Stop hook feedback:\n- pull 30"):
+    for notice in ("<task-notification>\n<task-id>b1</task-id>", "<system-reminder>\n[SYSTEM NOTIFICATION - NOT USER INPUT]", "<system-reminder id=\"8e13\">\nAnother Claude session sent a message", "Another Claude session sent a message:\n<agent-message from=\"ae87\">", "Stop hook feedback:\n- pull 30"):
         assert _said(api, notice).json()["id"] is None  # (the app's own messages, not his words)
     assert db.scalar(select(FftChat)) is None
 

@@ -1421,6 +1421,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.body.addEventListener('openScene', e => { const url = e.detail && (e.detail.value || e.detail); if (typeof url === 'string') openPanel(url, null, null); });
   // Something on askdnd's table changed (a place, a token, the fight): this page shows its new copy at once
   document.body.addEventListener('tableChanged', () => showInPlace(true));
+  // (picks saved in a mockup's window answer its question: For you, Feedback or a plan redraws once the window closes,
+  // without waiting on the live connection; issue 115, Brett: Q19 stayed in Decide until he reloaded)
+  document.addEventListener('doc:picks-saved', () => { if (document.querySelector('[data-fft-page], [data-fft-yours]')) showInPlace(); });
   document.body.addEventListener('characterChanged', () => showInPlace(true));
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
