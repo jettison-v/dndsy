@@ -173,6 +173,34 @@ def test_picks_on_a_mockup_save_in_askdnd_and_come_back(people, server, browser_
     assert frame.locator("input[name=shot][value=browser]").is_checked() and frame.locator("form.decide textarea").input_value() == "Fifteen minutes is fine."
 
 
+def test_a_question_answered_by_picks_in_its_mockup_leaves_for_you_without_a_reload(people, server, browser_db):
+    """Issue 115 (Brett, Nov 24): he saved his picks in Q19's mockup, opened from For you, and the question stayed in
+    Decide until he reloaded. Once the window closes, For you redraws itself without it."""
+    path = "docs/mockups/fft-round-2/index.html"
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        qid = conn.execute(text("INSERT INTO fft_questions (about, about_id, doc_path, text, choices, workspace_id) VALUES "
+                                "('document', NULL, :p, 'Which?', '[]', 1) RETURNING id"), {"p": path}).scalar()
+    engine.dispose()
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")
+    admin.page.route_web_socket("**/live/connect*", lambda ws: ws.close())  # (no live connection, as his page likely had)
+    page = admin.open("/manage/for-you")
+    row = page.locator(f'main [data-panel-url^="/manage/item/q{qid}"]').first
+    row.click()
+    page.locator("#peek.open .fft-doc a[data-modal-url]").click()
+    frame = page.frame_locator(".peek.full.open iframe.doc-frame")
+    frame.locator('form.decide .saved[data-state="none"]').wait_for()
+    for name, value in (("queue", "quiet"), ("split", "issue"), ("shot", "browser")):
+        frame.locator(f"input[name={name}][value={value}]").check()
+    frame.locator("form.decide button[type=submit]").click()
+    frame.locator('form.decide .saved[data-state="saved"]').wait_for()
+    page.locator(".peek.full.open .peek-close").click()  # (the mockup's window: the focus is in its frame, so ✕)
+    page.locator("#peek.open .peek-close").first.click()  # (then the question's)
+    page.wait_for_function("() => !document.querySelector('.peek.open')")
+    page.locator(f'main [data-panel-url^="/manage/item/q{qid}"]').wait_for(state="detached", timeout=8000)
+
+
 def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server, browser_db):
     """Brett's round, Nov 18: FEEDBACK AND TESTING wrapped over its first row. A Product Area's heading in Feedback's
     list is the lists' group heading: however long, it pushes its rows down."""
