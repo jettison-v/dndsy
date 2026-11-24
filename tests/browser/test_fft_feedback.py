@@ -275,7 +275,8 @@ def test_a_comment_made_on_claude_ai_is_pinned_by_its_words(people, server, brow
 
     path = "docs/mockups/work-board/index.html"  # (a mockup no other test pins)
     engine = create_engine(browser_db[0])
-    with engine.begin() as conn:
+    with engine.begin() as conn:  # (its own row each try: a rerun starts clean)
+        conn.execute(text("DELETE FROM fft_doc_comments WHERE doc = :p"), {"p": path})
         conn.execute(text("INSERT INTO fft_doc_comments (doc, page, n, x, y, near, words, origin, ext_id, workspace_id) VALUES "
                           "(:p, '', 1, 0, 0, 'How the queue feeds the board', 'Shorter, please.', 'claude.ai', 't1:1', 1)"), {"p": path})
     engine.dispose()
@@ -286,7 +287,11 @@ def test_a_comment_made_on_claude_ai_is_pinned_by_its_words(people, server, brow
     frame = page.frame_locator("iframe.doc-frame")
     pin = frame.locator('.askdnd-pin[data-n="1"]')
     pin.wait_for()
-    at, h1 = pin.bounding_box(), frame.locator("#h-qflow").bounding_box()
+    for _ in range(50):  # (the pin follows its words as the page settles: wait for it to sit by them)
+        at, h1 = pin.bounding_box(), frame.locator("#h-qflow").bounding_box()
+        if abs(at["y"] - h1["y"]) < 50 and abs(at["x"] - h1["x"]) < 50:
+            break
+        page.wait_for_timeout(100)
     assert abs(at["y"] - h1["y"]) < 50 and abs(at["x"] - h1["x"]) < 50 and at["y"] > 1000  # (at the words, drawn just above them as every pin is; not the corner)
 
 

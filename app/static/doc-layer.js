@@ -119,5 +119,11 @@
   }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape' && on) tell({ askdnd: 'comment-stop' }); });
   addEventListener('resize', () => { if (pins.length) draw(); });
+  // (a pin placed by its words moves with them: drawn again once the page's fonts and pictures have settled, and when
+  // the page itself grows or reflows, as a mockup drawing its own boards does)
+  const settle = () => { if (pins.length) draw(); };
+  addEventListener('load', settle);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+  if (window.ResizeObserver) new ResizeObserver(settle).observe(document.body);
   tell({ askdnd: 'comments-ready' });
 })();
