@@ -4767,8 +4767,16 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 /* Where it stands › Claude missed (views.gaps): what Claude left half done, in amber so it's seen */
 .fft-missed { border-left: 3px solid var(--amber); display: grid; gap: var(--sp-2); }
 .fft-missed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
-/* The Product Taxonomy on Feedback (docs/mockups/product-taxonomy/, A): a Product Area's Features hang under its chip
-   as a tray, so they never read as the area chips wrapping (the list's headings are the lists' .ls-grouphead) */
-.fft-feat-tray { margin-top: calc(-1 * var(--sp-1)); margin-left: var(--sp-4); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--blue); background: var(--surface); border-radius: 0 var(--r-lg) var(--r-lg) 0; }
-.fft-feat-of { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); white-space: nowrap; }
+/* Feedback's filters on one row (Brett's pick P1 A, docs/mockups/our-work-audit/, Nov 24): the Open · Ready to try switch,
+   then the design system's Filters ▾, chip groups and pills (filters_above's pieces, as links: the server filters this
+   list), the groups opening as a menu under the button so the list starts under the row. A Product Area's Features hang
+   under its chips on a blue line (a chip's own chips). */
+.fft-filter-row { margin: var(--sp-2) 0; gap: var(--sp-2); }
+.fft-filter > summary.ls-above-btn { display: inline-flex; min-width: 0; color: var(--text); }
+.fft-filter[open] > summary.ls-above-btn { background: var(--selected-bg); border-color: var(--blue); }
+.fft-filter[open] > summary .ls-above-chev { transform: rotate(180deg); }
+.fft-filter-menu { width: 420px; max-width: calc(100vw - 2 * var(--sp-4)); max-height: min(70vh, 560px); overflow-y: auto; gap: var(--sp-3); padding: var(--sp-3); }
+.fft-filter-menu .ls-chip { text-decoration: none; color: var(--text); }
+.fft-filter-feats { display: grid; gap: 6px; margin-top: var(--sp-1); padding-left: var(--sp-3); border-left: 2px solid var(--blue); }
+.fft-filter-row > .ls-pill { text-decoration: none; }
 .fft-path { color: var(--text); font-weight: 600; }
