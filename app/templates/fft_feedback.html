@@ -48,7 +48,7 @@
      right (app/fft/item_page.py), ↑ ↓ for the next #}
   {% macro row(r) %}
   <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}"{% if r.key == pick %} aria-current="true"{% endif %}>
-    <td class="num"><span class="dt-id">{{ r.key[1:] }}</span></td>
+    <td class="num"><span class="dt-id">{{ mark(r.key) }}</span></td>
     <td class="dt-title"><span class="ts-title">{{ r.title }}</span>{% if r.sub %}<span class="dt-why nt-sum">{{ r.sub }}</span>{% endif %}</td>
     {% if issues_on %}<td>{% if r.kind %}{{ kind_word(r.kind) }}{% endif %}</td>{% endif %}
     <td>{{ state_word(r.word, r.tone, ' data-turn="' ~ r.tone ~ '"') }}</td>
@@ -56,7 +56,7 @@
   {% endmacro %}
   <div class="table-scroll" id="fb-list">
   <table class="dtable fft-table" data-fft-list="{{ tab }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-    <thead><tr><th class="num dt-w1">#</th><th>{{ {"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") }}, and where it stands</th>{% if issues_on %}<th class="dt-w3">Kind</th>{% endif %}<th class="dt-w3">Whose</th></tr></thead>
+    <thead><tr><th class="num dt-w1">No.</th><th>{{ {"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") }}, and where it stands</th>{% if issues_on %}<th class="dt-w3">Kind</th>{% endif %}<th class="dt-w3">Whose</th></tr></thead>
     <tbody>
     {% if g %}{% for grp in g.groups %}
       <tr class="dt-group" data-group="{{ grp.key }}"><td colspan="{{ 4 if issues_on else 3 }}">{{ grp.title }} · {{ grp.rows | length }}</td></tr>

@@ -6,7 +6,7 @@
 {% macro kind_tag(kind) %}<span class="bd-kind" data-kind-tag="{{ kind }}">{{ kind_icon(kind) }}{{ {"feedback": "Feedback", "roadmap": "Roadmap", "upkeep": "Upkeep"}[kind] }}</span>{% endmacro %}
 {% macro card(c, lane_said) %}
 {% set k0 = c.key.split("-")[0] %}<a class="bd-card" href="{{ c.href }}"{% if k0[:1] == "a" %} data-panel-url="/manage/item/{{ k0 }}"{% elif k0[:1] == "i" %} data-panel-url="/manage/item/r{{ k0[1:] }}"{% endif %} data-card="{{ c.key }}" data-kind="{{ c.kind }}"{% if c.stage %} data-stage="{{ c.stage }}"{% endif %}{% if c.stuck %} data-stuck{% endif %}{% if c.href.startswith('http') %} target="_blank" rel="noopener"{% endif %}>
-  {{ kind_tag(c.kind) }}
+  <span class="bd-top">{{ kind_tag(c.kind) }}{% set base = c.key.split("-")[0] %}{% if base[:1] in ("a", "i") %}<span class="dt-id">{{ mark(("r" ~ base[1:]) if base[:1] == "i" else base) }}</span>{% endif %}{# (the Board's "i" is a Roadmap item: R38) #}</span>
   <span class="bd-title">{{ c.title }}</span>
   {% if c.stage_said %}<span class="bd-stage">{{ c.stage_said }}</span>{% endif %}
   <span class="bd-sub">{{ c.sub }}</span>

@@ -1621,6 +1621,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Your order in the Board's look (step 36, Nov 24): each row's kind as the Board's coloured edge, its stage the Board's column */
 .wk-queue tr.wk-top[data-kind] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-feedback); }
 .wk-queue tr.wk-top[data-kind="roadmap"] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-roadmap); }
+.bd-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }  /* the card's kind and its short mark (P12, R38: Nov 24) */
+abbr.mark { text-decoration: none; cursor: help; font-variant-numeric: tabular-nums; }
 .bd-kind { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--kind-upkeep); }
 .bd-kind svg { width: 12px; height: 12px; flex: none; }
 .bd-kind[data-kind-tag="feedback"] { color: var(--kind-feedback); }
