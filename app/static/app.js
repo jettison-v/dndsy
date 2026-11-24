@@ -4055,7 +4055,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     let kept = '';
     try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
     root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, above: !!s.above, q: '',
-                 view: views.includes(kept) ? kept : views.includes('all') ? 'all' : (views[0] || '') };
+                 view: views.includes(kept) ? kept : views.includes(root.dataset.lsStart) ? root.dataset.lsStart : views.includes('all') ? 'all' : (views[0] || '') };  // (a list may start elsewhere the first time: Documents on what waits on you, Nov 24)
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
@@ -4154,6 +4154,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         if (h) heads.delete(last);
         else {
           h = document.createElement('div'); h.className = 'ls-grouphead'; h.dataset.label = last; h.textContent = last;
+          if (root.hasAttribute('data-ls-group-count')) {  // (how many show under it, beside its name: Documents, Nov 24)
+            const lab = document.createElement('span'), c = document.createElement('span');
+            c.className = 'count'; lab.append(last, ' ', c); h.replaceChildren(lab);
+          }
           if (notes[last]) { const n = document.createElement('span'); n.className = 'ls-group-note'; n.textContent = notes[last]; h.append(n); }
         }
         want.push(h);

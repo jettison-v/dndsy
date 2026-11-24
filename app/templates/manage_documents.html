@@ -1,28 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Documents · Backstage · askdnd{% endblock %}
 {% block content %}
-{# Backstage › Global › Documents (app/documents.py; Brett, Nov 6): every page made for askdnd, from docs/library.json, in
-   four groups, each row its status, date and what it is; it opens inside askdnd from the repo's copy. #}
-{% from "_lists.html" import search_box %}
+{# Backstage › Global › Documents (app/documents.py; Brett, Nov 6): every page made for askdnd, from docs/library.json.
+   Brett's picks on docs/mockups/backstage-design-review/ (Nov 24): Waiting on you · Current · All, starting on what waits
+   on him (D1); a row opens its document in the large window over the list, the page's own address kept for a link (D2);
+   Title, State, Date and one plain line (D3); the state's word and colour from its key, one line, never wrapping (S2, S6).
+   On the shared list pieces: the view switch, the search box, group headings with their counts and notes. #}
+{% from "_lists.html" import search_box, view_switch %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Documents</h1></div>
   <p class="subtitle">Every guide, plan and design made for askdnd: {{ count }} in all, each opened from askdnd's own copy, so none depends on claude.ai. New ones join the list as Claude makes them. Only admins can see this page.</p>
-  {# One list on the shared list pieces (the UI review, Nov 16): the search box, a heading and its line per group, the
-     rows lined up as columns; a status that's settled is green, one waiting on someone amber #}
-  {% set notes = {} %}{% for key, name, about, rows in groups %}{% set _ = notes.update({name: about}) %}{% endfor %}
-  <div class="doc-list" data-list="documents" data-noun="document" data-nouns="documents" data-default-sort="default" data-group-notes-default='{{ notes | tojson }}'>
-    <div class="doc-search">{{ search_box("Search titles and what each is") }}</div>
+  <div class="doc-list" data-list="documents" data-noun="document" data-nouns="documents" data-default-sort="default" data-ls-start="{{ start }}" data-ls-group-count
+       data-group-notes-default='{{ notes | tojson }}'>
+    <div class="doc-tools">{{ view_switch(views, "Which documents") }}<div class="doc-search">{{ search_box("Search titles and what each is") }}</div></div>
     <div class="doc-rows" data-ls-rows>
-      {% for key, name, about, rows in groups %}{% set gi = loop.index %}{% for e in rows %}{% set st = e.status.lower() %}
-      <a class="doc-row" data-ls-row data-kind="{{ key }}" data-group-label="{{ name }}" data-sort-default="{{ gi * 10000 + loop.index }}"
-         data-name="{{ (e.title ~ ' ' ~ e.status ~ ' ' ~ e.what) | lower }}" href="/manage/documents/{{ e.id }}">
+      <div class="doc-head" aria-hidden="true"><span>Title</span><span>State</span><span>Date</span><span>What it is</span></div>
+      {% for r in rows %}{% set e = r.e %}
+      <a class="doc-row" data-ls-row data-views="{{ r.views }}" data-state="{{ r.state }}" data-group-label="{{ r.group }}" data-sort-default="{{ r.rank }}"
+         data-name="{{ (e.title ~ ' ' ~ r.word ~ ' ' ~ (e.status or '') ~ ' ' ~ r.line ~ ' ' ~ (e.what or '')) | lower }}"
+         href="/manage/documents/{{ e.id }}" data-modal-url="/manage/documents/{{ e.id }}?part=1" data-modal-size="full">
         <span class="doc-title">{{ e.title }}</span>
-        <span class="doc-status"><span class="tag {{ 'published' if st.startswith(('current', 'built', 'chosen', 'chose', 'done', 'decided', 'approved', 'answered', 'merged', 'captured')) else 'draft' if st.startswith(('waiting', 'your', 'in ', 'not ', 'recommended')) else '' }}">{{ e.status }}</span></span>
+        <span class="doc-status"><span class="tag {{ r.tone }}" title="{{ e.status }}">{{ r.word }}</span></span>
         <span class="doc-date">{{ e.date }}</span>
-        <span class="doc-what">{{ e.what }}</span>
+        <span class="doc-what" title="{{ e.what }}">{{ r.line }}</span>
       </a>
-      {% endfor %}{% endfor %}
+      {% endfor %}
     </div>
     <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
   </div>

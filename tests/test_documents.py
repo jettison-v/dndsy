@@ -100,3 +100,32 @@ def test_the_roadmaps_tags_all_close():
     p = Tags()
     p.feed((ROOT / "docs" / "roadmap.html").read_text())
     assert p.wrong == [] and p.open == [], (p.wrong[:3], p.open[-3:])
+
+
+def test_every_document_has_its_state_and_one_plain_line():
+    """Brett's picks S2 and D3 (docs/mockups/backstage-design-review/, Nov 24): a document's state is a fixed key, its
+    colour and word come from it, and it says what it is in one plain line (no item numbers or paths)."""
+    for e in documents.repo_library():
+        assert e.get("state") in documents.STATES, f"{e['title']}: state {e.get('state')!r}"
+        line = e.get("line") or ""
+        assert line and len(line) <= 90, f"{e['title']}: its line is missing or longer than one line"
+        assert not re.search(r"\b(PR|item) ?#?\d|docs/|app/|\.py\b|\bR\d+\b", line), f"{e['title']}: {line}"
+
+
+def test_the_list_starts_on_what_waits_on_you_newest_first_and_moves_what_was_replaced(admin, monkeypatch):
+    """Brett's picks D1 and D2: Waiting on you · Current · All, starting on what waits on him; newest first in each
+    group; a superseded page under Earlier whatever its kind; a row opens its document in the large window."""
+    rows = [{"title": "Old guide", "kind": "guide", "state": "earlier", "date": "Nov 2", "source": "docs/a.html", "id": "a"},
+            {"title": "New plan", "kind": "plan", "state": "building", "date": "Nov 20", "source": "docs/b.html", "id": "b"},
+            {"title": "Older plan", "kind": "plan", "state": "done", "date": "Oct 28", "source": "docs/c.html", "id": "c"},
+            {"title": "Picks", "kind": "design", "state": "waiting", "date": "Nov 24", "source": "docs/d.html", "id": "d"}]
+    got = documents.rows_for(rows)
+    assert [r["e"]["title"] for r in got] == ["New plan", "Older plan", "Picks", "Old guide"]
+    assert got[-1]["group"] == "Earlier and superseded" and got[0]["views"] == "current all" and got[1]["views"] == "all"
+    assert got[2]["views"] == "waiting all" and got[2]["tone"] == "draft" and got[2]["word"] == "Waiting on you"
+    monkeypatch.setattr(documents, "library", lambda: tuple(rows))
+    page = admin.get("/manage/documents").text
+    assert 'data-ls-start="waiting"' in page and 'data-ls-view="waiting"' in page
+    assert 'href="/manage/documents/d" data-modal-url="/manage/documents/d?part=1" data-modal-size="full"' in page
+    monkeypatch.setattr(documents, "library", lambda: tuple(r for r in rows if r["state"] != "waiting"))
+    assert 'data-ls-start="current"' in admin.get("/manage/documents").text  # (nothing waits: it starts on Current)
