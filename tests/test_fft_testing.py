@@ -399,7 +399,7 @@ def test_a_mockup_asked_about_an_issue_opens_from_for_you_and_shows_in_its_conve
     window = admin.get("/manage/documents/mockups-fft-reader-index?part=1").text  # (the mockup alone, in a window over For you)
     assert 'id="peek-title"' in window and 'class="doc-frame"' in window and "<main" not in window
     reader = admin.get(f"/manage/item/i{issue.id}").text
-    assert f'data-question="{q.id}"' in reader and f'href="/manage/for-you?open=q{q.id}" data-do="answer"' in reader
+    assert f'data-question="{q.id}"' in reader and f'href="/manage/for-you?open=q{q.id}" data-panel-url="/manage/item/q{q.id}" data-do="answer"' in reader  # (M2: in the same window)
     assert reader.index("I&#39;ll draw it.") < reader.index(f'data-question="{q.id}"')
     admin.post(f"/manage/testing/questions/{q.id}", data={"choice": "0", "text": "with counts"})
     reader = admin.get(f"/manage/item/i{issue.id}").text

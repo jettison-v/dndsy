@@ -243,3 +243,15 @@ def test_short_marks_on_cards_and_the_roadmap_list(db, admin):
     assert f'title="Roadmap item {it.id}" data-mark="r{it.id}">R{it.id}</abbr>' in road
     row = road.split(f'data-item="{it.id}"', 1)[1].split("</tr>", 1)[0]
     assert "<a " not in row.split("</td>", 3)[2]  # (its title plain: the row opens it)
+
+
+def test_links_inside_the_window_open_in_the_window(db, admin):
+    """Brett's pick M2 on Our Work, page by page (Nov 24): a check's issue, an issue's check and a question's subject open
+    in the same item window (← Back), not by changing page; their page address stays for a new tab."""
+    i = _issue(db, "Back clears what you typed")
+    c = rules.write_check(db, "claude", title="t", steps=["s"], expect="e", issue_ids=[i.id], area_id=i.area_id)
+    q = rules.ask(db, "claude", about="issue", about_id=i.id, text="Left or right?", choices=[{"label": "L"}, {"label": "R"}])
+    db.flush()
+    assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/c{c.id}").text
+    assert f'data-panel-url="/manage/item/c{c.id}"' in admin.get(f"/manage/item/i{i.id}").text
+    assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/q{q.id}").text

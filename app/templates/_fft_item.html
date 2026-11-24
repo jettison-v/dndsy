@@ -12,4 +12,4 @@
 <div class="peek-body fft-item-body"{% if next %} data-next-url="/manage/item/{{ next }}?from={{ frm | urlencode }}"{% endif %}>
   {% include "_fft_item_body.html" %}
 </div>
-{% if page_href %}<div class="peek-foot row"><a class="btn link small" href="{{ page_href }}" data-no-peek data-do="open-page">Open in {{ page_name }} ↗</a></div>{% endif %}
+{% if page_href %}<div class="peek-foot row"><a class="btn link small" href="{{ page_href }}" data-no-peek data-do="open-page">{{ "Open as a page" if page_name == "its page" else "Open in " ~ page_name }} ↗</a></div>{% endif %}

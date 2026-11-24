@@ -26,7 +26,7 @@
   <div class="act-bar"><button class="btn small" type="button" data-modal-url="/manage/testing/tries/{{ picked.last_failed.id }}/change" data-do="change">Change result…</button></div>
   {% endif %}
   {% if picked.issues %}<ol class="fft-problems" data-problems>{% for i in picked.issues %}{% set t = picked.turn %}
-    <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
+    <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}" data-panel-url="/manage/item/i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
   {% call rd_section("On the page, the card says", attrs=' data-card-says') %}
     {% if v %}{{ walkthrough({"id": c.id, "steps": picked.steps}) }}{% endif %}
     {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}{% endcall %}
@@ -38,7 +38,7 @@
 {% elif picked.kind == "question" %}{% set q = picked.q %}
 {# ---- a question or a decision (screen 8) #}
 <article class="reader-article fb-read" data-fft-question="{{ q.id }}">
-  <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}">{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
+  <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}"{% if picked.about.key %} data-panel-url="/manage/item/{{ picked.about.key }}"{% endif %}>{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
   {% set qt = q.text | note_title %}<h2 class="nt-h">{{ qt }}</h2>
   {% if q.text.strip() != qt %}<div class="bub claude"><small>Claude asks</small><p>{{ q.text }}</p></div>{% endif %}
   {% if picked.doc %}<div class="act-bar fft-doc" data-doc><a class="btn primary small" href="{{ picked.doc.href }}" data-modal-url="{{ picked.doc.href }}?part=1" data-modal-size="full" data-open-doc>Open mockup</a>{% if picked.doc.link %}<a class="btn link small" href="{{ picked.doc.link }}" target="_blank" rel="noopener">On claude.ai ↗</a>{% endif %}<span class="note" data-picks-answer>{% if q.choices %}Look at “{{ picked.doc.title }}” first, then answer here.{% else %}Your picks on it are your answer: pick, then Save my picks, here or on claude.ai. Nothing to type.{% endif %}</span></div>{% endif %}
@@ -144,7 +144,7 @@
   {% endcall %}
   {% if v.found or v.notes %}{% call rd_section("What was found", count=(v.found | length) + (v.notes | length), attrs=' data-sec="found"') %}
   {% for f in v.found %}<div class="fft-trial" data-try="{{ f.t.id }}">{{ state_word({"failed": "Failed", "passed": "Passed"}.get(f.t.result, "Can't try"), {"failed": "failed", "passed": "passed"}.get(f.t.result, "quiet")) }}
-    <span><a href="/manage/for-you?open=c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
+    <span><a href="/manage/for-you?open=c{{ f.check.id }}" data-panel-url="/manage/item/c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
     <time class="note" datetime="{{ f.t.created_at.isoformat() }}" data-clock="when">{{ f.t.created_at | ago }}</time>
     {% if f.stops_round or not f.blocking or f.still %}<span class="note fft-trial-sub">{{ "Marked as stopping the round." if f.stops_round else "Sent on its own: it doesn't stop the check." if not f.blocking else "" }}{{ " Still happening from before." if f.still }}</span>{% endif %}</div>{% endfor %}
   {% for nv in v.notes %}{{ report(nv, unjoin=("/manage/feedback/issues/" ~ i.id ~ "?tab=" ~ tab) if v.notes | length > 1 and i.state != "closed" else "") }}{% endfor %}

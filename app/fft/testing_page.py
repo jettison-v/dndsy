@@ -411,11 +411,11 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
 def _about(db: Session, q: FftQuestion) -> dict:
     """What a question is about, as a link: an issue on Feedback, a check here, an area, or a document."""
     if q.about == "issue" and q.about_id and (i := db.get(FftIssue, q.about_id)):
-        return {"said": f"the issue “{i.title}”", "href": f"/manage/feedback?tab=open&open=i{i.id}"}
+        return {"said": f"the issue “{i.title}”", "href": f"/manage/feedback?tab=open&open=i{i.id}", "key": f"i{i.id}"}
     if q.about == "check" and q.about_id and (c := db.get(FftCheck, q.about_id)):
-        return {"said": f"the check “{c.title}”", "href": f"{FOR_YOU}?open=c{c.id}"}
+        return {"said": f"the check “{c.title}”", "href": f"{FOR_YOU}?open=c{c.id}", "key": f"c{c.id}"}
     if q.about == "area" and q.about_id and (a := db.get(FftArea, q.about_id)):
-        return {"said": f"the {a.title} plan", "href": f"{WORK}/{a.id}"}
+        return {"said": f"the {a.title} plan", "href": f"{WORK}/{a.id}", "key": f"a{a.id}"}
     if q.about == "document" and (doc := views.doc_of(q.doc_path)):
         return {"said": doc["title"], "href": doc["href"], "version": q.doc_version}
     return {"said": "", "href": ""}
