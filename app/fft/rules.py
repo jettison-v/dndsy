@@ -930,6 +930,9 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     numbers; for Not doing, why not: Brett, Nov 20). A shipped item without one is a gap of Claude's (`views.gaps`)."""
     if item.standing:
         raise RuleError("bad", "Fixes and polish never ships.")
+    left = [] if not_doing else list(db.scalars(select(FftStep).where(FftStep.item_id == item.id, FftStep.done_at.is_(None))))
+    if left:  # (Brett, Nov 24: R42 sat in History at 5 of 7 with Claude's next step showing; tick each, or remove it)
+        raise RuleError("bad", f"{len(left)} step{'s' if len(left) != 1 else ''} still open: tick each, or remove one that won't be done.")
     item.section, item.shipped_at = ("not_doing" if not_doing else "shipped"), now()
     item.scope_asked_at = None  # (done: a Scope it press doesn't come back with it)
     if result is not None and result.strip():
