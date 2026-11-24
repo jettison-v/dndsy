@@ -23,13 +23,14 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.fft import lanes, rules, taxonomy, testing_page, views
-from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftQuestion
+from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftPull, FftQuestion
 from app.models import JobRun, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
 WORK = "/manage/work"
-TABS = (("queue", "Queue"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
+REPO = "jettison-v/dndsy"  # (where an Upkeep card's pull request opens)
+TABS = (("board", "Board"), ("queue", "Queue"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
 # (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
 # `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
@@ -166,6 +167,146 @@ def queue(db: Session) -> dict:
             "yours": sum(1 for r in rows if r["turn"] == "brett")}
 
 
+# ------------------------------------------------------------------ the Board (item 39, 4 of 4; Brett's picks on The Work Board)
+#
+# Every piece of work from Waiting to yours to try, in five columns, each move askdnd's own record: Waiting (a gate not
+# met yet: your go-ahead, your step, held, your round), Ready (in Claude's order, each with its one line of why),
+# Building (Claude's claim, one at a time), Shipping (a pull request on its way: in review, merging, going live, as
+# GitHub and Railway report it) and Yours to try. A card is one piece that ends in one pull request: a Product Area's
+# fixes (Feedback), a Roadmap build's plan (Roadmap), or a pull request with nothing behind it (Upkeep). Amber when
+# stuck. A card opens its plan, its Roadmap item, or the pull request.
+
+COLUMNS = (("waiting", "Waiting", "on a gate"), ("ready", "Ready", "Claude's order"), ("building", "Building", "Claude, one at a time"),
+           ("shipping", "Shipping", "review, merge, live"), ("yours", "Yours to try", "you"))
+BOARD_EMPTY = {"waiting": "Work waiting on a gate: your OK on its scope, your step, held below the line, or your round.",
+               "ready": "Nothing Ready: what Claude may take next comes here, in the order it's taken.",
+               "building": "Nothing being built: Claude's one claim shows here.",
+               "shipping": "No pull request on its way.", "yours": "Nothing for you to try."}
+WEEK = 7  # (days a Now item may wait behind other work before its card turns amber: Brett's fence, Nov 23)
+
+
+def pull_stage(db: Session, p: FftPull) -> tuple[str, str, bool]:
+    """A pull request's step in Shipping: (key, words, stuck)."""
+    if p.state == "merged":
+        return ("going_live", "Going live", False) if p.live_at is None else ("live", "Live", False)
+    if p.tests == "failed":
+        return "red", "Tests failed", True
+    if p.merge_state == "dirty":
+        return "conflicts", "Conflicts with main", True
+    if p.merge_state == "behind":
+        return "behind", "Catching up with main", False
+    if p.tests == "passed" and p.auto_merge:
+        return "merging", "Merging", False
+    if p.tests == "passed" and p.merge_state == "clean":
+        return ("held", "Waits for your try", False) if views._held_back(db, p) else ("not_merging", "Passed, not merging", True)
+    return "review", "In review", False
+
+
+def _card(kind: str, key: str, title: str, sub: str, href: str, why: str, lane: str = "", **kw) -> dict:
+    return {"kind": kind, "key": key, "title": title, "sub": sub, "href": href, "why": why, "lane": lane, "pr": None,
+            "stage": "", "stage_said": "", "stuck": False, "since": None} | kw
+
+
+def yours_waits(db: Session, a: FftArea) -> str:
+    """What waits on Brett from a plan, in a few words ("2 checks to try · 1 question"), or ""."""
+    issues = rules.area_open_issues(db, a)
+    states = [rules.check_state(db, c)["state"] for c in rules.area_checks(db, a)]
+    to_try, asks = states.count("to_try"), states.count("asks") + sum(1 for i in issues if i.state == "asks")
+    from app.fft.models import FftLocalTry
+
+    oks = sum(1 for i in issues if i.state == "merge_ok")
+    live = sum(1 for i in issues if i.state == "ready")
+    local = db.scalar(select(func.count()).select_from(FftLocalTry).where(FftLocalTry.area_id == a.id, FftLocalTry.answer == ""))
+    bits = ["your local try" if local else "", f"{to_try} check{'s' if to_try != 1 else ''} to try" if to_try else "",
+            f"{live} fix{'es' if live != 1 else ''} live to try" if live and not to_try else "",
+            f"{asks} question{'s' if asks != 1 else ''}" if asks else "", f"{oks} fix{'es' if oks != 1 else ''} to OK" if oks else ""]
+    return " · ".join(b for b in bits if b)
+
+
+def board(db: Session) -> dict:
+    """The Board's five columns of cards (see above)."""
+    cols: dict[str, list[dict]] = {k: [] for k, _, _ in COLUMNS}
+    turns: dict[int, str] = {}
+
+    def turn_of(_db: Session, a: FftArea) -> str:  # (each plan's turn worked out once for the page)
+        if a.id not in turns:
+            turns[a.id] = rules.area_turn(db, a)
+        return turns[a.id]
+
+    ready = {a.id: (reason, why) for a, reason, why in rules.ready_areas(db, turn_of)}
+    order = {a_id: n for n, a_id in enumerate(ready)}
+    open_pulls = list(db.scalars(select(FftPull).where((FftPull.state == "open") | ((FftPull.state == "merged") & FftPull.live_at.is_(None)))
+                                .order_by(FftPull.number)))
+    placed: set[int] = set()
+    shown: set[int] = set()
+    now_ = rules.now()
+
+    def pulls_of(a: FftArea) -> list[FftPull]:  # (an item's own pull request goes to the first of its plans that shows it, once)
+        return [p for p in open_pulls if p.id not in placed and (p.area_id == a.id or (p.area_id is None and p.item_id == a.item_id and not rules.pull_upkeep(p)))]
+
+    def area_card(a: FftArea, it: FftItem | None) -> None:
+        kind = "roadmap" if it is not None and not it.standing else "feedback"
+        sub = it.title if kind == "roadmap" else "Product Area"
+        base = {"kind": kind, "key": f"a{a.id}", "title": a.title, "sub": sub, "href": f"/manage/work/{a.id}", "lane": rules.lane_of(a)}
+        live_claim = bool(a.lock_owner and a.lock_until and a.lock_until > now_)
+        pulls = pulls_of(a)
+        turn = turn_of(db, a)
+        shown.add(a.id)
+        if live_claim:
+            cols["building"].append(_card(**base, why="Claude is building it", since=a.lock_until - rules.LOCK, stage="claimed"))
+        elif pulls:
+            p = pulls[0]
+            key, said, stuck = pull_stage(db, p)
+            placed.update(x.id for x in pulls)
+            cols["shipping"].append(_card(**base, why=f"Pull request #{p.number}", pr=p.number, stage=key, stage_said=said, stuck=stuck))
+        elif turn == "brett":
+            pass  # (its card is in Yours to try, below)
+        elif turn == "claude" and a.id in ready:
+            reason, why = ready[a.id]
+            last = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.area_id == a.id))
+            stuck = kind == "roadmap" and it.section == "now" and reason == "queue" and order[a.id] > 0 and last is not None and (now_ - last).days >= WEEK
+            cols["ready"].append(_card(**base, why=why + (" · waiting a week behind other work" if stuck else ""), stuck=stuck, stage=reason, n=order[a.id]))
+        elif turn == "claude":
+            why = ("Held below the line" if a.held or (it is not None and it.held) else "In your open round: nothing merges there" if rules.in_open_round(db, a)
+                   else f"Your step: {it.next_step}" if it is not None and it.next_whose == "brett" else "Waits its turn")
+            cols["waiting"].append(_card(**base, why=why))
+        yours = yours_waits(db, a)
+        if yours:  # (what waits on Brett from this plan, beside whatever else it's doing: the try of what shipped)
+            cols["yours"].append(_card(**base | {"key": f"a{a.id}-yours"}, why=yours))
+
+    for kind_key, x in rules.queue_entries(db):
+        if kind_key == "a":
+            area_card(x, db.get(FftItem, x.item_id))
+            continue
+        plans = list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))
+        for a in plans:
+            area_card(a, x)
+        if not plans:  # (an agreed build with no plan yet: its plan is made when Claude claims it)
+            mine = x.next_whose != "brett" and not x.held
+            (cols["ready"] if mine else cols["waiting"]).append(_card(
+                "roadmap", f"i{x.id}", x.title, "Roadmap build", f"/manage/roadmap/{x.id}",
+                "Next to plan: Claude makes its plan when it claims it" if mine else ("Held below the line" if x.held else f"Your step: {x.next_step}")))
+    stray = [a for a in db.scalars(select(FftArea).where(FftArea.archived.is_(False), FftArea.lock_owner != "").order_by(FftArea.id))
+             if a.id not in shown and a.lock_until and a.lock_until > now_]
+    stray += [db.get(FftArea, a_id) for a_id in ready if a_id not in shown]
+    for a in stray:  # (a plan claimed or Ready outside the queue's builds: claimed by hand, say; it shows all the same)
+        if a.id not in shown:
+            area_card(a, db.get(FftItem, a.item_id))
+    for it in db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next"))).order_by(rules.item_rank(), FftItem.place, FftItem.id)):
+        sc = rules.latest_scope(db, it)
+        if sc is not None and sc.agreed_at is None:  # (its scope written, your OK not given yet: the first gate)
+            cols["waiting"].append(_card("roadmap", f"i{it.id}", it.title, "Roadmap item", f"/manage/roadmap/{it.id}", f"Your OK on its scope (version {sc.version})"))
+    for p in open_pulls:  # (Upkeep: a pull request with nothing behind it is a card of its own)
+        if p.id in placed or not rules.pull_upkeep(p):
+            continue
+        key, said, stuck = pull_stage(db, p)
+        cols["shipping"].append(_card("upkeep", f"p{p.number}", p.title or f"Pull request #{p.number}", "Dependabot" if p.by_bot else "Upkeep",
+                                      f"https://github.com/{REPO}/pull/{p.number}", f"Pull request #{p.number}", pr=p.number, stage=key, stage_said=said, stuck=stuck))
+    cols["ready"].sort(key=lambda c: c.get("n", 10_000))
+    return {"cols": [(k, label, who, cols[k]) for k, label, who in COLUMNS],
+            "stuck": sum(1 for cards in cols.values() for c in cards if c["stuck"])}
+
+
 def done(db: Session) -> list[dict]:
     """Plans with nothing open, the most recently busy first, with what they closed."""
     out = []
@@ -296,11 +437,11 @@ def _who(db: Session, actor: str, said: dict | None = None) -> str:
 
 
 @router.get("/manage/work")
-def page(request: Request, tab: str = "queue", open: str = "", history: int = 0, db: Session = Depends(get_db)):
+def page(request: Request, tab: str = "board", open: str = "", history: int = 0, db: Session = Depends(get_db)):
     user, denied = testing_page._admin(request)
     if denied:
         return denied
-    tab = tab if tab in dict(TABS) or tab == "done" else "queue"
+    tab = tab if tab in dict(TABS) or tab == "done" else "board"
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
@@ -318,6 +459,8 @@ def page(request: Request, tab: str = "queue", open: str = "", history: int = 0,
         ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
     elif tab == "scheduled":
         ctx["jobs"] = jobs(db)
+    elif tab == "board":
+        ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
     elif tab == "how":
         ctx["how"] = how()
     db.commit()

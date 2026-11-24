@@ -52,7 +52,7 @@ def test_the_queue_shows_each_plan_with_its_stage_and_hold_puts_it_below_the_lin
     fixing = rules.new_issue(db, "claude", "Party's names cut off", area_id=party.id)
     rules.start_fixing(db, "claude", fixing)
     db.flush()
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert re.findall(r'data-area="(\d+)" data-href', page) == [str(battle.id), str(party.id)]  # (in Brett's order)
     assert f'data-area="{battle.id}" data-href="/manage/work/{battle.id}" data-stage="next"' in page  # (Claude's next)
     assert f'data-area="{party.id}" data-href="/manage/work/{party.id}" data-stage="building"' in page
@@ -60,7 +60,7 @@ def test_the_queue_shows_each_plan_with_its_stage_and_hold_puts_it_below_the_lin
 
     admin.post(f"/manage/testing/areas/{battle.id}", data={"do": "hold", "back": "/manage/work"})
     assert battle.held and rules.pick_next(db).area.id == party.id  # (Claude skips a held plan)
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     held = page[page.index("data-held"):]
     assert f'data-area="{battle.id}"' in held and f'data-area="{party.id}"' not in held and 'data-stage="held"' in held
     assert any(why == "held below the line" for _, why in rules.pick_next(db).skipped)
@@ -78,7 +78,7 @@ def test_an_issue_that_stops_bretts_round_marks_its_plan_a_blocker(db, admin):
     rules.record_try(db, "user:1", c, result="failed", round_id=r.id, found=[rules.Found(title="The Count is gone", stops_round=True)])
     db.flush()
     assert rules.pick_next(db).blocker
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert f'data-area="{battle.id}" data-href="/manage/work/{battle.id}" data-stage="blocker"' in page
 
 
@@ -184,7 +184,7 @@ def test_checks_done_scheduled_and_how_we_work(db, admin, monkeypatch):
     checks = admin.get("/manage/work?tab=checks&history=1").text
     assert f'data-row="c{c.id}"' in checks and 'data-device="laptop"' in checks and "Passed" in checks
     assert f'data-open-item="/manage/item/c{c.id}?from=checks%3Apassed"' in admin.get(f"/manage/work?tab=checks&open=c{c.id}").text  # (passed: opens in History)
-    assert 'data-tab="done"' not in admin.get("/manage/work").text  # (no Done tab: History, a link under the queue)
+    assert 'data-tab="done"' not in admin.get("/manage/work?tab=queue").text  # (no Done tab: History, a link under the queue)
     done = admin.get("/manage/work?tab=done").text
     assert f'data-area="{party.id}"' in done and f'data-area="{battle.id}"' not in done  # (a batch that never held anything isn't done work)
 
@@ -238,7 +238,7 @@ def test_a_standing_rule_work_is_for_admins_only(db, dm, player):
 
 
 def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert 'data-item="work"' in page and 'data-item="testing"' not in page
     assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
 
@@ -256,23 +256,23 @@ def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admi
     batch = rules.new_issue(db, "claude", "The Count wraps", feature="hp").area_id
     rules.write_scope(db, "claude", build, what="Find what's slow.", inside=["Time every page"])
     db.flush()
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert f'data-build="{build.id}"' not in page  # (its scope waits for his OK: still the Roadmap's)
     rules.agree_scope(db, "user:1", build)
     rules.add_step(db, "claude", build, "Time every page")
     db.flush()
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert f'data-build="{build.id}"' in page and f'data-build="{idea.id}"' not in page and f'data-area="{batch}"' in page
     assert page.index(f'data-area="{batch}"') < page.index(f'data-build="{build.id}"')  # (not placed yet: batches first)
     admin.post("/manage/testing/order", data={"column": "queue", "keys": [f"i{build.id}", f"a{batch}"]})
-    page = admin.get("/manage/work").text
+    page = admin.get("/manage/work?tab=queue").text
     assert page.index(f'data-build="{build.id}"') < page.index(f'data-area="{batch}"') and 'data-steps' in page
     pick = rules.pick_next(db)
     assert pick.item is not None and pick.item.id == build.id and pick.area is None  # (a build without a plan: as itself)
     assert f'data-build="{build.id}" data-href="/manage/roadmap/{build.id}" data-stage="next"' in page
     admin.post(f"/manage/roadmap/{build.id}", data={"do": "hold"})
     assert build.held and rules.pick_next(db).area.id == batch
-    held = admin.get("/manage/work").text
+    held = admin.get("/manage/work?tab=queue").text
     assert f'data-build="{build.id}"' in held[held.index("data-held"):]
 
 
@@ -380,7 +380,7 @@ def test_a_build_with_every_step_done_is_claudes_to_ship(db, admin):
     db.flush()
     gap = [g for g in views.gaps(db) if g["kind"] == "steps_done"]
     assert [(g["thing"], g["id"]) for g in gap] == [("item", item.id)] and gap[0]["since"] == his.done_at
-    row = admin.get("/manage/work").text
+    row = admin.get("/manage/work?tab=queue").text
     row = row[row.index(f'data-build="{item.id}"'):]
     assert 'data-waits="ship"' in row[:row.index("</tr>")]
     rules.hold_item(db, "user:1", item, True)

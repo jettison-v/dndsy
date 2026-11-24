@@ -1908,14 +1908,14 @@ def hold_item(db: Session, actor: str, item: FftItem, held: bool = True) -> None
         _event(db, actor, "item_held" if held else "item_let_go", "item", item.id)
 
 
-def _areas_ready(db: Session, q) -> list[FftArea]:
+def _areas_ready(db: Session, q, turn=None) -> list[FftArea]:
     """The areas of a query that are Claude's to take now: Claude's turn, not held, not in Brett's open round, open."""
     def item_ok(a: FftArea) -> bool:
         it = db.get(FftItem, a.item_id)
         return it is None or it.standing or not (it.held or it.next_whose == "brett")  # (a build Brett holds, or whose next step is his)
 
     return [a for a in db.scalars(q.where(FftArea.archived.is_(False)).distinct().order_by(FftArea.id))
-            if not a.held and item_ok(a) and area_turn(db, a) == "claude" and not in_open_round(db, a)]
+            if not a.held and item_ok(a) and (turn or area_turn)(db, a) == "claude" and not in_open_round(db, a)]
 
 
 def pick_next(db: Session) -> Pick:
@@ -2116,6 +2116,12 @@ def _names_pull(column, number: int):
     return or_(column.like(f"%{tail}"), column.like(f"%{tail}/%"), column.like(f"%{tail}#%"))
 
 
+def _names_pull_any(link: str):
+    """FftPull rows this issue's pull request link names (…/pull/480 in its `pr`), or none."""
+    m = re.search(r"/pull/(\d+)(?:$|[/#?])", link or "")
+    return FftPull.number == int(m.group(1)) if m else FftPull.id == 0
+
+
 def pull_link(db: Session, p: FftPull) -> tuple[int | None, int | None, int | None]:
     """The work a pull request is for: (issue, area, item), each None when it has none."""
     issue = area = item = None
@@ -2313,3 +2319,29 @@ def heartbeat(db: Session, owner: str) -> int:
     got = db.execute(_update(FftArea).where(FftArea.lock_owner == owner[:60], FftArea.lock_until > now(), FftArea.lock_until < soon)
                      .values(lock_until=now() + LOCK))
     return got.rowcount or 0
+
+
+def ready_areas(db: Session, turn=None) -> list[tuple[FftArea, str, str]]:
+    """Ready, in the order Claude takes it (item 39, the Board's Ready column): each area Claude may take now, with the
+    rule that put it there (Pick.reason) and its one line of why. Its first is `pick_next`'s pick, after a blocker and
+    Scope it, which hand over first and aren't plans in the queue."""
+    out: list[tuple[FftArea, str, str]] = []
+    seen: set[int] = set()
+
+    def add(a: FftArea, reason: str, why: str) -> None:
+        if a.id not in seen and not (a.lock_owner and a.lock_until and a.lock_until > now()):
+            seen.add(a.id)
+            out.append((a, reason, why))
+
+    for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
+                          .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing"))), turn):
+        add(a, "shipped_fix", "A fix to what just shipped: your try found it")
+    for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now()), turn):
+        add(a, "quiet_claim", "Back from a claim that went quiet: first in line")
+    for kind, x in queue_entries(db):
+        plans = [x] if kind == "a" else ([] if x.held or x.next_whose == "brett" else
+                                         list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))))
+        for a in plans:
+            if (turn or area_turn)(db, a) == "claude" and not a.held and not in_open_round(db, a):
+                add(a, "queue", f"Your order: {len(out) + 1}" + (f" ({x.title})" if kind == "i" else ""))  # (its place in Ready)
+    return out

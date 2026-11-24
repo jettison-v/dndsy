@@ -267,7 +267,7 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
     page = admin.page
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
-        admin.open("/manage/work")
+        admin.open("/manage/work?tab=queue")
         row = page.locator(f'tr[data-area="{area}"]')
         menu, lane = row.locator(".act-more:not(.fft-lane) summary"), row.locator(".fft-lane > summary")
         m, o = menu.bounding_box(), lane.bounding_box()
@@ -307,7 +307,7 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
     page = admin.page
     for width in (1000, 1280):
         page.set_viewport_size({"width": width, "height": 900})
-        admin.open("/manage/work")
+        admin.open("/manage/work?tab=queue")
         def where():  # (the pill against its bar's right end, where it sits: a scrollbar the round's row brings narrows
             # the bar, so from its left the pill seemed to move 13 px; Nov 20, main's run after PR 449)
             p, b = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status").bounding_box()

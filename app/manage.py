@@ -360,7 +360,28 @@ def design_page(request: Request):
                                        "notes": {"spell:Shield": "Save it for the big hit"}}}
     return templates.TemplateResponse(request, "design.html", {"colors": COLOR_TOKENS, "sizes": TEXT_SIZES, "space": SPACE,
                                                                "corners": CORNERS, "sample_moments": sample_moments(),
-                                                               "plain": Linker(None, {}), **demo})
+                                                               "plain": Linker(None, {}), **demo, **board_sample()})
+
+
+def board_sample() -> dict:
+    """The Board's sample on the design system page: made-up cards, one in each column, each kind and a stuck one."""
+    from datetime import timedelta
+
+    from app.fft import rules, work_page
+
+    c = work_page._card
+    cols = {"waiting": [c("roadmap", "s1", "A new idea", "Roadmap item", "#board", "Your OK on its scope (version 2)")],
+            "ready": [c("feedback", "s2", "Corner cards", "Product Area", "#board", "Your order: 1", lane="careful"),
+                      c("upkeep", "s3", "The nightly test's leftovers", "Upkeep", "#board", "Your order: 2", lane="ship")],
+            "building": [c("roadmap", "s4", "A sturdier loop: the build", "A sturdier loop", "#board", "Claude is building it", lane="ship",
+                           since=rules.now() - timedelta(minutes=2))],
+            "shipping": [c("feedback", "s5", "Feedback and Testing", "Product Area", "#board", "Pull request #12", lane="look", pr=12,
+                           stage="merging", stage_said="Merging"),
+                         c("upkeep", "s6", "Package updates", "Dependabot", "#board", "Pull request #13", pr=13, stage="red",
+                           stage_said="Tests failed", stuck=True)],
+            "yours": []}
+    return {"board_sample": [(k, label, who, cols[k]) for k, label, who in work_page.COLUMNS], "lane_said": rules.LANE_SAID,
+            "board_empty": work_page.BOARD_EMPTY}
 
 
 def sample_moments() -> list[dict]:

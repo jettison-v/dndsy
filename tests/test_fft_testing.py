@@ -113,7 +113,7 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
         r = admin.get(old, follow_redirects=False)
         assert r.status_code == 303 and r.headers["location"] == to, old
     work = admin.get("/manage/work").text
-    assert 'class="on" data-tab="queue"' in work and 'data-item="work" aria-current="page"' in work and 'data-do="start-round"' not in work
+    assert 'class="on" data-tab="board"' in work and 'data-item="work" aria-current="page"' in work and 'data-do="start-round"' not in work
     assert admin.get("/manage/for-you/count").json() == {"n": 4}
     assert "data-for-you-count" in admin.get("/party").text  # (the badge's place on the Admin gear, on every page)
     assert "4 waiting on you: " in admin.get("/manage/askdnd").text  # (its card on Overview says how much)

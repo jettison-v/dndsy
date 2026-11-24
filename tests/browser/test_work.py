@@ -23,7 +23,7 @@ def _on_top(page, locator):
 def test_a_rows_lane_menu_and_more_menu_open_over_the_next_row(people, server, browser_db):
     first, _, _ = _plans(browser_db[0])
     admin = people("admin")
-    page = admin.open("/manage/work")
+    page = admin.open("/manage/work?tab=queue")
     row = page.locator(f'tr.wk-plan[data-area="{first}"]')
     row.locator(".fft-lane > summary").click()
     page.locator(".act-menu.floats").wait_for()  # (placed over the page)
@@ -68,7 +68,7 @@ def test_whats_in_claudes_hands_is_a_quiet_line_that_opens(people, server, brows
     hands is a quiet line under the status bar's top row, opening to the list; nothing is amber while it's fresh."""
     _plans(browser_db[0], n=2)  # (issues with no Feature yet: in Claude's hands)
     admin = people("admin")
-    page = admin.open("/manage/work")
+    page = admin.open("/manage/work?tab=queue")
     line = page.locator('[data-stat="hands"]')
     assert line.locator("summary").bounding_box()["height"] < 30, "the line wraps"
     assert page.locator("[data-missed]").count() == 0  # (fresh: not late)
