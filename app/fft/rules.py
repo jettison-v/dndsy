@@ -1648,7 +1648,7 @@ def unlock_area(db: Session, owner: str, area: FftArea) -> None:
 
 
 def order_items(db: Session, actor: str, ids: list[int]) -> None:
-    """Brett's one order: the Roadmap's items, top first (dragged on Development's Queue, which lists only those with plans:
+    """Brett's one order: the Roadmap's items, top first (dragged on Development's Your order tab, which lists only those with plans:
     the items dragged come first in their new order, the rest keep theirs after them)."""
     rows = {it.id: it for it in db.scalars(select(FftItem))}
     moved = [x for x in dict.fromkeys(ids) if x in rows]
