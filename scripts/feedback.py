@@ -156,7 +156,11 @@ def wait(a) -> None:
     """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
     until, misses = time.monotonic() + a.hours * 3600, 0
+    check = time.monotonic() + a.wake * 60 if a.wake else None  # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks)
     while time.monotonic() < until:
+        if check is not None and time.monotonic() >= check:
+            print(f"{a.wake} minutes: time to check claude.ai (feedback.py sync list), then listen again.")
+            return
         got = _peek(a.base, a.listener)
         if got is None:
             misses += 1
@@ -591,6 +595,36 @@ def page(a) -> None:
     print(f"Sent {got['source']} ({got['files']} file{'s' if got['files'] != 1 else ''}): {a.base.rstrip('/')}{got['href']}")
 
 
+def sync(a) -> None:
+    """Comments and picks in either place (item 39, 6 of 6). `sync list`: the mockups to check on claude.ai now.
+    `sync in <doc> --file in.json`: bring in what Brett made on claude.ai ({"comments": [{ext_id, near, words, at}],
+    "picks": {"picks": [...], "notes", "at"}}). `sync out <doc> [--file out.json]`: what askdnd has, for the page's
+    own store on claude.ai (its "askdnd" collection, doc "comments"; and answers/verdict when askdnd's picks are newer)."""
+    if a.do == "list":
+        docs = call(a.base, "/docs/check")["docs"]
+        for d in docs:
+            print(f"{d['doc']}  {d['link']}" + (f"  (question {d['open_question']} open)" if d["open_question"] else ""))
+        if not docs:
+            print("Nothing to check on claude.ai.")
+        return
+    if not a.doc:
+        sys.exit("sync in|out <doc>")
+    from urllib.parse import quote
+
+    if a.do == "out":
+        got = call(a.base, "/docs/out?doc=" + quote(a.doc))
+        text = json.dumps(got, indent=1, ensure_ascii=False)
+        if a.file:
+            Path(a.file).write_text(text)
+            print(f"askdnd's side of {a.doc}: {len(got['comments'])} comments, picks {'from ' + got['picks']['at'] if got['picks'] else 'none'} → {a.file}")
+        else:
+            print(text)
+        return
+    data = json.loads(Path(a.file).read_text()) if a.file else {}
+    got = call(a.base, "/docs/in", {"doc": a.doc, "comments": data.get("comments", []), "picks": data.get("picks")})
+    print(f"Brought in {got['comments']} comment{'s' if got['comments'] != 1 else ''} from claude.ai; picks: {got['picks']}")
+
+
 def deploy(a) -> None:
     print(call(a.base, "/deploy", {"commit": a.commit, "prs": a.pr, "rollback": a.rollback}))
 
@@ -708,6 +742,7 @@ def main() -> None:
     s = sub.add_parser("wait")
     s.add_argument("--every", type=int, default=30)
     s.add_argument("--hours", type=float, default=8)
+    s.add_argument("--wake", type=int, default=10, help="end after this many minutes so Claude checks claude.ai (0: never)")
     s.add_argument("--listener", default="main")
     sub.add_parser("next")
     s = sub.add_parser("claim", help="ask askdnd for the top Ready piece (one at a time)")
@@ -843,6 +878,10 @@ def main() -> None:
     s = sub.add_parser("ideas", help="ideas from before the Roadmap: list, or place one: ideas <id> roadmap|fix|improvement")
     s.add_argument("id", nargs="?")
     s.add_argument("do", nargs="?", choices=[None, "roadmap", "fix", "improvement"])
+    s = sub.add_parser("sync", help="comments and picks merged with claude.ai: sync list | in <doc> --file | out <doc> [--file]")
+    s.add_argument("do", choices=["list", "in", "out"])
+    s.add_argument("doc", nargs="?")
+    s.add_argument("--file")
     s = sub.add_parser("page", help="page send docs/<path>: a page to askdnd's Documents at once, before its pull request")
     s.add_argument("do", choices=["send"])
     s.add_argument("path")
@@ -858,7 +897,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync}[a.cmd](a)
 
 
 if __name__ == "__main__":

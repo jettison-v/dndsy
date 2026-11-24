@@ -952,15 +952,8 @@ def answer(request: Request, question_id: int, choice: str = Form(""), text: str
 # the answer to the newest question asking about that mockup; opening it again shows them.
 
 
-def _doc_question(db: Session, doc: str, open_only: bool) -> FftQuestion | None:
-    q = select(FftQuestion).where(FftQuestion.doc_path == doc)
-    if open_only:
-        q = q.where(FftQuestion.answered_at.is_(None))
-    return db.scalar(q.order_by(FftQuestion.id.desc()))
-
-
-def _picks_said(picks: list) -> str:
-    return "Picks: " + "; ".join(f"{p.get('label') or p.get('value')}" for p in picks if p.get("value"))
+_doc_question = rules.doc_question  # (the one way, shared with picks brought in from claude.ai: item 39, 6 of 6)
+_picks_said = rules.picks_said
 
 
 @router.get("/manage/testing/picks")
@@ -1007,23 +1000,18 @@ def picks_save(request: Request, body=web.JsonBody, db: Session = Depends(get_db
 # as his until Save my picks, which sends them with his answer to its question (and so into its issue's conversation).
 
 
-def _held_comments(db: Session, doc: str, user_id: int | None) -> list[FftDocComment]:
-    return list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, FftDocComment.sent_at.is_(None),
-                                                       FftDocComment.user_id == user_id).order_by(FftDocComment.n)))
-
-
-def _comments_said(comments: list[FftDocComment]) -> str:
-    if not comments:
-        return ""
-    return "\n\nComments on the mockup:\n" + "\n".join(f"Pin {c.n}" + (f" (near “{c.near}”)" if c.near else "") + f": {c.words}" for c in comments)
+_held_comments = rules.held_comments  # (his own, and those brought in from claude.ai)
+_comments_said = rules.comments_said
 
 
 def _comments_rail(request: Request, db: Session, doc: str, user_id: int | None):
     asked = _doc_question(db, doc, open_only=True)
-    rows = list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, (FftDocComment.sent_at.is_not(None)) | (FftDocComment.user_id == user_id))
+    rows = list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, (FftDocComment.sent_at.is_not(None)) | (FftDocComment.user_id == user_id)
+                                                       | (FftDocComment.origin == "claude.ai"))
                            .order_by(FftDocComment.sent_at.is_(None), FftDocComment.n)))
     return templates.TemplateResponse(request, "_doc_comments.html", {"doc": doc, "comments": rows, "open": asked is not None,
-                                                                      "pins": [{"n": c.n, "x": c.x, "y": c.y, "page": c.page, "held": c.sent_at is None} for c in rows]})
+                                                                      "pins": [{"n": c.n, "x": c.x, "y": c.y, "page": c.page, "held": c.sent_at is None, "near": c.near if c.origin == "claude.ai" else ""}
+                                                                               for c in rows]})
 
 
 @router.get("/manage/testing/comments")

@@ -932,3 +932,40 @@ def page_send(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     documents.invalidate()
     did = documents.doc_id(doc.source)
     return _ok({"id": did, "source": doc.source, "href": f"/manage/documents/{did}", "files": len(files)})
+
+
+# Comments and picks in either place (item 39, 6 of 6): what Claude checks on claude.ai, what it brings in, what it hands out
+
+
+@router.get("/docs/check")
+def docs_check(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    keys.require(db, x_fft_key, "read")
+    return _ok({"docs": rules.docs_to_check(db)})
+
+
+@router.get("/docs/out")
+def docs_out(doc: str = "", x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    keys.require(db, x_fft_key, "read")
+    return _ok(rules.doc_out(db, doc[:300]))
+
+
+@router.post("/docs/in")
+def docs_in(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """{"doc", "comments": [{ext_id, near, words, at, page}], "picks": {"picks": [...], "notes", "at"} | null}: what Brett
+    made on claude.ai, brought in. Comments come in once each; picks answer the open question, or replace older ones."""
+    from app import documents
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    doc = _str(body, "doc", 300, need=True)
+    if documents.find(documents.doc_id(doc)) is None:
+        raise HTTPException(400, "That page isn't in Documents.")
+    raw = body.get("comments") if isinstance(body.get("comments"), list) else []
+    added = rules.comments_in(db, actor.name, doc, [c for c in raw[:200] if isinstance(c, dict)])
+    p = body.get("picks") if isinstance(body.get("picks"), dict) else {}
+    try:
+        picks = rules.picks_in(db, actor.name, doc, p.get("picks") if isinstance(p.get("picks"), list) else [], str(p.get("notes") or ""), p.get("at"))
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"comments": added, "picks": picks})

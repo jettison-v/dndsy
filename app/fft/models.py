@@ -316,6 +316,11 @@ class FftDocComment(_Stamped, Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     question_id: Mapped[int | None] = mapped_column(ForeignKey("fft_questions.id", ondelete="SET NULL"), nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Comments made on claude.ai, brought in when Claude checks in (item 39, 6 of 6: either place, merged): where it was
+    # made, claude.ai's own mark for it (so it's brought in once) and when; placed by its words (`near`), not a spot
+    origin: Mapped[str] = mapped_column(String(10), default="askdnd", server_default="askdnd")  # "askdnd" or "claude.ai"
+    ext_id: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    made_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class FftRound(_Stamped, Base):
