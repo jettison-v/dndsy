@@ -11,9 +11,9 @@
  {
   "title": "The Work Board",
   "kind": "design",
-  "status": "Your pick: redrawn for scope v2",
+  "status": "Your pick: redrawn for scope v4",
   "date": "Nov 23",
-  "what": "Roadmap item 39, as scope v2 settles it: Development's Board in five columns (Waiting, Ready in Claude's order with a one-line why, Building one piece at a time, Shipping through review, merge and live, Yours to try), three kinds of card (Feedback, Roadmap, Upkeep), amber when stuck, and each piece's round trip. Try-it buttons show askdnd's moves; a diagram shows the gates and the loops back. One pick: build it as drawn.",
+  "what": "Roadmap item 39, as scope v4 settles it: Development's Board in five columns (Waiting, Ready in Claude's order with a one-line why, Building one piece at a time, Shipping through review, merge and live, Yours to try), three kinds of card (Feedback, Roadmap, Upkeep), amber when stuck, and each piece's round trip. Try-it buttons show askdnd's moves; a diagram shows the gates and the loops back. One pick: build it as drawn.",
   "source": "docs/mockups/work-board/index.html",
   "link": "https://claude.ai/artifact/NY5pTLjXiBBubeH772479J"
  },

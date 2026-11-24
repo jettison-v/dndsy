@@ -155,7 +155,7 @@ button { font: inherit; color: inherit; }
   <header style="display:grid;gap:10px">
     <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23 · a mockup</span>
     <h1>The Work Board</h1>
-    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece from Waiting to yours to try and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's. <b>Redrawn to match scope v2</b> (Nov 23, after your devil's-advocate ask): five columns, one session, no Pin, no filter, no workers.</p>
+    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece from Waiting to yours to try and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's. <b>Redrawn to match scope v4</b> (Nov 23): five columns, one session building at a time, no Pin, no filter; workers are the next batch.</p>
     <div class="terms">
       <div class="term"><span class="tag">Lives in</span>Backstage › Our work › Development, a new first tab, Board, in place of the Queue tab (Waiting and Ready are the queue), beside Checks, Scheduled and How we work.</div>
       <div class="term"><span class="tag">Answers</span>What's moving, what's stuck and why, who has it, and where any one thing is right now.</div>
@@ -242,17 +242,17 @@ button { font: inherit; color: inherit; }
 
   <div class="why-box">
     <span class="tag">How to read it</span>
-    <p class="meta"><b>Ready</b> is in my execution order, each card saying why in one line; your Roadmap order is the input, and if you want something first, you say so in chat or on the item. <b>Building</b> holds one piece, with my last check-in; quiet for 20 minutes, it turns amber and goes back to Ready. <b>Shipping</b> is everything with a pull request, its step under the title (In review, Merging, Live and being tried by me). A red pull request, one behind main, or a try waiting too long turns amber where it sits. Click a card for its round trip.</p>
+    <p class="meta"><b>Ready</b> is in my execution order, each card saying why in one line; your Roadmap order is the input, and if you want something first, you say so in chat or on the item. <b>Building</b> holds one piece, with my last check-in (any call I make to askdnd counts, so a long test run doesn't look quiet); quiet for 20 minutes, it turns amber and goes back to Ready. The Monday phone sweep's session claims its own Upkeep card the same way. <b>Shipping</b> is everything with a pull request, its step under the title (In review, Merging, Live and being tried by me). <b>Yours to try</b> holds both kinds of try: your local try before a merge (Careful, or Look while Deploys is After my local try) and a check once it's live. A merge held by Pause says so on its card. A red pull request, one behind main, a try waiting too long, or a Now item behind less important work for a week turns amber where it sits. Click a card for its round trip.</p>
   </div>
 
   <section class="why-box" aria-labelledby="h-settled">
-    <span class="tag" id="h-settled">Settled by scope v2</span>
-    <p class="meta">This page first asked six picks. Scope v2 answers them, so they're no longer yours to answer here:</p>
+    <span class="tag" id="h-settled">Settled by the scope</span>
+    <p class="meta">This page first asked six picks. The scope (v2, then v4) answers them, so they're no longer yours to answer here:</p>
     <ol class="meta" style="margin:0;padding-left:1.3em;display:grid;gap:4px">
       <li><b>Where:</b> Development's first tab, Board.</li>
       <li><b>A card:</b> its kind, title, one line of why, and amber when stuck; the round trip has the rest.</li>
       <li><b>The round trip:</b> in every item's window, from askdnd's own record.</li>
-      <li><b>Ready's order:</b> mine, with its why. No Pin: you say “this first” in chat or on the item.</li>
+      <li><b>Ready's order:</b> mine, with its why. No Pin: you say “this first” in chat or on the item. A Now item behind less important work for a week turns amber.</li>
       <li><b>The kinds:</b> icon, word and coloured edge. No filter, until the board is long enough to need one.</li>
       <li><b>The Queue tab:</b> folded into the Board.</li>
     </ol>
@@ -261,7 +261,7 @@ button { font: inherit; color: inherit; }
   <form class="decide" aria-label="Your pick">
     <h2>Your pick</h2>
     <fieldset><legend>1 · The board as drawn</legend>
-      <label class="opt"><input type="radio" name="board" value="right"><span>A · Looks right: build it as scope v2 says <span class="mine">my pick</span></span><small>Then press Scope looks right on item 39, and I start with GitHub reporting into askdnd.</small></label>
+      <label class="opt"><input type="radio" name="board" value="right"><span>A · Looks right: build it as scope v4 says <span class="mine">my pick</span></span><small>Then press Scope looks right on item 39, and I start with GitHub reporting into askdnd.</small></label>
       <label class="opt"><input type="radio" name="board" value="change"><span>B · Something to change</span><small>Say what below; I'll answer it on item 39 and write scope v3.</small></label>
     </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(what you'd want on a card, a column you'd add or drop, what would make you trust it more)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
