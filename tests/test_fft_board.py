@@ -135,3 +135,34 @@ def test_an_issues_history_carries_its_pull_requests_round_trip(db, admin):
 
     said = [e.kind for e in feedback_page.issue_view(db, i, None)["events"]]
     assert {"pull_new", "pull_live"} <= set(said) and "issue_live" in said
+
+
+def test_the_queues_controls_come_back_to_the_queue(db, admin):
+    """The Board is Development's first tab: a lane, a hold or a rename pressed on the Queue returns to the Queue."""
+    i = _issue(db, "Back clears what you typed")
+    page = admin.get("/manage/work?tab=queue").text
+    assert 'name="back" value="/manage/work?tab=queue"' in page and 'name="back" value="/manage/work"' not in page
+    r = admin.post(f"/manage/testing/areas/{i.area_id}", data={"do": "hold", "back": "/manage/work?tab=queue"}, follow_redirects=False)
+    assert r.headers["location"] == "/manage/work?tab=queue"
+
+
+def test_a_plan_claimed_outside_the_queue_still_shows_and_an_items_pull_request_shows_once(db):
+    """Claimed by hand under an item whose scope isn't agreed: it's in Building all the same. A pull request from an
+    r<item>- branch shows once, however many plans its item has."""
+    it = rules.new_item(db, "claude", "Not agreed yet", section="now")
+    db.flush()
+    plan = rules.new_area(db, "claude", it, "Not agreed yet: the build")
+    db.flush()
+    rules.lock_area(db, OWNER, plan)
+    assert _where(db)["building"] == [f"a{plan.id}"]
+    rules.unlock_area(db, OWNER, plan)
+    built = rules.new_item(db, "claude", "Agreed", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", built, what="w", inside=["i"])
+    rules.agree_scope(db, "user:1", built)
+    rules.add_step(db, "claude", built, "Build it")
+    one, two = rules.new_area(db, "claude", built, "One"), rules.new_area(db, "claude", built, "Two")
+    db.flush()
+    _pull(db, 440, f"r{built.id}-board")
+    assert _where(db)["shipping"] == [f"a{one.id}"]
+    assert f"a{two.id}" in _where(db)["ready"]

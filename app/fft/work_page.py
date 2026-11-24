@@ -226,15 +226,23 @@ def yours_waits(db: Session, a: FftArea) -> str:
 def board(db: Session) -> dict:
     """The Board's five columns of cards (see above)."""
     cols: dict[str, list[dict]] = {k: [] for k, _, _ in COLUMNS}
-    ready = {a.id: (reason, why) for a, reason, why in rules.ready_areas(db)}
+    turns: dict[int, str] = {}
+
+    def turn_of(_db: Session, a: FftArea) -> str:  # (each plan's turn worked out once for the page)
+        if a.id not in turns:
+            turns[a.id] = rules.area_turn(db, a)
+        return turns[a.id]
+
+    ready = {a.id: (reason, why) for a, reason, why in rules.ready_areas(db, turn_of)}
     order = {a_id: n for n, a_id in enumerate(ready)}
     open_pulls = list(db.scalars(select(FftPull).where((FftPull.state == "open") | ((FftPull.state == "merged") & FftPull.live_at.is_(None)))
                                 .order_by(FftPull.number)))
     placed: set[int] = set()
+    shown: set[int] = set()
     now_ = rules.now()
 
-    def pulls_of(a: FftArea) -> list[FftPull]:
-        return [p for p in open_pulls if p.area_id == a.id or (p.area_id is None and p.item_id == a.item_id and not rules.pull_upkeep(p))]
+    def pulls_of(a: FftArea) -> list[FftPull]:  # (an item's own pull request goes to the first of its plans that shows it, once)
+        return [p for p in open_pulls if p.id not in placed and (p.area_id == a.id or (p.area_id is None and p.item_id == a.item_id and not rules.pull_upkeep(p)))]
 
     def area_card(a: FftArea, it: FftItem | None) -> None:
         kind = "roadmap" if it is not None and not it.standing else "feedback"
@@ -242,7 +250,8 @@ def board(db: Session) -> dict:
         base = {"kind": kind, "key": f"a{a.id}", "title": a.title, "sub": sub, "href": f"/manage/work/{a.id}", "lane": rules.lane_of(a)}
         live_claim = bool(a.lock_owner and a.lock_until and a.lock_until > now_)
         pulls = pulls_of(a)
-        turn = rules.area_turn(db, a)
+        turn = turn_of(db, a)
+        shown.add(a.id)
         if live_claim:
             cols["building"].append(_card(**base, why="Claude is building it", since=a.lock_until - rules.LOCK, stage="claimed"))
         elif pulls:
@@ -277,6 +286,12 @@ def board(db: Session) -> dict:
             (cols["ready"] if mine else cols["waiting"]).append(_card(
                 "roadmap", f"i{x.id}", x.title, "Roadmap build", f"/manage/roadmap/{x.id}",
                 "Next to plan: Claude makes its plan when it claims it" if mine else ("Held below the line" if x.held else f"Your step: {x.next_step}")))
+    stray = [a for a in db.scalars(select(FftArea).where(FftArea.archived.is_(False), FftArea.lock_owner != "").order_by(FftArea.id))
+             if a.id not in shown and a.lock_until and a.lock_until > now_]
+    stray += [db.get(FftArea, a_id) for a_id in ready if a_id not in shown]
+    for a in stray:  # (a plan claimed or Ready outside the queue's builds: claimed by hand, say; it shows all the same)
+        if a.id not in shown:
+            area_card(a, db.get(FftItem, a.item_id))
     for it in db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next"))).order_by(rules.item_rank(), FftItem.place, FftItem.id)):
         sc = rules.latest_scope(db, it)
         if sc is not None and sc.agreed_at is None:  # (its scope written, your OK not given yet: the first gate)

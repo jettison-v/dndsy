@@ -12,25 +12,25 @@
    item window. #}
 {% macro lane_menu(r) %}{# (a plan's lane, chosen from the lane itself: Where it stands' menu, kept) #}
 <details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
-  <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><input type="hidden" name="back" value="/manage/work"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ lane_said[l] }}</button></form>{% endfor %}</div></details>
+  <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><input type="hidden" name="back" value="/manage/work?tab=queue"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ lane_said[l] }}</button></form>{% endfor %}</div></details>
 {% endmacro %}
 {% macro plan_more(r) %}
 {% call more_menu("More for " ~ r.a.title) %}
-  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="{{ 'unhold' if r.a.held else 'hold' }}"><input type="hidden" name="back" value="/manage/work"><button type="submit" data-do="{{ 'unhold' if r.a.held else 'hold' }}">{{ "Let it go: back above the line" if r.a.held else "Hold: below the line" }}</button></form>
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="{{ 'unhold' if r.a.held else 'hold' }}"><input type="hidden" name="back" value="/manage/work?tab=queue"><button type="submit" data-do="{{ 'unhold' if r.a.held else 'hold' }}">{{ "Let it go: back above the line" if r.a.held else "Hold: below the line" }}</button></form>
   {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}
   <button type="button" data-show="fft-rename-{{ r.a.id }}">Rename…</button>
   <button type="button" data-show="fft-merge-{{ r.a.id }}">Merge into…</button>
   <button type="button" data-show="fft-moveto-{{ r.a.id }}">Move to another item…</button>
-  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work"><button type="submit">Archive</button></form>
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work?tab=queue"><button type="submit">Archive</button></form>
   {% endif %}
 {% endcall %}
 {% endmacro %}
 {% macro plan_forms(r) %}{% if not r.a.key %}{# (a hand-made plan's Rename, Merge and Move, under the table: each opens from ⋯) #}
-  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-rename-{{ r.a.id }}" hidden><input type="hidden" name="do" value="rename"><input type="hidden" name="back" value="/manage/work">
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-rename-{{ r.a.id }}" hidden><input type="hidden" name="do" value="rename"><input type="hidden" name="back" value="/manage/work?tab=queue">
     <label class="field"><span>Name</span><input type="text" name="title" value="{{ r.a.title }}" maxlength="80" required></label><div class="row tight"><button class="btn primary small" type="submit">Rename</button><button class="btn link small" type="button" data-cancel="fft-rename-{{ r.a.id }}">Cancel</button></div></form>
-  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-merge-{{ r.a.id }}" hidden><input type="hidden" name="do" value="merge"><input type="hidden" name="back" value="/manage/work">
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-merge-{{ r.a.id }}" hidden><input type="hidden" name="do" value="merge"><input type="hidden" name="back" value="/manage/work?tab=queue">
     <label class="field"><span>Its issues and checks join</span><select name="into" class="ls-select" required>{% for o in all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Merge</button><button class="btn link small" type="button" data-cancel="fft-merge-{{ r.a.id }}">Cancel</button></div></form>
-  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move"><input type="hidden" name="back" value="/manage/work">
+  <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move"><input type="hidden" name="back" value="/manage/work?tab=queue">
     <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in all_items if o.id != r.a.item_id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button><button class="btn link small" type="button" data-cancel="fft-moveto-{{ r.a.id }}">Cancel</button></div></form>
 {% endif %}
 {% endmacro %}

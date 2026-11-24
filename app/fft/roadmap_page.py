@@ -241,7 +241,7 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
         elif do in ("hold", "unhold"):  # (Development's line, issue 62)
             rules.hold_item(db, actor, it, do == "hold")
             said = "Held below Development's line" if do == "hold" else "Back above Development's line"
-            back = "/manage/work"
+            back = "/manage/work?tab=queue"  # (the Queue's hold: back to the Queue, not the Board)
         elif do == "move":
             rules.move_item(db, actor, it, section)
             said = f"Moved to {SECTION_SAID[section]}"
