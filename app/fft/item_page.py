@@ -13,7 +13,7 @@ from app.fft import feedback_page, taxonomy, testing_page, views, work_page
 from app.templating import templates
 
 router = APIRouter()
-KINDS = {"c": "Check", "q": "Question", "l": "On your Mac", "n": "Note", "i": "Issue", "d": "Idea", "r": "Roadmap item"}
+KINDS = {"c": "Check", "q": "Question", "l": "On your Mac", "n": "Note", "i": "Issue", "d": "Idea", "r": "Roadmap item", "a": "Plan"}
 
 
 def _list(db: Session, frm: str, device: str) -> list[str]:
@@ -38,6 +38,8 @@ def _home(picked: dict, frm: str) -> tuple[str, str]:
         name, href = "Feedback", f"/manage/feedback?tab={feedback_page.tab_of(picked)}&open={picked['key']}"
     elif k == "roadmap":  # (Brett, Nov 20: "the navigation is circular and you never actually get to the roadmap item")
         name, href = "the Roadmap", f"/manage/roadmap/{picked['it'].id}"
+    elif k == "plan":  # (a plan opens in the window from the Board and Your order; its page stays for a link: M1)
+        name, href = "its page", f"/manage/work/{picked['a'].id}"
     elif k == "check":  # (a check lives in Development's Checks, wherever it was opened from)
         name, href = "Development", f"/manage/work?tab=checks&open={picked['key']}"
     else:  # (a question or a try on your Mac lives only in For you)

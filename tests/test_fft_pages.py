@@ -274,7 +274,7 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
     db.flush()
     page = admin.get("/manage/work?tab=queue").text
     assert 'data-lane-tag="careful"' in page and 'data-mode="independent"' in page and 'data-mode-pick="frozen"' in page
-    assert f'data-area="{a.id}" data-href="/manage/work/{a.id}" data-stage="next"' in page  # (Claude's next: its row stands out)
+    assert f'data-area="{a.id}" data-panel-url="/manage/item/a{a.id}" data-stage="next"' in page  # (Claude's next: its row stands out)
     admin.post(f"/manage/testing/areas/{a.id}", data={"do": "lane", "lane": "look"})
     assert rules.lane_of(a) == "look"  # (Brett's word moves it down)
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "work"})

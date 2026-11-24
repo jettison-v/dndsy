@@ -552,6 +552,23 @@ def _plan_issues(db: Session, area_id: int) -> list[FftIssue]:
                            .order_by((FftIssue.state == "closed").asc(), FftIssue.id.desc())))
 
 
+def plan_view(db: Session, a: FftArea) -> dict:
+    """A plan as its window and its page show it (Brett's picks M1 and P3 on Our Work, page by page, Nov 24): its facts
+    on one line in the Board's words (its column, lane, fixes, checks, minutes to try, whose turn), its open issues and
+    its checks now, each opening in the same window, and its latest moves."""
+    row = plan_row(db, a, rules.pick_next(db), rules.freeze_state(db)["on"])
+    issues = [i for i in _plan_issues(db, a.id) if i.state != "closed"]
+    checks = [r for r in check_rows(db, a)[0] if r["c"].id in row["check_ids"]]
+    col = on_board(board(db)).get(f"a{a.id}")
+    events = [e for e in db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(40))
+              if e.thing != "pull" or views.pull_worth_saying(e)][:10]
+    who: dict = {}
+    return {"a": a, "item": db.get(FftItem, a.item_id) if a.item_id else None, "row": row, "col": col, "issues": issues, "checks": checks,
+            "lane_said": rules.LANE_SAID,
+            "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events],
+            "turns": {i.id: views.turn_pill(*views.issue_turn(db, i)) for i in issues}}
+
+
 @router.get("/manage/work/{area_id:int}")
 def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0, db: Session = Depends(get_db)):
     """A plan's page: Overview, Issues, Test round, Timeline (a link to a group goes to its page; one item opens in the
@@ -579,7 +596,7 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
-        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "history": bool(history),
+        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "col": on_board(board(db)).get(f"a{a.id}"), "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "history": bool(history),
         "open_n": sum(1 for i in issues if i.state != "closed"), "checks": shown_checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
         "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events], "questions": questions,
         "issue_word": views.ISSUE_WORD, "closed_word": views.CLOSED_WORD, "lane_said": rules.LANE_SAID, "lanes": rules.LANES,

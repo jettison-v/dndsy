@@ -48,14 +48,14 @@
   {% if doc %}<p class="row tight fft-doc"><a class="btn small" href="{{ doc.href }}" data-modal-url="{{ doc.href }}?part=1" data-modal-size="full" data-open-doc title="{{ doc.title }}">Open mockup</a>{% if doc.link %}<a class="note" href="{{ doc.link }}" target="_blank" rel="noopener">on claude.ai ↗</a>{% endif %}</p>{% endif %}
   {% if q.choices %}<ul class="fft-asked-choices">{% for ch in q.choices %}<li data-choice="{{ loop.index0 }}"{% if q.answer_choice == loop.index0 %} class="on"{% endif %}><b>{{ ch.label }}</b>{% if q.mine == loop.index0 %} <span class="note">Claude's pick</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
   {% if q.answered_at %}<div class="fft-answered" data-answered><small>{{ "You" if q.answered_by == me_id else "An admin" }} answered · <time datetime="{{ q.answered_at.isoformat() }}" data-clock="when">{{ q.answered_at | ago }}</time></small><p>{% if qv.picked %}<b>{{ qv.picked.label }}</b>{% if q.answer_text %} · {% endif %}{% endif %}{{ q.answer_text }}</p></div>
-  {% else %}<p class="row tight"><a class="btn primary small" href="/manage/for-you?open=q{{ q.id }}" data-do="answer">Answer</a></p>{% endif %}
+  {% else %}<p class="row tight"><a class="btn primary small" href="/manage/for-you?open=q{{ q.id }}" data-panel-url="/manage/item/q{{ q.id }}" data-do="answer">Answer</a></p>{% endif %}
 </div>
 {%- endmacro %}
 
 {# The checks that try an issue's fix, each a link to it in Testing with where it stands in Testing's words (Brett's round,
    Nov 18, issue 26: a live issue named no check). `checks`: views.issue_checks. #}
 {% macro its_checks(checks) -%}
-{% if checks %}<p class="note fft-its-checks" data-its-checks>{{ "Its check" if checks | length == 1 else "Its checks" }}: {% for x in checks %}<a href="/manage/for-you?open=c{{ x.c.id }}" data-check="{{ x.c.id }}">{{ x.c.title }}</a> · {{ x.word }}{{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
+{% if checks %}<p class="note fft-its-checks" data-its-checks>{{ "Its check" if checks | length == 1 else "Its checks" }}: {% for x in checks %}<a href="/manage/for-you?open=c{{ x.c.id }}" data-panel-url="/manage/item/c{{ x.c.id }}" data-check="{{ x.c.id }}">{{ x.c.title }}</a> · {{ x.word }}{{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
 {%- endmacro %}
 
 {# What's in Claude's hands, as a list (views.hands; Brett's pick 1A, issue 21): each gap, how long it has waited, and
@@ -77,4 +77,17 @@
   {% if a.words %}<p class="fft-answer-words">{{ a.words }}</p>{% endif %}
 </div>{% endfor %}
 {% endcall %}{% endif %}
+{%- endmacro %}
+
+{# A plan's facts on one line, in the Board's words (Brett's pick P3 on Our Work, page by page, Nov 24): its column (the
+   older stage word only when it isn't on the Board), Stuck, its lane, fixes, checks, minutes to try, whose turn. Its
+   window and its page. #}
+{% macro plan_facts(row, col, lane_said) -%}
+{% from "_admin_bits.html" import state_word %}
+<p class="wk-facts" data-facts>{% if col %}{{ state_word(col.said, col.tone, ' data-col-word="' ~ col.col ~ '"') }}{% if col.stuck %} {{ state_word("Stuck", "ask", " data-stuck") }}{% endif %}{% else %}{{ state_word(row.stage_said[0], row.stage_said[1], ' data-stage-word="' ~ row.stage ~ '"') }}{% endif %}
+  <span>{{ lane_said[row.lane] if row.lane else "No lane yet" }}</span>
+  {% if row.issues %}<span>{{ row.fixed }} of {{ row.issues }} fixed</span>{% endif %}
+  {% if row.checks %}<span>{{ row.passed }} of {{ row.checks }} passed</span>{% endif %}
+  {% if row.minutes %}<span>{{ row.minutes }} min to try</span>{% endif %}
+  <span>Waits on: <b>{{ row.waits }}</b></span></p>
 {%- endmacro %}

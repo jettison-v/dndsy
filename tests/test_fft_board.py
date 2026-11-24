@@ -208,6 +208,26 @@ def test_a_builds_row_in_your_order_says_its_plans_column(db, admin):
     assert 'data-col-word="building"' in row
 
 
+def test_a_plan_opens_in_the_item_window_from_the_board_and_your_order(db, admin):
+    """Brett's picks M1 and P3 on Our Work, page by page (Nov 24): a plan opens in the item window, not a new page, from
+    the Board, Your order and a Roadmap item's Plans; its facts on one line in the Board's words; its issues open in the
+    same window; its page stays for a link. A Roadmap card opens the short window For you uses (M3)."""
+    i = _issue(db, "Back clears what you typed")
+    it = rules.new_item(db, "claude", "An idea", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])
+    db.flush()
+    board = admin.get("/manage/work").text
+    assert f'data-panel-url="/manage/item/a{i.area_id}" data-card="a{i.area_id}"' in board
+    assert f'data-panel-url="/manage/item/r{it.id}" data-card="i{it.id}"' in board  # (M3)
+    assert f'data-panel-url="/manage/item/a{i.area_id}"' in admin.get("/manage/work?tab=queue").text
+    win = admin.get(f"/manage/item/a{i.area_id}").text
+    assert f'data-fft-plan="{i.area_id}"' in win and 'data-col-word="ready"' in win and "data-stats" not in win
+    assert f'data-panel-url="/manage/item/i{i.id}"' in win and f'href="/manage/work/{i.area_id}"' in win  # (its issue here; its page for a link)
+    page = admin.get(f"/manage/work/{i.area_id}").text
+    assert 'data-col-word="ready"' in page and "data-stats" not in page  # (P3 on its page too)
+
+
 def test_short_marks_on_cards_and_the_roadmap_list(db, admin):
     """Brett's picks P2 and P4 on Our Work, page by page (Nov 24): Board cards and the Roadmap list carry short marks (P12,
     R39), the full word on hover; the Roadmap list's titles are plain, the row opens the item."""
@@ -223,3 +243,15 @@ def test_short_marks_on_cards_and_the_roadmap_list(db, admin):
     assert f'title="Roadmap item {it.id}" data-mark="r{it.id}">R{it.id}</abbr>' in road
     row = road.split(f'data-item="{it.id}"', 1)[1].split("</tr>", 1)[0]
     assert "<a " not in row.split("</td>", 3)[2]  # (its title plain: the row opens it)
+
+
+def test_links_inside_the_window_open_in_the_window(db, admin):
+    """Brett's pick M2 on Our Work, page by page (Nov 24): a check's issue, an issue's check and a question's subject open
+    in the same item window (← Back), not by changing page; their page address stays for a new tab."""
+    i = _issue(db, "Back clears what you typed")
+    c = rules.write_check(db, "claude", title="t", steps=["s"], expect="e", issue_ids=[i.id], area_id=i.area_id)
+    q = rules.ask(db, "claude", about="issue", about_id=i.id, text="Left or right?", choices=[{"label": "L"}, {"label": "R"}])
+    db.flush()
+    assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/c{c.id}").text
+    assert f'data-panel-url="/manage/item/c{c.id}"' in admin.get(f"/manage/item/i{i.id}").text
+    assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/q{q.id}").text

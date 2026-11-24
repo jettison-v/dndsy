@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, kind_word %}
 {% from "_lists.html" import empty_state, count_pill, history_link, history_head %}
+{% from "_fft_bits.html" import plan_facts with context %}
 {% block title %}{{ a.title }} · Development · Backstage · askdnd{% endblock %}
 {% block content %}
 {# A plan's page (app/fft/work_page.py `plan`; The Work Pages, Nov 20): everything of its batch. Overview (its stage, lane,
@@ -10,23 +11,14 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1><a href="/manage/work" class="crumb">Development ›</a> {{ a.title }}</h1>
     {% if not a.archived %}<button class="btn title-action" type="button" data-modal-url="/manage/work/{{ a.id }}/discuss" data-do="discuss">Discuss with Claude ↗</button>{% endif %}</div>
-  <p class="subtitle wk-facts" data-facts>{{ state_word(row.stage_said[0], row.stage_said[1], ' data-stage-word="' ~ row.stage ~ '"') }}
-    <span>{{ lane_said[row.lane] if row.lane else "No lane yet" }}</span>
-    <span>{{ row.kind }}{% if item %} · {{ item.title }}{% endif %}{% if at %} · plan {{ at }} of {{ of }}{% endif %}</span>
-    <span>Waits on: <b>{{ row.waits }}</b></span></p>
+  <p class="subtitle note">{{ row.kind }}{% if item %} · {{ item.title }}{% endif %}{% if at %} · plan {{ at }} of {{ of }}{% endif %}</p>
+  {{ plan_facts(row, col, lane_said) }}{# (one line, the Board's words: P3, Nov 24) #}
 
   <nav class="sub-tabs" aria-label="{{ a.title }}">
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "issues" %}{{ count_pill(open_n) }}{% elif key == "round" %}{{ count_pill(now_n) }}{% endif %}</a>{% endfor %}
   </nav>
 
   {% if tab == "overview" %}
-  <div class="stats stats-fit" data-stats>
-    <div class="stat"><span>Stage</span><b>{{ row.stage_said[0] }}</b></div>
-    <div class="stat"><span>Lane</span><b>{{ lane_said[row.lane] if row.lane else "—" }}</b>{% if a.lane_why %}<small>{{ a.lane_why }}</small>{% endif %}</div>
-    <div class="stat"><span>Issues fixed</span><b>{{ row.fixed }} of {{ row.issues }}</b><small>open issues with a fix</small></div>
-    <div class="stat"><span>Checks passed</span><b>{{ row.passed }} of {{ row.checks }}</b></div>
-    <div class="stat"><span>To try now</span><b>{{ row.minutes }} min</b></div>
-  </div>
   <h2 class="plabel wk-h2">Next</h2>
   <div class="table-scroll"><table class="dtable fft-table" data-next>
     <thead><tr><th class="dt-w3">Whose</th><th>What</th></tr></thead>

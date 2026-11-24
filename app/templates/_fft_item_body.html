@@ -5,7 +5,7 @@
 {% from "_admin_bits.html" import state_word, state_line, more_menu, rd_section, kind_word %}
 {% from "_lists.html" import empty_state, count_pill %}
 {% from "_check_steps.html" import walkthrough, goal %}
-{% from "_fft_bits.html" import report, convo_line, history, asked_bub, its_checks, page_answers with context %}
+{% from "_fft_bits.html" import report, convo_line, history, asked_bub, its_checks, page_answers, plan_facts with context %}
 {% if picked.kind == "check" %}{% set c = picked.c %}{% set v = picked.v %}
 {# ---- a check (screens 1, 4, 7) #}
 <article class="reader-article fb-read" data-fft-check="{{ c.id }}" data-state="{{ picked.state.state }}">
@@ -26,7 +26,7 @@
   <div class="act-bar"><button class="btn small" type="button" data-modal-url="/manage/testing/tries/{{ picked.last_failed.id }}/change" data-do="change">Change result…</button></div>
   {% endif %}
   {% if picked.issues %}<ol class="fft-problems" data-problems>{% for i in picked.issues %}{% set t = picked.turn %}
-    <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
+    <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}" data-panel-url="/manage/item/i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
   {% call rd_section("On the page, the card says", attrs=' data-card-says') %}
     {% if v %}{{ walkthrough({"id": c.id, "steps": picked.steps}) }}{% endif %}
     {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}{% endcall %}
@@ -38,7 +38,7 @@
 {% elif picked.kind == "question" %}{% set q = picked.q %}
 {# ---- a question or a decision (screen 8) #}
 <article class="reader-article fb-read" data-fft-question="{{ q.id }}">
-  <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}">{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
+  <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}"{% if picked.about.key %} data-panel-url="/manage/item/{{ picked.about.key }}"{% endif %}>{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
   {% set qt = q.text | note_title %}<h2 class="nt-h">{{ qt }}</h2>
   {% if q.text.strip() != qt %}<div class="bub claude"><small>Claude asks</small><p>{{ q.text }}</p></div>{% endif %}
   {% if picked.doc %}<div class="act-bar fft-doc" data-doc><a class="btn primary small" href="{{ picked.doc.href }}" data-modal-url="{{ picked.doc.href }}?part=1" data-modal-size="full" data-open-doc>Open mockup</a>{% if picked.doc.link %}<a class="btn link small" href="{{ picked.doc.link }}" target="_blank" rel="noopener">On claude.ai ↗</a>{% endif %}<span class="note" data-picks-answer>{% if q.choices %}Look at “{{ picked.doc.title }}” first, then answer here.{% else %}Your picks on it are your answer: pick, then Save my picks, here or on claude.ai. Nothing to type.{% endif %}</span></div>{% endif %}
@@ -144,7 +144,7 @@
   {% endcall %}
   {% if v.found or v.notes %}{% call rd_section("What was found", count=(v.found | length) + (v.notes | length), attrs=' data-sec="found"') %}
   {% for f in v.found %}<div class="fft-trial" data-try="{{ f.t.id }}">{{ state_word({"failed": "Failed", "passed": "Passed"}.get(f.t.result, "Can't try"), {"failed": "failed", "passed": "passed"}.get(f.t.result, "quiet")) }}
-    <span><a href="/manage/for-you?open=c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
+    <span><a href="/manage/for-you?open=c{{ f.check.id }}" data-panel-url="/manage/item/c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
     <time class="note" datetime="{{ f.t.created_at.isoformat() }}" data-clock="when">{{ f.t.created_at | ago }}</time>
     {% if f.stops_round or not f.blocking or f.still %}<span class="note fft-trial-sub">{{ "Marked as stopping the round." if f.stops_round else "Sent on its own: it doesn't stop the check." if not f.blocking else "" }}{{ " Still happening from before." if f.still }}</span>{% endif %}</div>{% endfor %}
   {% for nv in v.notes %}{{ report(nv, unjoin=("/manage/feedback/issues/" ~ i.id ~ "?tab=" ~ tab) if v.notes | length > 1 and i.state != "closed" else "") }}{% endfor %}
@@ -183,6 +183,29 @@
   {% endcall %}
   {% if picked.notes %}{% call rd_section("Its notes", count=picked.notes | length, attrs=' data-sec="found"') %}{% for nv in picked.notes %}{{ report(nv) }}{% endfor %}{% endcall %}{% endif %}
 </article>
+{% elif picked.kind == "plan" %}{% set a = picked.a %}
+{# ---- a plan, in the item window (Brett's picks M1 and P3 on Our Work, page by page, Nov 24): from the Board, Your order
+   and a Roadmap item's Plans, over the page you're on. Its facts on one line in the Board's words; its issues and checks
+   open in this same window (← Back); its page stays for a link. #}
+<article class="reader-article fb-read" data-fft-plan="{{ a.id }}">
+  <p class="note ts-where">{{ picked.row.kind }}{% if picked.item %} · {{ picked.item.title }}{% endif %}</p>
+  <h2 class="nt-h">{{ a.title }}</h2>
+  {{ plan_facts(picked.row, picked.col, picked.lane_said) }}
+  {% call rd_section("Its open issues", count=picked.issues | length, attrs=' data-sec="plan-issues"') %}
+    {% if picked.issues %}<ul class="fft-plan-list">{% for i in picked.issues %}
+      <li data-panel-url="/manage/item/i{{ i.id }}" tabindex="0" data-row="i{{ i.id }}"><span class="dt-id">{{ mark("i" ~ i.id) }}</span><span class="ts-title">{{ i.title }}</span>{% if picked.turns.get(i.id) %}{{ state_word(picked.turns[i.id][0], picked.turns[i.id][1]) }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="note">Nothing open in this plan.</p>{% endif %}
+  {% endcall %}
+  {% if picked.checks %}{% call rd_section("Its checks now", count=picked.checks | length, attrs=' data-sec="plan-checks"') %}
+    <ul class="fft-plan-list">{% for r in picked.checks %}
+      <li data-panel-url="/manage/item/{{ r.key }}" tabindex="0" data-row="{{ r.key }}"><span class="dt-id">{{ mark(r.key) }}</span><span class="ts-title">{{ r.c.title }}</span>{% set st = r.devices.values() | list %}{% if st %}{{ state_word(st[0][0], st[0][1]) }}{% endif %}</li>{% endfor %}</ul>
+  {% endcall %}{% endif %}
+  {% if picked.events %}{% call rd_section("Lately", attrs=' data-sec="plan-lately"') %}
+    <ul class="fft-plan-lately">{% for e, words, who in picked.events %}<li><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time> · {{ who }} · {{ words }}</li>{% endfor %}</ul>
+  {% endcall %}{% endif %}
+  {% if not a.archived %}<div class="act-bar"><button class="btn small" type="button" data-modal-url="/manage/work/{{ a.id }}/discuss" data-do="discuss">Discuss with Claude ↗</button></div>{% endif %}
+</article>
+
 {% elif picked.kind == "roadmap" %}{% set it = picked.it %}{% set sc = picked.scope %}
 {# A Roadmap item, a quick look from For you (The Roadmap in askdnd, Nov 20): its scope waiting for your OK, or your
    steps; the whole item is on its page #}
