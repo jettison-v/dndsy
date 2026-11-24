@@ -84,6 +84,14 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
 .step .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 700 .74rem/1 var(--sans); color: var(--bg); }
 .step.you .n { background: var(--amber); } .step.app .n { background: var(--blue); } .step.mini .n { background: var(--muted); } .step.lead .n, .step.wk .n { background: var(--violet); }
 .step.alt { opacity: .9; } .step.alt .n { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+.ready { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.ready .card { gap: 6px; }
+.ready .k { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font: 700 .78rem/1 var(--sans); }
+.pickup { display: grid; gap: 8px; counter-reset: p; margin: 0; padding: 0; list-style: none; }
+.pickup li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.pickup li::before { counter-increment: p; content: counter(p); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--violet-soft); color: var(--violet); font: 700 .78rem/1 var(--sans); }
+.today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 640px) { .today { grid-template-columns: minmax(0, 1fr); } }
 .qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .qa .card p + p { margin-top: 2px; }
 @media (max-width: 640px) { .miss { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 1.6rem; } }
@@ -171,6 +179,46 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <div></div>
       <div></div>
     </div></div>
+  </section>
+
+  <section aria-labelledby="h-ready">
+    <h2 id="h-ready">What makes something Ready, and how it's picked up</h2>
+    <div class="today">
+      <div class="card"><span class="tag">Today</span><p>At the start of a session and before each round of work, I ask askdnd for the next thing (<code>feedback.py next</code>). It names the top of your order and lists what it skipped because it waits on you. But that's me following a rule: nothing stops me working on something else, and nothing records that I took it. Today's misses lived in that gap.</p></div>
+      <div class="card mine"><span class="tag">Proposed</span><p>Ready is a state askdnd works out from facts, never my judgment, and a session doesn't choose its work: it asks, and askdnd hands it over and records the claim.</p></div>
+    </div>
+    <h3>Ready means all four are true</h3>
+    <div class="ready">
+      <div class="card"><span class="k">1</span><b>It has your go-ahead</b><p class="note">An issue you filed, or a player's note you approved (your OK for its fix); for a Roadmap item, your Scope looks right.</p></div>
+      <div class="card"><span class="k">2</span><b>Nothing it waits on is open</b><p class="note">No question to you on it, no step of yours, nothing it depends on unfinished.</p></div>
+      <div class="card"><span class="k">3</span><b>It isn't in your way</b><p class="note">Its area isn't in a round you have open. Paused (game night) holds merging, not building, so it can still be Ready.</p></div>
+      <div class="card"><span class="k">4</span><b>Nobody holds it</b><p class="note">No session has a live claim on it.</p></div>
+    </div>
+    <p class="note">Anything that isn't Ready says why where you see it: waiting for your OK, your round, or your answer.</p>
+    <h3>How it's picked up</h3>
+    <ol class="pickup">
+      <li><span><b>A session asks askdnd for work.</b> The lead, when it finishes something or when its listener hears that something became Ready.</span></li>
+      <li><span><b>askdnd hands over the top Ready piece in your one order</b>: anything broken at the table first, then Roadmap items from the top, fixes grouped by Product Area. It records who has it.</span></li>
+      <li><span><b>The session checks in every few minutes while it works.</b> A claim that goes quiet for 20 minutes goes back to Ready, and the bar shows whose it was.</span></li>
+      <li><span><b>The claim ends when its pull request is attached.</b> From there askdnd moves it on by itself: In review, Live, yours to try.</span></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-group">
+    <h2 id="h-group">Your importance, my execution order</h2>
+    <p>Your direction (Nov 23): <i>"I want to communicate what is the most important from a business perspective, but you need to execute in the order that produces the best product."</i> So askdnd keeps two orders, each owned by one of us.</p>
+    <div class="today">
+      <div class="card"><span class="tag">Importance: yours</span><p>The Roadmap's sections and order say what matters most to the business. Only you change it (drag it, or tell me and I write it down). It's the input, not the schedule.</p></div>
+      <div class="card mine"><span class="tag">Execution order: mine</span><p>Which Ready work goes first, and what goes together, for the best product: <b>batches</b> (same Product Area or same files, one pull request, one try for you), <b>groundwork first</b>, the riskiest change when you can try it soonest. askdnd shows the order and each place's reason; a session still takes only the top of it.</p></div>
+    </div>
+    <h3>The fences, so the important things never starve</h3>
+    <ul>
+      <li>Only <b>Ready</b> work: the execution order never starts something early.</li>
+      <li><b>Something broken at the table</b> goes first, always.</li>
+      <li><b>Your pin wins:</b> "do this next" on anything puts it at the top of my order.</li>
+      <li><b>Now can't quietly slip:</b> when something lower in importance goes ahead of a Now item, askdnd says so on that item, with the reason; one left waiting a week turns amber.</li>
+      <li>A batch never mixes <b>lanes</b>: something you try locally is never bundled with work that just ships.</li>
+    </ul>
   </section>
 
   <section aria-labelledby="h-qa">
@@ -380,6 +428,11 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
       <label class="opt"><input type="radio" name="first" value="workers"><span>B · Workers first</span><small>More done sooner, on today's fragile bookkeeping.</small></label>
       <label class="opt"><input type="radio" name="first" value="channels"><span>C · Wait for channels, then build around them</span><small>Ends one miss; the rest stay.</small></label>
     </fieldset>
+    <fieldset><legend>5 · Who sets the order of work</legend>
+      <label class="opt"><input type="radio" name="grouping" value="claude-executes"><span>A · You set importance; Claude sets the execution order, with reasons and the fences above <span class="mine">your direction, Nov 23</span></span><small>Your pin wins, Now can't quietly slip, only Ready work.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="suggest"><span>B · I suggest groupings and moves; moves across items wait for your OK</span><small>More of your attention on sequencing.</small></label>
+      <label class="opt"><input type="radio" name="grouping" value="strict"><span>C · Strict importance order</span><small>Misses the efficiency you're after.</small></label>
+    </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(where you disagree, what I've missed, a worry this doesn't answer)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
@@ -391,7 +444,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
   // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["dispatch", "chats", "wip", "first"];
+  const NAMES = ["dispatch", "chats", "wip", "first", "grouping"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };

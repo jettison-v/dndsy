@@ -501,6 +501,21 @@ def test_pausing_says_what_it_would_hold(admin, db):
     assert "data-holds-flight" in page and "The Count wraps" in page[page.index("data-holds-flight"):]
 
 
+def test_a_pause_lets_what_was_merged_finish_and_says_when_askdnd_last_updated(admin, db):
+    """Issue 110 (Brett, Nov 23: "a pause is not a nuclear option. I would want inflight work to finish, not stop"):
+    paused, the bar says what was merged before still goes live and when askdnd.ai started running, so he sees it settle."""
+    from app import config
+
+    rules.set_freeze(db, "user:1", True, why="Game night")
+    db.flush()
+    page = admin.get("/manage/for-you").text
+    bar = page[page.index('data-stat="paused"'):]
+    assert "data-paused-drain" in bar and f'datetime="{config.STARTED_AT.isoformat()}"' in bar[:bar.index("</div>")]
+    rules.set_freeze(db, "user:1", False)
+    db.flush()
+    assert "data-paused-drain" not in admin.get("/manage/for-you").text
+
+
 def test_one_item_opens_in_its_window_with_the_next_and_the_old_link_opens_it_there(admin, dm, db):
     """Issue 44 and The Work Pages (Brett, Nov 20): any single item opens in one window, from any page, ↑ ↓ walking the
     list it came from; an old link to one item (?open=) opens it in that window over its page. Admins only."""

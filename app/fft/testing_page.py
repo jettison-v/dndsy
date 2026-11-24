@@ -328,7 +328,8 @@ def status(db: Session) -> dict:
             "gap_words": views.GAP_WORDS,
             "after": after, "flight": rules.in_flight(db),  # (a round waiting for changes to go live; what pausing would hold)
             "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)
-            "freeze": rules.freeze_state(db), "mode": rules.mode_of(db)}
+            "freeze": rules.freeze_state(db), "mode": rules.mode_of(db),
+            "updated": config.STARTED_AT.isoformat()}  # (askdnd.ai's last deploy: a pause has settled once nothing newer comes)
 
 
 def _render(request: Request, db: Session, user: dict, show: str, open: str):
