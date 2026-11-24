@@ -327,10 +327,30 @@ def items_in_order(db: Session) -> list[FftItem]:
 # ------------------------------------------------------------------ the record, in words
 
 
+def pull_worth_saying(ev) -> bool:
+    """A pull request's event a plan's History shows: opened, ended, brought up to date, tests passed or failed; not each
+    flicker of its merge state."""
+    d = ev.data or {}
+    ch = d.get("changes") or {}
+    return ev.kind == "pull_new" or bool(d.get("to")) or bool(ch.get("updated")) or ch.get("tests") in ("passed", "failed")
+
+
 def event_words(ev) -> str:
     """One line saying what happened: Claude's inbox and an issue's History. It never quotes what anyone wrote (T1),
     only what changed."""
     d = ev.data or {}
+    if ev.thing == "pull":  # (a pull request's record, item 39: on a plan's History; never an inbox, rules.heard)
+        n = d.get("number")
+        if ev.kind == "pull_new":
+            return f"Pull request #{n} " + {"merged": "merged", "closed": "closed"}.get(d.get("to") or "", "opened")
+        if d.get("to"):
+            return f"Pull request #{n} {'reopened' if d['to'] == 'open' else d['to']}"
+        ch = d.get("changes") or {}
+        if ch.get("updated"):
+            return f"Pull request #{n} brought up to date with main"
+        if ch.get("tests") in ("passed", "failed"):
+            return f"Pull request #{n}'s tests {ch['tests']}"
+        return f"Pull request #{n} changed"
     if ev.kind == "note_sent":
         return "A note from a player waits for Brett's approval" if d.get("role") != "admin" or d.get("staging") else f"Brett sent a note ({d.get('note_kind')})"
     if ev.kind == "line_added" and not d.get("approved", True):
