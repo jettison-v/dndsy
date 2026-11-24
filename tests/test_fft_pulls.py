@@ -1,0 +1,133 @@
+"""Pull requests as GitHub reports them (app/fft/rules.py `pulls_seen`, POST /api/fft/github/pulls, GET /api/fft/pulls,
+the two gaps; item 39, A sturdier loop, scope v4, Brett's OK Nov 24): no pull request without a card, each linked to
+its work, a red or conflicting one in Claude's hands."""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import select
+
+from app import config
+from app.db import get_db
+from app.fft import keys, rules, views
+from app.fft.models import FftArea, FftEvent, FftKey, FftPull
+from app.main import app
+
+CLAUDE, RELAY, MINI = "c" * 40, "r" * 40, "m" * 40
+URL = "https://github.com/jettison-v/dndsy/pull/"
+
+
+@pytest.fixture
+def api(db, monkeypatch):
+    monkeypatch.setattr(config, "FEEDBACK_KEY", CLAUDE)
+    monkeypatch.setenv("FFT_RELAY_KEY", RELAY)
+    monkeypatch.setenv("FFT_MINI_KEY", MINI)
+    app.dependency_overrides[get_db] = lambda: db
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture
+def github(db):
+    key = keys.make(db, "GitHub", "github")
+    db.flush()
+    return {"X-Fft-Key": key}
+
+
+def _pr(number, branch="some-work", **kw):
+    return {"number": number, "title": f"Pull {number}", "branch": branch, "state": "open", "tests": "running",
+            "merge_state": "blocked", "auto_merge": True, "head": "a" * 40} | kw
+
+
+def _seen(db, *rows, snapshot=False):
+    out = rules.pulls_seen(db, "github", list(rows), snapshot=snapshot)
+    db.flush()
+    return out
+
+
+def test_only_githubs_key_reports_pull_requests_and_it_reads_nothing(api, db, github):
+    """A standing rule (the audit, Nov 17; T6): each key does only its own job. GitHub's may report pull requests and
+    its jobs, and read nothing; Claude's reads them and can't report them; staging's and the Mini's can do neither."""
+    body = {"pulls": [_pr(480)], "snapshot": True}
+    assert api.post("/api/fft/github/pulls", json=body).status_code == 404
+    for key in (CLAUDE, RELAY, MINI):
+        assert api.post("/api/fft/github/pulls", headers={"X-Fft-Key": key}, json=body).status_code == 403
+    got = api.post("/api/fft/github/pulls", headers=github, json=body)
+    assert got.status_code == 200 and got.json()["seen"] == [480]
+    assert api.get("/api/fft/pulls", headers=github).status_code == 403
+    assert api.get("/api/fft/notes", headers=github).status_code == 403
+    listed = api.get("/api/fft/pulls", headers={"X-Fft-Key": CLAUDE}).json()["items"]
+    assert [(x["number"], x["upkeep"], x["tests"]) for x in listed] == [(480, True, "running")]
+
+
+def test_a_key_for_github_made_before_today_still_reports_only_its_jobs(db):
+    """The drift job's key (Nov 21) was made with only "jobs": it isn't given pull requests by this change; a new key is."""
+    db.add(FftKey(name="old", key_hash=keys.digest("o" * 40), actor="github", scopes=["jobs"]))
+    db.flush()
+    assert not keys.actor_for(db, "o" * 40).may("pulls")
+    assert keys.actor_for(db, keys.make(db, "new", "github")).may("pulls")
+
+
+def test_each_is_linked_to_its_work_by_its_branch_else_by_the_issue_that_names_it(db):
+    """`a12-…` an area, `i110-…` an issue, `r39-…` a Roadmap item; else an issue whose pull request it is; else nothing,
+    an Upkeep card (Dependabot's always)."""
+    issue = rules.new_issue(db, "claude", "Back clears what you typed", feature="feedback")
+    db.flush()
+    item = rules.new_item(db, "claude", "A sturdier loop")
+    db.flush()
+    by_issue, by_area, plain, bot = _seen(db, _pr(1, f"i{issue.id}-back"), _pr(2, f"a{issue.area_id}-batch"), _pr(3, "phone-sweep"),
+                                         _pr(4, "dependabot/uv/minor", by_bot=True))
+    assert (by_issue.issue_id, by_issue.area_id) == (issue.id, issue.area_id)
+    assert by_issue.item_id == by_area.item_id == db.get(FftArea, issue.area_id).item_id
+    assert (by_area.issue_id, by_area.area_id) == (None, issue.area_id)
+    assert rules.pull_upkeep(plain) and rules.pull_upkeep(bot) and bot.by_bot
+    by_item = _seen(db, _pr(5, f"r{item.id}-github"))[0]
+    assert (by_item.issue_id, by_item.area_id, by_item.item_id) == (None, None, item.id)
+    # (an issue that names it later links it on GitHub's next report; a branch mark for something that isn't there doesn't)
+    rules.fix_ready(db, "claude", issue, URL + "3")
+    db.flush()
+    assert _seen(db, _pr(3, "phone-sweep"))[0].issue_id == issue.id
+    assert rules.pull_upkeep(_seen(db, _pr(6, "i99999-gone"))[0])
+    assert not _seen(db, _pr(47, "other"))[0].issue_id  # (pull/3 isn't pull/47's prefix the other way round either)
+
+
+def test_each_change_is_recorded_once_and_a_whole_list_closes_what_left_it(db):
+    """The round trip reads the events: one when it first appears, one per change, none when nothing changed. A whole
+    list (snapshot) of the open ones closes any this record held open that isn't on it; a closed one keeps its tests."""
+    _seen(db, _pr(10), _pr(11))
+    _seen(db, _pr(10), _pr(11))  # (nothing new)
+    _seen(db, _pr(10, tests="passed"), _pr(11))
+    evs = list(db.scalars(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id)))
+    assert [e.kind for e in evs] == ["pull_new", "pull_new", "pull_changed"]
+    assert evs[-1].data["changes"] == {"tests": "passed"}
+    _seen(db, {"number": 10, "state": "merged"}, _pr(12), snapshot=True)
+    rows = {p.number: p for p in db.scalars(select(FftPull))}
+    assert (rows[10].state, rows[10].tests) == ("merged", "passed") and rows[10].closed_at is not None
+    assert rows[11].state == "closed" and rows[12].state == "open"
+
+
+def test_a_red_or_conflicting_pull_request_is_in_claudes_hands(db):
+    """Gaps (Brett, Nov 17): a pull request whose tests failed, or that conflicts with main, waits on Claude; behind
+    main isn't one (GitHub's run brings it up to date), nor is a closed one."""
+    _seen(db, _pr(20, tests="failed"), _pr(21, merge_state="dirty"), _pr(22, merge_state="behind"), _pr(23, tests="passed"))
+    got = {(g["kind"], g["title"].split()[0]) for g in views.gaps(db) if g["thing"] == "pull"}
+    assert got == {("pull_red", "#20"), ("pull_conflicts", "#21")}
+    _seen(db, {"number": 20, "state": "closed"})
+    assert ("pull_red", "#20") not in {(g["kind"], g["title"].split()[0]) for g in views.gaps(db) if g["thing"] == "pull"}
+
+
+def test_a_report_askdnd_cant_read_changes_nothing(api, db, github):
+    """A bad report is refused whole, never half kept."""
+    for body in ({"pulls": "x"}, {"pulls": [_pr(30), _pr(30)]}, {"pulls": [_pr(31, state="weird")]}, {"pulls": [_pr(0)]},
+                 {"pulls": [_pr(32, tests="maybe")]}, {"pulls": [{"title": "no number"}]}, {"pulls": [_pr(n) for n in range(1, 202)]}):
+        assert api.post("/api/fft/github/pulls", headers=github, json=body).status_code == 400, body
+    db.expire_all()
+    assert db.scalar(select(FftPull.id)) is None
+
+
+def test_brought_up_to_date_is_recorded(db):
+    """GitHub's run merged main into it: when, for the round trip and the board."""
+    p = _seen(db, _pr(40, merge_state="behind"))[0]
+    assert p.updated_by_askdnd_at is None
+    p = _seen(db, _pr(40, merge_state="", tests="running") | {"updated": True})[0]
+    assert p.updated_by_askdnd_at is not None
+    assert db.scalar(select(FftEvent).where(FftEvent.thing == "pull").order_by(FftEvent.id.desc())).data["changes"]["updated"] is True

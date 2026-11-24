@@ -19,7 +19,8 @@ SCOPES = {
     "claude": frozenset({"read", "write", "ask", "check", "deploy"}),
     "relay": frozenset({"relay"}),
     "mini": frozenset({"mini"}),
-    "github": frozenset({"jobs"}),  # (GitHub's scheduled runs: it may report only its own jobs; the jobs audit, Brett's pick 1, Nov 21)
+    "github": frozenset({"jobs", "pulls"}),  # (GitHub's runs: its own jobs (the jobs audit, Brett's pick 1, Nov 21) and the pull
+    # requests it sees (scripts/github_report.py; item 39, Nov 24), nothing else
 }
 # The jobs each reporter that isn't Claude may report (POST /api/fft/jobs/<key>; app/data/jobs.json)
 JOBS_OF = {"mini": ("nightly", "iphone", "after_deploy"), "github": ("drift",)}

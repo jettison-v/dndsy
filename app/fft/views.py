@@ -20,6 +20,7 @@ from app.fft.models import (
     FftListener,
     FftNote,
     FftNoteIssue,
+    FftPull,
     FftQuestion,
 )
 from app.models import User
@@ -452,6 +453,13 @@ def gaps(db: Session) -> list[dict]:
     for it, last in rules.builds_done(db):  # (issue 72, Brett Nov 22: a build stayed in the queue after he ticked its last step)
         out.append({"kind": "steps_done", "thing": "item", "id": it.id, "title": it.title, "since": last,
                     "says": f"Every step is done: ship it with what it changed (feedback.py roadmap {it.id} ship --result \"…\"), or add the step that's left."})
+    for p in db.scalars(select(FftPull).where(FftPull.state == "open").order_by(FftPull.number)):  # (item 39: GitHub reports them)
+        if p.tests == "failed":
+            out.append({"kind": "pull_red", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+                        "says": f"Pull request #{p.number}'s tests failed: fix it, or close it if it's no longer wanted."})
+        if p.merge_state == "dirty":
+            out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+                        "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
@@ -462,7 +470,8 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet",
              "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane",
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
-             "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet"}  # (each kind of gap, as Development says it)
+             "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet",
+             "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main"}  # (each kind of gap, as Development says it)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
 
@@ -476,7 +485,7 @@ def _since(db: Session, out: list[dict]) -> list[dict]:
         at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == g["thing"], FftEvent.thing_id == g["id"]))
         if g["thing"] == "area":
             at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.kind == "issue_pr", FftEvent.area_id == g["id"])) or at
-        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea, "item": FftItem}[g["thing"]]
+        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea, "item": FftItem, "pull": FftPull}[g["thing"]]
         g["since"] = at or getattr(db.get(row, g["id"]), "created_at", None) or rules.now()
     return out
 
@@ -493,3 +502,11 @@ def hands(db: Session) -> list[dict]:
 def missed(db: Session) -> list[dict]:
     """Waiting on Claude too long (Development's amber panel): the late ones in `hands`."""
     return [g for g in hands(db) if g["late"]]
+
+
+def pull_row(p: FftPull) -> dict:
+    """A pull request for the API and feedback.py: where it stands and the work it's for (Upkeep: nothing)."""
+    return {"number": p.number, "title": p.title, "branch": p.branch, "by_bot": p.by_bot, "state": p.state, "tests": p.tests,
+            "merge_state": p.merge_state, "auto_merge": p.auto_merge, "issue": p.issue_id, "area": p.area_id, "item": p.item_id,
+            "upkeep": rules.pull_upkeep(p), "reported_at": p.reported_at.isoformat() if p.reported_at else None,
+            "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None}
