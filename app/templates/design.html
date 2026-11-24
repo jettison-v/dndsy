@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_board.html" import board as work_board %}
+{% from "_tables.html" import table_box %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head %}
 {% from "_moments.html" import moment_list %}
@@ -398,6 +399,15 @@
     {{ ds("Section", ".section > h2 + .hint", "A card with a heading and, when it helps, one hint line. The gaps are fixed, so never add margins.") }}
     {{ ds("Table", ".dtable · th.dt-w0…dt-w5 · td.dt-title · td.dt-wrap · .dt-wide · .dt-why · tr.dt-group · tr.dt-cut · tr[data-href]", "Backstage mode's list (Nov 20): a header row, one line a row except the title (and a dt-wrap cell of a few words), which wrap; columns sized by their header (dt-w0 a grip or ⋯), the title taking the rest (dt-wide: a table of many columns keeps 880px and scrolls inside its frame); groups as divider rows; a cut line (Development's); a row of one item opens it in the one item window, a row of a group (a plan) goes to its page.") }}
     <div class="table-scroll"><table class="dtable"><thead><tr><th class="num dt-w1">#</th><th>Issue</th><th class="dt-w5">Area</th><th class="dt-w3">State</th></tr></thead><tbody><tr class="dt-group"><td colspan="4">Feedback and Testing · 2</td></tr><tr data-open="sample"><td class="num"><span class="dt-id">45</span></td><td class="dt-title">Check buttons: Passed looks already chosen<span class="dt-why">From your round, 08:53</span></td><td>Feedback and Testing</td><td>{{ state_word("To fix", "quiet") }}</td></tr><tr data-open="sample"><td class="num"><span class="dt-id">46</span></td><td class="dt-title">Round card: a fixed check opens as Failed</td><td>Feedback and Testing</td><td>{{ state_word("To fix", "quiet") }}</td></tr></tbody></table></div>
+    {{ ds("Titled table", "_tables.html table_box(key, title, n, what, cols, empty, controls, attrs) · .tbx-stack", "A table with its own head (issue 111, Nov 24): its title and count, one line of what it holds and its buttons, right above its column headings, so they sit by the rows they name. Several on a page stack in .tbx-stack; with no rows it keeps its head and one line. For you's Decide, From the Roadmap and Try.") }}
+    {% set demo_ctl %}<button class="btn primary small" type="button">▶ Start round</button>{% endset %}
+    <div class="tbx-stack" id="titled-table">
+    {% call table_box("demo-try", "Try", 2, "about 4 min · you use askdnd and mark what you saw", [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w1")], controls=demo_ctl) %}
+      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
+      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
+    {% endcall %}
+    {% call table_box("demo-decide", "Decide", 0, "one read and one press each", [], "Nothing to decide.") %}{% endcall %}
+    </div>
     {{ ds("History", "_lists.html history_link(href) · history_head(what, back) · .dt-history · .dt-history-head", "Done leaves the list (Brett, Nov 20): a list shows what's next; what's finished is one quiet History link under it, never a tab with a count, a chip beside Open or a section. The history is the same list, headed by what it shows and Back to what's open.") }}
     <div class="ds-row" style="display:grid;gap:8px">{{ history_link("#") }}{{ history_head("closed issues", "#") }}</div>
     {{ ds("Copy", 'button.btn.link[data-copy="the words"]', "Puts the words on the clipboard and a corner card says Copied (Discuss with Claude's message, issue 54). Show the words too, so they can be selected where the clipboard is refused.") }}

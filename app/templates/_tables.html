@@ -1,0 +1,15 @@
+{# A table with its own head (the design system's "Titled table"; issue 111, Brett's pick on docs/mockups/for-you-tables/,
+   Nov 24: one table piece, its title, count and buttons right above its column headings). `cols`: (label, class) for
+   each column head; the caller's block is the rows; with no rows, its head and one line say so (the page keeps its
+   shape). `controls` and `attrs` are markup the page builds (a `{% set %}` block; attrs starts with a space). #}
+{% from "_lists.html" import count_pill %}
+{% macro table_box(key, title, n, what="", cols=[], empty="", controls="", attrs="") -%}
+<section class="tbx{{ ' is-empty' if not n }}" data-table="{{ key }}" aria-labelledby="tbx-h-{{ key }}">
+  <header class="tbx-head"><h2 class="tbx-name" id="tbx-h-{{ key }}">{{ title }}{{ count_pill(n) }}</h2>
+    {%- if what %}<span class="tbx-what">{{ what }}</span>{% endif %}
+    {%- if controls %}<span class="tbx-ctl">{{ controls }}</span>{% endif %}</header>
+  {% if n %}<div class="table-scroll"><table class="dtable fft-table"{{ attrs }}><thead><tr>{% for label, cls in cols %}<th{% if cls %} class="{{ cls }}"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody>{{ caller() }}</tbody></table></div>
+  {% else %}<p class="tbx-empty">{{ empty }}</p>{% endif %}
+</section>
+{%- endmacro %}
