@@ -41,6 +41,47 @@ KINDS = (
     ("design", "Designs", "Mockups and proposals, with what was chosen and whether it's built"),
     ("earlier", "Earlier and superseded", "Kept for the record; a newer page took over"),
 )
+# Each document's state, a fixed key in docs/library.json (Brett's picks S2 and D1 on docs/mockups/backstage-design-review/,
+# Nov 24): its word and colour come from the key, never from the status's words (which said the same thing ten ways,
+# coloured by their first word). Waiting on you amber, in hand blue, current or done green, earlier grey.
+STATES = {"waiting": ("Waiting on you", "draft"), "building": ("Building", "new"), "current": ("Current", "done"),
+          "done": ("Done", "done"), "earlier": ("Earlier", "faint")}
+VIEWS = (("waiting", "Waiting on you"), ("current", "Current"), ("all", "All"))
+_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+
+
+def date_rank(when: str) -> int:
+    """A row's date as a number to sort by, newest highest ("Nov 24" → 1124); 0 when it isn't one. The library's dates
+    have no year and begin in October 2026, so January to September count as the year after (2027: until next October,
+    when the dates need their year)."""
+    m = re.match(r"\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})\b", when or "")
+    if not m or m.group(1).lower() not in _MONTHS:
+        return 0
+    month = _MONTHS[m.group(1).lower()]
+    return (month + (12 if month < 10 else 0)) * 100 + int(m.group(2))
+
+
+def state_of(e: dict) -> str:
+    """A document's state: its key, or earlier for one in the earlier group, else current."""
+    s = e.get("state") or ""
+    return s if s in STATES else ("earlier" if e.get("kind") == "earlier" else "current")
+
+
+def rows_for(entries) -> list[dict]:
+    """The list's rows: each document with its state's word and colour, its group (an earlier one moves to Earlier and
+    superseded, whatever its kind), the views it shows in, and its place: by group, newest first within it."""
+    order = {k: i for i, (k, _, _) in enumerate(KINDS)}
+    names = {k: n for k, n, _ in KINDS}
+    out = []
+    for e in entries:
+        st = state_of(e)
+        group = "earlier" if st == "earlier" else (e.get("kind") if e.get("kind") in order else "earlier")
+        views = {"waiting": "waiting all", "building": "current all", "current": "current all"}.get(st, "all")
+        out.append({"e": e, "state": st, "word": STATES[st][0], "tone": STATES[st][1], "group": names[group], "views": views,
+                    "line": e.get("line") or e.get("what") or "", "rank": order[group] * 10000 + (9999 - date_rank(e.get("date", "")))})
+    return sorted(out, key=lambda r: r["rank"])
+
+
 # (allow-forms so a mockup's form reaches its own script, its Save my picks; form-action 'none' so no form sends anywhere:
 # Brett's round, Nov 18)
 SANDBOX = ("sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox; form-action 'none'; "
@@ -64,7 +105,7 @@ def _library(mtime: float) -> tuple[dict, ...]:
 # Brett in seconds, not after a pull request and a deploy; rules.send_page keeps them). A sent copy is shown while it
 # differs from the repo's; once a deploy carries the same page, rules.prune_landed_pages removes it, so the repo's
 # copy (and any later change to it) is shown again.
-ENTRY_KEYS = ("title", "kind", "status", "date", "what", "link")
+ENTRY_KEYS = ("title", "kind", "status", "state", "date", "what", "line", "link")
 CACHE_SECONDS = 10
 
 
@@ -106,7 +147,9 @@ def _sent() -> dict:
 
 
 def same_entry(a: dict, b: dict) -> bool:
-    return all(str(a.get(k) or "") == str(b.get(k) or "") for k in ENTRY_KEYS)
+    """Whether a sent entry (a) is what the repo's (b) says: on the fields the sent one has (one sent before a field
+    existed, a page's state and line from Nov 24, still lands)."""
+    return all(str(a.get(k) or "") == str(b.get(k) or "") for k in ENTRY_KEYS if k in a)
 
 
 def repo_library() -> tuple[dict, ...]:
@@ -231,14 +274,17 @@ def file_url(page: str) -> str:
 
 @router.get("/manage/documents")
 def library_page(request: Request):
-    """Every document, in its group, newest first within it; the page's search box finds by title, status and what
-    each is (the shared list pieces, the UI review)."""
+    """Every document, in its group, newest first within it, on the shared list pieces: Waiting on you · Current · All
+    (starting on what waits on you, else Current), the search box (title, state, status and what it is), a row opening
+    the document in the large window over the list (Brett's picks D1–D3, Nov 24)."""
     _, stop = web.require(request, is_admin, "askdnd's documents are for admins.")
     if stop:
         return stop
-    entries = library()
-    groups = [(key, name, about, [e for e in entries if e["kind"] == key]) for key, name, about in KINDS]
-    return templates.TemplateResponse(request, "manage_documents.html", {"groups": groups, "count": len(entries)})
+    rows = rows_for(library())
+    waiting = sum(1 for r in rows if r["state"] == "waiting")
+    return templates.TemplateResponse(request, "manage_documents.html", {
+        "rows": rows, "count": len(rows), "views": VIEWS, "start": "waiting" if waiting else "current",
+        "notes": {name: about for _, name, about in KINDS}})
 
 
 @router.get("/manage/documents/{did}")

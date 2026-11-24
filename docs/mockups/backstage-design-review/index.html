@@ -1,0 +1,352 @@
+<title>Backstage Design Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Backstage, page by page: what the review found (Roadmap item 5, step 2, Nov 24). Brett's ask: "Complete a design review
+   for all Manage and Admin pages for adherence to the design system, as well as general UI cohesion and flow. Each page
+   should be evaluated individually to ensure it is optimally meeting its purpose." Recommendations only. */
+.find { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 900px; }
+.find th { text-align: left; font: 600 .76rem/1.2 var(--sans); color: var(--faint); padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.find td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.find tr:last-child td { border-bottom: 0; }
+.find tr.grp td { background: var(--surface-2); color: var(--muted); font: 600 .78rem/1.2 var(--sans); padding: 6px 10px; }
+.find .t { color: var(--strong); font-weight: 600; display: block; }
+.find .w { color: var(--muted); font-size: .82rem; display: block; margin-top: 2px; }
+.score { display: inline-block; min-width: 34px; text-align: center; padding: 1px 6px; border-radius: 6px; font: 700 .76rem/1.5 var(--sans); }
+.score.lo { background: rgba(240,138,138,.15); color: var(--red); } .score.mid { background: var(--amber-soft); color: var(--amber); } .score.hi { background: var(--green-soft); color: var(--green); }
+.sx { display: inline-block; padding: 1px 6px; border-radius: 6px; font: 600 .7rem/1.5 var(--sans); background: var(--blue-soft); color: var(--blue); margin-right: 3px; white-space: nowrap; }
+.tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.shot { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); min-width: 0; }
+.shot-h { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); font-size: .82rem; color: var(--muted); }
+.shot-h b { color: var(--strong); }
+.pg { padding: 14px; display: grid; gap: 8px; align-content: start; font-size: .8rem; }
+.pg h4 { margin: 0; color: var(--strong); font: 600 1.05rem/1.2 var(--sans); }
+.srch { border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; color: var(--faint); font-size: .76rem; max-width: 320px; }
+.rowsx { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.rx { display: grid; grid-template-columns: 1.1fr .9fr .4fr 1.6fr; gap: 8px; padding: 6px 9px; border-top: 1px solid var(--line-soft); align-items: start; font-size: .74rem; color: var(--muted); }
+.rx:first-child { border-top: 0; }
+.rx b { color: var(--strong); font-weight: 600; }
+.rx.hd { background: var(--surface-2); color: var(--faint); font-weight: 600; }
+.rx.g { background: var(--surface); color: var(--muted); grid-template-columns: 1fr; font-weight: 600; }
+.rx.on { outline: 2px solid var(--blue); outline-offset: -2px; }
+.pl { display: inline-block; padding: 1px 7px; border-radius: 999px; font: 600 .68rem/1.5 var(--sans); background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.pl.wait { background: var(--amber-soft); color: var(--amber); } .pl.cur { background: var(--green-soft); color: var(--green); } .pl.build { background: var(--blue-soft); color: var(--blue); }
+.pl.blob { white-space: normal; border-radius: 999px; padding: 4px 10px; line-height: 1.25; max-width: 150px; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; font-size: .72rem; }
+.seg span { padding: 3px 8px; border-radius: 6px; color: var(--muted); } .seg span.on { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.cnt { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--surface-3); font: 700 .66rem/1.5 var(--sans); color: var(--text); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 44%; }
+.dwin { border-left: 1px solid var(--line); background: var(--surface); padding: 10px 12px; display: grid; gap: 6px; align-content: start; font-size: .76rem; }
+.dwin .frame { border: 1px dashed var(--line-strong); border-radius: 8px; min-height: 120px; display: grid; place-items: center; color: var(--faint); }
+.cap { font-size: .8rem; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--line); }
+.bugs { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: .9rem; }
+.bugs li b { color: var(--strong); }
+@media (max-width: 900px) { .pair, .split { grid-template-columns: minmax(0, 1fr); } .dwin { border-left: 0; border-top: 1px solid var(--line); } }
+
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Roadmap item 39, scope v6. Brett, Nov 24: "Draw it first. Ideally, both paths - askdnd or claude.ai comments - would
+   function seamlessly. I would like to be able to make updates in either place and have them merge. This does not have
+   to be retroactive. Are there complexities with this approach?" */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --clay: #d97757; --clay-soft: rgba(217, 119, 87, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.fig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.fig svg { display: block; width: 100%; min-width: 900px; height: auto; }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
+
+/* the try-it: three panes */
+.play { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
+.play .of { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.sync { border-color: var(--violet); color: var(--violet); }
+.said { flex-basis: 100%; color: var(--text); font-size: .88rem; min-height: 1.4em; }
+.said b { color: var(--blue); }
+.panes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.pane { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); overflow: hidden; min-width: 0; }
+.pane-h { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-weight: 700; color: var(--strong); font-size: .9rem; }
+.pane-h .where { margin-left: auto; font: 600 .72rem/1 var(--sans); color: var(--faint); }
+.pane.askdnd .pane-h { border-bottom: 2px solid var(--red-btn); background: var(--chrome); }
+.pane.claude .pane-h { border-bottom: 2px solid var(--clay); background: var(--chrome); }
+.pane.record .pane-h { border-bottom: 2px solid var(--violet); background: var(--chrome); }
+.pane-b { padding: 10px 12px; display: grid; gap: 8px; font-size: .84rem; min-height: 220px; align-content: start; }
+.mock { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 10px; color: var(--faint); font-size: .8rem; position: relative; min-height: 70px; }
+.pin { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 700 .7rem/1 var(--sans); color: #15171a; margin-right: 4px; vertical-align: -4px; }
+.pin.a { background: var(--red); } .pin.c { background: var(--clay); }
+.cmt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 6px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.cmt .from { grid-column: 2; color: var(--faint); font-size: .74rem; }
+.cmt.new { outline: 2px solid var(--blue); outline-offset: 1px; }
+.cmt.waits { opacity: .6; border: 1px dashed var(--amber); }
+.picks { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.picks .v { color: var(--strong); font-weight: 600; }
+.picks .at { color: var(--faint); font-size: .74rem; margin-left: auto; }
+.empty { color: var(--faint); font-size: .8rem; }
+.hist { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; color: var(--muted); font-size: .8rem; }
+.hist li b { color: var(--text); }
+.tagw { font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+
+/* complexities and options */
+.cx { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.cx .term .tag.ok { color: var(--green); } .cx .term .tag.hard { color: var(--amber); } .cx .term .tag.no { color: var(--red); }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.opt-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 6px; font-size: .9rem; align-content: start; }
+.opt-card.mine { border-color: var(--amber); }
+.opt-card h3 { font: 700 1rem/1.3 var(--sans); }
+.opt-card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; color: var(--muted); font-size: .86rem; }
+.mine-tag { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.why-box { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why-box .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 900px) { .panes { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 5 · step 2 · Nov 24 · what the review found, twelve picks</span>
+    <h1>Backstage, page by page: what we found</h1>
+    <p class="meta">Every Backstage page outside Our work (24 of them; Our work's four had their own pass, which you've picked on), photographed on a laptop-wide screen and reviewed by three reviewers who had never seen askdnd, each against the page's own job and docs/DESIGN.md, then by me. Scene notes wasn't reviewed: it's the DM's alone, and askdnd's table is off on this campaign. Nothing changes until you pick.</p>
+    <div class="terms">
+      <div class="term"><span class="tag">How the pages scored</span>Out of 5 for doing their one job: four 4s (Needs you, Table, Features, Dice tuning), most 3s, and seven 2s: Documents, Backups, Places, Settings, both Histories, the Design system.</div>
+      <div class="term"><span class="tag">The big finding</span>Most problems repeat across pages: lists built five different ways, status colours that disagree, alarms in small grey text, forms always open. Fixing each once, in the design system, fixes every page that has it.</div>
+      <div class="term"><span class="tag">Your earlier notes, here</span>"No filters" on Documents (issue 5) is D1; "the radius on these larger pills is off" (issue 6) is S6: a status pill wraps into a blob, so it's fixed once, for every page.</div>
+    </div>
+  </header>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-shared">
+    <h2 id="h-shared">The shared fixes: once in the design system, every page</h2>
+    <div class="tblwrap"><table class="find">
+      <thead><tr><th style="width:24%">Fix</th><th>What's wrong today</th><th style="width:28%">Pages it fixes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="t">S1 · One Backstage table</span><span class="w">headings, a count, rows that open the item window</span></td><td>Lists are built five ways (a hand-made grid, two kinds of plain table, records, cards); few have column headings, and almost no row opens anything, so you can't get from a number to what's behind it.</td><td>Documents, Usage, Backups, Accounts, Campaigns, Items, Sessions, both Histories, Tool corrections, Features</td></tr>
+        <tr><td><span class="t">S2 · One colour per state</span><span class="w">from a fixed key, never from the words</span></td><td>"Ready" is grey on Items, green on Settings; "Published" grey on History, green on Sessions; Documents colours a status by its first words, so "Round 2: your picks" is grey while "Your picks" is amber.</td><td>Documents, Items, Settings, Sessions, History, Campaigns</td></tr>
+        <tr><td><span class="t">S3 · Attention leads</span></td><td>The backup is 16 days overdue and says so in a small tag in Overview's eighth card; no monthly spending limit is set and nothing flags it; what waits on you is scattered.</td><td>Overview, Backups, Usage, Documents, Needs you</td></tr>
+        <tr><td><span class="t">S4 · Forms open on demand</span></td><td>Credit top-ups, imports, book upload, two house-rule forms and every Change name sit open all the time.</td><td>Usage, Backups, House rules, Accounts</td></tr>
+        <tr><td><span class="t">S5 · Names and plain words</span></td><td>People appear as email addresses (History, Backups' imports); pages show repo and storage paths, item keys like "#turn invisible", "(pc)", raw ids, "Dev preview".</td><td>Both Histories, Backups, Accounts, Campaigns, Tool corrections, House rules, Settings</td></tr>
+        <tr><td><span class="t">S6 · A status pill never wraps</span></td><td>Long statuses wrap inside a fully round pill and become ovals up to five lines tall: your radius note.</td><td>Documents, D&amp;D Beyond bridge</td></tr>
+        <tr><td><span class="t">S7 · Small things, once</span></td><td>Remove and Delete are grey until hovered (the design system says quiet red); empty lists are hand-made lines; "Help · About" floats mid-screen on short pages; some dividers are gold in Backstage; counts written by hand.</td><td>Most pages</td></tr>
+        <tr><td><span class="t">S8 · One-sentence intros</span></td><td>Subtitles run three to five lines explaining how a page works.</td><td>Almost all</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-docs">
+    <h2 id="h-docs">Documents first</h2>
+    <p class="meta">186 rows in four groups, in the order they were added. What's waiting on you is spread over three screens, superseded pages sit among current ones, and each row leaves the page.</p>
+    <div class="pair">
+      <div class="shot"><div class="shot-h"><b>Today</b></div>
+        <div class="pg"><h4>Documents</h4><span class="note">Every guide, plan and design made for askdnd: 186 in all, each opened from askdnd's own copy, so none depends on claude.ai. New ones join the list as Claude makes them. Only admins can see this page.</span>
+          <div class="srch">Search titles and what each is</div>
+          <div class="rowsx">
+            <div class="rx g">Guides you use</div>
+            <div class="rx"><b>askdnd Roadmap</b><span><span class="pl">Moved into askdnd, Nov 20</span></span><span>Nov 2</span><span>Points to the Roadmap in askdnd (Backstage › Global › Roadmap), where it lives since Nov 20.</span></div>
+            <div class="rx"><b>askdnd Test Steps</b><span><span class="pl blob">Moved into askdnd (Testing), Nov 16</span></span><span>Nov 13</span><span>Brett, Nov 13: every change Claude builds lands with the steps to try it; Brett marks each Passed, Failed (with a note Claude reads) or Skip…</span></div>
+            <div class="rx g">Plans</div>
+            <div class="rx"><b>A build plan</b><span><span class="pl blob">Building: slices 2 and 3 live, slice 4 next, then the steps after it</span></span><span>Nov 2</span><span>Roadmap item 10, scope v3: the slices, R1–R18 and T1–T8, PRs 419, 420…</span></div>
+            <div class="rx"><b>Talking both ways</b><span><span class="pl wait">Your picks</span></span><span>Nov 24</span><span>…two screens down: the only row that needs you on this screen</span></div>
+          </div></div>
+        <div class="cap">No headings, no counts, colour decided by the status's words, pills wrapping into blobs, and a row click leaves for its own page.</div></div>
+      <div class="shot"><div class="shot-h"><b>Recommended</b> · D1, D2, D3</div>
+        <div class="split"><div class="pg"><h4>Documents</h4><span class="note">Every guide, plan and design made for askdnd. Only admins can see this page.</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="seg"><span class="on">Waiting on you <span class="cnt">4</span></span><span>Current <span class="cnt">31</span></span><span>All</span></span><div class="srch" style="flex:1;min-width:140px">Search</div></div>
+          <div class="rowsx">
+            <div class="rx hd"><span>Title</span><span>State</span><span>Date</span><span>What it is</span></div>
+            <div class="rx on"><b>Backstage, page by page</b><span><span class="pl wait">Your picks</span></span><span>Nov 24</span><span>What the review found, twelve picks</span></div>
+            <div class="rx"><b>Talking both ways</b><span><span class="pl wait">Your picks</span></span><span>Nov 24</span><span>Every way a message travels between you and Claude</span></div>
+            <div class="rx"><b>A build plan</b><span><span class="pl build">Building</span></span><span>Nov 2</span><span>The new flow in slices; slice 4 next</span></div>
+            <div class="rx"><b>Recording to Recap</b><span><span class="pl cur">Current</span></span><span>Nov 6</span><span>Your steps after a game night</span></div>
+          </div></div>
+          <div class="dwin"><span class="note">D2 · ↑ ↓ · Open as a page ↗ · ✕</span><b style="color:var(--strong)">Backstage, page by page</b><div class="frame">the page, in its sealed frame</div><span class="note">Comments beside it · On claude.ai ↗</span></div></div>
+        <div class="cap">What waits on you on top, with its count; Current for the guides you use; earlier and superseded pages one press away (All). One line each, in plain words, one state word each. The page opens over the list.</div></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-pages">
+    <h2 id="h-pages">Every other page</h2>
+    <div class="tblwrap"><table class="find">
+      <thead><tr><th style="width:17%">Page</th><th style="width:7%">Job</th><th>What the review found</th><th style="width:24%">Recommended</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">This campaign: the DM's side</td></tr>
+        <tr><td><span class="t">Needs you</span></td><td><span class="score hi">4</span></td><td>A real triage list. Its side buttons are nouns that leave (Sessions, Backups); five of six prep tiles are "planned" placeholders, repeated as five greyed menu entries.</td><td>Verbs that do it ("Draft the next one"); built tools only, the rest one quiet line.</td></tr>
+        <tr><td><span class="t">Inbox</span></td><td><span class="score mid">3</span></td><td>A draft shows here, on Needs you and on Sessions, each with a different next step; a three-line explanation; a hand-made "Nothing waiting".</td><td>Inbox holds the table's suggestions; a draft is one row leading to its review. <span class="sx">S7</span><span class="sx">S8</span></td></tr>
+        <tr><td><span class="t">Sessions</span></td><td><span class="score mid">3</span></td><td>The red button says "Draft the next one" while a draft waits for review; "Draft all 9 at once" (it costs money) is a plain link beside it; nine identical backlog rows each with a full-size button; a "Last draft" column that holds a cost.</td><td>The red button follows the state; Draft all in a ⋯ menu with its cost confirmed; the backlog one row. <span class="sx">S1</span></td></tr>
+        <tr><td><span class="t">Items</span></td><td><span class="score mid">3</span></td><td>The menu says Items, the page says DM Tools; about 30 rows with no search or grouping; the name and Open do the same; every builder opens a new page.</td><td>One name; rows grouped by character with search; the builder in a large window. <span class="sx">S1</span><span class="sx">S2</span></td></tr>
+        <tr><td><span class="t">Places and maps</span></td><td><span class="score lo">2</span></td><td>With askdnd's table off it's a dead end: a note sending you to Settings, which opens at its top.</td><td>The switch to turn it on, right here.</td></tr>
+        <tr><td><span class="t">Table</span></td><td><span class="score hi">4</span></td><td>Clean. Two title actions where one is the rule; no ↗ to each D&amp;D Beyond sheet though that's its job; the DM's row shows an email.</td><td>Refresh in a ⋯ menu; each row's ↗ sheet link. <span class="sx">S5</span></td></tr>
+        <tr><td><span class="t">House rules</span></td><td><span class="score mid">3</span></td><td>Two add forms always open under the list; insider words ("Dev preview", "audited roll recipe").</td><td><span class="sx">S4</span><span class="sx">S5</span></td></tr>
+        <tr><td><span class="t">Settings</span></td><td><span class="score lo">2</span></td><td>Four screens: books, trophies, art style, features, Labs and the test flag on one scroll; three ways of saving; D&amp;D Beyond's terms warning buried mid-paragraph; feature notes of five or six lines with roadmap dates.</td><td>Tabs: Campaign · Books · Pictures · Features; the terms warning beside its switch, amber.</td></tr>
+        <tr><td><span class="t">History</span></td><td><span class="score lo">2</span></td><td>Dozens of rows read alike, so you can't tell what Restore would bring back; deleted things show as raw field dumps; people as emails.</td><td>Each row names its subject; a batch one row; a row opens the window with before and after, Restore in its foot. <span class="sx">S1</span><span class="sx">S5</span></td></tr>
+        <tr><td><span class="t">DM guide</span></td><td><span class="score mid">3</span></td><td>Lines twice reading length; its jump row is cut off and out of order; it explains features that are off.</td><td>A reading column; the tab bar; sections only for what's on.</td></tr>
+        <tr class="grp"><td colspan="4">Global</td></tr>
+        <tr><td><span class="t">Overview</span></td><td><span class="score mid">3</span></td><td>Sixteen equal cards mirroring the menu beside them; the one alarm (backup overdue) is a small amber line; the page is titled Global, the menu says Overview.</td><td>Cards that need you first, in their colour; cards with nothing to say go. <span class="sx">S3</span></td></tr>
+        <tr><td><span class="t">Product areas</span></td><td><span class="score mid">3</span></td><td>The busiest area sits bottom right; an area's name links nowhere though each is a plan.</td><td>Sorted by what's open; the name opens its plan in the window.</td></tr>
+        <tr><td><span class="t">Usage</span></td><td><span class="score mid">3</span></td><td>No monthly limit set and nothing says so; "this month" looks bigger than "all time" (one counts two providers); 35 recent calls at full height.</td><td>A limit flagged until set; tiles that say what they count; the newest 20. <span class="sx">S1</span><span class="sx">S3</span><span class="sx">S4</span></td></tr>
+        <tr><td><span class="t">Backups</span></td><td><span class="score lo">2</span></td><td>Overdue with no cause or next step; the missed nights don't show; every row a green Worked; rule books filed here.</td><td>Missed nights in red with what to do; failures marked, the rest plain; Books its own place. <span class="sx">S1</span><span class="sx">S3</span></td></tr>
+        <tr><td><span class="t">Accounts</span></td><td><span class="score mid">3</span></td><td>Every row three lines (an open Change name); test accounts marked by a symbol in the name.</td><td>Rename from the row's ⋯; a Test tag and filter. <span class="sx">S4</span></td></tr>
+        <tr><td><span class="t">Campaigns</span></td><td><span class="score mid">3</span></td><td>One run-on line per campaign, an address shown as a link; Test tagged amber (amber means needs you).</td><td>A table: DM, people, characters. <span class="sx">S1</span><span class="sx">S2</span></td></tr>
+        <tr><td><span class="t">Features</span></td><td><span class="score hi">4</span></td><td>Answers "what's used" at a glance; a row goes nowhere; the chart's legend promises deploy lines it doesn't draw. Reads like Labs' features under Tuning.</td><td>A row opens its detail; move to General as "Feature use".</td></tr>
+        <tr><td><span class="t">askdnd history</span></td><td><span class="score lo">2</span></td><td>Emails on every row; one field flipping eight times takes a screen; no search, no paging; titled just History.</td><td>Names; a run of the same change folded into one row. <span class="sx">S1</span><span class="sx">S5</span></td></tr>
+        <tr><td><span class="t">Tool corrections</span></td><td><span class="score mid">3</span></td><td>Code keys in names; a row can't take you back to where the correction was made.</td><td>Item, then its action in words; the row opens that thing's panel. <span class="sx">S5</span></td></tr>
+        <tr><td><span class="t">Dice tuning</span></td><td><span class="score hi">4</span></td><td>The best page here. One switch looks like it saves at once but waits for Save; red sliders compete with the one red button.</td><td>Small fixes only.</td></tr>
+        <tr><td><span class="t">D&amp;D Beyond bridge</span></td><td><span class="score mid">3</span></td><td>The red badge says "no character with that id" while Right now says "None yet"; Check everything changes the real test sheet with no confirm; the timers reset with no confirm.</td><td>Health as one row in Right now with what to do; confirms. <span class="sx">S6</span></td></tr>
+        <tr><td><span class="t">Design system</span></td><td><span class="score lo">2</span></td><td>Its sizes are Table mode's while it draws in Backstage mode, so it misstates its own numbers; the jump row misses sections; it breaks a few of its own rules.</td><td>A Table · Backstage switch, values from the live sizes; a search.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section style="display:grid;gap:10px" aria-labelledby="h-bugs">
+    <h2 id="h-bugs">Simply wrong: I'll fix these with the first build, no pick needed</h2>
+    <ul class="bugs">
+      <li><b>Sessions' "Draft all 9 at once"</b> spends money with one plain press: it asks first, saying the cost.</li>
+      <li><b>The bridge's "Check everything"</b> changes the real test sheet with no confirm; its timers' reset too.</li>
+      <li><b>Documents decides a colour by a status's words</b>, against the rule that nothing decides by display text.</li>
+      <li><b>The Design system page misstates its own sizes</b> (Table mode's numbers, drawn in Backstage mode).</li>
+      <li><b>Dice tuning's preview says "Press Throw"</b>; the buttons say "Throw a d20".</li>
+      <li><b>Features' legend</b> promises deploy lines it doesn't draw.</li>
+    </ul>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>S1 · One Backstage table for every list</legend><label class="opt"><input type="radio" name="s1" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Headings, a count, a group heading where a list has groups, rows that open the item window. Each page moves over as it's redone.</small></label><label class="opt"><input type="radio" name="s1" value="no"><span>B · Leave each list as it is</span><small>As today: five ways.</small></label></fieldset>
+    <fieldset><legend>S2 · One colour per state, from a fixed key</legend><label class="opt"><input type="radio" name="s2" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Waiting on you amber, in hand blue, done or current green, earlier grey: the same word the same colour on every page.</small></label><label class="opt"><input type="radio" name="s2" value="no"><span>B · Keep the colours as they are</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S3 · What needs you leads</legend><label class="opt"><input type="radio" name="s3" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Overdue, unset and waiting go first on their page and on Overview, in amber or red, each with what to do.</small></label><label class="opt"><input type="radio" name="s3" value="no"><span>B · Keep the order</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S4 · Forms open on demand</legend><label class="opt"><input type="radio" name="s4" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>+ Add top-up, Import, + House rule, Rename: each opens a window from its button.</small></label><label class="opt"><input type="radio" name="s4" value="no"><span>B · Keep them open</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S5 · Names and plain words</legend><label class="opt"><input type="radio" name="s5" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>People by name (the address on hover), no paths, keys or ids on a page.</small></label><label class="opt"><input type="radio" name="s5" value="no"><span>B · Leave them</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S6 · A status pill never wraps</legend><label class="opt"><input type="radio" name="s6" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>One short state word in the pill; anything longer is a line beside it. Your radius note, fixed once.</small></label><label class="opt"><input type="radio" name="s6" value="no"><span>B · Leave it</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S7 · The small things, in one pass</legend><label class="opt"><input type="radio" name="s7" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Remove and Delete quiet red, the shared empty state, the footer at the bottom, no gold dividers in Backstage, counts drawn the one way.</small></label><label class="opt"><input type="radio" name="s7" value="no"><span>B · Not now</span><small>Later.</small></label></fieldset>
+    <fieldset><legend>S8 · One-sentence intros</legend><label class="opt"><input type="radio" name="s8" value="yes"><span>A · Now, page by page</span><small>Each page says what it's for in one sentence and who sees it.</small></label><label class="opt"><input type="radio" name="s8" value="no"><span>B · With the String Audit (item 3) <span class="mine">my pick</span></span><small>One pass over all of askdnd's words, as you picked for Our work's intros.</small></label></fieldset>
+    <fieldset><legend>D1 · Documents: Waiting on you · Current · All</legend><label class="opt"><input type="radio" name="d1" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Waiting on you first with its count; Current for the guides you use; earlier and superseded pages under All.</small></label><label class="opt"><input type="radio" name="d1" value="no"><span>B · Keep the four groups</span><small>As today: 186 rows, superseded among current.</small></label></fieldset>
+    <fieldset><legend>D2 · Documents: a page opens over the list</legend><label class="opt"><input type="radio" name="d2" value="yes"><span>A · Yes, the large window <span class="mine">my pick</span></span><small>The window For you already uses for a mockup, with comments beside it; ↑ ↓ to the next; Open as a page for a link.</small></label><label class="opt"><input type="radio" name="d2" value="no"><span>B · Keep its own page</span><small>As today: you leave the list and find your place again.</small></label></fieldset>
+    <fieldset><legend>D3 · Documents: one line, plain words</legend><label class="opt"><input type="radio" name="d3" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Title, state, date and one line of what it is; the history and numbers stay on the page itself.</small></label><label class="opt"><input type="radio" name="d3" value="no"><span>B · Keep the descriptions</span><small>As today: three to six lines with item numbers and code words.</small></label></fieldset>
+    <fieldset><legend>Next: how the rest gets drawn</legend><label class="opt"><input type="radio" name="o1" value="yes"><span>A · In four rounds, mockups for each <span class="mine">my pick</span></span><small>1 Overview, Backups, Usage (what needs you) · 2 Settings, House rules, Table, Items · 3 both Histories, Tool corrections · 4 Sessions, Inbox, Needs you, the Tuning pages.</small></label><label class="opt"><input type="radio" name="o1" value="no"><span>B · Build the shared fixes first, then decide</span><small>The shared fixes change every page; look again after.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(a page that bothers you that I haven't listed)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "d1", "d2", "d3", "o1"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+(async () => {
+  // Comments made in askdnd, shown on claude.ai too (item 39, 6 of 6: either place, merged): Claude hands them to this
+  // page's own store (collection "askdnd", doc "comments") when it checks in; each is pinned by the words it was made at.
+  let db = null;
+  try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) return;
+  let d = null;
+  try { d = await db.collection("askdnd").doc("comments").get(); } catch (e) { return; }
+  const list = d && d.exists ? (d.data().comments || []).filter(c => c && c.words) : [];
+  if (!list.length) return;
+  const box = document.createElement("section");
+  box.setAttribute("aria-label", "Comments made in askdnd");
+  box.style.cssText = "display:grid;gap:8px;border:1px solid var(--line,#34383e);border-radius:12px;padding:12px 16px;background:var(--surface,#1f2226)";
+  const h = document.createElement("h2");
+  h.textContent = "Comments made in askdnd";
+  box.append(h);
+  const pin = n => { const b = document.createElement("span"); b.textContent = String(n);
+    b.style.cssText = "display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f08a8a;color:#15171a;font:700 .7rem/1 system-ui;margin-right:6px;vertical-align:1px"; return b; };
+  for (const c of list) {
+    const row = document.createElement("p");
+    row.style.cssText = "margin:0;font-size:.9rem";
+    row.append(pin(c.n), document.createTextNode(c.words));
+    if (c.near) { const w = document.createElement("span"); w.textContent = ` · near “${c.near}”`; w.style.color = "var(--muted,#a29d93)"; row.append(w); }
+    box.append(row);
+    const want = String(c.near || "").trim().slice(0, 60);
+    if (!want) continue;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || box.contains(t) || el.closest("script, style, template, title, noscript")) continue;  // (words a person sees)
+      if (t.nodeValue && t.nodeValue.includes(want) && el.getClientRects().length) { el.prepend(pin(c.n)); break; }
+    }
+  }
+  const form = document.querySelector("form.decide");
+  (form || document.body.lastElementChild).after(box);
+})();
+
+</script>

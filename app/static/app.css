@@ -1783,24 +1783,29 @@ button.rm-box { cursor: pointer; }
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
 /* Backstage › Global › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
-.doc-search { margin: 0 0 var(--sp-3); max-width: 520px; }
-/* Documents: one list, its rows lined up as columns (title, status, date, what it is) on the list's grid (the UI review) */
-.doc-rows { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 13rem) 4.5rem minmax(0, 1fr); column-gap: var(--sp-3); }
+.doc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }  /* the views, then the search */
+.doc-search { flex: 1 1 18rem; max-width: 420px; }
+/* Documents: one list, its rows lined up as columns under their headings (Title, State, Date, What it is: Brett's pick
+   D3, Nov 24), on the list's grid; a row is one line: its state a short word that never wraps (S6), what it is one line,
+   the whole of it on hover and on the document's page */
+.doc-rows { display: grid; grid-template-columns: minmax(0, 17rem) 8.5rem 4rem minmax(0, 1fr); column-gap: var(--sp-3); }
+.doc-head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: var(--sp-1) 0; border-bottom: 1px solid var(--line); color: var(--faint); font-size: var(--fs-xs); font-weight: 600; }
 .doc-rows > .ls-grouphead { grid-column: 1 / -1; }
 .doc-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: baseline; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line-soft); color: var(--text); text-decoration: none; }
 .doc-row:hover .doc-title { text-decoration: underline; }
-.doc-status .tag { white-space: normal; max-width: 100%; }
+.doc-status .tag { white-space: nowrap; }
 .doc-title { font-weight: 600; color: var(--text-strong); min-width: 0; }
-.doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
-.doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
-/* (the list's own width, not the screen's: under 800px its four columns squeeze the status onto two lines, so the
-   status and what it is go under the title and date; the weekly phone sweep, Nov 23) */
+.doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* (the list's own width, not the screen's: under 800px its four columns squeeze, so the state and what it is go under
+   the title and date; the weekly phone sweep, Nov 23) */
 .doc-list { container: doclist / inline-size; }
 @container doclist (max-width: 800px) {
   .doc-rows { grid-template-columns: minmax(0, 1fr) auto; }
+  .doc-head { display: none; }
   .doc-date { grid-column: 2; grid-row: 1; justify-self: end; }
   .doc-status { grid-column: 1 / -1; grid-row: 2; }
-  .doc-what { grid-column: 1 / -1; }
+  .doc-what { grid-column: 1 / -1; white-space: normal; }
 }
 .doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
 .doc-meta { margin: var(--sp-1) 0 var(--sp-3); overflow-wrap: anywhere; }
