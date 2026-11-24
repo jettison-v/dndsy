@@ -901,3 +901,34 @@ def picture(pic_id: int, x_fft_key: str | None = Header(default=None), db: Sessi
         raise HTTPException(404)
     content_type = next((t for t, (ext, _) in files.TYPES.items() if pic.safe_key.endswith(ext)), "image/png")
     return files.serve(pic.safe_key, content_type, cache_control="no-store", release=db)
+
+
+@router.post("/pages")
+def page_send(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A page Claude sends before its repo copy lands (item 39, scope v7): {"entry": its docs/library.json entry,
+    "files": {path under docs/: its contents in base64}}. It opens in Backstage › Documents at once, sealed as the repo's
+    pages are; sending again replaces it. feedback.py page send."""
+    import base64
+    import binascii
+
+    from app import documents
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    entry, raw = body.get("entry"), body.get("files")
+    if not isinstance(entry, dict) or not isinstance(raw, dict):
+        raise HTTPException(400, "Send its entry and its files.")
+    try:
+        files = {str(k): base64.b64decode(v, validate=True) for k, v in raw.items() if isinstance(v, str)}
+    except (binascii.Error, ValueError):
+        raise HTTPException(400, "Each file's contents in base64.") from None
+    if len(files) != len(raw):
+        raise HTTPException(400, "Each file's contents in base64.")
+    try:
+        doc = rules.send_page(db, actor.name, entry, files)
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    documents.invalidate()
+    did = documents.doc_id(doc.source)
+    return _ok({"id": did, "source": doc.source, "href": f"/manage/documents/{did}", "files": len(files)})

@@ -560,6 +560,37 @@ def ideas(a) -> None:
     print(call(a.base, f"/ideas/{a.id}", {"do": a.do}))
 
 
+PAGE_FILES = (".html", ".md", ".css", ".js", ".json", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".woff2")
+
+
+def page_files(source: str) -> dict[str, bytes]:
+    """A page's files as askdnd keeps them (rules.page_home): a mockup's whole folder, a design folder's files, or for a
+    page in a shared folder (docs/, docs/artifacts/) the page alone. Paths are under docs/, without the "docs/"."""
+    docs = ROOT / "docs"
+    rel = source.removeprefix("docs/")
+    parts = rel.split("/")
+    home = rel if rel.endswith("/") else f"mockups/{parts[1]}/" if len(parts) >= 3 and parts[0] == "mockups" else rel
+    if not home.endswith("/"):
+        return {rel: (docs / rel).read_bytes()}
+    return {f.relative_to(docs).as_posix(): f.read_bytes() for f in sorted((docs / home).rglob("*"))
+            if f.is_file() and f.suffix.lower() in PAGE_FILES and not any(x.startswith(".") for x in f.relative_to(docs).parts)}
+
+
+def page(a) -> None:
+    """page send docs/<path>: send a page and its docs/library.json entry to askdnd, so it opens in Documents (and from a
+    question's Open mockup) at once, before its pull request (item 39, scope v7). Add its entry to docs/library.json
+    first; send again after each change."""
+    import base64
+
+    source = a.path if a.path.startswith("docs/") else "docs/" + a.path
+    entry = next((e for e in json.loads((ROOT / "docs" / "library.json").read_text()) if e["source"] == source), None)
+    if entry is None:
+        sys.exit(f"{source} isn't in docs/library.json: add its entry first (title, kind, status, date, what, source, link).")
+    files = page_files(source)
+    got = call(a.base, "/pages", {"entry": entry, "files": {k: base64.b64encode(v).decode() for k, v in files.items()}})
+    print(f"Sent {got['source']} ({got['files']} file{'s' if got['files'] != 1 else ''}): {a.base.rstrip('/')}{got['href']}")
+
+
 def deploy(a) -> None:
     print(call(a.base, "/deploy", {"commit": a.commit, "prs": a.pr, "rollback": a.rollback}))
 
@@ -812,6 +843,9 @@ def main() -> None:
     s = sub.add_parser("ideas", help="ideas from before the Roadmap: list, or place one: ideas <id> roadmap|fix|improvement")
     s.add_argument("id", nargs="?")
     s.add_argument("do", nargs="?", choices=[None, "roadmap", "fix", "improvement"])
+    s = sub.add_parser("page", help="page send docs/<path>: a page to askdnd's Documents at once, before its pull request")
+    s.add_argument("do", choices=["send"])
+    s.add_argument("path")
     s = sub.add_parser("deploy")
     s.add_argument("commit")
     s.add_argument("--pr", action="append", default=[])
@@ -824,7 +858,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page}[a.cmd](a)
 
 
 if __name__ == "__main__":
