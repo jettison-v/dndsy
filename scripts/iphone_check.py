@@ -227,7 +227,7 @@ def check_page(safari: Safari, udid: str, device: str, seat: str, path: str, sho
     return [f"{device} · {seat} · {path} · {f}" for f in found]
 
 
-def run(devices: list[str], seats: list[str]) -> list[str]:
+def run(devices: list[str], seats: list[str], close_seats: bool = False) -> list[str]:
     from playwright.sync_api import sync_playwright
 
     layout = (HERE / "layout_check.js").read_text()
@@ -244,6 +244,9 @@ def run(devices: list[str], seats: list[str]) -> list[str]:
                     seat_cookie(seat, p)
                 except Exception as e:
                     print(f"  {seat}'s sign-in couldn't be read: {type(e).__name__}", flush=True)
+            if close_seats:  # (issue 114: the seats' Chrome ran beside each simulator and the Mini maxed out, so iOS in the
+                # simulator killed its own processes and macOS showed a crash dialog each morning; their sign-ins are read)
+                sh(str(HERE / "real_table_seats.sh"), "close", check=False)
             for kind in (d for d in devices if d in found_devices):
                 sim = found_devices[kind]
                 name = f"{kind} ({sim['name']})"
@@ -333,11 +336,12 @@ def main() -> int:
     ap.add_argument("--devices", default=",".join(DEVICES), help="small, large, ipad")
     ap.add_argument("--seats", default=",".join(PAGES), help="dm, player2")
     ap.add_argument("--sentry", action="store_true", help="report what's found to Sentry")
+    ap.add_argument("--close-seats", action="store_true", help="close the seats' Chrome once their sign-ins are read (the nightly run)")
     args = ap.parse_args()
     if subprocess.run(["xcrun", "--find", "simctl"], capture_output=True).returncode or not APPIUM.exists():
         print("Not set up here: Xcode with its iOS simulator and Appium (docs/live-test-plan.md › iPhone Safari).")
         return 2
-    problems = run(args.devices.split(","), args.seats.split(","))
+    problems = run(args.devices.split(","), args.seats.split(","), args.close_seats)
     print("\n".join(problems) or "Everything holds together in iPhone and iPad Safari.")
     print(f"Screenshots: {SHOTS}")
     if problems and args.sentry:
