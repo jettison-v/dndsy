@@ -180,3 +180,12 @@ def test_your_order_says_each_plans_place_in_the_boards_words(db, admin):
     assert 'data-col-word="ready"' in row(first.area_id) and 'data-col-word="building"' in row(b.id)
     assert 'data-kind-tag="feedback"' in row(first.area_id)
     assert f'data-kind="feedback" data-key="a{first.area_id}"' in page
+
+
+def test_a_plan_with_two_pull_requests_on_their_way_shows_both(db):
+    """A card is one piece that ends in one pull request (Nov 24: #490 was hidden behind #488, both on one plan)."""
+    i = _issue(db, "Two pieces")
+    _pull(db, 488, f"a{i.area_id}-one", tests="running", merge_state="blocked")
+    _pull(db, 490, f"a{i.area_id}-two", tests="failed")
+    cards = {x["key"]: x for _, _, _, cards in work_page.board(db)["cols"] for x in cards}
+    assert cards[f"a{i.area_id}"]["pr"] == 488 and cards[f"a{i.area_id}-p490"]["pr"] == 490 and cards[f"a{i.area_id}-p490"]["stuck"]

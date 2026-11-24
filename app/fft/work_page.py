@@ -273,11 +273,12 @@ def board(db: Session) -> dict:
         shown.add(a.id)
         if live_claim:
             cols["building"].append(_card(**base, why="Claude is building it", since=a.lock_until - rules.LOCK, stage="claimed"))
-        elif pulls:
-            p = pulls[0]
-            key, said, stuck = pull_stage(db, p)
+        elif pulls:  # (a card is one piece that ends in one pull request: a plan with two on their way shows both, Nov 24)
             placed.update(x.id for x in pulls)
-            cols["shipping"].append(_card(**base, why=f"Pull request #{p.number}", pr=p.number, stage=key, stage_said=said, stuck=stuck))
+            for n, p in enumerate(pulls):
+                key, said, stuck = pull_stage(db, p)
+                cols["shipping"].append(_card(**base | ({"key": f"a{a.id}-p{p.number}"} if n else {}), why=f"Pull request #{p.number}", pr=p.number,
+                                              stage=key, stage_said=said, stuck=stuck))
         elif turn == "brett":
             pass  # (its card is in Yours to try, below)
         elif turn == "claude" and a.id in ready:
