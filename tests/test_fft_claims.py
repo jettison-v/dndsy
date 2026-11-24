@@ -64,7 +64,7 @@ def test_a_claim_that_goes_quiet_returns_to_the_front_of_ready(db):
     assert rules.pick_next(db).area.id == first.area_id  # (a live claim is in hand: not Ready)
     area.lock_until = rules.now() - timedelta(minutes=1)
     pick = rules.pick_next(db)
-    assert pick.area.id == second.area_id and "quiet" in pick.why.lower()
+    assert (pick.area.id, pick.reason) == (second.area_id, "quiet_claim")
     got, _, already = rules.claim(db, "claude:other", None)
     assert got.id == second.area_id and not already and area.lock_owner == "claude:other"
 
@@ -80,25 +80,30 @@ def test_a_fix_to_what_just_shipped_goes_ahead_of_new_work(db):
     db.flush()
     later = _issue(db, "Found on a try", feature="hp", origin_try_id=tried.id)
     pick = rules.pick_next(db)
-    assert pick.area.id == later.area_id and "just shipped" in pick.why
+    assert (pick.area.id, pick.reason) == (later.area_id, "shipped_fix")
 
 
-def test_every_call_claude_makes_is_its_check_in(api, db):
-    """The listener's wait, the end-of-turn gaps, any call: the claim runs another 20 minutes. A lapsed claim isn't
-    revived by it (it's already back in Ready), and the Mini's key checks no one in."""
+def test_a_sessions_own_listener_is_its_check_in(api, db):
+    """Its listener's inbox and wait run in the background all the while it works (a long test run too): its claim runs
+    another 20 minutes. Another session's listener never keeps it alive, a lapsed claim isn't revived, and the Mini's
+    key checks no one in."""
     area = db.get(FftArea, _issue(db, "Back clears what you typed").area_id)
     rules.lock_area(db, OWNER, area)
-    area.lock_until = rules.now() + timedelta(minutes=3)
-    db.flush()
-    api.get("/api/fft/gaps", headers={"X-Fft-Key": MINI})
-    db.refresh(area)
-    assert area.lock_until < rules.now() + timedelta(minutes=4)
-    api.get("/api/fft/gaps", headers={"X-Fft-Key": CLAUDE})
-    db.refresh(area)
-    assert area.lock_until > rules.now() + timedelta(minutes=19)
+
+    def left_after(path, key=CLAUDE):
+        area.lock_until = rules.now() + timedelta(minutes=3)
+        db.flush()
+        api.get(path, headers={"X-Fft-Key": key})
+        db.refresh(area)
+        return area.lock_until - rules.now()
+
+    assert left_after("/api/fft/inbox/wait?listener=main&seconds=1") > timedelta(minutes=19)
+    assert left_after("/api/fft/inbox?listener=main&peek=1") > timedelta(minutes=19)
+    assert left_after("/api/fft/inbox/wait?listener=sweep&seconds=1") < timedelta(minutes=4)  # (another session's)
+    assert left_after("/api/fft/gaps") < timedelta(minutes=4)
     area.lock_until = rules.now() - timedelta(minutes=1)
     db.flush()
-    api.get("/api/fft/gaps", headers={"X-Fft-Key": CLAUDE})
+    api.get("/api/fft/inbox/wait?listener=main&seconds=1", headers={"X-Fft-Key": CLAUDE})
     db.refresh(area)
     assert area.lock_until < rules.now()
 
@@ -119,6 +124,15 @@ def test_opening_the_pull_request_releases_the_claim_and_one_for_unclaimed_work_
     assert {g["title"].split()[0] for g in views.gaps(db) if g["kind"] == "pull_unclaimed"} == {"#301"}
     rules.claim(db, OWNER, db.get(FftArea, loose.area_id))
     assert not p2.unclaimed
+    rules.unlock_area(db, OWNER, db.get(FftArea, loose.area_id))
+    it = rules.new_item(db, "claude", "A build", section="now")
+    db.flush()
+    plan = rules.new_area(db, "claude", it, "A build: the build")
+    db.flush()
+    p5 = _pull(db, 304, f"r{it.id}-board")
+    assert p5.unclaimed  # (an item's branch, nothing claimed)
+    rules.claim(db, OWNER, plan)
+    assert not p5.unclaimed  # (claiming the item's plan claims it)
 
 
 def test_a_green_pull_request_that_isnt_merging_is_a_gap(db):
@@ -130,6 +144,11 @@ def test_a_green_pull_request_that_isnt_merging_is_a_gap(db):
     assert {g["title"].split()[0] for g in views.gaps(db) if g["kind"] == "pull_waiting"} == {"#310"}
     rules.set_lane(db, "user:1", db.get(FftArea, i.area_id), "careful", "Brett chose it", admin=True)
     assert not [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]
+    rules.set_lane(db, "user:1", db.get(FftArea, i.area_id), "look", "Brett chose it", admin=True)
+    assert [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]
+    rules.set_available(db, "user:1", True, by="Brett")  # (Deploys: After my local try)
+    rules.new_local_try(db, "claude", "Try it on your Mac", db.get(FftArea, i.area_id), ["c"], "l", "/", "x")
+    assert not [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]  # (After my local try: it waits for his)
 
 
 def test_a_builds_plan_with_claudes_steps_left_never_vanishes(db):
@@ -145,6 +164,9 @@ def test_a_builds_plan_with_claudes_steps_left_never_vanishes(db):
     rules.add_step(db, "claude", it, "Build 3 of 4")
     db.flush()
     assert rules.area_turn(db, plan) == "claude"
+    it.next_whose = "brett"  # (its next step is Brett's: it waits on him, whatever comes after)
+    assert rules.area_turn(db, plan) == "done"
+    it.next_whose = "claude"
     rules.add_step(db, "claude", it, "Brett's own", whose="brett")
     db.execute(update(rules.FftStep).where(rules.FftStep.item_id == it.id, rules.FftStep.whose != "brett").values(done_at=rules.now()))
     db.flush()
@@ -164,3 +186,23 @@ def test_a_build_with_no_plan_gets_one_when_claimed(db):
 
 def test_a_claim_lasts_twenty_minutes_without_a_check_in():
     assert timedelta(minutes=20) == rules.LOCK
+
+
+def test_a_build_brett_holds_never_jumps_the_line(db):
+    """A fix to what just shipped goes first, but not from a build Brett holds below the line."""
+    from app.fft.models import FftTry
+
+    it = rules.new_item(db, "claude", "Held build", section="now")
+    db.flush()
+    plan = rules.new_area(db, "claude", it, "Held build: the build")
+    db.flush()
+    check = rules.write_check(db, "claude", title="t", steps=["s"], expect="e")
+    tried = FftTry(check_id=check.id, version=1, actor="person", result="failed")
+    db.add(tried)
+    db.flush()
+    rules.new_issue(db, "claude", "Found on a try", area_id=plan.id, origin_try_id=tried.id)
+    db.flush()
+    assert rules.pick_next(db).reason == "shipped_fix"
+    it.held = True
+    db.flush()
+    assert rules.pick_next(db).reason != "shipped_fix"

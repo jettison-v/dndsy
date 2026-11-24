@@ -130,6 +130,7 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
     """What this listener hasn't read (T8): each listener its own read mark; an area's own listener hears only it."""
     li = rules.listener(db, listener, area_id=area or None)
     actor = keys.require(db, x_fft_key, "read")
+    rules.heartbeat(db, f"{actor.name}:{listener}")  # (the session's own listener is its check-in: its claim stays alive)
     rows = [e for e in rules.unread(db, li, peek=bool(peek)) if rules.heard(e, actor.name)]
     out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
             "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
@@ -152,6 +153,7 @@ def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x
     from app import realtime, timing
 
     actor = keys.require(db, x_fft_key, "read")
+    rules.heartbeat(db, f"{actor.name}:{listener}")  # (a waiting session is alive: its claim runs on; peek's commit keeps it)
 
     def peek() -> list[dict]:
         li = rules.listener(db, listener, area_id=area or None)

@@ -64,11 +64,6 @@ def require(db: Session, key: str | None, scope: str) -> Actor:
         raise HTTPException(404)
     if not actor.may(scope):
         raise HTTPException(403, f"This key can't {scope}.")
-    if actor.name == "claude":  # (every call Claude makes is its check-in: its claim stays alive; item 39, 3 of 4)
-        from app.fft import rules
-
-        if rules.heartbeat(db, actor.name):
-            db.commit()
     return actor
 
 

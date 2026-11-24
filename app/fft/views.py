@@ -542,9 +542,15 @@ def missed(db: Session) -> list[dict]:
 
 
 def _held_back(db: Session, p: FftPull) -> bool:
-    """A green pull request that's meant to wait: its plan is Careful (Brett tries it first) or in his open round."""
+    """A green pull request that's meant to wait: its plan is Careful (Brett tries it first), in his open round, or has
+    a local try he hasn't answered."""
+    from app.fft.models import FftLocalTry
+
     a = db.get(FftArea, p.area_id) if p.area_id else None
-    return a is not None and (rules.lane_of(a) == "careful" or rules.in_open_round(db, a))
+    if a is None:
+        return False
+    waiting_try = db.scalar(select(FftLocalTry.id).where(FftLocalTry.area_id == a.id, FftLocalTry.answer == "").limit(1)) is not None
+    return rules.lane_of(a) == "careful" or rules.in_open_round(db, a) or waiting_try  # (or his local try first: After my local try)
 
 
 def pull_row(p: FftPull) -> dict:

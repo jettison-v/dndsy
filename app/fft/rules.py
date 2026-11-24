@@ -1747,8 +1747,8 @@ def build_open(db: Session, area: FftArea) -> bool:
     """A Roadmap build's plan with work left: its item's scope agreed, not shipped, a step of Claude's not done (item 39:
     a plan with no issues showed as done and vanished from Development, taking its lane with it, Nov 24)."""
     it = db.get(FftItem, area.item_id)
-    if it is None or it.standing or it.section not in ("now", "next", "later"):
-        return False
+    if it is None or it.standing or it.section not in ("now", "next", "later") or it.next_whose == "brett":
+        return False  # (its next step is Brett's: it waits on him, not Claude)
     sc = latest_scope(db, it)
     if sc is None or sc.agreed_at is None:
         return False
@@ -1859,6 +1859,7 @@ class Pick:
     skipped: list[tuple[str, str]] = field(default_factory=list)  # (what, why)
     blocker: bool = False
     item: FftItem | None = None  # (a Roadmap build that's next and has no plan of its own: its next step is Claude's)
+    reason: str = "queue"  # (which rule picked it: blocker, scope, shipped_fix, quiet_claim, queue; tests and pages read this, never `why`)
 
 
 def is_build(db: Session, it: FftItem) -> bool:
@@ -1909,8 +1910,12 @@ def hold_item(db: Session, actor: str, item: FftItem, held: bool = True) -> None
 
 def _areas_ready(db: Session, q) -> list[FftArea]:
     """The areas of a query that are Claude's to take now: Claude's turn, not held, not in Brett's open round, open."""
+    def item_ok(a: FftArea) -> bool:
+        it = db.get(FftItem, a.item_id)
+        return it is None or it.standing or not (it.held or it.next_whose == "brett")  # (a build Brett holds, or whose next step is his)
+
     return [a for a in db.scalars(q.where(FftArea.archived.is_(False)).distinct().order_by(FftArea.id))
-            if not a.held and area_turn(db, a) == "claude" and not in_open_round(db, a)]
+            if not a.held and item_ok(a) and area_turn(db, a) == "claude" and not in_open_round(db, a)]
 
 
 def pick_next(db: Session) -> Pick:
@@ -1923,16 +1928,16 @@ def pick_next(db: Session) -> Pick:
         stop = db.scalar(select(FftIssue).join(FftTryIssue, FftTryIssue.issue_id == FftIssue.id)
                          .where(FftTryIssue.stops_round.is_(True), FftIssue.state.in_(("to_fix", "fixing"))))
         if stop is not None and stop.area_id:
-            return Pick(db.get(FftArea, stop.area_id), f"Blocker: “{stop.title}” stops Brett's round.", blocker=True)
+            return Pick(db.get(FftArea, stop.area_id), f"Blocker: “{stop.title}” stops Brett's round.", blocker=True, reason="blocker")
     for it in scope_asked(db):  # (Scope it: Brett asked, so first after a blocker, Nov 21)
-        return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it)
+        return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it, reason="scope")
     skipped: list[tuple[str, str]] = []
     # (item 39, 3 of 4: next, a fix to what just shipped, then a claim that went quiet, each ahead of new work)
     for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
                           .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing")))):
-        return Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", skipped)
+        return Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", skipped, reason="shipped_fix")
     for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now())):
-        return Pick(a, f"Back from a claim that went quiet: {a.title}", skipped)
+        return Pick(a, f"Back from a claim that went quiet: {a.title}", skipped, reason="quiet_claim")
 
     def plan_ok(area: FftArea, name: str) -> bool:
         if area_turn(db, area) != "claude":
@@ -2270,8 +2275,8 @@ def release_live(db: Session, actor: str, version: str) -> dict:
 # ------------------------------------------------------------------ claims (item 39, 3 of 4; scope v4, Brett's OK Nov 24)
 #
 # Claude doesn't choose its work: it asks askdnd, which hands over the top of Ready (`pick_next`) and records the claim
-# (the area's lock: one at a time). Every call Claude makes to askdnd renews it (`heartbeat`, from keys.require), so a
-# claim lapses only when the session stops; a lapsed one goes back to the front of Ready. Opening the pull request
+# (the area's lock: one at a time). The session's own listener renews it (`heartbeat`, from its inbox and wait, which
+# run in the background all the while it works), so a claim lapses only when the session stops; a lapsed one goes back to the front of Ready. Opening the pull request
 # releases it (Building → Shipping, `pulls_seen`); one opened for work nobody claimed is a gap (`unclaimed`).
 
 def claim(db: Session, owner: str, area: FftArea | None = None) -> tuple[FftArea | None, str, bool]:
@@ -2292,19 +2297,19 @@ def claim(db: Session, owner: str, area: FftArea | None = None) -> tuple[FftArea
     else:
         why = f"Claimed by hand: {area.title}"
     lock_area(db, owner, area)
-    for p in db.scalars(select(FftPull).where(FftPull.area_id == area.id, FftPull.unclaimed.is_(True), FftPull.state == "open")):
+    for p in db.scalars(select(FftPull).where(or_(FftPull.area_id == area.id, (FftPull.item_id == area.item_id) & FftPull.area_id.is_(None)),
+                                              FftPull.unclaimed.is_(True), FftPull.state == "open")):
         p.unclaimed = False
     return area, why, False
 
 
-def heartbeat(db: Session, actor: str) -> int:
-    """A Claude session checked in: its live claims run another LOCK from now. Writes only when one has under 19 minutes
-    left, so a burst of calls costs one write."""
-    if actor != "claude":
-        return 0
+def heartbeat(db: Session, owner: str) -> int:
+    """A session checked in (its listener's inbox or wait, `owner` "claude:<listener>"): its own live claim runs another
+    LOCK from now; another session's never does. Writes only when it has under 19 minutes left, so a burst of calls costs
+    one write. A claim already lapsed stays lapsed: it's back in Ready."""
     from sqlalchemy import update as _update
 
     soon = now() + LOCK - timedelta(minutes=1)
-    got = db.execute(_update(FftArea).where(FftArea.lock_owner.like("claude:%"), FftArea.lock_until > now(), FftArea.lock_until < soon)
+    got = db.execute(_update(FftArea).where(FftArea.lock_owner == owner[:60], FftArea.lock_until > now(), FftArea.lock_until < soon)
                      .values(lock_until=now() + LOCK))
     return got.rowcount or 0
