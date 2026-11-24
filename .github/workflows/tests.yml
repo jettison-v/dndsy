@@ -19,8 +19,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Started by .github/workflows/report.yml after it brings a waiting pull request up to date with main: an update made
-  # with GitHub's own token starts no run by itself, and main's protection needs these checks on the new commit
+  # By hand from the Actions tab (a run started this way doesn't count for a pull request's own checks: Nov 24, #485)
   workflow_dispatch:
 
 # A newer push to the same pull request cancels the run still going for the older one: only the newest is checked

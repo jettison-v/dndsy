@@ -1,7 +1,8 @@
 # GitHub tells askdnd about the pull requests (scripts/github_report.py; item 39, A sturdier loop, Brett's OK Nov 24):
-# after each pull request event, each test run and each push to main, it brings waiting pull requests up to date with
-# main (those set to merge by themselves) and reports every open one to askdnd.ai, which links each to its work. A
-# pull request with nothing behind it becomes an Upkeep card there: no pull request without a card.
+# after each pull request event, each test run and each push to main, it reports every open one to askdnd.ai, which
+# links each to its work. A pull request with nothing behind it becomes an Upkeep card there: no pull request without
+# a card. It changes nothing on GitHub: one set to merge by itself that falls behind main is a gap for Claude, who
+# brings it up to date under a person's sign-in (Nov 24: runs GitHub's own robot starts wait for a person's approval).
 #
 # Safe on pull_request_target: it checks out main's copy of the script, never a pull request's own code, and reads
 # titles only as data (never put into a command). FFT_GITHUB_KEY may report only pull requests and GitHub's own jobs
@@ -22,10 +23,9 @@ on:
     - cron: "15 11 * * *"  # 11:15 UTC, after the Mini's 4:00 nightly on the West Coast
   workflow_dispatch:
 
-permissions:
-  contents: write  # (merging main into a waiting pull request)
-  pull-requests: write
-  actions: write  # (starting its tests again: an update this token makes starts no run by itself)
+permissions:  # (it only reads)
+  contents: read
+  pull-requests: read
   checks: read
 
 # One at a time, newest waiting: each run reads everything afresh, so a skipped one loses nothing

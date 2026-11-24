@@ -106,11 +106,11 @@ def test_each_change_is_recorded_once_and_a_whole_list_closes_what_left_it(db):
 
 
 def test_a_red_or_conflicting_pull_request_is_in_claudes_hands(db):
-    """Gaps (Brett, Nov 17): a pull request whose tests failed, or that conflicts with main, waits on Claude; behind
-    main isn't one (GitHub's run brings it up to date), nor is a closed one."""
-    _seen(db, _pr(20, tests="failed"), _pr(21, merge_state="dirty"), _pr(22, merge_state="behind"), _pr(23, tests="passed"))
+    """Gaps (Brett, Nov 17): a pull request whose tests failed, that conflicts with main, or that's set to merge but
+    behind main (Nov 24: Claude brings it up to date, not GitHub's robot) waits on Claude; a closed one doesn't."""
+    _seen(db, _pr(20, tests="failed"), _pr(21, merge_state="dirty"), _pr(22, merge_state="behind", auto_merge=True), _pr(23, tests="passed"))
     got = {(g["kind"], g["title"].split()[0]) for g in views.gaps(db) if g["thing"] == "pull"}
-    assert got == {("pull_red", "#20"), ("pull_conflicts", "#21")}
+    assert got == {("pull_red", "#20"), ("pull_conflicts", "#21"), ("pull_behind", "#22")}
     _seen(db, {"number": 20, "state": "closed"})
     assert ("pull_red", "#20") not in {(g["kind"], g["title"].split()[0]) for g in views.gaps(db) if g["thing"] == "pull"}
 

@@ -151,6 +151,18 @@ def test_a_green_pull_request_that_isnt_merging_is_a_gap(db):
     assert not [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]  # (After my local try: it waits for his)
 
 
+def test_one_set_to_merge_that_falls_behind_main_is_claudes_to_bring_up_to_date(db):
+    """Nov 24, #485: GitHub's robot brought it up to date and its tests waited for a person's approval, so it never
+    merged. Behind main and set to merge is Claude's to update (under a person's sign-in), unless it's meant to wait."""
+    i = _issue(db, "Back clears what you typed")
+    _pull(db, 320, f"a{i.area_id}-fix", tests="passed", merge_state="behind", auto_merge=True)
+    _pull(db, 321, "phone-sweep", tests="passed", merge_state="behind", auto_merge=False)  # (not set to merge: it waits as it is)
+    behind = [g for g in views.gaps(db) if g["kind"] == "pull_behind"]
+    assert [g["title"].split()[0] for g in behind] == ["#320"] and "gh pr update-branch 320" in behind[0]["says"]
+    rules.set_lane(db, "user:1", db.get(FftArea, i.area_id), "careful", "Brett chose it", admin=True)
+    assert not [g for g in views.gaps(db) if g["kind"] == "pull_behind"]
+
+
 def test_a_builds_plan_with_claudes_steps_left_never_vanishes(db):
     """Area 17 showed as done and left Development, its lane control with it (Nov 24): a build's plan with no issues
     is Claude's while its item's scope is agreed, it isn't shipped and a step of Claude's is open."""

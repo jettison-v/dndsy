@@ -195,7 +195,7 @@ def pull_stage(db: Session, p: FftPull) -> tuple[str, str, bool]:
     if p.merge_state == "dirty":
         return "conflicts", "Conflicts with main", True
     if p.merge_state == "behind":
-        return "behind", "Catching up with main", False
+        return "behind", "Behind main", False
     if p.tests == "passed" and p.auto_merge:
         return "merging", "Merging", False
     if p.tests == "passed" and p.merge_state == "clean":

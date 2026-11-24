@@ -489,6 +489,9 @@ def gaps(db: Session) -> list[dict]:
         if p.tests == "passed" and p.merge_state == "clean" and not p.auto_merge and not frozen and not _held_back(db, p):
             out.append({"kind": "pull_waiting", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} passed and can merge, but isn't set to: merge it, or turn auto-merge on (GitHub turns it off after a failed try)."})
+        if p.merge_state == "behind" and p.auto_merge and not frozen and not _held_back(db, p):  # (Nov 24: GitHub's robot can't do it)
+            out.append({"kind": "pull_behind", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+                        "says": f"Pull request #{p.number} is set to merge but is behind main: bring it up to date (gh pr update-branch {p.number}), so its tests run again and it merges."})
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})
@@ -508,6 +511,7 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
              "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet",
              "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main",
+             "pull_behind": "a pull request waiting to merge, behind main",
              "version_unplaced": "askdnd.ai runs a version no pull request explains",
              "pull_unclaimed": "a pull request for work nobody claimed", "pull_waiting": "a pull request that passed and isn't merging"}  # (each kind of gap, as Development says it)
 UNPLACED_AFTER = timedelta(minutes=15)  # (GitHub reports a merge within a minute; a deploy takes about ten)

@@ -1,6 +1,6 @@
 """What GitHub tells askdnd about the pull requests (scripts/github_report.py, run by .github/workflows/report.yml; item
-39): the tests' state, which waiting pull requests it brings up to date with main, and the whole list it sends. GitHub
-and askdnd are stand-ins here: nothing reaches either."""
+39): the tests' state and the whole list it sends, changing nothing on GitHub. GitHub and askdnd are stand-ins here:
+nothing reaches either."""
 
 import json
 
@@ -36,7 +36,7 @@ def test_the_tests_state_reads_only_the_checks_main_asks_for(rollup, want):
 @pytest.fixture
 def github(monkeypatch, tmp_path):
     """A stand-in GitHub: the open pull requests `gh pr list` gives, and every other `gh` call recorded."""
-    state = {"prs": [], "closed": [], "calls": [], "sent": None, "fail": set(), "down": False}
+    state = {"prs": [], "closed": [], "calls": [], "sent": None, "down": False}
 
     def gh(*args):
         state["calls"].append(args)
@@ -44,15 +44,12 @@ def github(monkeypatch, tmp_path):
             raise gr.subprocess.CalledProcessError(1, "gh", stderr="HTTP 502")
         if args[:2] == ("pr", "list"):
             return json.dumps(state["closed"] if "closed" in args else state["prs"])
-        if args[0] == "api" and any(f"/pulls/{n}/" in a for n in state["fail"] for a in args):
-            raise gr.subprocess.CalledProcessError(1, "gh", stderr="merge conflict")
         return ""
 
     monkeypatch.setattr(gr, "gh", gh)
     monkeypatch.setattr(gr, "send", lambda rows, key: state.__setitem__("sent", rows))
     monkeypatch.setattr(gr.time, "sleep", lambda s: None)
     monkeypatch.setenv("FFT_GITHUB_KEY", "k" * 40)
-    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
 
     def run(event, payload=None):
         path = tmp_path / "event.json"
@@ -66,39 +63,15 @@ def github(monkeypatch, tmp_path):
     return state
 
 
-def test_after_main_moves_a_waiting_pull_request_is_brought_up_to_date_and_retested(github):
-    """Only one set to merge by itself and behind main: main is merged in at the commit GitHub showed, its tests start
-    again (an update made with GitHub's own token starts none), and askdnd hears it's running again."""
-    github["prs"] = [_pr(1, autoMergeRequest={"enabledAt": "x"}, mergeStateStatus="BEHIND"),
-                     _pr(2, mergeStateStatus="BEHIND"),  # (not set to merge by itself: left as it is)
-                     _pr(3, autoMergeRequest={"enabledAt": "x"}, mergeStateStatus="CLEAN")]
-    got = github["run"]("push")
-    updates = [c for c in got["calls"] if c[0] == "api"]
-    assert updates == [("api", "-X", "PUT", "repos/owner/repo/pulls/1/update-branch", "-f", "expected_head_sha=" + "b" * 40)]
-    assert ("workflow", "run", "tests.yml", "--ref", "branch-1") in got["calls"]
-    sent = {r["number"]: r for r in got["sent"]}
-    assert sent[1]["updated"] is True and sent[1]["tests"] == "running"
-    assert "updated" not in sent[2] and sent[2]["merge_state"] == "behind"
-
-
-def test_one_that_conflicts_is_left_for_claude_and_the_rest_still_report(github):
-    github["prs"] = [_pr(1, autoMergeRequest={"x": 1}, mergeStateStatus="BEHIND"), _pr(2)]
-    github["fail"] = {1}
-    got = github["run"]("push")
-    assert not any(c[:2] == ("workflow", "run") for c in got["calls"])
-    assert [r["number"] for r in got["sent"]] == [1, 2] and "updated" not in got["sent"][0]
-
-
-def test_every_run_brings_them_up_to_date_since_a_waiting_run_can_be_replaced(github):
-    """One run waits per group, and a newer one replaces it: so a test run's report, or a pull request's own, catches up
-    too. One already up to date is left alone, so the run its update starts doesn't start another."""
-    github["prs"] = [_pr(1, autoMergeRequest={"x": 1}, mergeStateStatus="BEHIND")]
-    for event, payload in (("workflow_run", {"action": "completed"}), ("pull_request_target", {"action": "synchronize"})):
-        github["calls"].clear()
-        assert [c for c in github["run"](event, payload)["calls"] if c[0] == "api"]
-    github["prs"] = [_pr(1, autoMergeRequest={"x": 1}, mergeStateStatus="BLOCKED")]
-    github["calls"].clear()
-    assert not [c for c in github["run"]("workflow_run", {"action": "requested"})["calls"] if c[0] in ("api", "workflow")]
+def test_it_only_reads_github_and_a_waiting_one_behind_main_is_reported_as_behind(github):
+    """Nov 24 (#485): runs GitHub's own robot starts wait for a person's approval, so the report changes nothing on
+    GitHub; one set to merge by itself that's behind main reaches askdnd as behind (a gap for Claude, views `pull_behind`)."""
+    github["prs"] = [_pr(1, autoMergeRequest={"enabledAt": "x"}, mergeStateStatus="BEHIND"), _pr(2, mergeStateStatus="BEHIND")]
+    for event, payload in (("push", {}), ("workflow_run", {"action": "completed"}), ("pull_request_target", {"action": "synchronize"})):
+        got = github["run"](event, payload)
+        assert all(c[:2] in (("pr", "list"),) for c in got["calls"]), got["calls"]
+        sent = {r["number"]: r for r in got["sent"]}
+        assert (sent[1]["merge_state"], sent[1]["auto_merge"]) == ("behind", True) and "updated" not in sent[1]
 
 
 def test_it_waits_while_github_still_works_out_behind(github, monkeypatch):
