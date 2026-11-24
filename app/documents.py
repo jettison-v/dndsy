@@ -51,9 +51,14 @@ _MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun",
 
 
 def date_rank(when: str) -> int:
-    """A row's date as a number to sort by, newest highest ("Nov 24" → 1124); 0 when it isn't one."""
+    """A row's date as a number to sort by, newest highest ("Nov 24" → 1124); 0 when it isn't one. The library's dates
+    have no year and begin in October 2026, so January to September count as the year after (2027: until next October,
+    when the dates need their year)."""
     m = re.match(r"\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})\b", when or "")
-    return _MONTHS.get(m.group(1).lower(), 0) * 100 + int(m.group(2)) if m else 0
+    if not m or m.group(1).lower() not in _MONTHS:
+        return 0
+    month = _MONTHS[m.group(1).lower()]
+    return (month + (12 if month < 10 else 0)) * 100 + int(m.group(2))
 
 
 def state_of(e: dict) -> str:

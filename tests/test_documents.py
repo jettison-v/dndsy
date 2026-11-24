@@ -119,6 +119,7 @@ def test_the_list_starts_on_what_waits_on_you_newest_first_and_moves_what_was_re
             {"title": "New plan", "kind": "plan", "state": "building", "date": "Nov 20", "source": "docs/b.html", "id": "b"},
             {"title": "Older plan", "kind": "plan", "state": "done", "date": "Oct 28", "source": "docs/c.html", "id": "c"},
             {"title": "Picks", "kind": "design", "state": "waiting", "date": "Nov 24", "source": "docs/d.html", "id": "d"}]
+    assert documents.date_rank("Jan 3") > documents.date_rank("Dec 30") > documents.date_rank("Oct 28") > documents.date_rank("") == 0
     got = documents.rows_for(rows)
     assert [r["e"]["title"] for r in got] == ["New plan", "Older plan", "Picks", "Old guide"]
     assert got[-1]["group"] == "Earlier and superseded" and got[0]["views"] == "current all" and got[1]["views"] == "all"
