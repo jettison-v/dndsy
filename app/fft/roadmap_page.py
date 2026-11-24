@@ -189,7 +189,7 @@ def item(request: Request, item_id: int, tab: str = "scope", ver: int = 0, db: S
         "it": it, "r": r, "tab": tab, "tabs": TABS, "scopes": scopes, "shown": shown, "latest": latest,
         "line_comments": lines, "answers": answers, "question_keys": [f"q:{i}" for i in range(len(latest.questions) if latest else 0)], "held": held, "waits": rules.waits_on_brett(latest) and it.section in rules.ROADMAP_SECTIONS,
         "open": it.section in rules.ROADMAP_SECTIONS,
-        "adds": adds, "steps": steps, "plans": plans, "pages": pages(db, it), "section_said": SECTION_SAID, "sections": rules.ROADMAP_SECTIONS,
+        "adds": adds, "steps": steps, "plans": plans, "pages": pages(db, it), "page_answers": page_answers(db, it), "section_said": SECTION_SAID, "sections": rules.ROADMAP_SECTIONS,
         "events": [(e, views.event_words(e), work_page._who(db, e.actor, who)) for e in events],
         "toast": request.session.pop("toast", None)})
 
@@ -265,8 +265,30 @@ def pages(db: Session, it: FftItem) -> list[dict]:
     from app import documents
 
     sc = rules.latest_scope(db, it)
-    words = [it.why or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id))),
+    words = [it.why or "", it.why_from or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id))),
              *(f"{a.words} {a.answer_words or ''}" for a in db.scalars(select(FftAddition).where(FftAddition.item_id == it.id)))]
     if sc is not None:
         words += [sc.what or "", *(sc.inside or []), *(sc.not_now or []), *(str(q) for q in (sc.questions or []))]
     return documents.linked(*words)
+
+
+def page_answers(db: Session, it: FftItem) -> list[dict]:
+    """Your answers on the pages an item points to: each page's latest answered question, with its picks, your words and
+    where you saved them (Brett, Nov 24: "I cannot even see my answers during the final approval"). Shown beside the
+    scope you're asked to OK, in its window and on its page."""
+    from app import documents
+    from app.fft.models import FftQuestion
+
+    out = []
+    for p in pages(db, it):
+        e = documents.find(p["id"])
+        if e is None:
+            continue
+        q = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == e["source"], FftQuestion.answered_at.is_not(None),
+                                                ~FftQuestion.answer_text.startswith("Withdrawn:")).order_by(FftQuestion.answered_at.desc()))
+        if q is None:
+            continue
+        rest = q.answer_text.split("\n\n", 1)[1] if "\n\n" in q.answer_text else ("" if q.picks else q.answer_text)
+        out.append({"page": p, "q": q, "picks": [x for x in (q.picks or []) if x.get("value")], "words": rest.strip(),
+                    "where": "on claude.ai" if "(on claude.ai)" in q.answer_text.split("\n", 1)[0] else "in askdnd"})
+    return out

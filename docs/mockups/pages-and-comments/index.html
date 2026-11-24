@@ -294,7 +294,7 @@ figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
     btn.disabled = true;
     const at = new Date().toISOString(), doc = { notes, at };
     list.forEach(p => { doc[p.name] = p.value; });
-    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
     catch (err) { show("Couldn't save it. Try again."); }
     btn.disabled = false;
   });

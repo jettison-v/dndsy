@@ -64,3 +64,17 @@
 <ul class="fft-missed-list">{% for g in gaps %}<li data-gap="{{ g.kind }}"{% if g.late %} data-late{% endif %}>{% if g.thing in ("chat", "pull", "deploy") %}<span class="fft-missed-what">{{ g.title }}</span>{# (no page of its own in askdnd: said in chat, a pull request, a deploy) #}{% else %}<a href="{{ '/manage/work/' ~ g.id if g.thing == 'area' else '/manage/roadmap/' ~ g.id if g.thing == 'item' else '/manage/work?tab=checks&open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>{% endif %}
   <span class="note">· {{ gap_words[g.kind] }} · since <time datetime="{{ g.since.isoformat() }}" data-clock="when">{{ g.since | ago }}</time></span></li>{% endfor %}</ul>
 {%- endmacro %}
+
+{# Your answers on the pages a Roadmap item points to (Brett, Nov 24: "I cannot even see my answers during the final
+   approval"): each page's latest answered question, its picks, your words, where you saved them. Beside the scope you're
+   asked to OK, in its window and on its page (roadmap_page.page_answers). #}
+{% macro page_answers(list) -%}
+{% from "_admin_bits.html" import rd_section %}
+{% if list %}{% call rd_section("Your answers behind it", attrs=' data-sec="page-answers"') %}
+{% for a in list %}<div class="fft-page-answer" data-page-answer="{{ a.q.id }}">
+  <p class="note">On <a href="{{ a.page.href }}" data-no-peek>{{ a.page.title }}</a> · Q{{ a.q.id }} · {{ a.where }}, <time datetime="{{ a.q.answered_at.isoformat() }}" data-clock="ago">{{ a.q.answered_at | ago }}</time></p>
+  {% if a.picks %}<ul class="fft-picks-list">{% for p in a.picks %}<li>{{ p.label or p.value }}</li>{% endfor %}</ul>{% endif %}
+  {% if a.words %}<p class="fft-answer-words">{{ a.words }}</p>{% endif %}
+</div>{% endfor %}
+{% endcall %}{% endif %}
+{%- endmacro %}

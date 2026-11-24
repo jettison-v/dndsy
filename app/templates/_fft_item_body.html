@@ -5,7 +5,7 @@
 {% from "_admin_bits.html" import state_word, state_line, more_menu, rd_section, kind_word %}
 {% from "_lists.html" import empty_state, count_pill %}
 {% from "_check_steps.html" import walkthrough, goal %}
-{% from "_fft_bits.html" import report, convo_line, history, asked_bub, its_checks with context %}
+{% from "_fft_bits.html" import report, convo_line, history, asked_bub, its_checks, page_answers with context %}
 {% if picked.kind == "check" %}{% set c = picked.c %}{% set v = picked.v %}
 {# ---- a check (screens 1, 4, 7) #}
 <article class="reader-article fb-read" data-fft-check="{{ c.id }}" data-state="{{ picked.state.state }}">
@@ -41,11 +41,11 @@
   <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}">{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
   {% set qt = q.text | note_title %}<h2 class="nt-h">{{ qt }}</h2>
   {% if q.text.strip() != qt %}<div class="bub claude"><small>Claude asks</small><p>{{ q.text }}</p></div>{% endif %}
-  {% if picked.doc %}<div class="act-bar fft-doc" data-doc><a class="btn primary small" href="{{ picked.doc.href }}" data-modal-url="{{ picked.doc.href }}?part=1" data-modal-size="full" data-open-doc>Open mockup</a>{% if picked.doc.link %}<a class="btn link small" href="{{ picked.doc.link }}" target="_blank" rel="noopener">On claude.ai ↗</a>{% endif %}<span class="note">Look at “{{ picked.doc.title }}” first, then answer here.</span></div>{% endif %}
+  {% if picked.doc %}<div class="act-bar fft-doc" data-doc><a class="btn primary small" href="{{ picked.doc.href }}" data-modal-url="{{ picked.doc.href }}?part=1" data-modal-size="full" data-open-doc>Open mockup</a>{% if picked.doc.link %}<a class="btn link small" href="{{ picked.doc.link }}" target="_blank" rel="noopener">On claude.ai ↗</a>{% endif %}<span class="note" data-picks-answer>{% if q.choices %}Look at “{{ picked.doc.title }}” first, then answer here.{% else %}Your picks on it are your answer: pick, then Save my picks, here or on claude.ai. Nothing to type.{% endif %}</span></div>{% endif %}
   <form method="post" action="/manage/testing/questions/{{ q.id }}" class="composer" data-answer>
     {% if q.choices %}<div class="fft-options" role="radiogroup" aria-label="Answers">{% for ch in q.choices %}
       <label class="fft-opt" data-choice="{{ loop.index0 }}"><input type="radio" name="choice" value="{{ loop.index0 }}"><span><b>{{ ch.label }}</b>{% if ch.detail %} · {{ ch.detail }}{% endif %}</span><small class="note">{% if q.mine == loop.index0 %}Claude's pick{% endif %}</small></label>{% endfor %}</div>{% endif %}
-    <label class="field"><span>{{ "Or in your words" if q.choices else "Your answer" }}</span><textarea name="text" rows="2" maxlength="4000"></textarea></label>
+    <label class="field"><span>{{ "Or in your words" if q.choices else "Only if you'd rather answer in words" if picked.doc else "Your answer" }}</span><textarea name="text" rows="2" maxlength="4000"></textarea></label>
     <div class="row tight"><button class="btn primary small" type="submit" data-do="answer">Send answer</button></div>
   </form>
   <p class="note">Nothing is picked for you. Your answer names this question, so a newer one can't take it.</p>
@@ -196,6 +196,7 @@
   {% for p in picked.pages %}<p class="row tight"><a class="btn small" href="{{ p.href }}" data-no-peek data-page="{{ p.id }}">Open {{ p.title }}</a>{% if p.status %}<span class="note">{{ p.status }}</span>{% endif %}</p>{% endfor %}
   {% endcall %}{% endif %}
   {% if sc and not sc.agreed_at and not sc.changes_at %}
+  {{ page_answers(picked.page_answers) }}
   {% call rd_section("Scope version " ~ sc.version ~ " waits for your OK", tone="ask", attrs=' data-sec="scope"') %}
   {% if sc.changed %}<p class="note">What changed: {{ sc.changed }}</p>{% endif %}
   <p>{{ sc.what }}</p><ul class="rm-quick">{% for x in sc.inside %}<li>{{ x }}</li>{% endfor %}</ul>

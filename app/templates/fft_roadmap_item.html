@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, more_menu %}
 {% from "_lists.html" import empty_state, count_pill %}
+{% from "_fft_bits.html" import page_answers as answers_box with context %}
 {% block title %}{{ it.title }} · Roadmap · Backstage · askdnd{% endblock %}
 {% block content %}
 {# A Roadmap item's page (app/fft/roadmap_page.py `item`; The Roadmap in askdnd, Nov 20): Scope (its versions, Brett's
@@ -81,6 +82,7 @@
       <div class="rm-doc-bar"><span class="rm-vers">{% for s in scopes %}<a href="?tab=scope&amp;ver={{ s.version }}" class="{{ 'on' if s.version == shown.version }}" data-ver="{{ s.version }}">v{{ s.version }}</a>{% endfor %}</span>
         <span class="note">{% if shown.version != latest.version %}An earlier version{% elif shown.agreed_at %}Agreed <time datetime="{{ shown.agreed_at.isoformat() }}" data-clock="ago">{{ shown.agreed_at | ago }}</time>{% elif shown.changes_at %}Changes asked <time datetime="{{ shown.changes_at.isoformat() }}" data-clock="ago">{{ shown.changes_at | ago }}</time>{% else %}Latest · waits for your OK{% endif %}</span></div>
       {% if shown.changed %}<p class="rm-changed" data-changed><b>What changed in v{{ shown.version }}:</b> {{ shown.changed }}</p>{% endif %}
+      {{ answers_box(page_answers) }}{# (your picks behind it, where you read and OK the scope: Nov 24) #}
       <div><h3 class="plabel">What it is</h3>{{ line("what", shown.what, can, line_comments) }}</div>
       <div><h3 class="plabel">In scope</h3><div class="rm-lines">{% for x in shown.inside %}{{ line("in:" ~ loop.index0, x, can, line_comments) }}{% endfor %}</div></div>
       {% if shown.not_now %}<div><h3 class="plabel">Not now</h3><div class="rm-lines">{% for x in shown.not_now %}{{ line("not:" ~ loop.index0, x, can, line_comments) }}{% endfor %}</div></div>{% endif %}
