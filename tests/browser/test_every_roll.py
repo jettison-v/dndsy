@@ -18,6 +18,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from tests.browser.pages import press
 from tests.table_setup import char
 
 PARTY = ["cole", "big_c", "no_name", "trah"]
@@ -219,7 +220,7 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
     if page.evaluate("document.body.classList.contains('rolls-closed')"):
         page.evaluate("document.querySelector('.rs-edge, .rs-toggle').click()")
     for _ in range(3):  # (an attack rolled and closed before its damage: Table rolls offers its follow-ups; a natural 1 offers none)
-        page.locator("main [data-roll=attack][data-plan]").first.evaluate("b => b.click()")
+        press(page, "main [data-roll=attack][data-plan]")
         card = page.locator(".roll-card")
         if card.locator('[data-choice="damage"]').count():
             card.locator('[data-choice="damage"]').click()
@@ -234,7 +235,7 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
         if not button.count():
             continue
         page.evaluate("window.__sent.length = 0")
-        button.first.evaluate("b => b.click()")
+        press(page, f'#roll-log .roll-follow[data-follow="{action}"]')  # (the log redraws itself: found and pressed in one step)
         page.locator(".roll-card").wait_for()
         if action == "bonus":
             page.locator(".roll-card [data-add]").first.click()
@@ -253,7 +254,7 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
     for full, short in pills:
         for _ in range(4):  # (a natural 20 offers nothing for a miss: roll again)
             page.evaluate("window.__sent.length = 0")
-            page.locator(attack).first.evaluate("b => b.click()")
+            press(page, attack)
             card = page.locator(".roll-card")
             if card.locator('[data-choice="damage"]').count():
                 card.locator('[data-choice="damage"]').click()
@@ -282,7 +283,7 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
     for i, rider, act in riders:
         for _ in range(6):  # (a natural 1 has no damage: roll again)
             page.evaluate("window.__sent.length = 0")
-            page.locator(attack).nth(i).evaluate("b => b.click()")
+            press(page, attack, i)
             card = page.locator(".roll-card")
             if card.locator('[data-choice="damage"]').count():
                 card.locator('[data-choice="damage"]').click()
