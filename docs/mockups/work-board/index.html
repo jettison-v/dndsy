@@ -59,7 +59,7 @@ button { font: inherit; color: inherit; }
 
 /* the board */
 .board-scroll { overflow-x: auto; }
-.board { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 8px; min-width: 1040px; align-items: start; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 8px; min-width: 900px; align-items: start; }
 .col { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px; display: grid; gap: 8px; align-content: start; min-height: 260px; }
 .col-h { display: flex; align-items: center; gap: 6px; padding: 2px 4px 4px; font: 700 .72rem/1.2 var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .col-h .who { margin-left: auto; font: 600 .7rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--faint); }
@@ -70,15 +70,12 @@ button { font: inherit; color: inherit; }
 .card .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font: 600 .7rem/1.55 var(--sans); white-space: nowrap; background: var(--surface-3); color: var(--muted); }
 .pill.lane-ship { background: var(--green-soft); color: var(--green); } .pill.lane-look { background: var(--blue-soft); color: var(--blue); } .pill.lane-careful { background: var(--amber-soft); color: var(--amber); }
-.pill.lead { background: var(--violet-soft); color: var(--violet); } .pill.worker { background: var(--violet-soft); color: var(--violet); border: 1px dashed var(--violet); }
+.pill.lead { background: var(--violet-soft); color: var(--violet); }
 .pill.warn { background: var(--amber-soft); color: var(--amber); }
 .card .why { color: var(--muted); font-size: .78rem; line-height: 1.35; }
 .card .why b { color: var(--text); font-weight: 600; }
 .beat { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: 1px; }
 .beat.quiet { background: var(--amber); }
-.pin { margin-left: auto; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 6px; font: 600 .7rem/1 var(--sans); padding: 3px 6px; cursor: pointer; }
-.pin:hover { color: var(--strong); border-color: var(--line-strong); }
-.card.pinned { border-color: var(--blue); }
 .waiting { border: 1px dashed var(--line-strong); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .86rem; }
 .waiting .w { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
 .waiting .w .on { color: var(--amber); font-weight: 600; }
@@ -134,12 +131,9 @@ button { font: inherit; color: inherit; }
 .kind.k-feedback { color: var(--k-feedback); } .kind.k-roadmap { color: var(--k-roadmap); } .kind.k-upkeep { color: var(--k-upkeep); }
 .inside { color: var(--muted); font-size: .76rem; }
 .legend { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); cursor: pointer; color: var(--text); }
-.fchip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
-.fchip .count { font-size: .72rem; }
 .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
 .kinds .term .kind { font-size: .74rem; }
-.card.hide { display: none; }
+.stage { display: flex; gap: 4px; align-items: center; font: 600 .74rem/1.2 var(--sans); color: var(--violet); } .stage i { font-style: normal; color: var(--faint); font-weight: 500; }
 /* the queue's end of the board: Waiting, each card saying what it waits on; and the try-it buttons */
 .col[data-col="waiting"] { background: transparent; border-style: dashed; border-color: var(--line-strong); }
 .col[data-col="waiting"] .card { background: var(--surface); opacity: .92; }
@@ -161,9 +155,9 @@ button { font: inherit; color: inherit; }
   <header style="display:grid;gap:10px">
     <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23 · a mockup</span>
     <h1>The Work Board</h1>
-    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece in hand from Ready to yours to try, who holds it and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's.</p>
+    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece from Waiting to yours to try and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's. <b>Redrawn to match scope v2</b> (Nov 23, after your devil's-advocate ask): five columns, one session, no Pin, no filter, no workers.</p>
     <div class="terms">
-      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › Development, a new first tab, Board, beside Queue, Checks, Scheduled and How we work.</div>
+      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › Development, a new first tab, Board, in place of the Queue tab (Waiting and Ready are the queue), beside Checks, Scheduled and How we work.</div>
       <div class="term"><span class="tag">Answers</span>What's moving, what's stuck and why, who has it, and where any one thing is right now.</div>
       <div class="term"><span class="tag">Doesn't change</span>Your importance order (the Roadmap) and For you, which stays what waits on you.</div>
     </div>
@@ -182,27 +176,26 @@ button { font: inherit; color: inherit; }
       <div class="page">
         <h2 class="pt">Development</h2>
         <div class="bar">
-          <div><span class="dot"></span><b>Claude is listening</b><span class="note">lead session, checked in 1 min ago · 1 worker</span><span style="margin-left:auto" class="note">Deploys: <b>When tests pass</b> ▾</span></div>
+          <div><span class="dot"></span><b>Claude is listening</b><span class="note">one session, checked in 1 min ago</span><span style="margin-left:auto" class="note">Deploys: <b>When tests pass</b> ▾</span></div>
         </div>
-        <div class="tabs" role="tablist" aria-label="Development"><span class="tab on">Board <span class="new">new</span></span><span class="tab">Queue</span><span class="tab">Checks <span class="count">6</span></span><span class="tab">Scheduled</span><span class="tab">How we work</span></div>
-        <div class="legend" role="group" aria-label="Show"><button type="button" class="fchip" aria-pressed="true" data-k="">All <span class="count" data-n=""></span></button><button type="button" class="fchip" aria-pressed="false" data-k="feedback"><span class="kind k-feedback" data-icon="feedback">Feedback</span><span class="count" data-n="feedback"></span></button><button type="button" class="fchip" aria-pressed="false" data-k="roadmap"><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span><span class="count" data-n="roadmap"></span></button><button type="button" class="fchip" aria-pressed="false" data-k="upkeep"><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span><span class="count" data-n="upkeep"></span></button>
-          <span class="sum" style="margin-left:auto"><b>3 waiting</b> · <b>13 in hand</b> · <span class="amb">2 need a look</span> · 3 yours to try</span></div>
+        <div class="tabs" role="tablist" aria-label="Development"><span class="tab on">Board <span class="new">new</span></span><span class="tab">Checks <span class="count">6</span></span><span class="tab">Scheduled</span><span class="tab">How we work</span></div>
+        <div class="legend"><span class="kind k-feedback" data-icon="feedback">Feedback</span><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span>
+          <span class="sum" id="sum" style="margin-left:auto"></span></div>
         <div class="play" aria-label="Try the queue">
           <span class="lbl2">Try it</span>
           <button type="button" class="btn" data-play="claim">Claude asks for work</button>
+          <button type="button" class="btn" data-play="pr">Claude opens its pull request</button>
           <button type="button" class="btn" data-play="ok">Your OK on issue 75</button>
           <button type="button" class="btn" data-play="fail">A try fails: Something's wrong on check 79</button>
-          <button type="button" class="btn" data-play="quiet">A worker's claim goes quiet</button>
+          <button type="button" class="btn" data-play="quiet">Claude's claim goes quiet</button>
           <button type="button" class="btn quiet" data-play="reset" style="margin-left:auto">Start over</button>
-          <span class="said" id="said" aria-live="polite">Press a button to see what askdnd does. Or Pin a Ready card.</span>
+          <span class="said" id="said" aria-live="polite">Press a button to see what askdnd does. Try Claude asks for work first: one piece at a time.</span>
         </div>
         <div class="board-scroll"><div class="board" id="board">
-          <section class="col" data-col="waiting"><div class="col-h">Waiting <span class="count" data-c="waiting"></span><span class="who">the queue</span></div></section>
+          <section class="col" data-col="waiting"><div class="col-h">Waiting <span class="count" data-c="waiting"></span><span class="who">on a gate</span></div></section>
           <section class="col" data-col="ready"><div class="col-h">Ready <span class="count" data-c="ready"></span><span class="who">my order</span></div></section>
-          <section class="col" data-col="claimed"><div class="col-h">Being built <span class="count" data-c="claimed"></span><span class="who">Claude</span></div></section>
-          <section class="col" data-col="review"><div class="col-h">In review <span class="count" data-c="review"></span><span class="who">lead</span></div></section>
-          <section class="col" data-col="merging"><div class="col-h">Merging <span class="count" data-c="merging"></span><span class="who">tests, GitHub</span></div></section>
-          <section class="col" data-col="live"><div class="col-h">Live <span class="count" data-c="live"></span><span class="who">Claude tries it</span></div></section>
+          <section class="col" data-col="building"><div class="col-h">Building <span class="count" data-c="building"></span><span class="who">Claude, one at a time</span></div></section>
+          <section class="col" data-col="shipping"><div class="col-h">Shipping <span class="count" data-c="shipping"></span><span class="who">review, merge, live</span></div></section>
           <section class="col" data-col="yours"><div class="col-h">Yours to try <span class="count" data-c="yours"></span><span class="who">you</span></div></section>
         </div></div>
       </div>
@@ -220,7 +213,7 @@ button { font: inherit; color: inherit; }
 
   <section style="display:grid;gap:10px" aria-labelledby="h-qflow">
     <h2 id="h-qflow">How the queue feeds the board</h2>
-    <div class="flowfig"><svg viewBox="0 0 1180 370" role="img" aria-label="Three sources fill the queue: notes become Feedback, an OK'd scope becomes Roadmap slices, and upkeep comes from failed jobs and pull requests with nothing behind them. Gates move work from Waiting to Ready; Ready is ordered table breakage first, then your pin, then Claude's order. Claude asks and askdnd hands over the top. Three loops come back: a failed try files an issue that is Ready at once, a quiet claim returns to the front of Ready, and a review that finds a problem sends the work back to Being built.">
+    <div class="flowfig"><svg viewBox="0 0 1180 370" role="img" aria-label="Three sources fill the queue: notes become Feedback, an OK'd scope becomes Roadmap slices, and upkeep comes from failed jobs and pull requests with nothing behind them. Gates move work from Waiting to Ready; Ready is ordered: broken at the table first, then a fix to what just shipped, then Claude's order. Claude asks and askdnd hands over the top, one piece at a time. GitHub and Railway report each move after that. Three loops come back: a quiet claim returns to the front of Ready, a failed try files an issue that is Ready at once, and a review that finds a problem sends the work back to Building.">
       <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a29d93"/></marker></defs>
       <g font-family="Inter, system-ui, sans-serif" font-size="12">
         <rect x="10" y="20" width="200" height="58" rx="9" fill="#2a1d24" stroke="#e07a9b"/><text x="24" y="44" fill="#e07a9b" font-weight="700">Feedback</text><text x="24" y="64" fill="#ebe7df">a note filed and sorted</text>
@@ -231,17 +224,17 @@ button { font: inherit; color: inherit; }
         <text x="288" y="90" fill="#ebe7df">your go-ahead</text><text x="288" y="112" fill="#ebe7df">nothing it waits on open</text><text x="288" y="134" fill="#ebe7df">not in your round</text><text x="288" y="156" fill="#ebe7df">nobody holds it</text><text x="288" y="186" fill="#8f8a81" font-size="11">all four met → Ready</text>
         <line x1="474" y1="125" x2="514" y2="125" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
         <rect x="518" y="40" width="210" height="170" rx="10" fill="#1b2230" stroke="#7ea6e0"/><text x="534" y="66" fill="#7ea6e0" font-weight="700">Ready · in order</text>
-        <text x="534" y="90" fill="#ebe7df">1  broken at the table</text><text x="534" y="112" fill="#ebe7df">2  your pin</text><text x="534" y="134" fill="#ebe7df">3  a fix to what just shipped</text><text x="534" y="156" fill="#ebe7df">4  my order, from your importance</text><text x="534" y="186" fill="#8f8a81" font-size="11">Claude asks → askdnd hands over the top</text>
+        <text x="534" y="90" fill="#ebe7df">1  broken at the table</text><text x="534" y="112" fill="#ebe7df">2  a fix to what just shipped</text><text x="534" y="134" fill="#ebe7df">3  my order, from your importance</text><text x="534" y="186" fill="#8f8a81" font-size="11">Claude asks → askdnd hands over the top</text>
         <line x1="730" y1="125" x2="770" y2="125" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a)"/>
         <rect x="774" y="80" width="396" height="90" rx="10" fill="#231f2c" stroke="#b9a3e3"/><text x="790" y="106" fill="#b9a3e3" font-weight="700">The board</text>
-        <text x="790" y="130" fill="#ebe7df">Being built → In review → Merging → Live → Your try → Closed</text><text x="790" y="152" fill="#8f8a81" font-size="11">each move from askdnd's own record</text>
+        <text x="790" y="130" fill="#ebe7df">Building → Shipping (review, merge, live) → Your try → Closed</text><text x="790" y="152" fill="#8f8a81" font-size="11">GitHub and Railway report each move; nothing typed by hand</text>
         <path d="M1040,172 C1040,280 620,290 620,214" fill="none" stroke="#e07a9b" stroke-width="1.5" marker-end="url(#a)"/><circle cx="830" cy="268" r="9" fill="#e07a9b"/><text x="830" y="272" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">2</text>
         <path d="M850,172 C850,232 690,240 690,214" fill="none" stroke="#e8b34b" stroke-width="1.5" marker-end="url(#a)"/><circle cx="770" cy="232" r="9" fill="#e8b34b"/><text x="770" y="236" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">1</text>
         <path d="M985,78 C985,40 860,40 860,78" fill="none" stroke="#b9a3e3" stroke-width="1.5" marker-end="url(#a)"/><circle cx="922" cy="44" r="9" fill="#b9a3e3"/><text x="922" y="48" text-anchor="middle" fill="#15171a" font-weight="700" font-size="11">3</text>
         <text x="272" y="236" fill="#8f8a81" font-size="11">Pause holds merging, not building · a round holds its area's merges</text>
-        <text x="10" y="312" fill="#e8b34b">1  A claim goes quiet for 20 minutes → back to the front of Ready, its branch kept</text>
+        <text x="10" y="312" fill="#e8b34b">1  Claude's claim goes quiet for 20 minutes → back to the front of Ready, its branch kept</text>
         <text x="10" y="334" fill="#e07a9b">2  Your try fails → its issue is filed, already OK'd, and Ready at once, ahead of new work</text>
-        <text x="10" y="356" fill="#b9a3e3">3  The review finds a problem → back to Being built</text>
+        <text x="10" y="356" fill="#b9a3e3">3  The review finds a problem → back to Building</text>
       </g>
     </svg></div>
     <p class="note">The queue is everything not started: Waiting, then Ready. The board is its front and everything in flight. Every move is askdnd applying a rule to a fact (your OK arrived, a claim went quiet, tests passed), so nothing moves because someone remembered to move it.</p>
@@ -249,39 +242,30 @@ button { font: inherit; color: inherit; }
 
   <div class="why-box">
     <span class="tag">How to read it</span>
-    <p class="meta"><b>Ready</b> is in my execution order, each card saying why it's there, with <b>Pin</b> to put it first (your pin wins). A card in <b>Being built</b> shows who holds it and their last check-in; one quiet for 20 minutes turns amber and goes back to Ready. A red pull request, a merge stuck behind main, or a try waiting too long turns amber where it sits. Click a card for its round trip.</p>
+    <p class="meta"><b>Ready</b> is in my execution order, each card saying why in one line; your Roadmap order is the input, and if you want something first, you say so in chat or on the item. <b>Building</b> holds one piece, with my last check-in; quiet for 20 minutes, it turns amber and goes back to Ready. <b>Shipping</b> is everything with a pull request, its step under the title (In review, Merging, Live and being tried by me). A red pull request, one behind main, or a try waiting too long turns amber where it sits. Click a card for its round trip.</p>
   </div>
 
-  <form class="decide" aria-label="Your picks">
-    <h2>Your picks</h2>
-    <fieldset><legend>1 · Where the board lives</legend>
-      <label class="opt"><input type="radio" name="where" value="dev-tab"><span>A · Development's first tab, Board <span class="mine">my pick</span></span><small>Development is where the work is; For you stays what waits on you.</small></label>
-      <label class="opt"><input type="radio" name="where" value="for-you"><span>B · At the top of For you</span><small>One page for everything, but For you gets long and mixes Claude's work with yours.</small></label>
-      <label class="opt"><input type="radio" name="where" value="own-page"><span>C · A page of its own under Our work</span><small>One more page in the menu.</small></label>
-    </fieldset>
-    <fieldset><legend>2 · What a card shows</legend>
-      <label class="opt"><input type="radio" name="card" value="full"><span>A · Title, area, lane, who holds it, its age and last check-in, amber when stuck <span class="mine">my pick</span></span><small>Enough to trust it at a glance; the round trip has the rest.</small></label>
-      <label class="opt"><input type="radio" name="card" value="lean"><span>B · Title and how long it's been in the column</span><small>Quieter; you click for who and why.</small></label>
-    </fieldset>
-    <fieldset><legend>3 · The round trip</legend>
-      <label class="opt"><input type="radio" name="trip" value="every-window"><span>A · In every item's window (issues, checks, notes, Roadmap items): one line, opening to the timeline <span class="mine">my pick</span></span><small>Wherever you meet a piece of work, you see where it is.</small></label>
-      <label class="opt"><input type="radio" name="trip" value="board-only"><span>B · Only from the board</span><small>Fewer places to keep right.</small></label>
-    </fieldset>
-    <fieldset><legend>4 · The Ready column's order</legend>
-      <label class="opt"><input type="radio" name="ready" value="mine-why"><span>A · My execution order, each with its why and a Pin <span class="mine">my pick</span></span><small>Your direction: your importance, my order, your pin wins.</small></label>
-      <label class="opt"><input type="radio" name="ready" value="importance"><span>B · Your importance order, my notes beside it</span><small>Shows your order; you'd read my reasoning in the notes.</small></label>
-    </fieldset>
-    <fieldset><legend>5 · Telling the kinds apart</legend>
-      <label class="opt"><input type="radio" name="kinds" value="icon-word-edge"><span>A · Icon, word and a coloured edge, with a filter above the board <span class="mine">my pick</span></span><small>Readable at a glance and without colour; the filter shows one kind at a time.</small></label>
-      <label class="opt"><input type="radio" name="kinds" value="edge"><span>B · The coloured edge only</span><small>Quieter cards; you learn the colours.</small></label>
-      <label class="opt"><input type="radio" name="kinds" value="columns"><span>C · A row of the board per kind</span><small>Clear, but three times the height.</small></label>
-    </fieldset>
-    <fieldset><legend>6 · Development's Queue tab</legend>
-      <label class="opt"><input type="radio" name="queue" value="fold"><span>A · Folded into the Board: Waiting and Ready are the queue <span class="mine">my pick</span></span><small>One way to see the work; the Queue tab's Roadmap builds become their slices' cards.</small></label>
-      <label class="opt"><input type="radio" name="queue" value="list"><span>B · Kept as a list view of the same queue beside the Board</span><small>Easier to scan a long queue; two views to keep in step.</small></label>
+  <section class="why-box" aria-labelledby="h-settled">
+    <span class="tag" id="h-settled">Settled by scope v2</span>
+    <p class="meta">This page first asked six picks. Scope v2 answers them, so they're no longer yours to answer here:</p>
+    <ol class="meta" style="margin:0;padding-left:1.3em;display:grid;gap:4px">
+      <li><b>Where:</b> Development's first tab, Board.</li>
+      <li><b>A card:</b> its kind, title, one line of why, and amber when stuck; the round trip has the rest.</li>
+      <li><b>The round trip:</b> in every item's window, from askdnd's own record.</li>
+      <li><b>Ready's order:</b> mine, with its why. No Pin: you say “this first” in chat or on the item.</li>
+      <li><b>The kinds:</b> icon, word and coloured edge. No filter, until the board is long enough to need one.</li>
+      <li><b>The Queue tab:</b> folded into the Board.</li>
+    </ol>
+  </section>
+
+  <form class="decide" aria-label="Your pick">
+    <h2>Your pick</h2>
+    <fieldset><legend>1 · The board as drawn</legend>
+      <label class="opt"><input type="radio" name="board" value="right"><span>A · Looks right: build it as scope v2 says <span class="mine">my pick</span></span><small>Then press Scope looks right on item 39, and I start with GitHub reporting into askdnd.</small></label>
+      <label class="opt"><input type="radio" name="board" value="change"><span>B · Something to change</span><small>Say what below; I'll answer it on item 39 and write scope v3.</small></label>
     </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(what you'd want on a card, a column you'd add or drop, what would make you trust it more)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
-    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+    <div class="sendline"><button class="btn go" type="submit">Save my pick</button><span class="saved" aria-live="polite"></span></div>
   </form>
 </div>
 
@@ -294,24 +278,23 @@ button { font: inherit; color: inherit; }
     { id: "it38", kind: "roadmap", col: "waiting", t: "Built vs. planned: the changes you pick", k: "Built vs. planned: review the deltas", lane: "look", waits: "your picks" },
     { id: "i66", kind: "feedback", col: "ready", t: "Corner cards stay over the side panel", k: "Getting around › Corner cards", inside: "Issue 66", lane: "careful", why: "<b>Your Now.</b> First Ready; a Careful change, so one try on your Mac" },
     { id: "it5", kind: "roadmap", col: "ready", t: "Design review: Documents", k: "Design review: every Backstage page · slice 1 of 8", lane: "look", why: "<b>Next in your Now.</b> After 66: both touch Backstage's lists, so one look covers both" },
-    { id: "lt1", kind: "upkeep", col: "ready", t: "Live test: No Name twin cleanup", k: "The nightly test", inside: "Its second try every night since Nov 19", lane: "ship", why: "<b>Groundwork.</b> Quiets a nightly second try; small, ships alone" },
-    { id: "sp2", kind: "roadmap", col: "claimed", t: "Speed: database time per page", k: "Performance: the whole tool · slice 1 of 3", lane: "ship", who: "lead", since: "2:10 PM", beat: "1 min ago" },
-    { id: "lc2", kind: "upkeep", col: "claimed", t: "Live test: the fight run's leftovers", k: "The nightly test", lane: "ship", who: "worker", since: "2:30 PM", beat: "26 min ago", quiet: true },
-    { id: "i110", kind: "feedback", col: "review", t: "A pause lets what's on its way finish", k: "Feedback and Testing › Where it stands", inside: "Issue 110", lane: "look", who: "lead", pr: "479", since: "4:02 PM" },
-    { id: "ps", kind: "upkeep", col: "review", t: "Weekly phone sweep", k: "Every Monday", inside: "Documents and the More button at phone width", lane: "look", who: "worker", pr: "473", since: "8:54 AM" },
-    { id: "i107", kind: "feedback", col: "merging", t: "Feedback's bar, and windows over the item window", k: "Feedback and Testing", inside: "Issues 107, 108, 109", lane: "look", pr: "477", since: "tests 4 min" },
-    { id: "dep", kind: "upkeep", col: "merging", t: "Package updates", k: "Dependabot", inside: "12 updates; Playwright's test image moved with it", lane: "ship", pr: "469", since: "red 16 h, fixed 8:40 AM" },
-    { id: "i106", kind: "feedback", col: "live", t: "End round ends the round on the bar", k: "Feedback and Testing › Testing", inside: "Issue 106", lane: "look", since: "live 11:07 AM", trying: true },
+    { id: "lt1", kind: "upkeep", col: "ready", t: "Live test: the No Name twin and the fight run's leftovers", k: "The nightly test", inside: "Two nightly second tries, one script", lane: "ship", why: "<b>Groundwork, grouped.</b> Same script, one pull request; quiets the nightly" },
+    { id: "sp2", kind: "roadmap", col: "building", t: "Speed: database time per page", k: "Performance: the whole tool · slice 1 of 3", lane: "ship", since: "2:10 PM", beat: "1 min ago" },
+    { id: "i110", kind: "feedback", col: "shipping", stage: "review", t: "A pause lets what's on its way finish", k: "Feedback and Testing › Where it stands", inside: "Issue 110", lane: "look", pr: "479", since: "review at high effort, 4 min" },
+    { id: "ps", kind: "upkeep", col: "shipping", stage: "review", t: "Weekly phone sweep", k: "Every Monday", inside: "Documents and the More button at phone width", lane: "look", pr: "473", since: "opened 8:54 AM" },
+    { id: "i107", kind: "feedback", col: "shipping", stage: "merging", t: "Feedback's bar, and windows over the item window", k: "Feedback and Testing", inside: "Issues 107, 108, 109", lane: "look", pr: "477", since: "tests 4 min" },
+    { id: "dep", kind: "upkeep", col: "shipping", stage: "merging", t: "Package updates", k: "Dependabot", inside: "12 updates; Playwright's test image moved with it", lane: "ship", pr: "469", since: "red 16 h, fixed 8:40 AM" },
+    { id: "i106", kind: "feedback", col: "shipping", stage: "live", t: "End round ends the round on the bar", k: "Feedback and Testing › Testing", inside: "Issue 106", lane: "look", since: "live 11:07 AM" },
     { id: "c78", kind: "feedback", col: "yours", t: "Feedback's bar, windows that keep the item window open", k: "Check 78 · laptop", inside: "Issues 107, 108, 109", lane: "look", since: "waiting 45 min" },
     { id: "c79", kind: "feedback", col: "yours", t: "A pause lets what's on its way finish", k: "Check 79 · laptop", inside: "Issue 110", lane: "look", since: "waiting 10 min" },
     { id: "c77", kind: "feedback", col: "yours", t: "End round ends the round on the bar", k: "Check 77 · laptop", inside: "Issue 106", lane: "look", since: "waiting 4 h", late: true },
   ];
   const HOPS = ["Sent", "Sorted", "Ready", "Claimed", "Pull request", "Review", "Merge", "Live", "Claude's try", "Your try", "Closed"];
-  const AT = { waiting: 1, ready: 2, claimed: 3, review: 5, merging: 6, live: 8, yours: 9 };  // (the hop each column is at)
+  const AT = { waiting: 1, ready: 2, building: 3, yours: 9 };  // (the hop each column is at; Shipping's comes from its step)
+  const STAGE = { review: [5, "In review"], merging: [6, "Merging"], live: [8, "Live"] };
   const TRIP = {
-    i110: [["3:36 PM", "you, in chat"], ["3:37", "lead"], ["3:38", "your Yes, build it"], ["3:39", "lead"], ["4:02", "#479", "23 min building"], ["4:06", "lead, high effort"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
-    lc2: [["11:44 AM", "the Mini's check"], ["11:46", "lead"], ["12:10 PM", "groundwork"], ["2:30", "worker 1"], ["", "", "quiet 26 min: back to Ready at 20"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
-    c77: [["10:43 AM", "you, a note"], ["10:45", "lead"], ["10:45", "your note's OK"], ["10:46", "lead"], ["10:58", "#476"], ["11:01", "lead, high effort"], ["11:05", "tests 4 min"], ["11:07", "Railway"], ["11:10", "lead, on askdnd.ai"], ["11:10", "", "waiting on you 4 h"], ["", ""]],
+    i110: [["3:36 PM", "you, in chat"], ["3:37", "Claude"], ["3:38", "your Yes, build it"], ["3:39", "Claude"], ["4:02", "#479, from GitHub", "23 min building"], ["4:06", "Claude, high effort"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
+    c77: [["10:43 AM", "you, a note"], ["10:45", "Claude"], ["10:45", "your note's OK"], ["10:46", "Claude"], ["10:58", "#476, from GitHub"], ["11:01", "Claude, high effort"], ["11:05", "GitHub, tests 4 min"], ["11:07", "Railway"], ["11:10", "Claude, on askdnd.ai"], ["11:10", "", "waiting on you 4 h"], ["", ""]],
   };
   const board = document.getElementById("board");
   const lanes = { ship: "Ship", look: "Look", careful: "Careful" };
@@ -322,48 +305,57 @@ button { font: inherit; color: inherit; }
     upkeep: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 1.6a4 4 0 0 0-4.6 5.2L1.9 11.2a1.4 1.4 0 0 0 2 2l4.4-4.4a4 4 0 0 0 5.2-4.6l-2 2-1.9-.5-.5-1.9z" fill="currentColor"/></svg>',
   };
   document.querySelectorAll("[data-icon]").forEach(el => el.insertAdjacentHTML("afterbegin", ICON[el.dataset.icon]));
-  let only = "";
+  const hop = c => (c.col === "shipping" ? STAGE[c.stage][0] : AT[c.col]);
   function cardEl(c) {
     const b = document.createElement("button");
-    b.type = "button"; b.className = `card k-${c.kind}` + (c.quiet || c.late ? " stuck" : "") + (c.pinned ? " pinned" : "") + (c.just ? " just" : "") + (only && only !== c.kind ? " hide" : ""); b.dataset.id = c.id;
-    let h = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="t">${c.t}</span><span class="note">${c.k}</span>${c.inside ? `<span class="inside">${c.inside}</span>` : ""}<span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
-    if (c.who) h += `<span class="pill ${c.who}">${c.who === "lead" ? "Lead" : "Worker 1"}</span>`;
+    b.type = "button"; b.className = `card k-${c.kind}` + (c.quiet || c.late ? " stuck" : "") + (c.just ? " just" : ""); b.dataset.id = c.id;
+    let h = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="t">${c.t}</span>`;
+    if (c.col === "shipping") h += `<span class="stage">${STAGE[c.stage][1]}${c.stage === "live" ? " <i>· Claude is trying it on askdnd.ai</i>" : ""}</span>`;
+    h += `<span class="note">${c.k}</span>${c.inside ? `<span class="inside">${c.inside}</span>` : ""}<span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
     if (c.pr) h += `<span class="pill">#${c.pr}</span>`;
-    if (c.col === "ready") h += `<span class="pin" data-pin role="button" tabindex="0">${c.pinned ? "Pinned" : "Pin"}</span>`;
     h += `</span>`;
     if (c.waits) h += `<span class="waits">waits for ${c.waits}</span>`;
     if (c.why) h += `<span class="why">${c.why}</span>`;
     if (c.beat) h += `<span class="note"><span class="beat${c.quiet ? " quiet" : ""}"></span>since ${c.since} · checked in ${c.beat}${c.quiet ? " · <b style=\"color:var(--amber)\">gone quiet</b>" : ""}</span>`;
-    else if (c.since) h += `<span class="note">${c.trying ? "Claude is trying it on askdnd.ai · " : ""}${c.since}${c.late ? " · <b style=\"color:var(--amber)\">waiting long</b>" : ""}</span>`;
+    else if (c.since) h += `<span class="note">${c.since}${c.late ? " · <b style=\"color:var(--amber)\">waiting long</b>" : ""}</span>`;
     b.innerHTML = h;
     return b;
   }
+  const rank = c => (c.broken ? 0 : c.front ? 1 : 2);  // (broken at the table, a fix to what just shipped or a lapsed claim, then my order)
+  const readyOrder = () => CARDS.filter(c => c.col === "ready").map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
   function draw() {
     board.querySelectorAll(".card").forEach(x => x.remove());
-    const rank = c => (c.broken ? 0 : c.pinned ? 1 : c.front ? 2 : 3);  // (the table's breakage, your pin, a fix to what just shipped or a lapsed claim, then my order)
-    const ready = CARDS.filter(c => c.col === "ready").map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
     const rest = CARDS.filter(c => c.col !== "ready" && c.col !== "gone");
-    [...ready, ...rest].forEach(c => board.querySelector(`[data-col="${c.col}"]`).append(cardEl(c)));
-    const shown = CARDS.filter(c => !only || c.kind === only);
-    document.querySelectorAll("[data-c]").forEach(el => { el.textContent = shown.filter(c => c.col === el.dataset.c).length; });
-    document.querySelectorAll("[data-n]").forEach(el => { el.textContent = CARDS.filter(c => !el.dataset.n || c.kind === el.dataset.n).length; });
+    [...readyOrder(), ...rest].forEach(c => board.querySelector(`[data-col="${c.col}"]`).append(cardEl(c)));
+    document.querySelectorAll("[data-c]").forEach(el => { el.textContent = CARDS.filter(c => c.col === el.dataset.c).length; });
+    const n = col => CARDS.filter(c => c.col === col).length, amber = CARDS.filter(c => c.col !== "gone" && (c.quiet || c.late)).length;
+    document.getElementById("sum").innerHTML = `<b>${n("waiting")} waiting</b> · <b>${n("ready")} ready</b> · <b>${n("building") + n("shipping")} in hand</b>${amber ? ` · <span class="amb">${amber} need${amber === 1 ? "s" : ""} a look</span>` : ""} · ${n("yours")} yours to try`;
   }
-  // Try it: what askdnd does when something happens (each move is askdnd's rule, not anyone's memory)
+  // Try it: what askdnd does when something happens (each move is askdnd's rule applied to a fact, not anyone's memory)
   const START = JSON.stringify(CARDS), said = document.getElementById("said");
   const say = html => { said.innerHTML = html; };
-  const top = () => { const r = CARDS.filter(c => c.col === "ready"); return r.find(c => c.broken) || r.find(c => c.pinned) || r[0]; };
+  const fresh = () => CARDS.forEach(x => { x.just = false; });
   const PLAY = {
     claim() {
-      const c = top();
+      const busy = CARDS.find(c => c.col === "building");
+      if (busy) return say(`<b>One at a time:</b> Claude is still building “${busy.t}”, so askdnd hands out nothing new. Press <b>Claude opens its pull request</b> to free Building.`);
+      const c = readyOrder()[0];
       if (!c) return say("Nothing is Ready, so nothing starts: askdnd says so, and Claude waits for the next thing to become Ready.");
-      CARDS.forEach(x => { x.just = false; });
-      Object.assign(c, { col: "claimed", who: "lead", since: "now", beat: "just now", just: true, why: "" });
-      say(`<b>Claude asked; askdnd handed over the top of Ready:</b> “${c.t}”. It records the claim (Lead, now); the card moves to Being built. Claude didn't choose it.`);
+      fresh();
+      Object.assign(c, { col: "building", since: "now", beat: "just now", just: true, why: "", front: false, quiet: false });
+      say(`<b>Claude asked; askdnd handed over the top of Ready:</b> “${c.t}”. It records the claim; the card moves to Building. Claude didn't choose it.`);
+    },
+    pr() {
+      const c = CARDS.find(x => x.col === "building");
+      if (!c) return say("Nothing is in Building. Press <b>Claude asks for work</b> first.");
+      fresh();
+      Object.assign(c, { col: "shipping", stage: "review", pr: "480", since: "opened just now", beat: "", just: true });
+      say(`<b>GitHub told askdnd:</b> pull request 480 opened, linked to “${c.t}” by its branch name. The card moves to Shipping, In review; from here GitHub and Railway report each step. Building is free, so Claude can ask for the next.`);
     },
     ok() {
       const c = CARDS.find(x => x.id === "i75");
       if (c.col !== "waiting") return say("Issue 75 is already past Waiting.");
-      CARDS.forEach(x => { x.just = false; });
+      fresh();
       Object.assign(c, { col: "ready", waits: "", just: true, why: "<b>Your OK just now.</b> Placed after your Now's two; a Careful change, so your try on your Mac first" });
       CARDS.splice(CARDS.indexOf(c), 1); CARDS.splice(CARDS.findIndex(x => x.id === "it5") + 1, 0, c);  // (into my order, not to the top)
       say("<b>Your OK met the last gate:</b> issue 75 moves from Waiting to Ready, placed in my order with its reason. Nothing else had to happen.");
@@ -371,36 +363,31 @@ button { font: inherit; color: inherit; }
     fail() {
       const c = CARDS.find(x => x.id === "c79");
       if (!c || c.col !== "yours") return say("Check 79 has already gone back.");
-      CARDS.forEach(x => { x.just = false; });
+      fresh();
       c.col = "gone";
       CARDS.push({ id: "i111", kind: "feedback", col: "ready", t: "Pause: the bar's line wraps oddly", k: "Feedback and Testing › Where it stands", inside: "Issue 111, from your try of check 79", lane: "look", just: true, front: true,
                    why: "<b>Your try found it.</b> A fix to something just shipped goes ahead of new work" });
       say("<b>Your Something's wrong… filed issue 111</b> with your words and picture, already OK'd (it's yours), so it's Ready at once, ahead of new work; check 79 leaves your column until the fix is live.");
     },
     quiet() {
-      const c = CARDS.find(x => x.id === "lc2");
-      if (c.col !== "claimed") return say("That claim has already gone back.");
-      CARDS.forEach(x => { x.just = false; });
-      Object.assign(c, { col: "ready", who: "", beat: "", quiet: false, just: true, front: true, why: "<b>Back from Worker 1</b> (quiet 26 min): first in line, nothing lost; the bar said whose it was" });
-      say("<b>The claim lapsed after 20 quiet minutes:</b> askdnd put the piece back at the front of Ready, its branch kept, and said so on the bar. The next session to ask gets it.");
+      const c = CARDS.find(x => x.col === "building");
+      if (!c) return say("Nothing is in Building, so no claim can go quiet.");
+      fresh();
+      Object.assign(c, { col: "ready", beat: "", just: true, front: true, why: "<b>Back from Claude</b> (quiet 20 min, the session ended mid-work): first in line, its branch kept" });
+      say("<b>The claim lapsed after 20 quiet minutes:</b> askdnd put the piece back at the front of Ready, its branch kept, and said so on the bar. The next time Claude asks, it gets this one.");
     },
     reset() { CARDS.splice(0, CARDS.length, ...JSON.parse(START)); say("Back to the start. Press a button to see what askdnd does."); },
   };
   document.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => { PLAY[b.dataset.play](); draw(); }));
-  document.querySelectorAll(".fchip").forEach(b => b.addEventListener("click", () => {
-    only = b.dataset.k;
-    document.querySelectorAll(".fchip").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    draw();
-  }));
   const peek = document.getElementById("peek"), scrim = document.getElementById("scrim");
   function open(id) {
     const c = CARDS.find(x => x.id === id);
-    const at = AT[c.col];
+    const at = hop(c);
     document.getElementById("peek-t").textContent = c.t;
     document.getElementById("peek-k").textContent = c.k;
     const stuckNote = c.quiet ? " · gone quiet" : c.late ? " · waiting long" : "";
     document.getElementById("trip-line").innerHTML = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="pill lane-${c.lane}">${lanes[c.lane]}</span><b>${HOPS[at]}</b><span class="note">step ${at + 1} of ${HOPS.length}${stuckNote}</span>`;
-    const trip = TRIP[id] || HOPS.map((_, i) => [i < at ? ["9:14 AM", "9:15", "9:16", "9:40", "10:20", "10:24", "10:28", "10:31", "10:35"][i] || "" : "", i < at ? ["you", "lead", "askdnd", "lead", "", "lead", "GitHub", "Railway", "lead"][i] || "" : ""]);
+    const trip = TRIP[id] || HOPS.map((_, i) => [i < at ? ["9:14 AM", "9:15", "9:16", "9:40", "10:20", "10:24", "10:28", "10:31", "10:35"][i] || "" : "", i < at ? ["you", "Claude", "askdnd", "Claude", "GitHub", "Claude", "GitHub", "Railway", "Claude"][i] || "" : ""]);
     const ol = document.getElementById("trip");
     ol.innerHTML = HOPS.map((h, i) => {
       const [tm, by, gap] = trip[i] || ["", ""];
@@ -411,17 +398,10 @@ button { font: inherit; color: inherit; }
     peek.hidden = false; scrim.hidden = false;
   }
   function close() { peek.hidden = true; scrim.hidden = true; }
-  board.addEventListener("click", e => {
-    const pin = e.target.closest("[data-pin]");
-    const card = e.target.closest(".card");
-    if (pin && card) { e.stopPropagation(); const c = CARDS.find(x => x.id === card.dataset.id); c.pinned = !c.pinned; c.why = c.pinned ? "<b>Your pin.</b> First, whatever my order said" : c.why0; draw(); return; }
-    if (card) open(card.dataset.id);
-  });
-  board.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-pin]")) { e.preventDefault(); e.target.click(); } });
+  board.addEventListener("click", e => { const card = e.target.closest(".card"); if (card) open(card.dataset.id); });
   document.getElementById("peek-x").addEventListener("click", close);
   scrim.addEventListener("click", close);
   addEventListener("keydown", e => { if (e.key === "Escape") close(); });
-  CARDS.forEach(c => { c.why0 = c.why; });
   draw();
 })();
 (() => {
@@ -429,7 +409,7 @@ button { font: inherit; color: inherit; }
   // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["where", "card", "trip", "ready", "kinds", "queue"];
+  const NAMES = ["board"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };

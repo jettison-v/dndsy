@@ -11,16 +11,16 @@
  {
   "title": "The Work Board",
   "kind": "design",
-  "status": "Your picks",
+  "status": "Your pick: redrawn for scope v2",
   "date": "Nov 23",
-  "what": "Roadmap item 39: Development's Board, every piece of work in hand from Ready to yours to try, who holds it, its age and last check-in, stuck in amber; each piece's round trip as a timeline of every hop; the Ready column in Claude's order with Pin. How the queue feeds it: a Waiting column with what each piece waits on, Try-it buttons (Claude asks for work, your OK, a failed try, a quiet claim), and a diagram of the gates and the loops back. Six picks.",
+  "what": "Roadmap item 39, as scope v2 settles it: Development's Board in five columns (Waiting, Ready in Claude's order with a one-line why, Building one piece at a time, Shipping through review, merge and live, Yours to try), three kinds of card (Feedback, Roadmap, Upkeep), amber when stuck, and each piece's round trip. Try-it buttons show askdnd's moves; a diagram shows the gates and the loops back. One pick: build it as drawn.",
   "source": "docs/mockups/work-board/index.html",
   "link": "https://claude.ai/artifact/NY5pTLjXiBBubeH772479J"
  },
  {
   "title": "How the work flows",
   "kind": "plan",
-  "status": "Your picks",
+  "status": "Settled by scope v2, Nov 23",
   "date": "Nov 23",
   "what": "Roadmap item 39, A sturdier loop: askdnd as the dispatcher (queue, states, gates, timers), a lead session and short-lived workers, the life of one piece of work, the chat setups argued (including standing expert chats and a listener chat), channels as a plug-in delivery, a build order, and five picks.",
   "source": "docs/mockups/loop-architecture/index.html",
