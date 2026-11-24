@@ -130,6 +130,7 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
     """What this listener hasn't read (T8): each listener its own read mark; an area's own listener hears only it."""
     li = rules.listener(db, listener, area_id=area or None)
     actor = keys.require(db, x_fft_key, "read")
+    rules.heartbeat(db, f"{actor.name}:{listener}")  # (the session's own listener is its check-in: its claim stays alive)
     rows = [e for e in rules.unread(db, li, peek=bool(peek)) if rules.heard(e, actor.name)]
     out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
             "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
@@ -152,6 +153,7 @@ def inbox_wait(listener: str = "main", area: int = 0, seconds: int = WAIT_MAX, x
     from app import realtime, timing
 
     actor = keys.require(db, x_fft_key, "read")
+    rules.heartbeat(db, f"{actor.name}:{listener}")  # (a waiting session is alive: its claim runs on; peek's commit keeps it)
 
     def peek() -> list[dict]:
         li = rules.listener(db, listener, area_id=area or None)
@@ -756,6 +758,30 @@ def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=
         raise _rule(e) from e
     db.commit()
     return _ok({"job": key})
+
+
+@router.post("/claim")
+def claim(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude asks for work (item 39, 3 of 4): askdnd hands over the top of Ready and records the claim, one at a time
+    ({"owner": its listener's name, "area": an id to claim by hand}); {"release": true} gives the claim back."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    owner = f"{actor.name}:{_str(body, 'owner', 40) or 'main'}"
+    try:
+        if body.get("release") is True:
+            held = db.scalar(select(FftArea).where(FftArea.lock_owner == owner, FftArea.lock_until > rules.now()))
+            if held is not None:
+                rules.unlock_area(db, owner, held)
+            db.commit()
+            return _ok({"released": held.id if held else None})
+        area = db.get(FftArea, _int(body.get("area"), "area")) if body.get("area") is not None else None
+        if body.get("area") is not None and area is None:
+            raise HTTPException(404)
+        got, why, already = rules.claim(db, owner, area)
+    except rules.RuleError as e:
+        raise _rule(e) from e
+    db.commit()
+    return _ok({"area": got.id if got else None, "title": got.title if got else "", "why": why, "already": already})
 
 
 @router.post("/github/pulls")

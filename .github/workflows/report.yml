@@ -16,6 +16,11 @@ on:
     types: [requested, completed]
   push:
     branches: [main]
+  # Every night, even when nothing happened: askdnd's cards compared with GitHub's open pull requests (scope v4, the
+  # nightly comparison), and anything merged since released; and by hand from the Actions tab
+  schedule:
+    - cron: "15 11 * * *"  # 11:15 UTC, after the Mini's 4:00 nightly on the West Coast
+  workflow_dispatch:
 
 permissions:
   contents: write  # (merging main into a waiting pull request)
