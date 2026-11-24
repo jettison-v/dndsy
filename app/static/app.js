@@ -3815,6 +3815,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const seen = new Set();
     log.querySelectorAll('.roll-item[data-id]').forEach(li => { if (seen.has(li.dataset.id)) li.remove(); else seen.add(li.dataset.id); });
     if (log.querySelector('.roll-item')) log.querySelectorAll('.roll-empty').forEach(li => li.remove());
+    else log.querySelectorAll('.roll-empty').forEach((li, i) => { if (i) li.remove(); });  // (one line, if a second first ask came)
     [...log.querySelectorAll('.roll-item')].slice(50).forEach(li => li.remove());
     log.querySelectorAll('time[data-at]').forEach(t => { t.textContent = ago(t.dataset.at); });
   }
@@ -3903,7 +3904,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // (its first load once htmx has set the page up: app.js runs before htmx's own start, a trigger then is lost)
     const first = () => setTimeout(() => { if (window.askdndRolls.wanted()) htmx.trigger(log, 'rolls:load'); });
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', first, { once: true }); else first();
-    setInterval(() => { if (window.askdndRolls.poll()) htmx.trigger(log, 'rolls:load'); }, 3000);
+    // (and until it has loaded, it asks again: a first ask lost before htmx was ready, or one that failed, left Table
+    // rolls empty for good, since polling waits for the first load; issue 112, a browser test's flake on GitHub)
+    setInterval(() => { if (window.askdndRolls.wanted() || window.askdndRolls.poll()) htmx.trigger(log, 'rolls:load'); }, 3000);
   }
   document.addEventListener('askdnd:live', e => {
     if (e.detail.type === 'rolls' && atTable()) earlyThrow(e.detail.roll);
