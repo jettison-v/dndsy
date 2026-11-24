@@ -30,7 +30,8 @@ from app.templating import templates
 router = APIRouter()
 WORK = "/manage/work"
 REPO = "jettison-v/dndsy"  # (where an Upkeep card's pull request opens)
-TABS = (("board", "Board"), ("queue", "Queue"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
+# ("queue" is Your order: the Queue, kept with one job, Brett's order of importance, lanes and holds; Nov 24)
+TABS = (("board", "Board"), ("queue", "Your order"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
 # (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
 # `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
