@@ -227,6 +227,25 @@ def test_the_rolls_sidebar_stays_as_you_left_it(people, server):
     assert player.errors == []
 
 
+def test_table_rolls_load_even_when_their_first_ask_is_lost(people, server):
+    """Issue 112: Table rolls asked for its rolls once as the page opened, and polled only once that had loaded, so a
+    first ask lost (htmx not ready on a slow machine) or failed left it empty for good. It asks again until it loads."""
+    dm = people("dm")
+    dm.allow("htmx:afterRequest", "htmx:sendError")  # (the ask this test drops)
+    lost = []
+
+    def first_lost(route):
+        if route.request.method == "GET" and not lost:
+            lost.append(route.request.url)
+            return route.abort()
+        return route.continue_()
+
+    dm.page.route("**/rolls?*", first_lost)
+    dm.open(f"/characters/{server['cole']}/battle")
+    dm.page.locator(LOG).first.wait_for(timeout=8000)  # (the next ask, within a few seconds)
+    assert lost and dm.page.locator("#roll-log > li.roll-empty").count() <= 1
+
+
 def test_add_on_the_spell_bar_opens_the_book_and_pinning_there_updates_the_bar(people, server):
     player = people("player")
     page = battle(player, server)
