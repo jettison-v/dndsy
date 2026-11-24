@@ -50,9 +50,11 @@ def test_a_message_said_in_chat_is_a_gap_until_filed_onto_its_item_or_issue(api,
     assert api.post(f"/api/fft/chat/{ids[2]}", headers=h, json={"as": "chat"}).status_code == 409  # (filed once)
 
 
-def test_a_relayed_claude_ai_comment_and_an_empty_message_arent_saved(api, db):
+def test_a_relayed_comment_the_apps_own_notices_and_an_empty_message_arent_saved(api, db):
     assert _said(api, "[Artifact comment sent to Claude]\nArtifact: …").json()["id"] is None  # (it comes in through its page)
     assert _said(api, "  ").json()["id"] is None
+    for notice in ("<task-notification>\n<task-id>b1</task-id>", "<system-reminder>\n[SYSTEM NOTIFICATION - NOT USER INPUT]", "Stop hook feedback:\n- pull 30"):
+        assert _said(api, notice).json()["id"] is None  # (the app's own messages, not his words)
     assert db.scalar(select(FftChat)) is None
 
 

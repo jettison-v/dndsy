@@ -2599,7 +2599,9 @@ def docs_to_check(db: Session, days: int = 7) -> list[dict]:
 # its item or issue (or as just chat), and one left unfiled is a gap, so nothing said only in chat is lost. His OK on a
 # scope stays his own press in askdnd: saving his words never gives it.
 
-CHAT_SKIP = ("[Artifact comment sent to Claude]",)  # (a claude.ai comment comes in through the page's check-in, not twice)
+# Not his words: a claude.ai comment (it comes in through the page's check-in, not twice), and what the app itself sends
+# as a message (a background task's notice, a hook's feedback, a system reminder; Nov 24: the first one saved was a notice)
+CHAT_SKIP = ("[Artifact comment sent to Claude]", "<task-notification>", "<system-reminder>", "[SYSTEM NOTIFICATION", "Stop hook feedback")
 CHAT_FILED = ("item", "issue", "chat")
 
 
