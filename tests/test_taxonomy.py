@@ -172,7 +172,7 @@ def test_feedbacks_filters_are_one_row_and_each_one_on_is_a_pill_clear_takes_off
     assert 'data-views' in row and 'data-filter-menu' in row and 'data-chip="fix"' in row and 'data-pa="battle"' in row
     assert "data-filter-on" not in page and "data-filter-clear" not in page  # (nothing on: no pills, no Clear)
     on = admin.get("/manage/feedback?tab=open&chip=fix&pa=battle&feature=hp").text
-    assert [m for m in re.findall(r'data-filter-on="(\w+)"', on)] == ["chip", "pa", "feature"]
+    assert re.findall(r'data-filter-on="(\w+)"', on) == ["chip", "pa", "feature"]
     assert 'href="?tab=open&amp;pa=battle&amp;feature=hp" data-filter-on="chip"' in on
     assert 'href="?tab=open" data-filter-clear' in on and 'data-tab="ready"' in on and 'href="?tab=ready&amp;chip=fix&amp;pa=battle&amp;feature=hp"' in on
     build = admin.get(f"/manage/feedback?tab=open&area={plan.id}").text
