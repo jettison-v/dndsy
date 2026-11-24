@@ -21,6 +21,7 @@ from app.fft.models import (
     FftCheckIssue,
     FftCheckVersion,
     FftCheckWait,
+    FftDocComment,
     FftEvent,
     FftIdea,
     FftIssue,
@@ -2448,3 +2449,140 @@ def prune_landed_pages(db: Session, actor: str = "askdnd") -> list[str]:
     db.flush()
     documents.invalidate()
     return landed
+
+
+# ------------------------------------------------------------------ comments and picks in either place (item 39, 6 of 6)
+# Brett, Nov 24: "I would like to be able to make updates in either place and have them merge" (his pick A on Pages and
+# comments, both places). Only a Claude session can reach claude.ai, so Claude brings claude.ai's comments and picks in
+# when it checks in (each turn, when askdnd wakes it, on Send to Claude, at least every 10 minutes while listening) and
+# hands askdnd's out to the page's own store. Each copy keeps where it was made, so nothing is brought in twice.
+
+def doc_question(db: Session, doc: str, open_only: bool) -> FftQuestion | None:
+    """The newest question asking about a mockup (its open one, with `open_only`)."""
+    q = select(FftQuestion).where(FftQuestion.doc_path == doc)
+    if open_only:
+        q = q.where(FftQuestion.answered_at.is_(None))
+    return db.scalar(q.order_by(FftQuestion.id.desc()))
+
+
+def picks_said(picks: list, where: str = "") -> str:
+    return f"Picks{where}: " + "; ".join(f"{p.get('label') or p.get('value')}" for p in picks if p.get("value"))
+
+
+def comments_said(comments: list) -> str:
+    if not comments:
+        return ""
+    return "\n\nComments on the mockup:\n" + "\n".join(
+        f"Pin {c.n}" + (" (on claude.ai)" if c.origin == "claude.ai" else "") + (f" (near “{c.near}”)" if c.near else "") + f": {c.words}" for c in comments)
+
+
+def held_comments(db: Session, doc: str, user_id: int | None) -> list[FftDocComment]:
+    """Comments waiting to go with the picks: his own made in askdnd, and those brought in from claude.ai."""
+    return list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, FftDocComment.sent_at.is_(None),
+                                                       or_(FftDocComment.user_id == user_id, FftDocComment.origin == "claude.ai"))
+                           .order_by(FftDocComment.n)))
+
+
+def comments_in(db: Session, actor: str, doc: str, comments: list[dict]) -> int:
+    """Comments made on claude.ai, brought in: each once (claude.ai's mark), placed by the words it was pinned to. While
+    the mockup's question is open they wait to go with the picks, as askdnd's own do; after, they're sent at once."""
+    asked = doc_question(db, doc, open_only=True)
+    seen = set(db.scalars(select(FftDocComment.ext_id).where(FftDocComment.doc == doc, FftDocComment.origin == "claude.ai")))
+    n = db.scalar(select(func.max(FftDocComment.n)).where(FftDocComment.doc == doc)) or 0
+    added = 0
+    for c in comments:
+        ext, words = str(c.get("ext_id") or "")[:64], str(c.get("words") or "").strip()[:2000]
+        if not ext or not words or ext in seen:
+            continue
+        seen.add(ext)
+        n += 1
+        made = _made_at(c.get("at"))
+        row = FftDocComment(doc=doc, page=str(c.get("page") or "")[:300], n=n, x=0.0, y=0.0, near=str(c.get("near") or "").strip()[:200],
+                            words=words, user_id=None, origin="claude.ai", ext_id=ext, made_at=made)
+        if asked is None:
+            row.sent_at = now()
+            last = doc_question(db, doc, open_only=False)
+            row.question_id = last.id if last else None
+        db.add(row)
+        added += 1
+    if added:
+        db.flush()
+        _event(db, actor, "doc_comments_in", "doc", 0, doc=doc, added=added)
+    return added
+
+
+def picks_in(db: Session, actor: str, doc: str, picks: list, notes: str, at) -> str:
+    """Picks saved on claude.ai, brought in. They answer the mockup's open question, with the comments waiting to go with
+    them; with none open, the newest wins: picks newer than the answer askdnd has replace it (and say so), older ones
+    are left. Returns "answered", "changed", "older", "same" or "none"."""
+    picks = [{k: str(p.get(k, ""))[:200] for k in ("name", "value", "label")} for p in (picks or [])[:20] if isinstance(p, dict)]
+    if not any(p["value"] for p in picks):
+        return "none"
+    made = _made_at(at) or now()
+    notes = (notes or "").strip()[:4000]
+    q = doc_question(db, doc, open_only=True)
+    if q is not None:
+        held = held_comments(db, doc, None)
+        said = picks_said(picks, " (on claude.ai)") + (f"\n\n{notes}" if notes else "") + comments_said(held)
+        answer(db, actor, q, choice=None, text=said[:8000], user_id=None, picks=picks)
+        q.answered_at = min(made, q.answered_at)  # (when he made them: the newest picks win, wherever they were made)
+        for c in held:
+            c.question_id, c.sent_at = q.id, now()
+        return "answered"
+    last = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == doc, func.jsonb_array_length(FftQuestion.picks) > 0)
+                     .order_by(FftQuestion.answered_at.desc()))
+    if last is None:
+        return "none"
+    if [(p["name"], p["value"]) for p in last.picks] == [(p["name"], p["value"]) for p in picks]:
+        return "same"
+    if last.answered_at is not None and last.answered_at >= made:
+        return "older"
+    last.picks = picks
+    last.answer_text = (picks_said(picks, " (changed on claude.ai)") + (f"\n\n{notes}" if notes else "") + "\n\nBefore: " + last.answer_text)[:8000]
+    last.answered_at = made
+    _event(db, actor, "picks_changed", "question", last.id, doc=doc)
+    return "changed"
+
+
+def _made_at(at) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(at).replace("Z", "+00:00")) if at else None
+    except ValueError:
+        return None
+    return t if t is None or t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def doc_out(db: Session, doc: str) -> dict:
+    """What askdnd has for a mockup that claude.ai's copy should show: the comments made in askdnd, and the newest picks
+    with when they were made (the page's own store keeps the newer of the two)."""
+    rows = db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, FftDocComment.origin == "askdnd").order_by(FftDocComment.n))
+    last = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == doc, func.jsonb_array_length(FftQuestion.picks) > 0)
+                     .order_by(FftQuestion.answered_at.desc()))
+    notes = ""
+    if last is not None:  # (the answer is the picks line, then his notes, then the comments that went with them)
+        rest = last.answer_text.split("\n\n", 1)[1] if "\n\n" in last.answer_text else ""
+        for mark in ("Comments on the mockup:", "Before:"):
+            rest = rest.split(mark)[0]
+        notes = rest.strip()
+    return {"doc": doc,
+            "comments": [{"n": c.n, "near": c.near, "words": c.words, "at": c.created_at.isoformat() if c.created_at else "",
+                          "sent": c.sent_at is not None} for c in rows],
+            "picks": {"picks": last.picks, "notes": notes, "at": last.answered_at.isoformat()} if last is not None and last.answered_at else None}
+
+
+def docs_to_check(db: Session, days: int = 7) -> list[dict]:
+    """The mockups Claude checks on claude.ai when it checks in: those with a claude.ai link and an open question, or
+    asked about, answered or sent in the last `days` days (so a late change on either side still merges)."""
+    from app import documents
+
+    since = now() - timedelta(days=days)
+    recent = set(db.scalars(select(FftQuestion.doc_path).where(FftQuestion.doc_path != "",
+                                                              or_(FftQuestion.answered_at.is_(None), FftQuestion.answered_at >= since,
+                                                                  FftQuestion.created_at >= since))))
+    recent |= set(db.scalars(select(FftSentDoc.source).where(FftSentDoc.sent_at >= since)))
+    out = []
+    for e in documents.library():
+        if e["source"] in recent and e.get("link"):
+            q = doc_question(db, e["source"], open_only=True)
+            out.append({"doc": e["source"], "title": e["title"], "link": e["link"], "open_question": q.id if q else None})
+    return out
