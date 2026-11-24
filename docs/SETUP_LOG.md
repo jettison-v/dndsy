@@ -1138,3 +1138,15 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 
 **Why:** two environments with different records made it unclear which one held the truth, and checks were being tried on a copy that didn't have the fixes. One place for the record removes that whole class of confusion.
 **Reuse:** try a new internal tool on a local copy first, but keep the trial short and plan the move: carry the data over with a migration, not by hand; copy across anything only the trial holds, with who said it; then point every listener and script at the one live place, and say out loud that the trial copy is now scratch.
+
+## A sturdier loop: askdnd as the record between Brett and Claude (Nov 24, Roadmap item 39)
+
+What was set up:
+1. **GitHub reports into askdnd.** A GitHub Action (Report to askdnd) runs on every pull request, test run and push to main and tells askdnd what it sees. It only *reads* GitHub; a robot that changed pull requests got stuck waiting for a person's approval, so Claude brings a pull request up to date itself.
+2. **Deploys mark themselves live.** A minute after a new version starts on Railway, askdnd releases every pull request merged into it: their fixes become ready to try and their checks reach For you.
+3. **One piece at a time, claimed.** Claude asks askdnd for work; askdnd hands over the top of its Ready list and records the claim. A claim that goes quiet for 20 minutes goes back.
+4. **Pages without a deploy.** A mockup or plan is data, not code: Claude sends it to askdnd with one command and it opens at once; the repo copy still arrives with the next pull request.
+5. **Comments and picks in either place.** On claude.ai or in askdnd; Claude carries each side to the other when it checks in, at least every 10 minutes while listening.
+
+**Why:** the record of what's being built and what waits on whom lived partly in chat and in Claude's memory, so things were missed. Now each fact has one home that both sides read.
+**Reuse:** let your tools report into one record (webhooks or a scheduled job), keep reporters read-only, separate "data" (documents, decisions) from "code" so data never waits on a deploy, and make every move a rule applied to a fact, not something someone has to remember.
