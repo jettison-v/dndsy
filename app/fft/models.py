@@ -485,3 +485,5 @@ class FftPull(_Stamped, Base):
     # Deploys mark themselves live (item 39, 2 of 4): its merge commit, and when askdnd.ai first ran a version holding it
     merge_commit: Mapped[str] = mapped_column(String(40), default="", server_default="")
     live_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Opened for work nobody had claimed (item 39, 3 of 4): a gap until it closes or its plan is claimed
+    unclaimed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())

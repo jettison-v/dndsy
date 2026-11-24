@@ -50,7 +50,7 @@ ISSUE_TURN = {"to_fix": "claude", "fixing": "claude", "asks": "brett", "merge_ok
 CONFIRM_DAYS = 3  # a player's fix is theirs to confirm, then Brett's (R5)
 UNDO = timedelta(minutes=1)  # approving, and a pass's notices, wait this long (R5, Undo)
 ROUND_IDLE = timedelta(hours=12)  # an open round ends itself (R11)
-LOCK = timedelta(hours=6)  # an area's lock lapses unless renewed (R11)
+LOCK = timedelta(minutes=20)  # a claim lapses unless renewed: every call Claude makes to askdnd renews it (item 39, 3 of 4; `heartbeat`)
 
 
 class RuleError(ValueError):
@@ -1738,7 +1738,21 @@ def area_turn(db: Session, area: FftArea) -> str:
         return "claude"
     if any(i.state in ("asks", "merge_ok", "ready") for i in issues) or any(s in ("to_try", "later", "asks") for s in states):
         return "brett"
+    if build_open(db, area):
+        return "claude"
     return "done"
+
+
+def build_open(db: Session, area: FftArea) -> bool:
+    """A Roadmap build's plan with work left: its item's scope agreed, not shipped, a step of Claude's not done (item 39:
+    a plan with no issues showed as done and vanished from Development, taking its lane with it, Nov 24)."""
+    it = db.get(FftItem, area.item_id)
+    if it is None or it.standing or it.section not in ("now", "next", "later"):
+        return False
+    sc = latest_scope(db, it)
+    if sc is None or sc.agreed_at is None:
+        return False
+    return db.scalar(select(FftStep.id).where(FftStep.item_id == it.id, FftStep.done_at.is_(None), FftStep.whose != "brett").limit(1)) is not None
 
 
 def holding_round(db: Session) -> FftRound | None:
@@ -1893,6 +1907,12 @@ def hold_item(db: Session, actor: str, item: FftItem, held: bool = True) -> None
         _event(db, actor, "item_held" if held else "item_let_go", "item", item.id)
 
 
+def _areas_ready(db: Session, q) -> list[FftArea]:
+    """The areas of a query that are Claude's to take now: Claude's turn, not held, not in Brett's open round, open."""
+    return [a for a in db.scalars(q.where(FftArea.archived.is_(False)).distinct().order_by(FftArea.id))
+            if not a.held and area_turn(db, a) == "claude" and not in_open_round(db, a)]
+
+
 def pick_next(db: Session) -> Pick:
     """R15: a blocker first (an issue that stops Brett's round); then an item Brett pressed Scope it on; otherwise Development's one queue from the top (issue 62:
     the Product Area batches and the Roadmap builds in his order), skipping a held row, a build whose next step is his and a
@@ -1907,6 +1927,12 @@ def pick_next(db: Session) -> Pick:
     for it in scope_asked(db):  # (Scope it: Brett asked, so first after a blocker, Nov 21)
         return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it)
     skipped: list[tuple[str, str]] = []
+    # (item 39, 3 of 4: next, a fix to what just shipped, then a claim that went quiet, each ahead of new work)
+    for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
+                          .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing")))):
+        return Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", skipped)
+    for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now())):
+        return Pick(a, f"Back from a claim that went quiet: {a.title}", skipped)
 
     def plan_ok(area: FftArea, name: str) -> bool:
         if area_turn(db, area) != "claude":
@@ -2168,6 +2194,8 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
             changed["link"] = list(link)
         p.reported_at = at
         db.flush()
+        if fresh and p.state == "open":
+            _pull_opened(db, actor, p)
         if fresh or changed:
             _event(db, actor, "pull_new" if fresh else "pull_changed", "pull", p.id, area_id=p.area_id, number=number,
                    **({"to": p.state} if "state" in changed or fresh else {}), changes={k: v for k, v in changed.items() if k != "title"})
@@ -2177,6 +2205,20 @@ def pulls_seen(db: Session, actor: str, rows: list[dict], snapshot: bool = False
             p.state, p.closed_at = "closed", at
             _event(db, actor, "pull_changed", "pull", p.id, area_id=p.area_id, number=p.number, to="closed", changes={"state": "closed", "missing": True})
     return out
+
+
+def _pull_opened(db: Session, actor: str, p: FftPull) -> None:
+    """A new pull request: its work's claim is released (Building → Shipping), or, for work nobody claimed, it's marked
+    unclaimed (a gap). Dependabot's and Upkeep are no one's to claim."""
+    if p.by_bot or pull_upkeep(p):
+        return
+    plans = [db.get(FftArea, p.area_id)] if p.area_id else list(db.scalars(select(FftArea).where(FftArea.item_id == (p.item_id or 0))))
+    held = [a for a in plans if a is not None and a.lock_owner and a.lock_until and a.lock_until > now()]
+    for a in held:
+        a.lock_owner, a.lock_until = "", None
+        _event(db, actor, "area_unlocked", "area", a.id, area_id=a.id, by_pull=p.number)
+    if not held:
+        p.unclaimed = True
 
 
 def pull_upkeep(p: FftPull) -> bool:
@@ -2223,3 +2265,46 @@ def release_live(db: Session, actor: str, version: str) -> dict:
         waits = [w.pr for w in db.scalars(select(FftCheckWait).where(_names_pull(FftCheckWait.pr, p.number)))]
         out["checks"] += deployed(db, actor, waits)
     return out
+
+
+# ------------------------------------------------------------------ claims (item 39, 3 of 4; scope v4, Brett's OK Nov 24)
+#
+# Claude doesn't choose its work: it asks askdnd, which hands over the top of Ready (`pick_next`) and records the claim
+# (the area's lock: one at a time). Every call Claude makes to askdnd renews it (`heartbeat`, from keys.require), so a
+# claim lapses only when the session stops; a lapsed one goes back to the front of Ready. Opening the pull request
+# releases it (Building → Shipping, `pulls_seen`); one opened for work nobody claimed is a gap (`unclaimed`).
+
+def claim(db: Session, owner: str, area: FftArea | None = None) -> tuple[FftArea | None, str, bool]:
+    """(the claimed area, why it's next, whether it was already this owner's). One at a time: an owner holding a live
+    claim gets it back. `area`: claim this one by hand (work already under way)."""
+    held = db.scalar(select(FftArea).where(FftArea.lock_owner == owner[:60], FftArea.lock_until > now()))
+    if held is not None and (area is None or area.id == held.id):
+        return held, "Still yours: one piece at a time", True
+    if area is None:
+        pick = pick_next(db)
+        area = pick.area
+        if area is None and pick.item is not None:  # (a build with no plan yet: its plan is made now)
+            area = new_area(db, owner, pick.item, f"{pick.item.title}: the build"[:80])
+            db.flush()
+        if area is None:
+            return None, pick.why, False
+        why = pick.why
+    else:
+        why = f"Claimed by hand: {area.title}"
+    lock_area(db, owner, area)
+    for p in db.scalars(select(FftPull).where(FftPull.area_id == area.id, FftPull.unclaimed.is_(True), FftPull.state == "open")):
+        p.unclaimed = False
+    return area, why, False
+
+
+def heartbeat(db: Session, actor: str) -> int:
+    """A Claude session checked in: its live claims run another LOCK from now. Writes only when one has under 19 minutes
+    left, so a burst of calls costs one write."""
+    if actor != "claude":
+        return 0
+    from sqlalchemy import update as _update
+
+    soon = now() + LOCK - timedelta(minutes=1)
+    got = db.execute(_update(FftArea).where(FftArea.lock_owner.like("claude:%"), FftArea.lock_until > now(), FftArea.lock_until < soon)
+                     .values(lock_until=now() + LOCK))
+    return got.rowcount or 0

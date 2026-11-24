@@ -758,6 +758,30 @@ def job_ran(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=
     return _ok({"job": key})
 
 
+@router.post("/claim")
+def claim(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude asks for work (item 39, 3 of 4): askdnd hands over the top of Ready and records the claim, one at a time
+    ({"owner": its listener's name, "area": an id to claim by hand}); {"release": true} gives the claim back."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    owner = f"{actor.name}:{_str(body, 'owner', 40) or 'main'}"
+    try:
+        if body.get("release") is True:
+            held = db.scalar(select(FftArea).where(FftArea.lock_owner == owner, FftArea.lock_until > rules.now()))
+            if held is not None:
+                rules.unlock_area(db, owner, held)
+            db.commit()
+            return _ok({"released": held.id if held else None})
+        area = db.get(FftArea, _int(body.get("area"), "area")) if body.get("area") is not None else None
+        if body.get("area") is not None and area is None:
+            raise HTTPException(404)
+        got, why, already = rules.claim(db, owner, area)
+    except rules.RuleError as e:
+        raise _rule(e) from e
+    db.commit()
+    return _ok({"area": got.id if got else None, "title": got.title if got else "", "why": why, "already": already})
+
+
 @router.post("/github/pulls")
 def github_pulls(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """What GitHub sees of the pull requests (scripts/github_report.py; item 39): {"pulls": [{"number", "title", "branch",

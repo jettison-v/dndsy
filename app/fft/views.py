@@ -476,12 +476,19 @@ def gaps(db: Session) -> list[dict]:
     for it, last in rules.builds_done(db):  # (issue 72, Brett Nov 22: a build stayed in the queue after he ticked its last step)
         out.append({"kind": "steps_done", "thing": "item", "id": it.id, "title": it.title, "since": last,
                     "says": f"Every step is done: ship it with what it changed (feedback.py roadmap {it.id} ship --result \"…\"), or add the step that's left."})
+    frozen = rules.freeze_state(db)["on"]
     for p in db.scalars(select(FftPull).where(FftPull.state == "open").order_by(FftPull.number)):  # (item 39: GitHub reports them)
         if p.tests == "failed":  # (since its tests failed: a later change to it, such as its merge state, doesn't restart the wait)
             red = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == "pull", FftEvent.thing_id == p.id,
                                                                 FftEvent.data["changes"]["tests"].astext == "failed"))
             out.append({"kind": "pull_red", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}", **({"since": red} if red else {}),
                         "says": f"Pull request #{p.number}'s tests failed: fix it, or close it if it's no longer wanted."})
+        if p.unclaimed:
+            out.append({"kind": "pull_unclaimed", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+                        "says": f"Pull request #{p.number} was opened for work nobody claimed: claim its plan (feedback.py claim --area <id>), so it's on the record as yours."})
+        if p.tests == "passed" and p.merge_state == "clean" and not p.auto_merge and not frozen and not _held_back(db, p):
+            out.append({"kind": "pull_waiting", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
+                        "says": f"Pull request #{p.number} passed and can merge, but isn't set to: merge it, or turn auto-merge on (GitHub turns it off after a failed try)."})
         if p.merge_state == "dirty":
             out.append({"kind": "pull_conflicts", "thing": "pull", "id": p.id, "title": f"#{p.number} {p.title}",
                         "says": f"Pull request #{p.number} conflicts with main, so it can't be brought up to date: merge main into it."})
@@ -501,7 +508,8 @@ GAP_WORDS = {"no_check": "fixed, with no check for you to try", "not_tried": "a 
              "no_result": "finished, with no result written yet", "scope_changes": "you asked for changes to its scope",
              "scope_asked": "you asked for its scope", "steps_done": "every step done, not shipped yet",
              "pull_red": "a pull request whose tests failed", "pull_conflicts": "a pull request that conflicts with main",
-             "version_unplaced": "askdnd.ai runs a version no pull request explains"}  # (each kind of gap, as Development says it)
+             "version_unplaced": "askdnd.ai runs a version no pull request explains",
+             "pull_unclaimed": "a pull request for work nobody claimed", "pull_waiting": "a pull request that passed and isn't merging"}  # (each kind of gap, as Development says it)
 UNPLACED_AFTER = timedelta(minutes=15)  # (GitHub reports a merge within a minute; a deploy takes about ten)
 GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happened isn't late yet; 15 minutes, his pick 1A, issue 21)
 
@@ -531,6 +539,12 @@ def hands(db: Session) -> list[dict]:
 def missed(db: Session) -> list[dict]:
     """Waiting on Claude too long (Development's amber panel): the late ones in `hands`."""
     return [g for g in hands(db) if g["late"]]
+
+
+def _held_back(db: Session, p: FftPull) -> bool:
+    """A green pull request that's meant to wait: its plan is Careful (Brett tries it first) or in his open round."""
+    a = db.get(FftArea, p.area_id) if p.area_id else None
+    return a is not None and (rules.lane_of(a) == "careful" or rules.in_open_round(db, a))
 
 
 def pull_row(p: FftPull) -> dict:
