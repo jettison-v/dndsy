@@ -1,0 +1,336 @@
+<title>The Work Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (docs/mockups/fft-round-2/); laptop first, one column on a phone.
+   Roadmap item 39, A sturdier loop. Brett, Nov 23: "What other UI do I need to visual this in the system so I have
+   confidence in the execution and progress?" Two views: Development › Board, and each item's round trip. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); } .mbar .sp { flex: 1; }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.page h2.pt { font: 700 1.5rem/1.2 var(--sans); }
+.bar { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: .86rem; }
+.bar > div { padding: 8px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bar > div + div { border-top: 1px solid var(--line); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); display: inline-block; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { padding: 9px 12px; color: var(--muted); font-weight: 500; font-size: .9rem; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.tab .new { color: var(--amber); font: 700 .62rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.sum { font-size: .86rem; color: var(--muted); } .sum b { color: var(--text); } .sum .amb { color: var(--amber); font-weight: 600; }
+
+/* the board */
+.board-scroll { overflow-x: auto; }
+.board { display: grid; grid-template-columns: repeat(6, minmax(158px, 1fr)); gap: 8px; min-width: 1000px; align-items: start; }
+.col { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px; display: grid; gap: 8px; align-content: start; min-height: 260px; }
+.col-h { display: flex; align-items: center; gap: 6px; padding: 2px 4px 4px; font: 700 .72rem/1.2 var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.col-h .who { margin-left: auto; font: 600 .7rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--faint); }
+.card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; display: grid; gap: 5px; font-size: .84rem; cursor: pointer; text-align: left; width: 100%; }
+.card:hover, .card:focus-visible { border-color: var(--line-strong); outline: none; }
+.card.stuck { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber); }
+.card .t { color: var(--strong); font-weight: 600; line-height: 1.3; }
+.card .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font: 600 .7rem/1.55 var(--sans); white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+.pill.lane-ship { background: var(--green-soft); color: var(--green); } .pill.lane-look { background: var(--blue-soft); color: var(--blue); } .pill.lane-careful { background: var(--amber-soft); color: var(--amber); }
+.pill.lead { background: var(--violet-soft); color: var(--violet); } .pill.worker { background: var(--violet-soft); color: var(--violet); border: 1px dashed var(--violet); }
+.pill.warn { background: var(--amber-soft); color: var(--amber); }
+.card .why { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.card .why b { color: var(--text); font-weight: 600; }
+.beat { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: 1px; }
+.beat.quiet { background: var(--amber); }
+.pin { margin-left: auto; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 6px; font: 600 .7rem/1 var(--sans); padding: 3px 6px; cursor: pointer; }
+.pin:hover { color: var(--strong); border-color: var(--line-strong); }
+.card.pinned { border-color: var(--blue); }
+.waiting { border: 1px dashed var(--line-strong); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .86rem; }
+.waiting .w { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.waiting .w .on { color: var(--amber); font-weight: 600; }
+
+/* the item window with its round trip */
+.scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); }
+.peek { position: absolute; top: 46px; right: 0; bottom: 0; width: min(440px, 100%); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0, 0, 0, .45); display: flex; flex-direction: column; }
+.peek-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 16px 18px 6px; }
+.peek-head .x { border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; cursor: pointer; }
+.peek-body { padding: 6px 18px 18px; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.sec { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.sec h3 { font: 700 .72rem/1 var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); padding: 10px 12px 0; }
+.sec .in { padding: 8px 12px 12px; display: grid; gap: 8px; }
+.trip-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .86rem; }
+.trip { list-style: none; margin: 0; padding: 0; display: grid; }
+.trip li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 2px 10px; padding: 0 0 12px; position: relative; font-size: .84rem; }
+.trip li::before { content: ""; position: absolute; left: 7px; top: 14px; bottom: 0; width: 2px; background: var(--line-strong); }
+.trip li:last-child::before { display: none; }
+.trip .m { width: 12px; height: 12px; border-radius: 50%; background: var(--green); margin-top: 3px; position: relative; z-index: 1; border: 2px solid var(--surface-2); box-sizing: content-box; }
+.trip li.now .m { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.trip li.todo .m { background: var(--surface-3); }
+.trip li.slow .m { background: var(--amber); }
+.trip .s b { color: var(--strong); }
+.trip .s .by { color: var(--faint); font-size: .76rem; }
+.trip .tm { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.trip .gap { grid-column: 2 / -1; color: var(--faint); font-size: .74rem; }
+.trip li.slow .gap { color: var(--amber); }
+.trip li.todo .s { color: var(--faint); }
+
+.why-box { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why-box .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 760px) { .shell { grid-template-columns: minmax(0, 1fr); } .side { display: none; } .peek { top: 40%; width: 100%; border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 39 · A sturdier loop · Nov 23 · a mockup</span>
+    <h1>The Work Board</h1>
+    <p class="meta">You asked what you'd need to see to trust the execution and the progress. Two views, drawn with today's real work: <b>Development › Board</b>, every piece in hand from Ready to yours to try, who holds it and whether it's moving; and each piece's <b>round trip</b>, the timeline of every hop with how long it took. Click any card. The numbers are illustrative; the items are today's.</p>
+    <div class="terms">
+      <div class="term"><span class="tag">Lives in</span>Backstage › Our work › Development, a new first tab, Board, beside Queue, Checks, Scheduled and How we work.</div>
+      <div class="term"><span class="tag">Answers</span>What's moving, what's stuck and why, who has it, and where any one thing is right now.</div>
+      <div class="term"><span class="tag">Doesn't change</span>Your importance order (the Roadmap) and For you, which stays what waits on you.</div>
+    </div>
+  </header>
+
+  <div class="app" id="app">
+    <div class="mbar"><span class="logo"></span><b>askdnd</b><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Party ▾</span><span class="sp"></span><b>Backstage ▾</b></div>
+    <div class="shell">
+      <nav class="side" aria-label="Backstage"><span class="h">Our work</span><span>For you</span><span>Feedback</span><span>Roadmap</span><span class="on">Development</span><span class="h">General</span><span>Overview</span><span>Product areas</span><span>Documents</span></nav>
+      <div class="page">
+        <h2 class="pt">Development</h2>
+        <div class="bar">
+          <div><span class="dot"></span><b>Claude is listening</b><span class="note">lead session, checked in 1 min ago · 1 worker</span><span style="margin-left:auto" class="note">Deploys: <b>When tests pass</b> ▾</span></div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Development"><span class="tab on">Board <span class="new">new</span></span><span class="tab">Queue</span><span class="tab">Checks <span class="count">6</span></span><span class="tab">Scheduled</span><span class="tab">How we work</span></div>
+        <p class="sum"><b>9 in hand</b> · 3 Ready · 2 being built · 1 in review · 1 merging · <span class="amb">1 gone quiet</span> · 3 yours to try</p>
+        <div class="board-scroll"><div class="board" id="board">
+          <section class="col" data-col="ready"><div class="col-h">Ready <span class="count">3</span><span class="who">my order</span></div></section>
+          <section class="col" data-col="claimed"><div class="col-h">Being built <span class="count">2</span><span class="who">Claude</span></div></section>
+          <section class="col" data-col="review"><div class="col-h">In review <span class="count">1</span><span class="who">lead</span></div></section>
+          <section class="col" data-col="merging"><div class="col-h">Merging <span class="count">1</span><span class="who">tests, GitHub</span></div></section>
+          <section class="col" data-col="live"><div class="col-h">Live <span class="count">1</span><span class="who">Claude tries it</span></div></section>
+          <section class="col" data-col="yours"><div class="col-h">Yours to try <span class="count">3</span><span class="who">you</span></div></section>
+        </div></div>
+        <div class="waiting" aria-label="Not ready yet">
+          <b>Not Ready yet, and why</b>
+          <div class="w"><span>Fight reports numbered by the extension (issue 75)</span><span class="on">waits for your OK</span></div>
+          <div class="w"><span>Speed: the slow pages</span><span class="on">waits for a day of speed numbers (tomorrow morning)</span></div>
+          <div class="w"><span>Built vs. planned (item 38)</span><span class="on">waits for your picks</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="scrim" id="scrim" hidden></div>
+    <aside class="peek" id="peek" hidden role="dialog" aria-labelledby="peek-t">
+      <div class="peek-head"><div><p class="note" id="peek-k">Issue 110 · Feedback and Testing › Where it stands</p><h3 id="peek-t" style="font:700 1.1rem/1.3 var(--sans)">Title</h3></div><button class="x" type="button" id="peek-x" aria-label="Close">✕</button></div>
+      <div class="peek-body">
+        <div class="sec"><h3>Where it is</h3><div class="in"><div class="trip-line" id="trip-line"></div></div></div>
+        <div class="sec"><h3>Its round trip</h3><div class="in"><ol class="trip" id="trip"></ol></div></div>
+        <p class="note">Every hop comes from askdnd's own record: who did what, when. Nothing here is typed by hand.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="why-box">
+    <span class="tag">How to read it</span>
+    <p class="meta"><b>Ready</b> is in my execution order, each card saying why it's there, with <b>Pin</b> to put it first (your pin wins). A card in <b>Being built</b> shows who holds it and their last check-in; one quiet for 20 minutes turns amber and goes back to Ready. A red pull request, a merge stuck behind main, or a try waiting too long turns amber where it sits. Click a card for its round trip.</p>
+  </div>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>1 · Where the board lives</legend>
+      <label class="opt"><input type="radio" name="where" value="dev-tab"><span>A · Development's first tab, Board <span class="mine">my pick</span></span><small>Development is where the work is; For you stays what waits on you.</small></label>
+      <label class="opt"><input type="radio" name="where" value="for-you"><span>B · At the top of For you</span><small>One page for everything, but For you gets long and mixes Claude's work with yours.</small></label>
+      <label class="opt"><input type="radio" name="where" value="own-page"><span>C · A page of its own under Our work</span><small>One more page in the menu.</small></label>
+    </fieldset>
+    <fieldset><legend>2 · What a card shows</legend>
+      <label class="opt"><input type="radio" name="card" value="full"><span>A · Title, area, lane, who holds it, its age and last check-in, amber when stuck <span class="mine">my pick</span></span><small>Enough to trust it at a glance; the round trip has the rest.</small></label>
+      <label class="opt"><input type="radio" name="card" value="lean"><span>B · Title and how long it's been in the column</span><small>Quieter; you click for who and why.</small></label>
+    </fieldset>
+    <fieldset><legend>3 · The round trip</legend>
+      <label class="opt"><input type="radio" name="trip" value="every-window"><span>A · In every item's window (issues, checks, notes, Roadmap items): one line, opening to the timeline <span class="mine">my pick</span></span><small>Wherever you meet a piece of work, you see where it is.</small></label>
+      <label class="opt"><input type="radio" name="trip" value="board-only"><span>B · Only from the board</span><small>Fewer places to keep right.</small></label>
+    </fieldset>
+    <fieldset><legend>4 · The Ready column's order</legend>
+      <label class="opt"><input type="radio" name="ready" value="mine-why"><span>A · My execution order, each with its why and a Pin <span class="mine">my pick</span></span><small>Your direction: your importance, my order, your pin wins.</small></label>
+      <label class="opt"><input type="radio" name="ready" value="importance"><span>B · Your importance order, my notes beside it</span><small>Shows your order; you'd read my reasoning in the notes.</small></label>
+    </fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(what you'd want on a card, a column you'd add or drop, what would make you trust it more)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Today's real work, the times illustrative: each card and its round trip
+  const CARDS = [
+    { id: "i66", col: "ready", t: "Corner cards stay over the side panel", k: "Issue 66 · Getting around › Corner cards", lane: "careful", why: "<b>Your Now.</b> First Ready; a Careful change, so one try on your Mac" },
+    { id: "it5", col: "ready", t: "Design review: Documents", k: "Roadmap item 5 · Backstage", lane: "look", why: "<b>Next in your Now.</b> After 66: both change Backstage's list styles, so one look covers both" },
+    { id: "lt1", col: "ready", t: "Live test: No Name twin cleanup", k: "Behind the scenes › Live test", lane: "ship", why: "<b>Groundwork.</b> Quiets a nightly second try; small, ships alone" },
+    { id: "sp2", col: "claimed", t: "Speed: database time per page", k: "Behind the scenes › Speed", lane: "ship", who: "lead", since: "2:10 PM", beat: "1 min ago" },
+    { id: "lc2", col: "claimed", t: "Live test: the fight run's leftovers", k: "Behind the scenes › Live test", lane: "ship", who: "worker", since: "2:30 PM", beat: "26 min ago", quiet: true },
+    { id: "i110", col: "review", t: "A pause lets what's on its way finish", k: "Issue 110 · Where it stands", lane: "look", who: "lead", pr: "479", since: "4:02 PM" },
+    { id: "i107", col: "merging", t: "Feedback's bar, and windows over the item window", k: "Issues 107–109 · Feedback and Testing", lane: "look", pr: "477", since: "tests 4 min" },
+    { id: "i106", col: "live", t: "End round ends the round on the bar", k: "Issue 106 · Testing", lane: "look", since: "live 11:07 AM", trying: true },
+    { id: "c78", col: "yours", t: "Feedback's bar, windows that keep the item window open", k: "Check 78 · laptop", lane: "look", since: "waiting 45 min" },
+    { id: "c79", col: "yours", t: "A pause lets what's on its way finish", k: "Check 79 · laptop", lane: "look", since: "waiting 10 min" },
+    { id: "c77", col: "yours", t: "End round ends the round on the bar", k: "Check 77 · laptop", lane: "look", since: "waiting 4 h", late: true },
+  ];
+  const HOPS = ["Sent", "Sorted", "Ready", "Claimed", "Pull request", "Review", "Merge", "Live", "Claude's try", "Your try", "Closed"];
+  const AT = { ready: 2, claimed: 3, review: 5, merging: 6, live: 8, yours: 9 };  // (the hop each column is at)
+  const TRIP = {
+    i110: [["3:36 PM", "you, in chat"], ["3:37", "lead"], ["3:38", "your Yes, build it"], ["3:39", "lead"], ["4:02", "#479", "23 min building"], ["4:06", "lead, high effort"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
+    lc2: [["11:44 AM", "the Mini's check"], ["11:46", "lead"], ["12:10 PM", "groundwork"], ["2:30", "worker 1"], ["", "", "quiet 26 min: back to Ready at 20"], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""], ["", ""]],
+    c77: [["10:43 AM", "you, a note"], ["10:45", "lead"], ["10:45", "your note's OK"], ["10:46", "lead"], ["10:58", "#476"], ["11:01", "lead, high effort"], ["11:05", "tests 4 min"], ["11:07", "Railway"], ["11:10", "lead, on askdnd.ai"], ["11:10", "", "waiting on you 4 h"], ["", ""]],
+  };
+  const board = document.getElementById("board");
+  const lanes = { ship: "Ship", look: "Look", careful: "Careful" };
+  function cardEl(c) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "card" + (c.quiet || c.late ? " stuck" : "") + (c.pinned ? " pinned" : ""); b.dataset.id = c.id;
+    let h = `<span class="t">${c.t}</span><span class="note">${c.k}</span><span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
+    if (c.who) h += `<span class="pill ${c.who}">${c.who === "lead" ? "Lead" : "Worker 1"}</span>`;
+    if (c.pr) h += `<span class="pill">#${c.pr}</span>`;
+    if (c.col === "ready") h += `<span class="pin" data-pin role="button" tabindex="0">${c.pinned ? "Pinned" : "Pin"}</span>`;
+    h += `</span>`;
+    if (c.why) h += `<span class="why">${c.why}</span>`;
+    if (c.beat) h += `<span class="note"><span class="beat${c.quiet ? " quiet" : ""}"></span>since ${c.since} · checked in ${c.beat}${c.quiet ? " · <b style=\"color:var(--amber)\">gone quiet</b>" : ""}</span>`;
+    else if (c.since) h += `<span class="note">${c.trying ? "Claude is trying it on askdnd.ai · " : ""}${c.since}${c.late ? " · <b style=\"color:var(--amber)\">waiting long</b>" : ""}</span>`;
+    b.innerHTML = h;
+    return b;
+  }
+  function draw() {
+    board.querySelectorAll(".card").forEach(x => x.remove());
+    const ready = CARDS.filter(c => c.col === "ready").sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+    const rest = CARDS.filter(c => c.col !== "ready");
+    [...ready, ...rest].forEach(c => board.querySelector(`[data-col="${c.col}"]`).append(cardEl(c)));
+  }
+  const peek = document.getElementById("peek"), scrim = document.getElementById("scrim");
+  function open(id) {
+    const c = CARDS.find(x => x.id === id);
+    const at = AT[c.col];
+    document.getElementById("peek-t").textContent = c.t;
+    document.getElementById("peek-k").textContent = c.k;
+    const stuckNote = c.quiet ? " · gone quiet" : c.late ? " · waiting long" : "";
+    document.getElementById("trip-line").innerHTML = `<span class="pill lane-${c.lane}">${lanes[c.lane]}</span><b>${HOPS[at]}</b><span class="note">step ${at + 1} of ${HOPS.length}${stuckNote}</span>`;
+    const trip = TRIP[id] || HOPS.map((_, i) => [i < at ? ["9:14 AM", "9:15", "9:16", "9:40", "10:20", "10:24", "10:28", "10:31", "10:35"][i] || "" : "", i < at ? ["you", "lead", "askdnd", "lead", "", "lead", "GitHub", "Railway", "lead"][i] || "" : ""]);
+    const ol = document.getElementById("trip");
+    ol.innerHTML = HOPS.map((h, i) => {
+      const [tm, by, gap] = trip[i] || ["", ""];
+      const state = i < at ? "" : i === at ? "now" : "todo";
+      const slow = gap && /quiet|waiting/.test(gap) ? " slow" : "";
+      return `<li class="${state}${slow}"><span class="m"></span><span class="s"><b>${h}</b>${by ? ` <span class="by">${by}</span>` : ""}</span><span class="tm">${tm}</span>${gap ? `<span class="gap">${gap}</span>` : ""}</li>`;
+    }).join("");
+    peek.hidden = false; scrim.hidden = false;
+  }
+  function close() { peek.hidden = true; scrim.hidden = true; }
+  board.addEventListener("click", e => {
+    const pin = e.target.closest("[data-pin]");
+    const card = e.target.closest(".card");
+    if (pin && card) { e.stopPropagation(); const c = CARDS.find(x => x.id === card.dataset.id); c.pinned = !c.pinned; c.why = c.pinned ? "<b>Your pin.</b> First, whatever my order said" : c.why0; draw(); return; }
+    if (card) open(card.dataset.id);
+  });
+  board.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-pin]")) { e.preventDefault(); e.target.click(); } });
+  document.getElementById("peek-x").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+  addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  CARDS.forEach(c => { c.why0 = c.why; });
+  draw();
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or a Roadmap item's page), askdnd keeps them as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["where", "card", "trip", "ready"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

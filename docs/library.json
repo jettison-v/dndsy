@@ -9,6 +9,15 @@
   "link": ""
  },
  {
+  "title": "The Work Board",
+  "kind": "design",
+  "status": "Your picks",
+  "date": "Nov 23",
+  "what": "Roadmap item 39: Development's Board, every piece of work in hand from Ready to yours to try, who holds it, its age and last check-in, stuck in amber; each piece's round trip as a timeline of every hop; the Ready column in Claude's order with Pin. Four picks.",
+  "source": "docs/mockups/work-board/index.html",
+  "link": "https://claude.ai/artifact/NY5pTLjXiBBubeH772479J"
+ },
+ {
   "title": "How the work flows",
   "kind": "plan",
   "status": "Your picks",
