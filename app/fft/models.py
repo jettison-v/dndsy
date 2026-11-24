@@ -482,3 +482,6 @@ class FftPull(_Stamped, Base):
     issue_id: Mapped[int | None] = mapped_column(ForeignKey("fft_issues.id", ondelete="SET NULL"), nullable=True)
     area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True)
     item_id: Mapped[int | None] = mapped_column(ForeignKey("fft_items.id", ondelete="SET NULL"), nullable=True)
+    # Deploys mark themselves live (item 39, 2 of 4): its merge commit, and when askdnd.ai first ran a version holding it
+    merge_commit: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    live_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

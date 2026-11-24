@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
+from app import config, web
 from app.db import get_db
 from app.fft import keys, rules, sending, steps, taxonomy, views
 from app.fft.models import (
@@ -770,10 +770,11 @@ def github_pulls(body=web.JsonBody, x_fft_key: str | None = Header(default=None)
         raise HTTPException(400, "pulls: a list of up to 200 pull requests")
     try:
         seen = rules.pulls_seen(db, actor.name, rows, snapshot=body.get("snapshot") is True)
+        released = rules.release_live(db, "askdnd", config.running_version())  # (one merged just before the deploy)
     except rules.RuleError as e:
         raise _rule(e) from e
     db.commit()
-    return _ok({"seen": [p.number for p in seen]})
+    return _ok({"seen": [p.number for p in seen], "live": released["live"]})
 
 
 @router.get("/pulls")

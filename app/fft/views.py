@@ -332,7 +332,7 @@ def pull_worth_saying(ev) -> bool:
     flicker of its merge state."""
     d = ev.data or {}
     ch = d.get("changes") or {}
-    return ev.kind == "pull_new" or bool(d.get("to")) or bool(ch.get("updated")) or ch.get("tests") in ("passed", "failed")
+    return ev.kind in ("pull_new", "pull_live") or bool(d.get("to")) or bool(ch.get("updated")) or ch.get("tests") in ("passed", "failed")
 
 
 def event_words(ev) -> str:
@@ -341,6 +341,8 @@ def event_words(ev) -> str:
     d = ev.data or {}
     if ev.thing == "pull":  # (a pull request's record, item 39: on a plan's History; never an inbox, rules.heard)
         n = d.get("number")
+        if ev.kind == "pull_live":
+            return f"Pull request #{n} is live on askdnd.ai"
         if ev.kind == "pull_new":
             return f"Pull request #{n} " + {"merged": "merged", "closed": "closed"}.get(d.get("to") or "", "opened")
         if d.get("to"):
@@ -530,4 +532,5 @@ def pull_row(p: FftPull) -> dict:
     return {"number": p.number, "title": p.title, "branch": p.branch, "by_bot": p.by_bot, "state": p.state, "tests": p.tests,
             "merge_state": p.merge_state, "auto_merge": p.auto_merge, "issue": p.issue_id, "area": p.area_id, "item": p.item_id,
             "upkeep": rules.pull_upkeep(p), "reported_at": p.reported_at.isoformat() if p.reported_at else None,
-            "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None}
+            "updated_by_askdnd_at": p.updated_by_askdnd_at.isoformat() if p.updated_by_askdnd_at else None,
+            "merge_commit": p.merge_commit, "live_at": p.live_at.isoformat() if p.live_at else None}
