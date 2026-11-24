@@ -124,6 +124,22 @@ button { font: inherit; color: inherit; }
 .decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .decide .saved { color: var(--muted); font-size: .84rem; }
 .decide .saved.ok { color: var(--green); }
+/* the three kinds of card: an icon and word, and a coloured edge (Brett: "some visual identification would be helpful") */
+:root { --k-feedback: #e07a9b; --k-feedback-soft: rgba(224, 122, 155, .15); --k-roadmap: #7ea6e0; --k-roadmap-soft: rgba(126, 166, 224, .16); --k-upkeep: #a5b0bd; --k-upkeep-soft: rgba(165, 176, 189, .14); }
+.card { border-left-width: 3px; }
+.card.k-feedback { border-left-color: var(--k-feedback); } .card.k-roadmap { border-left-color: var(--k-roadmap); } .card.k-upkeep { border-left-color: var(--k-upkeep); }
+.card.stuck { border-color: var(--amber); box-shadow: none; border-left-width: 3px; }
+.kind { display: inline-flex; align-items: center; gap: 4px; font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.kind svg { width: 13px; height: 13px; flex: none; }
+.kind.k-feedback { color: var(--k-feedback); } .kind.k-roadmap { color: var(--k-roadmap); } .kind.k-upkeep { color: var(--k-upkeep); }
+.inside { color: var(--muted); font-size: .76rem; }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); cursor: pointer; color: var(--text); }
+.fchip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.fchip .count { font-size: .72rem; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.kinds .term .kind { font-size: .74rem; }
+.card.hide { display: none; }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 @media (max-width: 760px) { .shell { grid-template-columns: minmax(0, 1fr); } .side { display: none; } .peek { top: 40%; width: 100%; border-left: 0; border-top: 1px solid var(--line); } }
 </style>
@@ -138,6 +154,12 @@ button { font: inherit; color: inherit; }
       <div class="term"><span class="tag">Answers</span>What's moving, what's stuck and why, who has it, and where any one thing is right now.</div>
       <div class="term"><span class="tag">Doesn't change</span>Your importance order (the Roadmap) and For you, which stays what waits on you.</div>
     </div>
+    <p class="meta"><b>What a card is:</b> one piece of work that ends in one pull request, whatever it came from. Three kinds, each marked by an icon, a word and the colour of its left edge. <b>No pull request without a card:</b> one opened with nothing behind it gets an Upkeep card by itself.</p>
+    <div class="kinds">
+      <div class="term"><span class="kind k-feedback" data-icon="feedback">Feedback</span>A fix or an improvement from a note (yours, the table's, or found on a check). One card per Product Area batch, its issues listed inside.</div>
+      <div class="term"><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span>A slice of a Roadmap item's build, once you've OK'd its scope. Names the item it belongs to.</div>
+      <div class="term"><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span>Work no one asked for that keeps askdnd healthy: the live test, package updates, the weekly phone sweep, a nightly that failed.</div>
+    </div>
   </header>
 
   <div class="app" id="app">
@@ -150,14 +172,15 @@ button { font: inherit; color: inherit; }
           <div><span class="dot"></span><b>Claude is listening</b><span class="note">lead session, checked in 1 min ago · 1 worker</span><span style="margin-left:auto" class="note">Deploys: <b>When tests pass</b> ▾</span></div>
         </div>
         <div class="tabs" role="tablist" aria-label="Development"><span class="tab on">Board <span class="new">new</span></span><span class="tab">Queue</span><span class="tab">Checks <span class="count">6</span></span><span class="tab">Scheduled</span><span class="tab">How we work</span></div>
-        <p class="sum"><b>9 in hand</b> · 3 Ready · 2 being built · 1 in review · 1 merging · <span class="amb">1 gone quiet</span> · 3 yours to try</p>
+        <div class="legend" role="group" aria-label="Show"><button type="button" class="fchip" aria-pressed="true" data-k="">All <span class="count" data-n=""></span></button><button type="button" class="fchip" aria-pressed="false" data-k="feedback"><span class="kind k-feedback" data-icon="feedback">Feedback</span><span class="count" data-n="feedback"></span></button><button type="button" class="fchip" aria-pressed="false" data-k="roadmap"><span class="kind k-roadmap" data-icon="roadmap">Roadmap</span><span class="count" data-n="roadmap"></span></button><button type="button" class="fchip" aria-pressed="false" data-k="upkeep"><span class="kind k-upkeep" data-icon="upkeep">Upkeep</span><span class="count" data-n="upkeep"></span></button>
+          <span class="sum" style="margin-left:auto"><b>13 in hand</b> · <span class="amb">2 need a look</span> · 3 yours to try</span></div>
         <div class="board-scroll"><div class="board" id="board">
-          <section class="col" data-col="ready"><div class="col-h">Ready <span class="count">3</span><span class="who">my order</span></div></section>
-          <section class="col" data-col="claimed"><div class="col-h">Being built <span class="count">2</span><span class="who">Claude</span></div></section>
-          <section class="col" data-col="review"><div class="col-h">In review <span class="count">1</span><span class="who">lead</span></div></section>
-          <section class="col" data-col="merging"><div class="col-h">Merging <span class="count">1</span><span class="who">tests, GitHub</span></div></section>
-          <section class="col" data-col="live"><div class="col-h">Live <span class="count">1</span><span class="who">Claude tries it</span></div></section>
-          <section class="col" data-col="yours"><div class="col-h">Yours to try <span class="count">3</span><span class="who">you</span></div></section>
+          <section class="col" data-col="ready"><div class="col-h">Ready <span class="count" data-c="ready"></span><span class="who">my order</span></div></section>
+          <section class="col" data-col="claimed"><div class="col-h">Being built <span class="count" data-c="claimed"></span><span class="who">Claude</span></div></section>
+          <section class="col" data-col="review"><div class="col-h">In review <span class="count" data-c="review"></span><span class="who">lead</span></div></section>
+          <section class="col" data-col="merging"><div class="col-h">Merging <span class="count" data-c="merging"></span><span class="who">tests, GitHub</span></div></section>
+          <section class="col" data-col="live"><div class="col-h">Live <span class="count" data-c="live"></span><span class="who">Claude tries it</span></div></section>
+          <section class="col" data-col="yours"><div class="col-h">Yours to try <span class="count" data-c="yours"></span><span class="who">you</span></div></section>
         </div></div>
         <div class="waiting" aria-label="Not ready yet">
           <b>Not Ready yet, and why</b>
@@ -202,6 +225,11 @@ button { font: inherit; color: inherit; }
       <label class="opt"><input type="radio" name="ready" value="mine-why"><span>A · My execution order, each with its why and a Pin <span class="mine">my pick</span></span><small>Your direction: your importance, my order, your pin wins.</small></label>
       <label class="opt"><input type="radio" name="ready" value="importance"><span>B · Your importance order, my notes beside it</span><small>Shows your order; you'd read my reasoning in the notes.</small></label>
     </fieldset>
+    <fieldset><legend>5 · Telling the kinds apart</legend>
+      <label class="opt"><input type="radio" name="kinds" value="icon-word-edge"><span>A · Icon, word and a coloured edge, with a filter above the board <span class="mine">my pick</span></span><small>Readable at a glance and without colour; the filter shows one kind at a time.</small></label>
+      <label class="opt"><input type="radio" name="kinds" value="edge"><span>B · The coloured edge only</span><small>Quieter cards; you learn the colours.</small></label>
+      <label class="opt"><input type="radio" name="kinds" value="columns"><span>C · A row of the board per kind</span><small>Clear, but three times the height.</small></label>
+    </fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(what you'd want on a card, a column you'd add or drop, what would make you trust it more)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
@@ -211,17 +239,19 @@ button { font: inherit; color: inherit; }
 (() => {
   // Today's real work, the times illustrative: each card and its round trip
   const CARDS = [
-    { id: "i66", col: "ready", t: "Corner cards stay over the side panel", k: "Issue 66 · Getting around › Corner cards", lane: "careful", why: "<b>Your Now.</b> First Ready; a Careful change, so one try on your Mac" },
-    { id: "it5", col: "ready", t: "Design review: Documents", k: "Roadmap item 5 · Backstage", lane: "look", why: "<b>Next in your Now.</b> After 66: both change Backstage's list styles, so one look covers both" },
-    { id: "lt1", col: "ready", t: "Live test: No Name twin cleanup", k: "Behind the scenes › Live test", lane: "ship", why: "<b>Groundwork.</b> Quiets a nightly second try; small, ships alone" },
-    { id: "sp2", col: "claimed", t: "Speed: database time per page", k: "Behind the scenes › Speed", lane: "ship", who: "lead", since: "2:10 PM", beat: "1 min ago" },
-    { id: "lc2", col: "claimed", t: "Live test: the fight run's leftovers", k: "Behind the scenes › Live test", lane: "ship", who: "worker", since: "2:30 PM", beat: "26 min ago", quiet: true },
-    { id: "i110", col: "review", t: "A pause lets what's on its way finish", k: "Issue 110 · Where it stands", lane: "look", who: "lead", pr: "479", since: "4:02 PM" },
-    { id: "i107", col: "merging", t: "Feedback's bar, and windows over the item window", k: "Issues 107–109 · Feedback and Testing", lane: "look", pr: "477", since: "tests 4 min" },
-    { id: "i106", col: "live", t: "End round ends the round on the bar", k: "Issue 106 · Testing", lane: "look", since: "live 11:07 AM", trying: true },
-    { id: "c78", col: "yours", t: "Feedback's bar, windows that keep the item window open", k: "Check 78 · laptop", lane: "look", since: "waiting 45 min" },
-    { id: "c79", col: "yours", t: "A pause lets what's on its way finish", k: "Check 79 · laptop", lane: "look", since: "waiting 10 min" },
-    { id: "c77", col: "yours", t: "End round ends the round on the bar", k: "Check 77 · laptop", lane: "look", since: "waiting 4 h", late: true },
+    { id: "i66", kind: "feedback", col: "ready", t: "Corner cards stay over the side panel", k: "Getting around › Corner cards", inside: "Issue 66", lane: "careful", why: "<b>Your Now.</b> First Ready; a Careful change, so one try on your Mac" },
+    { id: "it5", kind: "roadmap", col: "ready", t: "Design review: Documents", k: "Design review: every Backstage page · slice 1 of 8", lane: "look", why: "<b>Next in your Now.</b> After 66: both touch Backstage's lists, so one look covers both" },
+    { id: "lt1", kind: "upkeep", col: "ready", t: "Live test: No Name twin cleanup", k: "The nightly test", inside: "Its second try every night since Nov 19", lane: "ship", why: "<b>Groundwork.</b> Quiets a nightly second try; small, ships alone" },
+    { id: "sp2", kind: "roadmap", col: "claimed", t: "Speed: database time per page", k: "Performance: the whole tool · slice 1 of 3", lane: "ship", who: "lead", since: "2:10 PM", beat: "1 min ago" },
+    { id: "lc2", kind: "upkeep", col: "claimed", t: "Live test: the fight run's leftovers", k: "The nightly test", lane: "ship", who: "worker", since: "2:30 PM", beat: "26 min ago", quiet: true },
+    { id: "i110", kind: "feedback", col: "review", t: "A pause lets what's on its way finish", k: "Feedback and Testing › Where it stands", inside: "Issue 110", lane: "look", who: "lead", pr: "479", since: "4:02 PM" },
+    { id: "ps", kind: "upkeep", col: "review", t: "Weekly phone sweep", k: "Every Monday", inside: "Documents and the More button at phone width", lane: "look", who: "worker", pr: "473", since: "8:54 AM" },
+    { id: "i107", kind: "feedback", col: "merging", t: "Feedback's bar, and windows over the item window", k: "Feedback and Testing", inside: "Issues 107, 108, 109", lane: "look", pr: "477", since: "tests 4 min" },
+    { id: "dep", kind: "upkeep", col: "merging", t: "Package updates", k: "Dependabot", inside: "12 updates; Playwright's test image moved with it", lane: "ship", pr: "469", since: "red 16 h, fixed 8:40 AM" },
+    { id: "i106", kind: "feedback", col: "live", t: "End round ends the round on the bar", k: "Feedback and Testing › Testing", inside: "Issue 106", lane: "look", since: "live 11:07 AM", trying: true },
+    { id: "c78", kind: "feedback", col: "yours", t: "Feedback's bar, windows that keep the item window open", k: "Check 78 · laptop", inside: "Issues 107, 108, 109", lane: "look", since: "waiting 45 min" },
+    { id: "c79", kind: "feedback", col: "yours", t: "A pause lets what's on its way finish", k: "Check 79 · laptop", inside: "Issue 110", lane: "look", since: "waiting 10 min" },
+    { id: "c77", kind: "feedback", col: "yours", t: "End round ends the round on the bar", k: "Check 77 · laptop", inside: "Issue 106", lane: "look", since: "waiting 4 h", late: true },
   ];
   const HOPS = ["Sent", "Sorted", "Ready", "Claimed", "Pull request", "Review", "Merge", "Live", "Claude's try", "Your try", "Closed"];
   const AT = { ready: 2, claimed: 3, review: 5, merging: 6, live: 8, yours: 9 };  // (the hop each column is at)
@@ -232,10 +262,18 @@ button { font: inherit; color: inherit; }
   };
   const board = document.getElementById("board");
   const lanes = { ship: "Ship", look: "Look", careful: "Careful" };
+  const KIND = { feedback: "Feedback", roadmap: "Roadmap", upkeep: "Upkeep" };
+  const ICON = {  // (a speech bubble, a flag, a wrench)
+    feedback: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H7l-3.2 2.6c-.3.2-.8 0-.8-.4V11h0A1.5 1.5 0 0 1 2 9.5z" fill="currentColor"/></svg>',
+    roadmap: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5a.75.75 0 0 1 .75.75V3h7.4c.6 0 .9.7.5 1.1L10.4 6l1.75 1.9c.4.4.1 1.1-.5 1.1h-7.4v5.25a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75z" fill="currentColor"/></svg>',
+    upkeep: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 1.6a4 4 0 0 0-4.6 5.2L1.9 11.2a1.4 1.4 0 0 0 2 2l4.4-4.4a4 4 0 0 0 5.2-4.6l-2 2-1.9-.5-.5-1.9z" fill="currentColor"/></svg>',
+  };
+  document.querySelectorAll("[data-icon]").forEach(el => el.insertAdjacentHTML("afterbegin", ICON[el.dataset.icon]));
+  let only = "";
   function cardEl(c) {
     const b = document.createElement("button");
-    b.type = "button"; b.className = "card" + (c.quiet || c.late ? " stuck" : "") + (c.pinned ? " pinned" : ""); b.dataset.id = c.id;
-    let h = `<span class="t">${c.t}</span><span class="note">${c.k}</span><span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
+    b.type = "button"; b.className = `card k-${c.kind}` + (c.quiet || c.late ? " stuck" : "") + (c.pinned ? " pinned" : "") + (only && only !== c.kind ? " hide" : ""); b.dataset.id = c.id;
+    let h = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="t">${c.t}</span><span class="note">${c.k}</span>${c.inside ? `<span class="inside">${c.inside}</span>` : ""}<span class="row"><span class="pill lane-${c.lane}">${lanes[c.lane]}</span>`;
     if (c.who) h += `<span class="pill ${c.who}">${c.who === "lead" ? "Lead" : "Worker 1"}</span>`;
     if (c.pr) h += `<span class="pill">#${c.pr}</span>`;
     if (c.col === "ready") h += `<span class="pin" data-pin role="button" tabindex="0">${c.pinned ? "Pinned" : "Pin"}</span>`;
@@ -251,7 +289,15 @@ button { font: inherit; color: inherit; }
     const ready = CARDS.filter(c => c.col === "ready").sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     const rest = CARDS.filter(c => c.col !== "ready");
     [...ready, ...rest].forEach(c => board.querySelector(`[data-col="${c.col}"]`).append(cardEl(c)));
+    const shown = CARDS.filter(c => !only || c.kind === only);
+    document.querySelectorAll("[data-c]").forEach(el => { el.textContent = shown.filter(c => c.col === el.dataset.c).length; });
+    document.querySelectorAll("[data-n]").forEach(el => { el.textContent = CARDS.filter(c => !el.dataset.n || c.kind === el.dataset.n).length; });
   }
+  document.querySelectorAll(".fchip").forEach(b => b.addEventListener("click", () => {
+    only = b.dataset.k;
+    document.querySelectorAll(".fchip").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    draw();
+  }));
   const peek = document.getElementById("peek"), scrim = document.getElementById("scrim");
   function open(id) {
     const c = CARDS.find(x => x.id === id);
@@ -259,7 +305,7 @@ button { font: inherit; color: inherit; }
     document.getElementById("peek-t").textContent = c.t;
     document.getElementById("peek-k").textContent = c.k;
     const stuckNote = c.quiet ? " · gone quiet" : c.late ? " · waiting long" : "";
-    document.getElementById("trip-line").innerHTML = `<span class="pill lane-${c.lane}">${lanes[c.lane]}</span><b>${HOPS[at]}</b><span class="note">step ${at + 1} of ${HOPS.length}${stuckNote}</span>`;
+    document.getElementById("trip-line").innerHTML = `<span class="kind k-${c.kind}">${ICON[c.kind]}${KIND[c.kind]}</span><span class="pill lane-${c.lane}">${lanes[c.lane]}</span><b>${HOPS[at]}</b><span class="note">step ${at + 1} of ${HOPS.length}${stuckNote}</span>`;
     const trip = TRIP[id] || HOPS.map((_, i) => [i < at ? ["9:14 AM", "9:15", "9:16", "9:40", "10:20", "10:24", "10:28", "10:31", "10:35"][i] || "" : "", i < at ? ["you", "lead", "askdnd", "lead", "", "lead", "GitHub", "Railway", "lead"][i] || "" : ""]);
     const ol = document.getElementById("trip");
     ol.innerHTML = HOPS.map((h, i) => {
@@ -289,7 +335,7 @@ button { font: inherit; color: inherit; }
   // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["where", "card", "trip", "ready"];
+  const NAMES = ["where", "card", "trip", "ready", "kinds"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
