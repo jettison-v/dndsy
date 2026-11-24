@@ -41,7 +41,7 @@
         {% for r in g.rows %}
         <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
           <td>{{ state_word(act[r.kind][0], act[r.kind][1], ' data-act="' ~ r.kind ~ '"') }}</td>
-          <td><span class="dt-id">{{ r.no }}</span></td>
+          <td><span class="dt-id">{{ mark(r.key) }}</span></td>
           <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
           <td class="num">{% if r.minutes %}{{ r.minutes }} min{% endif %}</td>
           <td>{% if r.kind == "check" %}<form method="post" action="/manage/testing/checks/{{ r.key[1:] }}/go" class="inline"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>{% endif %}</td>
@@ -57,7 +57,7 @@
       {% for g in gs %}{% for r in g.rows %}
         <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
           <td>{{ state_word(act[r.kind][0], act[r.kind][1], ' data-act="' ~ r.kind ~ '"') }}</td>
-          <td><span class="dt-id">{{ r.no }}</span></td>
+          <td><span class="dt-id">{{ mark(r.key) }}</span></td>
           <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
           <td class="dt-wrap note">{{ r.from }}</td>
         </tr>

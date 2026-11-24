@@ -371,6 +371,15 @@ def _dm_tools_ok(user, here) -> bool:
 templates.env.globals["dm_tools_ok"] = _dm_tools_ok
 
 
+def _mark(key: str):
+    from app.fft import views
+
+    return views.mark(key)
+
+
+templates.env.globals["mark"] = _mark  # (an item's short mark, I76 with "issue 76" on hover: app/fft/views.py; Nov 24)
+
+
 def _digest_on(here) -> bool | None:
     """Whether the person asking gets this campaign's Inbox digest (the account menu's Email digest says On or Off);
     None where there's no campaign to say it for."""
