@@ -1,23 +1,16 @@
 {# Backups' + Import and Rule books' + Upload a book (app/admin.py `import_window`, `book_window`; Brett's pick S4 on
-   docs/mockups/backstage-round-1/, Nov 25: a form opens on demand, from the title row's action). #}
-<div class="peek-head">
-  <div><div class="note">{{ "Rule books" if book else "Backups" }}</div><h2 id="peek-title">{{ "Upload a book" if book else "Import campaign data" }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-  {% if book %}
-  <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="peek-form">
-    <div class="peek-body stack">
-      <p class="note">A book's file comes from the computer that has its offline copy (Claude makes it). Uploading it replaces that book's entries; the page says which book and how many once it's read.</p>
-      <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
-    </div>
-    <div class="peek-foot row"><button type="submit" class="btn primary" data-busy="Loading…">Upload book</button><button class="btn link peek-close" type="button">Cancel</button></div>
-  </form>
-  {% else %}
-  <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="peek-form">
-    <div class="peek-body stack">
-      <p class="note">A campaign bundle (.json). You'll see exactly what it would change before anything is saved; importing the same file again updates matching records, never duplicates them.</p>
-      <input type="file" name="file" accept=".json,application/json" required aria-label="Campaign bundle">
-    </div>
-    <div class="peek-foot row"><button type="submit" class="btn primary" data-busy="Reading…">Preview import</button><button class="btn link peek-close" type="button">Cancel</button></div>
-  </form>
-  {% endif %}
+   docs/mockups/backstage-round-1/, Nov 25: a form opens on demand, from the title row's action). On the one window and
+   field (Roadmap item 47); a book's upload says which file it takes and where it comes from (issue 118). #}
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% if book %}
+{% set w_foot %}<button type="submit" class="btn primary" data-busy="Loading…">Upload book</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Rule books", "Upload a book", foot=w_foot, form='method="post" action="/manage/backups/books" enctype="multipart/form-data"') %}
+  {% call field("Book file", help="askdnd's own file for a book, a .json.gz, made on the Mac from the book's offline copy (Claude makes it). Uploading it replaces that book's entries; the page says which book and how many once it's read.", key="book-file") %}<input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">{% endcall %}
+{% endcall %}
+{% else %}
+{% set w_foot %}<button type="submit" class="btn primary" data-busy="Reading…">Preview import</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Backups", "Import campaign data", foot=w_foot, form='method="post" action="/manage/backups/import" enctype="multipart/form-data"') %}
+  {% call field("Campaign bundle", help="A campaign bundle (.json). You'll see exactly what it would change before anything is saved; importing the same file again updates matching records, never duplicates them.", key="import-file") %}<input type="file" name="file" accept=".json,application/json" required aria-label="Campaign bundle">{% endcall %}
+{% endcall %}
+{% endif %}

@@ -1,18 +1,17 @@
 {# + Add to the table on Backstage › Table (app/manage_table.py `add_window`): a person, their role and their character, in a
    window from the title row's action (the UI review, Nov 16: a page's own action is at its title's right). #}
-<div class="peek-head">
-  <div><div class="note">Table</div><h2 id="peek-title">Add to the table</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-      <form method="post" action="{{ cbase }}/manage/table/add" class="peek-form">
-    <div class="peek-body stack">
-          <label class="field">Who<select name="email"><option value="">No one yet (just a character)</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}</option>{% endfor %}</select></label>
-          {% if can_add_new %}<label class="field">Or someone new: their Google email<input type="text" name="new_email" placeholder="name@gmail.com"></label>
-          <label class="field">Their name (optional, for a new email)<input type="text" name="name" maxlength="200"></label>{% endif %}
-          <label class="field">Role here<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select></label>
-          <label class="field">Their character: a D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="dndbeyond.com/characters/…"></label>
-          <label class="field">Or a character's name, if it has no D&amp;D Beyond sheet<input type="text" name="char_name" maxlength="200"></label>
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set w_kind %}Table{% endset %}{% set w_title %}Add to the table{% endset %}
+{% set w_foot %}<button class="btn primary" type="submit">Add to {{ campaign.name }}</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% set w_form %}method="post" action="{{ cbase }}/manage/table/add"{% endset %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
+          {% call field("Who") %}<select name="email"><option value="">No one yet (just a character)</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}</option>{% endfor %}</select>{% endcall %}
+          {% if can_add_new %}{% call field("New person", help="Their Google email, if they aren't listed above.") %}<input type="text" name="new_email" placeholder="name@gmail.com">{% endcall %}
+          {% call field("Their name", help="Optional, for a new person.") %}<input type="text" name="name" maxlength="200">{% endcall %}{% endif %}
+          {% call field("Role here") %}<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select>{% endcall %}
+          {% call field("Character", help="Its D&D Beyond link. Optional.") %}<input type="text" name="ddb_link" placeholder="dndbeyond.com/characters/…">{% endcall %}
+          {% call field("Or its name", help="If it has no D&D Beyond sheet.") %}<input type="text" name="char_name" maxlength="200">{% endcall %}
           {% if can_add_new %}<p class="note">A new email gets an account and can sign in. Google also needs them on its test-user list (Accounts says how).</p>{% endif %}
-    </div>
-    <div class="peek-foot row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button><button class="btn link peek-close" type="button">Cancel</button></div>
-  </form>
+    
+{% endcall %}

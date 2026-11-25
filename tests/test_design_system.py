@@ -136,12 +136,9 @@ def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
 # Windows still to move onto the one window (Roadmap item 47, Brett's pick W1 A, Nov 25): the work left, which may only
 # shrink. A window that moves leaves this list; a new window is built from _window.html from its first day.
 WINDOWS_TO_MOVE = {
-    "_account_add.html",
-    "_account_rename.html",
     "_brief.html",
     "_check_numbers.html",
     "_connections_modal.html",
-    "_design_panel.html",
     "_dice_picker.html",
     "_document_window.html",
     "_email_settings.html",
@@ -152,9 +149,7 @@ WINDOWS_TO_MOVE = {
     "_fft_close.html",
     "_fft_same.html",
     "_fft_split.html",
-    "_house_rule_add.html",
     "_hp_window.html",
-    "_import_window.html",
     "_item_browser.html",
     "_note_panel.html",
     "_panel_detail.html",
@@ -166,10 +161,8 @@ WINDOWS_TO_MOVE = {
     "_roll_checks.html",
     "_round_heads_up.html",
     "_scene_panel.html",
-    "_table_add.html",
     "_token_panel.html",
     "_trophy_view.html",
-    "_usage_window.html",
 }
 
 
