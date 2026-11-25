@@ -33,6 +33,17 @@
   "link": "https://claude.ai/artifact/EKE5TdPKJjRPt3H1cTLXUt"
  },
  {
+  "title": "Windows, Forms and Tables",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "Roadmap item 47, after your Backstage round: why the checks missed eleven window, form and table problems, one window, one field and one grouped table drawn on askdnd's own windows (New item, a roll's fields, Accounts), what's fixed the same way everywhere, and what the checks become. Three picks.",
+  "line": "One way for windows, fields and grouped tables",
+  "source": "docs/mockups/windows-forms-tables/index.html",
+  "link": "https://claude.ai/artifact/3vaQx2SE8GBbguzQwAFW5L"
+ },
+ {
   "title": "The Sync queue",
   "kind": "design",
   "status": "Picked",
