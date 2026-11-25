@@ -138,11 +138,8 @@ def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
 WINDOWS_TO_MOVE = {
     "_brief.html",
     "_check_numbers.html",
-    "_connections_modal.html",
     "_dice_picker.html",
     "_email_settings.html",
-    "_entity_edit.html",
-    "_entity_new.html",
     "_hp_window.html",
     "_item_browser.html",
     "_note_panel.html",

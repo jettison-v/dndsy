@@ -3,16 +3,14 @@
    wait; otherwise the button starts the round at once, as before. #}
 {% from "_window.html" import window %}
 {% set w_kind %}For you{% endset %}{% set w_title %}Start your round?{% endset %}
-{% call window(w_kind, w_title) %}
+{% set w_foot %}{% if flight %}<form method="post" action="/manage/testing/round/after"><input type="hidden" name="area" value="{{ area }}"><button class="btn primary" type="submit" data-do="round-after">Let it go live first</button></form>{% endif %}
+  <form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ area }}"><input type="hidden" name="need" value="{{ need }}"><button class="btn{{ '' if flight else ' primary' }}" type="submit" data-do="round-now">Start now</button></form>
+  <button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window(w_kind, w_title, foot=w_foot) %}
   <p class="note">Your round holds Claude's work in the areas you're trying. {{ "This is" if flight | length == 1 else "These are" }} about to go live there:</p>
   <ul class="plain fft-flight" data-flight>
     {% for g in flight %}<li class="fft-flight-row" data-pr="{{ g.n }}"><b>{{ g.titles[0] }}{% if g.titles | length > 1 %} <span class="note">and {{ g.titles | length - 1 }} more</span>{% endif %}</b>
       <span class="note">{% for a in g.areas %}<span class="chip">{{ a }}</span> {% endfor %}<a href="{{ g.pr }}" target="_blank" rel="noopener noreferrer">pull request {{ g.n }} ↗</a></span></li>{% endfor %}
   </ul>
   {% if not flight %}<p class="note">Nothing is about to go live there any more: your round can start.</p>{% endif %}
-</div>
-<div class="peek-foot row">
-  {% if flight %}<form method="post" action="/manage/testing/round/after"><input type="hidden" name="area" value="{{ area }}"><button class="btn primary" type="submit" data-do="round-after">Let it go live first</button></form>{% endif %}
-  <form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ area }}"><input type="hidden" name="need" value="{{ need }}"><button class="btn{{ '' if flight else ' primary' }}" type="submit" data-do="round-now">Start now</button></form>
-  <button class="btn link peek-close" type="button">Cancel</button>
 {% endcall %}
