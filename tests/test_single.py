@@ -46,7 +46,7 @@ def test_one_way_to_send_an_email(monkeypatch):
 
     monkeypatch.setattr(mail.urllib.request, "urlopen", lambda req, timeout: (sent.append(json.loads(req.data)), Answer())[1])
     base = {"subject": "s", "html": "<p>h</p>", "text": "h"}
-    assert mail.send("someone@example.test", base | {"stop": "https://askdnd.test/stop/1"})
-    assert mail.send("someone@example.test", base)
+    assert mail.send("someone@example.com", base | {"stop": "https://askdnd.test/stop/1"})
+    assert mail.send("someone@example.com", base)
     assert sent[0]["headers"]["List-Unsubscribe"] == "<https://askdnd.test/stop/1>" and "headers" not in sent[1]
     assert digest.SEND is mail.send and nudge.SEND is mail.send
