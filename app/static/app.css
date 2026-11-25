@@ -3074,7 +3074,6 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .ds-row + .ds-row { margin-top: var(--sp-3); }
 .ds-badge-host { position: relative; display: inline-grid; place-items: center; height: 36px; padding: 0 28px 0 10px; border-radius: var(--r-md); background: var(--chrome); color: var(--text); }  /* (a menu-bar button, to show its badge on) */
 .ds-sample { margin: 0; }
-.ds-sample + .ds-sample { margin-top: var(--sp-3); }  /* (two samples of one piece, one under the other) */
 .ds-edge { position: relative; height: 96px; max-width: 520px; border-radius: var(--r-lg); background: var(--bg); overflow: hidden; }
 .ds-edge .cond-halo { position: absolute; z-index: auto; }  /* (on the page it's fixed to the window) */
 .ds-sample .title-row h1 { margin: 0; }
