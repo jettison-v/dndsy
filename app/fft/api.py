@@ -1032,7 +1032,7 @@ def _run_view(run) -> dict:
             "asked_by": run.asked_by, "asked_at": run.created_at.isoformat() if run.created_at else None,
             "started_at": run.started_at.isoformat() if run.started_at else None,
             "ended_at": run.ended_at.isoformat() if run.ended_at else None, "limit": r.get("limit", 60),
-            "does": r.get("does", ""), "launch": r.get("launch", "now")}
+            "does": r.get("does", ""), "launch": r.get("launch", "now"), "how_to": reviews.fills().get("how", {}).get(run.review, [])}
 
 
 @router.get("/reviews")

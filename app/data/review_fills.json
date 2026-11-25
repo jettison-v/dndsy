@@ -1,20 +1,104 @@
 {
-  "_about": "What askdnd fills into Workshop's reviews (app/fft/reviews.json; Roadmap item 46, the pass's first change: a review is Workshop's, each product fills in its own). against: what Dig into a feature can check a feature against; devices: where a run looks; depths: how far it goes, with about how long. The characters come from the campaign's own (app/fft/host.py `review_characters`).",
+  "_about": "What askdnd fills into Workshop's reviews (app/fft/reviews.json; Roadmap item 46, the pass's first change: a review is Workshop's, each product fills in its own). against: what Dig into a feature can check a feature against; devices: where a run looks; depths: how far it goes, with about how long. The characters come from the campaign's own (app/fft/host.py `review_characters`). how: askdnd's playbook for each review, the steps Claude follows when it runs one (`feedback.py review next` prints them).",
   "against": [
-    {"key": "books", "label": "The 2024 books"},
-    {"key": "sheet", "label": "D&D Beyond's sheet"},
-    {"key": "house", "label": "The DM's house rules"},
-    {"key": "map", "label": "How it's meant to work (its section of the map)"}
+    {
+      "key": "books",
+      "label": "The 2024 books"
+    },
+    {
+      "key": "sheet",
+      "label": "D&D Beyond's sheet"
+    },
+    {
+      "key": "house",
+      "label": "The DM's house rules"
+    },
+    {
+      "key": "map",
+      "label": "How it's meant to work (its section of the map)"
+    }
   ],
   "devices": [
-    {"key": "laptop", "label": "A laptop"},
-    {"key": "phone", "label": "A phone"}
+    {
+      "key": "laptop",
+      "label": "A laptop"
+    },
+    {
+      "key": "phone",
+      "label": "A phone"
+    }
   ],
   "depths": [
-    {"key": "quick", "label": "A quick look", "minutes": 20},
-    {"key": "deep", "label": "All the way", "minutes": 60}
+    {
+      "key": "quick",
+      "label": "A quick look",
+      "minutes": 20
+    },
+    {
+      "key": "deep",
+      "label": "All the way",
+      "minutes": 60
+    }
   ],
   "product": "askdnd",
   "where": "at the table",
-  "test_sheets": "The test sheets"
+  "test_sheets": "The test sheets",
+  "how": {
+    "game_night": [
+      "Play Battle, Sheet, Party and Table rolls on the local copy of beta as each player and the DM would on a game night (scripts/pull_beta.sh first if it's over a day old): a fight, a rest, a spell, an item, a level's worth of buttons.",
+      "A laptop first (1280×800), then a phone (375) for the pages players use at the table.",
+      "Each thing that slowed a player, confused them or broke: an issue under its feature (feedback.py note, then sort), with a picture.",
+      "Fix only what's small and Ship-lane in the run, through the usual pull request and check."
+    ],
+    "polish_area": [
+      "Read the area's every page against docs/DESIGN.md and the design system page, and its section of docs/MAP.md for what it's for.",
+      "Open each page as everyone who uses it (admin, DM, player, View as), at a laptop width and the devices asked; keyboard only once; text at 200%.",
+      "Draw what should change as a mockup with picks (the picks block), asked in For you about the area; rounds until it's one piece.",
+      "Each change agreed becomes that area's batch: one design, one pull request, its checks."
+    ],
+    "every_number": [
+      "For each of the four characters and the test sheets: every number and button on Battle against the 2024 books' own words (private/books) and the character's D&D Beyond sheet.",
+      "scripts/battle_audit.py and scripts/roll_coverage.py first; then by hand what they can't see.",
+      "A number that's wrong: an issue under its feature, with the book's page and the sheet's value; never the book's text in the repo.",
+      "Report what was covered, character by character."
+    ],
+    "dig_feature": [
+      "Start from what was asked: the feature's open issues, then the words given.",
+      "Read the feature's section of docs/MAP.md and its code; check it against what was asked (the books, the sheet, the house rules, the map), with the characters asked, on the device asked.",
+      "Ask in For you (feedback.py ask review <run>, then review <run> wait <question>) only a real choice: which reading the table follows.",
+      "Each finding an issue under the feature; a small Ship-lane fix may go in the run; the rest in its area's batch."
+    ],
+    "the_week": [
+      "Skip it (review <run> skip) when no pull request merged since the last run (feedback.py pulls --all).",
+      "Read the week's merged pull requests as one: fresh reviewers on the design system and the code (the code review on the week's combined diff).",
+      "Sweep every page (scripts/visual_compare.py against last week's main, scripts/layout_sweep.py).",
+      "Check Help's About and FAQ, the DM guide and the tour against what changed; each mismatch an issue."
+    ],
+    "rethink_build": [
+      "Knowing every requirement now, read the architecture (docs/ARCHITECTURE.md, docs/MAP.md, the biggest modules) and ask: would we build it the same way?",
+      "Write what to keep, change and plan, each with its cost and what it buys.",
+      "Draw it as a page with picks for Brett (a decision, asked in For you); nothing changes until he picks."
+    ],
+    "test_tests": [
+      "Mutation testing on the core modules changed since the last run (scripts/mutation.py), and every survivor that isn't wording gets a test.",
+      "The tests that passed only on a second try (GitHub's run summaries), and the slowest ones: each fixed at its cause.",
+      "Untested corners: branch coverage under 90% by file; an issue for each that matters."
+    ],
+    "who_sees": [
+      "Read as an attacker and an auditor would: every route's refusals and readings (tests/test_refusals.py, tests/test_reading.py), what a request can change, what leaves askdnd (Claude, S3, email, Sentry).",
+      "What's kept, where and for how long: transcripts let go, backups restorable (the restore drill), keys still narrow (Railway, GitHub, the extension).",
+      "Each finding an issue under its feature; anything serious tells Brett at once."
+    ],
+    "runs_well": [
+      "Sentry's errors of the month, the slowest pages (scripts/page_speed.py), failed jobs (Backstage › Sync, Development › Scheduled), and the month's costs (Claude, OpenAI, Railway and its worker).",
+      "One look: what's getting worse, and what to change.",
+      "Each finding an issue under its feature; a cost that's grown asked in For you."
+    ],
+    "how_we_work": [
+      "Where time went this month (session lengths, what waited on whom: Development › Handoffs), what fell through (gaps, missed handoffs), what to change in Workshop.",
+      "The Roadmap: items gone stale, scopes waiting, whether the order still matches what matters.",
+      "Reviews that found nothing three runs in a row: suggest running them less often.",
+      "Drawn as a page with picks for Brett, asked in For you."
+    ]
+  }
 }

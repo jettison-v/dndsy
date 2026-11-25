@@ -503,6 +503,8 @@ def review(a) -> None:
         print(f"  What it does: {run['does']}")
         if run["inputs"]:
             print(f"  Asked: {json.dumps(run['inputs'])}")
+        for i, step in enumerate(run.get("how_to") or [], 1):
+            print(f"  {i}. {step}")
         print(f"  Then: review {run['id']} on \"…\" as it goes; done --file result.json at the end.")
         return
     if w[0] == "due":
