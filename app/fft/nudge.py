@@ -7,16 +7,15 @@ Counts and a link only, as the Inbox digest (app/digest.py): never anyone's word
 kept by the mail service. Sent by Resend from askdnd's own address, where the key is set and never on staging; one copy
 of the app at a time (a Postgres advisory lock)."""
 
-import asyncio
 import json
 import logging
-import urllib.request
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import config
+from app import mail as mail_out
 from app.fft import rules, views
 from app.fft.models import FftEvent, FftListener
 from app.models import ToolSetting
@@ -27,7 +26,6 @@ TICK = 300  # seconds between looks
 KEY = "fft_nobody_mail"  # (a ToolSetting: {"sent_at"}, when the last email went)
 LOCK = 72_042_042
 SITE = "https://askdnd.ai"
-RESEND = "https://api.resend.com/emails"
 
 
 def enabled() -> bool:
@@ -86,40 +84,22 @@ def check(db: Session, now: datetime | None = None) -> str:
     return "sent"
 
 
-def _resend(to: str, mail: dict) -> bool:
-    body = json.dumps({"from": config.EMAIL_FROM, "to": [to], "subject": mail["subject"], "html": mail["html"], "text": mail["text"]}).encode()
-    req = urllib.request.Request(RESEND, data=body, method="POST", headers={"Authorization": f"Bearer {config.RESEND_API_KEY}",
-                                                                           "Content-Type": "application/json", "User-Agent": "askdnd"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return 200 <= r.status < 300
-
-
-SEND = _resend  # (tests replace it)
+SEND = mail_out.send  # (tests replace it; app/mail.py, the one way to send)
 
 
 def run_once() -> str:
-    from app.db import SessionLocal, engine
+    from app import single
 
-    with engine.connect() as hold:
-        got = hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar()
-        hold.commit()
-        if not got:
-            return "elsewhere"
-        try:
-            with SessionLocal() as db:
-                said = check(db)
-                db.commit()
-                return said
-        finally:
-            hold.execute(select(func.pg_advisory_unlock(LOCK)))
-            hold.commit()
+    def look(db: Session) -> str:
+        said = check(db)
+        db.commit()
+        return said
+
+    return single.alone(LOCK, look, "elsewhere")
 
 
 async def loop() -> None:
     """Started with the app (app/main.py) where email is set up: a look every TICK seconds, never stopping on an error."""
-    while True:
-        await asyncio.sleep(TICK)
-        try:
-            await asyncio.to_thread(run_once)
-        except Exception:
-            log.warning("The nobody's-listening look failed this time", exc_info=True)
+    from app import single
+
+    await single.every(TICK, run_once, "The nobody's-listening look")

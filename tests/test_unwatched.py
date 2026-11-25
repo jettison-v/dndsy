@@ -65,7 +65,7 @@ def test_a_test_copy_and_a_campaign_without_sync_are_never_read(db, sheet):
     assert unwatched.unwatched(db) == []
 
 
-def test_one_copy_of_the_app_reads_at_a_time(monkeypatch):
+def test_one_copy_of_the_app_reads_at_a_time(db, monkeypatch):  # (db: its worker's test database made first)
     """Another copy holding the lock: this one reads nothing this tick (two copies never double the reads)."""
     from sqlalchemy import func
 

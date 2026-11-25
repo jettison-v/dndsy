@@ -1929,8 +1929,8 @@ def _areas_ready(db: Session, q, turn=None) -> list[FftArea]:
 def pick_next(db: Session) -> Pick:
     """R15: a blocker first (an issue that stops Brett's round); then an item Brett pressed Scope it on; otherwise Development's one queue from the top (issue 62:
     the Product Area batches and the Roadmap builds in his order), skipping a held row, a build whose next step is his and a
-    plan in his open round; the first that's Claude's. A build with plans of its own is taken by its plan; one without, as
-    itself (its next step)."""
+    plan in his open round or claimed by a session now; the first that's Claude's (`_ready`, the order the Board's Ready
+    column shows too). A build with plans of its own is taken by its plan; one without, as itself (its next step)."""
     r = round_open(db)
     if r is not None:
         stop = db.scalar(select(FftIssue).join(FftTryIssue, FftTryIssue.issue_id == FftIssue.id)
@@ -1940,42 +1940,9 @@ def pick_next(db: Session) -> Pick:
     for it in scope_asked(db):  # (Scope it: Brett asked, so first after a blocker, Nov 21)
         return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it, reason="scope")
     skipped: list[tuple[str, str]] = []
-    # (item 39, 3 of 4: next, a fix to what just shipped, then a claim that went quiet, each ahead of new work)
-    for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
-                          .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing")))):
-        return Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", skipped, reason="shipped_fix")
-    for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now())):
-        return Pick(a, f"Back from a claim that went quiet: {a.title}", skipped, reason="quiet_claim")
-
-    def plan_ok(area: FftArea, name: str) -> bool:
-        if area_turn(db, area) != "claude":
-            return False
-        if area.held:  # (below Development's line: Brett holds it)
-            skipped.append((name, "held below the line"))
-            return False
-        if in_open_round(db, area):
-            skipped.append((name, "in Brett's open round"))
-            return False
-        return True
-
-    for kind, x in queue_entries(db):
-        if kind == "a":
-            if plan_ok(x, x.title):
-                return Pick(x, x.title, skipped)
-            continue
-        if x.held:
-            skipped.append((x.title, "held below the line"))
-            continue
-        if x.next_whose == "brett":
-            skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
-            continue
-        plans = list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))
-        for a in plans:
-            if plan_ok(a, f"{x.title} › {a.title}"):
-                return Pick(a, f"{x.title} › {a.title}", skipped, item=x)
-        sc = latest_scope(db, x)
-        if sc is not None and sc.agreed_at is not None:
-            return Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", skipped, item=x)
+    for p in _ready(db, skipped=skipped):
+        p.skipped = skipped
+        return p
     return Pick(None, "Nothing is Claude's turn.", skipped)
 
 
@@ -2340,28 +2307,77 @@ def heartbeat(db: Session, owner: str) -> int:
 
 def ready_areas(db: Session, turn=None) -> list[tuple[FftArea, str, str]]:
     """Ready, in the order Claude takes it (item 39, the Board's Ready column): each area Claude may take now, with the
-    rule that put it there (Pick.reason) and its one line of why. Its first is `pick_next`'s pick, after a blocker and
-    Scope it, which hand over first and aren't plans in the queue."""
+    rule that put it there (Pick.reason) and its one line of why. The same order `pick_next` takes (`_ready`, one place;
+    the backend look-back's LB4), after a blocker and Scope it, which hand over first and aren't plans in the queue."""
     out: list[tuple[FftArea, str, str]] = []
+    for p in _ready(db, turn):
+        if p.area is not None:
+            why = {"shipped_fix": "A fix to what just shipped: your try found it",
+                   "quiet_claim": "Back from a claim that went quiet: first in line"}.get(p.reason)
+            out.append((p.area, p.reason, why or f"Your order: {len(out) + 1}" + (f" ({p.item.title})" if p.item else "")))
+    return out
+
+
+def _ready(db: Session, turn=None, skipped: list[tuple[str, str]] | None = None):
+    """Ready work in the one order Claude takes it, as Picks: a fix to what just shipped, then a claim that went quiet,
+    then Development's queue from the top (Brett's order): a batch, or a build's plans, each Claude's turn, not held, not
+    in his open round and not claimed by a session right now; a build with no plan Claude may take is itself, once its
+    scope is agreed (its next step). `skipped` collects what was passed over and why (R15)."""
+    skipped = skipped if skipped is not None else []
+    turn_of = turn or area_turn
     seen: set[int] = set()
 
-    def add(a: FftArea, reason: str, why: str) -> None:
-        if a.id not in seen and not (a.lock_owner and a.lock_until and a.lock_until > now()):
-            seen.add(a.id)
-            out.append((a, reason, why))
+    def claimed(a: FftArea) -> bool:
+        return bool(a.lock_owner and a.lock_until and a.lock_until > now())
 
     for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
                           .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing"))), turn):
-        add(a, "shipped_fix", "A fix to what just shipped: your try found it")
+        if a.id not in seen and not claimed(a):
+            seen.add(a.id)
+            yield Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", reason="shipped_fix")
     for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now()), turn):
-        add(a, "quiet_claim", "Back from a claim that went quiet: first in line")
+        if a.id not in seen:
+            seen.add(a.id)
+            yield Pick(a, f"Back from a claim that went quiet: {a.title}", reason="quiet_claim")
+
+    def plan_ok(area: FftArea, name: str) -> bool:
+        if area.id in seen or turn_of(db, area) != "claude":
+            return False
+        if area.held:  # (below Development's line: Brett holds it)
+            skipped.append((name, "held below the line"))
+            return False
+        if in_open_round(db, area):
+            skipped.append((name, "in Brett's open round"))
+            return False
+        if claimed(area):
+            skipped.append((name, "claimed by a session now"))
+            return False
+        return True
+
     for kind, x in queue_entries(db):
-        plans = [x] if kind == "a" else ([] if x.held or x.next_whose == "brett" else
-                                         list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))))
-        for a in plans:
-            if (turn or area_turn)(db, a) == "claude" and not a.held and not in_open_round(db, a):
-                add(a, "queue", f"Your order: {len(out) + 1}" + (f" ({x.title})" if kind == "i" else ""))  # (its place in Ready)
-    return out
+        if kind == "a":
+            if plan_ok(x, x.title):
+                seen.add(x.id)
+                yield Pick(x, x.title)
+            continue
+        if x.held:
+            skipped.append((x.title, "held below the line"))
+            continue
+        if x.next_whose == "brett":
+            skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
+            continue
+        took = taken = False
+        for a in db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
+            taken = taken or claimed(a)
+            if plan_ok(a, f"{x.title} › {a.title}"):
+                seen.add(a.id)
+                took = True
+                yield Pick(a, f"{x.title} › {a.title}", item=x)
+        if took or taken:
+            continue  # (its plans are Ready, or one is being built now: not a second plan for the same build)
+        sc = latest_scope(db, x)
+        if sc is not None and sc.agreed_at is not None:
+            yield Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", item=x)
 
 
 # ------------------------------------------------------------------ pages sent without a merge (item 39, scope v7)

@@ -6,7 +6,6 @@ Reads Sentry with a read-only key (SENTRY_READ_TOKEN, a Railway variable; SENTRY
 project); off without it and never on staging. Each Sentry issue is filed once (its id kept), with a line saying how
 often it happened and its link; its run is a scheduled job (app/data/jobs.json "sentry") on Development › Scheduled."""
 
-import asyncio
 import json
 import logging
 import os
@@ -14,7 +13,6 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import config
@@ -97,28 +95,18 @@ def _save(db: Session, state: dict) -> None:
 
 
 def run_once() -> list[int]:
-    from app.db import SessionLocal, engine
+    from app import single
 
-    with engine.connect() as hold:
-        got = hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar()
-        hold.commit()
-        if not got:
-            return []
-        try:
-            with SessionLocal() as db:
-                made = run(db)
-                db.commit()
-                return made
-        finally:
-            hold.execute(select(func.pg_advisory_unlock(LOCK)))
-            hold.commit()
+    def look(db: Session) -> list[int]:
+        made = run(db)
+        db.commit()
+        return made
+
+    return single.alone(LOCK, look, [])
 
 
 async def loop() -> None:
     """Started with the app (app/main.py) where the key is set: a look every TICK seconds, filing once a day."""
-    while True:
-        await asyncio.sleep(TICK)
-        try:
-            await asyncio.to_thread(run_once)
-        except Exception:
-            log.warning("The Sentry look failed this time", exc_info=True)
+    from app import single
+
+    await single.every(TICK, run_once, "The Sentry look")
