@@ -56,7 +56,33 @@ def scan(page, found, who, width, where):
         found[(p["kind"], p["where"])].append((who, width, where, p["detail"]))
 
 
-def sweep(base: str, people: list[str], limit: int, widths: tuple = WIDTHS) -> dict:
+def open_windows(page, found, who, width, path, opened: set, shots: Path) -> None:
+    """Every window this page opens (data-modal-url), each kind once per person and width (ids collapsed): opened,
+    checked and pictured, then closed (Brett, Nov 25: the windows Backstage's rounds made were never opened by a check).
+    A window that only shows after a press inside another isn't reached."""
+    urls = page.eval_on_selector_all("main [data-modal-url]", "els => els.filter(e => e.checkVisibility()).map(e => e.dataset.modalUrl)")
+    for url in dict.fromkeys(urls):
+        kind = (who, width, re.sub(r"\d+", "N", url.split("?")[0]))
+        if kind in opened:
+            continue
+        opened.add(kind)
+        try:
+            page.locator(f'main [data-modal-url="{url}"]').first.click(timeout=3000)
+            page.wait_for_selector(".peek.open", timeout=5000)
+            page.wait_for_timeout(500)
+        except Exception:
+            print(f"  window {url} on {path} at {width}px didn't open")
+            page.keyboard.press("Escape")
+            continue
+        scan(page, found, who, width, f"{path} › window {url}")
+        name = re.sub(r"[^\w]+", "_", url.strip("/"))
+        (shots / who.split("@")[0] / str(width) / "windows").mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(shots / who.split("@")[0] / str(width) / "windows" / f"{name}.png"))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(250)
+
+
+def sweep(base: str, people: list[str], limit: int, widths: tuple = WIDTHS, windows: bool = False) -> dict:
     found = defaultdict(list)
     shots = ROOT / "private" / "layout-sweep"
     with sync_playwright() as pw:
@@ -67,6 +93,7 @@ def sweep(base: str, people: list[str], limit: int, widths: tuple = WIDTHS) -> d
             page.goto(f"{base}/dev/login?as={who}")
             paths = pages_from(page, base, "/", limit)
             print(f"{who}: {len(paths)} pages")
+            opened = set() if windows else None  # (each kind of window once per person and width)
             for width in widths:
                 page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
                 for i, path in enumerate(paths):
@@ -93,6 +120,8 @@ def sweep(base: str, people: list[str], limit: int, widths: tuple = WIDTHS) -> d
                             page.wait_for_timeout(600)
                             scan(page, found, who, width, f"menu {opener.get_attribute('data-menu')}")
                             page.mouse.click(5, 300)
+                    if opened is not None:
+                        open_windows(page, found, who, width, path, opened, shots)
                     if path.endswith("/battle") and page.locator(".head-add:visible").count():
                         page.locator(".head-add:visible").first.click()
                         page.wait_for_selector(".peek.open", timeout=4000)
@@ -109,11 +138,13 @@ def main():
     ap.add_argument("--base", default="http://localhost:8000")
     ap.add_argument("--as", dest="people", action="append", required=True, help="an email the dev login accepts (repeat)")
     ap.add_argument("--limit", type=int, default=80, help="pages per person")
+    ap.add_argument("--windows", action="store_true", help="also open every window each page opens (data-modal-url)")
     ap.add_argument("--widths", default=",".join(map(str, WIDTHS)), help="comma-separated, e.g. 375,768 for the weekly phone sweep")
     args = ap.parse_args()
-    found = sweep(args.base, args.people, args.limit, tuple(int(w) for w in args.widths.split(",") if w.strip()))
+    found = sweep(args.base, args.people, args.limit, tuple(int(w) for w in args.widths.split(",") if w.strip()),
+                  args.windows)
     if not found:
-        print("Nothing scrolls sideways, spills, wraps or overlaps.")
+        print("Nothing scrolls sideways, spills, wraps, overlaps or is covered.")
         return
     for (kind, where), hits in sorted(found.items(), key=lambda kv: (kv[0][0], -len(kv[1]))):
         widths = sorted({w for _, w, _, _ in hits})

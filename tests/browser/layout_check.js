@@ -5,6 +5,8 @@
 // - "wraps": a one-line control (a button, tab, tag, chip) broke onto two lines
 // - "overlaps": two items in the menu bar sit on top of each other, or something placed on top (a badge, a corner
 //   button) covers text beside it
+// - "covered": words with something else drawn over them, on the page or in an open window (a sticky header over a row,
+//   a card over a list, a help line over a box; Nov 25)
 // - "zooms", on a touch screen only: a box you type in with text under 16px, which makes an iPhone zoom the page in
 // - "breaks a word": a heading or a bold name wrapped inside a word rather than between words
 // - "cuts its hint": a box's placeholder longer than the box
@@ -309,6 +311,48 @@ ask => {
         }
       }
     });
+  }
+  // Words something else is drawn over (Brett, Nov 25: issues 124, 126, 129 and 131 reached him because only the menu bar
+  // and small badges were checked): a sticky header over a list's first row, a card over the last, a help line over the
+  // box below it, chips wrapping under the next row. The middle of each line of words is asked what's on top there. Only
+  // the top layer counts (an open window, else the page), and only words that can be seen (inside the screen and every
+  // box that clips them).
+  const layer = [...document.querySelectorAll('.peek.open, dialog[open]')].filter(shown).pop() || document.body;
+  const seenAt = el => {
+    let r = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const b = e.getBoundingClientRect();
+      r = { left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom) };
+    }
+    return r;
+  };
+  const named = el => el.id ? `#${el.id}` : `${el.tagName.toLowerCase()}${[...el.classList].slice(0, 2).map(c => '.' + c).join('')}`;
+  const words = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
+  for (let n = words.nextNode(); n; n = words.nextNode()) {
+    const el = n.parentElement;
+    if (!n.textContent.trim() || !el || !shown(el) || el.closest('[hidden], .sr, [aria-hidden=true], [role=tooltip], option, script, style, template')) continue;
+    if (parseFloat(getComputedStyle(el).opacity) === 0) continue;
+    const range = document.createRange(); range.selectNodeContents(n);
+    const box = seenAt(el);
+    for (const t of range.getClientRects()) {
+      if (t.width < 4 || t.height < 4) continue;
+      const x = t.left + t.width / 2, y = t.top + t.height / 2;
+      if (x < box.left + 1 || x > box.right - 1 || y < box.top + 1 || y > box.bottom - 1) continue;
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || hit === el || el.contains(hit) || hit.contains(el)) continue;
+      if (hit.closest('.menu, [role=menu], .tour-card, .peek-backdrop, #cards, #check-card')) continue;  // (a menu or card opened over the page on purpose)
+      const hb = hit.getBoundingClientRect();
+      if (x < hb.left || x > hb.right || y < hb.top || y > hb.bottom) continue;  // (a link's clickable area stretched over its card: drawn by ::after, see-through)
+      if (getComputedStyle(hit).position === 'sticky' || hit.closest('thead, [data-sticky]')) {  // (rows scrolled under a header that stays: as meant, once scrolled)
+        let box = el.parentElement;
+        while (box && box !== document.body && !(box.scrollHeight > box.clientHeight && /auto|scroll/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+        if ((box && box !== document.body ? box.scrollTop : scrollY) > 0) continue;
+      }
+      add('covered', el, `"${n.textContent.trim()}" under ${named(hit)}${hit.textContent.trim() ? ` ("${hit.textContent.trim().slice(0, 30)}")` : ''}`);
+      break;
+    }
   }
   const ids = new Map();
   document.querySelectorAll('[id]').forEach(el => { if (el.id) ids.set(el.id, (ids.get(el.id) || 0) + 1); });
