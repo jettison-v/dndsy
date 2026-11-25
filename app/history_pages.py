@@ -158,6 +158,7 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         "toast": request.session.pop("toast", None)})
 
 
+LONG = 160  # (before and after longer than this together: Open it, in the row)
 DAYS_SHOWN = 7  # (the newest week of days with changes, then Show older: Brett's pick HI3, Nov 25)
 RUN_SECONDS = 180  # (changes to many things alike within three minutes are one: a publish, Brett's pick HI1)
 NOUNS = {"story_events": ("key moment", "key moments"), "entities": ("entry", "entries"), "glossary_terms": ("glossary term", "glossary terms"),
@@ -183,7 +184,7 @@ def _item(db: Session, user: dict, r: Revision, people: dict, known: dict) -> di
     return {"r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
             "subject": _subject(r, known), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
             **_present(db, r, people),
-            "long": r.field in ("summary", "description", "data", "note", "deleted"),
+            "long": r.field in ("summary", "description", "data", "note", "deleted") or len(str(r.old or "")) + len(str(r.new or "")) > LONG,  # (a rule's data is for the window, not the row)
             "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)}
 
 

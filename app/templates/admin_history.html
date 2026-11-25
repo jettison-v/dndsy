@@ -15,7 +15,7 @@
   {% if batch %}<p class="flash">Showing one import. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   <div class="hist-list" data-list="history" data-default-sort="default" data-ls-group-count>
     <div class="hist-tools">
-      <span class="seg" role="group" aria-label="Show">{% for k, lab in filters.items() %}<a href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %} data-filter="{{ k or 'all' }}">{{ lab }}</a>{% endfor %}</span>
+      <div class="filters" role="group" aria-label="Show">{% for k, lab in filters.items() %}<a class="chip{{ ' on' if show == k }}" href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %} data-filter="{{ k or 'all' }}">{{ lab }}</a>{% endfor %}</div>{# (chips that wrap: ten filters overran a segmented switch at every width) #}
       <div class="hist-search">{{ search_box("Search what changed or who") }}</div>
     </div>
     <div class="hist-rows" data-ls-rows>

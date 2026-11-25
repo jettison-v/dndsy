@@ -840,6 +840,8 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .records > .record[data-modal-url]:hover { background: var(--surface-2); }
 /* History (Brett's picks HI1–HI3, Nov 25): rows that open their window; the switch and search on one row */
 .hist-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }
+.hist-tools > .filters { margin: 0; }
+.hist-tools a.chip { text-decoration: none; }
 .hist-search { flex: 1 1 16rem; max-width: 380px; }
 .hist-rows > .hist-row[data-modal-url] { cursor: pointer; }
 .hist-rows > .hist-row[data-modal-url]:hover { background: var(--surface-2); }

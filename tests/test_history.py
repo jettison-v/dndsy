@@ -80,7 +80,7 @@ def test_history_filters_and_restore_point_at_history(db, cole, admin):
 
     for url in ("/manage/history", "/c/main/manage/history"):
         page = admin.get(url, follow_redirects=True).text
-        hrefs = re.findall(r'<a href="([^"]+)"[^>]*data-filter=', page)  # (the views as a two-way switch: Brett's pick HI3, Nov 25)
+        hrefs = re.findall(r'<a [^>]*href="([^"]+)"[^>]*data-filter=', page)  # (each filter by its marker, whatever its look)
         assert hrefs and all(h.startswith(("/manage/history", "/c/main/manage/history")) for h in hrefs), hrefs
     page = admin.get("/c/main/manage/history").text  # (Restore is in a row's window now: HI2)
     for ids in re.findall(r'data-modal-url="/c/main/manage/history/window\?ids=([0-9,]+)"', page)[:3]:
