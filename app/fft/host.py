@@ -8,7 +8,7 @@ the page helpers, config, the live connection, file storage, errors, timing, the
 directly. tests/test_fft_boundary.py keeps it so. No table moves: the tool's tables stay in askdnd's database.
 """
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import access as _access
@@ -123,6 +123,17 @@ def test_campaign_name(db: Session, *, slug: str = "", character_id: int | None 
                          .where(CampaignCharacter.character_id == character_id, CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
         return camp.name if camp is not None else ""
     return ""
+
+
+def review_characters(db: Session) -> list[str]:
+    """The characters a review can look through (Dig into a feature's With which characters; Roadmap item 46): the
+    table's own, in its real campaigns, by name; a test campaign's are "the test sheets" (app/data/review_fills.json)."""
+    from app.models import Campaign, CampaignCharacter, Character
+
+    return list(db.scalars(select(Character.name).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
+                           .join(Campaign, Campaign.id == CampaignCharacter.campaign_id)
+                           .where(CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(False))
+                           .group_by(Character.name).order_by(func.min(Character.id))))
 
 
 # ------------------------------------------------------------------ the host's jobs and speeds (Development › Scheduled)

@@ -1,0 +1,73 @@
+{# Running a review (app/fft/work_page.py `review_run_window`; Roadmap item 46, Brett's pick "Launching on demand: as
+   drawn" on docs/mockups/review-catalog/): Run now confirms once and says what it will cover; Run… asks only what that
+   review needs, a numbered step at a time (app.js "Steps in a window"): Polish an area two, Dig into a feature four,
+   the last saying what will happen before Start. On the one window, its buttons in the foot. #}
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field, pick_chips, pick_any %}
+{% set action = 'method="post" action="/manage/work/reviews/' ~ r.key ~ '/run"' %}
+{% macro starts() -%}
+{% if paused %}Waits while Deploys is Paused, and starts once you choose another
+{%- elif live %}Waits its turn after the review running now
+{%- else %}Within minutes while Claude listens, else within the hour{% endif %}
+{%- endmacro %}
+{% if r.launch == "now" %}
+{% set w_foot %}<button class="btn primary" type="submit" data-do="review-start">Run now</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Run a review", r.title, foot=w_foot, form=action ~ ' data-review-run="' ~ r.key ~ '"') %}
+  <p>{{ r.does }}</p>
+  <dl class="mech">
+    <dt>It covers</dt><dd>{% if last %}What changed since its last run: {{ merged }} change{{ "s" if merged != 1 }} merged since {{ when(last.ended_at) }}{% else %}Everything: it hasn't run before{% endif %}</dd>
+    <dt>Starts</dt><dd>{{ starts() }}</dd>
+    <dt>Takes</dt><dd>Up to {{ r.limit }} minutes, stopping at its limit and saying what it covered</dd>
+    <dt>Hands back</dt><dd>One page on its row, what it found as issues in Feedback, and only real choices in your For you</dd>
+  </dl>
+{% endcall %}
+{% else %}
+{% set steps = [("which", "Which area"), ("focus", "Focus and devices")] if r.launch == "polish" else [("which", "Which feature"), ("why", "What prompted it"), ("against", "Check against"), ("start", "Start")] %}
+{% set w_foot %}<button class="btn" type="button" data-step-back hidden>Back</button><button class="btn primary" type="button" data-step-next>Next</button><button class="btn primary" type="submit" data-step-start hidden data-do="review-start">Start</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Run a review", r.title ~ "…", foot=w_foot, form=action ~ ' data-steps data-review-run="' ~ r.key ~ '"', body_class="stack") %}
+  <div class="tabbar review-steps" role="tablist" aria-label="Steps">
+    {% for k, label in steps %}<button type="button" role="tab" data-tab="rs-{{ k }}" aria-selected="{{ 'true' if loop.first else 'false' }}"><span><span class="step-n">{{ loop.index }}</span><span class="step-name">{{ label }}</span></span></button>{% endfor %}
+  </div>
+  {% if r.launch == "polish" %}
+  <div id="rs-which" class="stack">
+    {% call field("Area", tag="div", key="area") %}{{ pick_chips("area", opts.areas, "", "Area") }}{% endcall %}
+    <p class="note">Its findings land as issues under that area's features.</p>
+  </div>
+  <div id="rs-focus" class="stack" hidden>
+    {% call field("Focus", help="Optional: a page or what feels off.", key="focus") %}<textarea name="focus" rows="2" maxlength="500"></textarea>{% endcall %}
+    {% call field("On", tag="div", key="devices") %}{{ pick_any("devices", opts.devices, ["laptop"], "On") }}{% endcall %}
+    <dl class="mech"><dt>Starts</dt><dd>{{ starts() }}</dd><dt>Takes</dt><dd>Up to {{ r.limit }} minutes</dd></dl>
+  </div>
+  {% else %}
+  <div id="rs-which" class="stack">
+    {% call field("Feature", help="From the Product Taxonomy, so what it finds lands in that feature's issues.", key="feature") %}<select name="feature" required data-review-feature>
+      <option value="">Pick one</option>
+      {% for a in areas %}<optgroup label="{{ a.title }}">{% for f in a.features %}<option value="{{ f.key }}">{{ f.title }}</option>{% endfor %}</optgroup>{% endfor %}
+    </select>{% endcall %}
+  </div>
+  <div id="rs-why" class="stack" hidden>
+    {% call field("Its open issues", tag="div", help="Pick any to look at first.", key="issues") %}<div class="pick-chips" role="group" aria-label="Its open issues">
+      {% for i in issues %}<label class="chip" data-pick="{{ i.id }}" data-for-feature="{{ i.feature }}" hidden><input type="checkbox" name="issues" value="{{ i.id }}"> I{{ i.id }} · {{ i.title }}</label>{% endfor %}
+      <span class="note" data-no-issues>None open under it.</span></div>{% endcall %}
+    {% call field("Or say what's wrong", key="words") %}<textarea name="words" rows="3" maxlength="2000" data-sum-source="words"></textarea>{% endcall %}
+  </div>
+  <div id="rs-against" class="stack" hidden>
+    {% call field("Check it against", tag="div", key="against") %}{{ pick_any("against", opts.against, ["books", "sheet"], "Check it against") }}{% endcall %}
+    {% call field("With which characters", tag="div", key="characters") %}{{ pick_any("characters", opts.characters, [], "With which characters") }}{% endcall %}
+    {% call field("On", tag="div", key="device") %}{{ pick_chips("device", opts.devices, "laptop", "On") }}{% endcall %}
+    {% call field("How deep", tag="div", key="depth") %}{{ pick_chips("depth", opts.depths, "deep", "How deep") }}{% endcall %}
+  </div>
+  <div id="rs-start" class="stack" hidden>
+    <dl class="mech" data-review-summary>
+      <dt>Feature</dt><dd data-sum="feature"></dd>
+      <dt>Starting from</dt><dd data-sum="issues words"></dd>
+      <dt>Against</dt><dd data-sum="against"></dd>
+      <dt>Characters</dt><dd data-sum="characters device"></dd>
+      <dt>Starts</dt><dd>{{ starts() }}</dd>
+      <dt>Takes</dt><dd>About {{ fills.depths | map(attribute="minutes") | list | last }} minutes all the way, {{ fills.depths[0].minutes }} for a quick look, stopping at its limit</dd>
+      <dt>Hands back</dt><dd>Its findings as issues under that feature, one page of choices in For you</dd>
+    </dl>
+  </div>
+  {% endif %}
+{% endcall %}
+{% endif %}

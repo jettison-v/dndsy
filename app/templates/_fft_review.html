@@ -1,0 +1,32 @@
+{# A review in the side panel (app/fft/work_page.py `review_panel`; Roadmap item 46, Brett's picks on
+   docs/mockups/review-catalog/): what it does and what it grew from, a run under way, and its runs with the same few
+   numbers each time (the pass's sixth change: results that line up). On the one window. #}
+{% from "_window.html" import window %}
+{% from "_admin_bits.html" import rd_section, state_word %}
+{% set r = x.r %}
+{% set TONE = {"asked": ("Waiting its turn", "quiet"), "starting": ("Starting", "ready"), "running": ("Running", "ready"), "waiting": ("Waiting on you", "ask"),
+               "done": ("Done", "passed"), "stopped": ("Stopped", "quiet"), "skipped": ("Skipped", "quiet")} %}
+{% set w_foot %}{% if x.run %}<form method="post" action="/manage/work/reviews/runs/{{ x.run.id }}/stop" class="inline" data-confirm="Stop {{ run_title(x.run) }}?"><button class="btn" type="submit" data-do="review-stop">Stop</button></form>
+  {% else %}<button class="btn primary" type="button" data-modal-url="/manage/work/reviews/{{ r.key }}/run" data-do="review-run">{{ "Run now" if r.launch == "now" else "Run…" }}</button>{% endif %}
+  <button class="btn link peek-close" type="button">Close</button>{% endset %}
+{% set w_head %} data-review-panel="{{ r.key }}"{% endset %}
+{% call window("Review · " ~ bucket.title, r.title, foot=w_foot, attrs=w_head, sub=x.cadence ~ " · Next: " ~ x.next, body_class="fft-item-body") %}
+<article class="reader-article fb-read">
+  {% call rd_section("What it does", attrs=' data-review-does') %}<p>{{ r.does }}</p>
+    {% if r.built_from %}<p class="note">Grew from {{ r.built_from }}.</p>{% endif %}
+    <p class="note">{{ bucket.question }} Already checked by itself: {{ bucket.automatic }}</p>{% endcall %}
+  {% if x.run %}{% call rd_section("Now", tone=TONE[x.run.state][1], attrs=' data-review-now') %}
+    <p>{{ state_word(TONE[x.run.state][0], TONE[x.run.state][1]) }} {{ run_title(x.run) }}</p>
+    <p class="note">{{ x.run_says }}</p>{% endcall %}{% endif %}
+  {% call rd_section("Its runs", count=runs | length, attrs=' data-review-runs') %}
+    {% if runs %}<div class="table-scroll"><table class="dtable fft-table">
+      <thead><tr><th>Run</th><th class="dt-w4">What it found</th></tr></thead>
+      <tbody>{% for u in runs %}{% set n = u.result.numbers or {} %}
+        <tr data-run="{{ u.id }}"><td class="dt-title">{% if u.state == "done" %}<a class="link-plain" href="/manage/work/reviews/runs/{{ u.id }}" data-modal-url="/manage/work/reviews/runs/{{ u.id }}" data-modal-size="large">{{ run_title(u) }}</a>{% else %}{{ run_title(u) }}{% endif %}
+          <span class="dt-why">{{ state_word(TONE[u.state][0], TONE[u.state][1]) }} {{ (u.ended_at or u.created_at) | ago }}{% if u.why %} · {{ u.why }}{% endif %}{% if u.how == "scheduled" %} · on its schedule{% endif %}</span></td>
+          <td class="dt-wrap">{% if u.state == "done" %}{{ n.found }} found · {{ n.fixed }} fixed · {{ n.picks }} pick{{ "s" if n.picks != 1 }} · {{ n.open }} open{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<p class="note">Not run yet. {{ "Its schedule starts after its first run." if x.cadence in ("Weekly", "Monthly") else "" }}</p>{% endif %}
+    {% if quiet >= 3 %}<p class="note" data-review-quiet>Nothing found {{ quiet }} runs in a row: it comes up in Look back at how we work, to run less often.</p>{% endif %}
+  {% endcall %}
+</article>
+{% endcall %}

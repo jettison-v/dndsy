@@ -133,6 +133,30 @@
   {% if not history %}{{ history_link("?tab=checks&history=1") }}{% endif %}
 
   {% elif tab == "scheduled" %}
+  {# Reviews (Roadmap item 46, Brett's picks on docs/mockups/review-catalog/, version 6): the ten in six buckets, each
+     with how often and when it's next; Run now confirms, Run… asks what that review needs; a running one says what
+     it's on, with Stop; its last finished run opens its one page (app/fft/work_page.py review_rows) #}
+  {% set RUN_TONE = {"asked": ("Waiting its turn", "quiet"), "starting": ("Starting", "ready"), "running": ("Running", "ready"), "waiting": ("Waiting on you", "ask")} %}
+  {% set waiting = reviews | map(attribute="rows") | sum(start=[]) | selectattr("run") | selectattr("run.state", "equalto", "waiting") | list %}
+  {% for x in waiting %}{{ needs_line("Waiting on you", "you", run_title(x.run) ~ " asks you in For you", "review-" ~ x.r.key) }}{% endfor %}
+  <h2 class="plabel">Reviews</h2>
+  <p class="note">Each looks at one part of askdnd on its schedule or when you run it, and hands back one page: what it found goes into Feedback under its feature, and only real choices come to your For you.</p>
+  <div class="table-scroll"><table class="dtable fft-table" data-reviews>
+    <thead><tr><th>Review</th><th class="dt-w3">How often</th><th class="dt-w3">Next</th><th class="dt-w3">Last run</th><th class="dt-w3"></th></tr></thead>
+    <tbody>{% for g in reviews %}
+      <tr class="dt-group" data-bucket="{{ g.b.key }}"><td colspan="5" title="{{ g.b.question }}">{{ g.b.title }}</td></tr>
+      {% for x in g.rows %}
+      <tr data-review="{{ x.r.key }}" data-panel-url="/manage/work/reviews/{{ x.r.key }}" tabindex="0"{% if x.run %} data-run-state="{{ x.run.state }}"{% endif %}>
+        <td class="dt-title">{{ x.r.title }}<span class="dt-why">{% if x.run %}{{ state_word(RUN_TONE[x.run.state][0], RUN_TONE[x.run.state][1]) }} {% if x.run.inputs %}{{ run_title(x.run) }} · {% endif %}{{ x.run_says }}{% else %}{{ x.r.gets }}{% endif %}</span></td>
+        <td>{{ x.cadence }}</td>
+        <td class="dt-wrap">{{ x.next }}</td>
+        <td>{% if x.last %}<a class="link-plain" href="/manage/work/reviews/runs/{{ x.last.id }}" data-modal-url="/manage/work/reviews/runs/{{ x.last.id }}" data-modal-size="large" data-review-result>{% if x.last.state == "done" %}{{ x.last.result.numbers.found }} found · {{ x.last.ended_at | ago }}{% else %}{{ x.last.state | capitalize }} · {{ x.last.ended_at | ago }}{% endif %}</a>{% else %}<span class="dt-id">Not run yet</span>{% endif %}</td>
+        <td class="end">{% if x.run %}<form method="post" action="/manage/work/reviews/runs/{{ x.run.id }}/stop" class="inline" data-confirm="Stop {{ run_title(x.run) }}?"><button class="btn small" type="submit" data-do="review-stop">Stop</button></form>
+          {% else %}<button class="btn small" type="button" data-modal-url="/manage/work/reviews/{{ x.r.key }}/run" data-do="review-run">{{ "Run now" if x.r.launch == "now" else "Run…" }}</button>{% endif %}</td>
+      </tr>{% endfor %}
+    {% endfor %}</tbody></table></div>
+
+  <h2 class="plabel wk-h2">Jobs</h2>
   <p class="note">Jobs that run on their own. Each reports its run here; one that's late or failed says so.</p>
   <div class="table-scroll"><table class="dtable fft-table" data-jobs>
     <thead><tr><th>Job</th><th class="dt-w4">When</th><th class="dt-w3">Where</th><th class="dt-w3">Last run</th><th class="dt-w5">Result</th></tr></thead>

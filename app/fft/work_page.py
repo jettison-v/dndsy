@@ -25,7 +25,7 @@ from app import web
 from app.db import get_db
 from app.fft import host, lanes, rules, taxonomy, testing_page, views
 from app.fft.host import ToolSetting
-from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftPull, FftQuestion
+from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftPull, FftQuestion, FftReviewRun
 from app.templating import templates
 
 router = APIRouter()
@@ -481,7 +481,8 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
             ctx["history"] = history = 1  # (an old link to a check that has passed: it's in History now)
         ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
     elif tab == "scheduled":
-        ctx["jobs"] = jobs(db)
+        ctx["jobs"], ctx["reviews"] = jobs(db), review_rows(db)
+        ctx["run_title"] = run_title
     elif tab == "handoffs":  # (what passes between you, Workshop and Claude: Roadmap item 45)
         from app.fft import handoffs
 
@@ -630,3 +631,187 @@ def wake(request: Request, what: str = Form(""), key: str = Form(""), db: Sessio
     db.commit()
     request.session["toast"] = web.notice("Claude is told now: it looks at claude.ai at once" if what == "look" else "Claude is told now")
     return RedirectResponse("/manage/work?tab=handoffs", status_code=303)
+
+
+# ------------------------------------------------------------------ reviews (Roadmap item 46)
+
+
+def _when_words(t: datetime | None) -> str:
+    from app.config import TABLE_TIME
+
+    return t.astimezone(TABLE_TIME).strftime("%a %b %-d") if t else ""
+
+
+def _merged_since(db: Session, since: datetime | None) -> int:
+    """Changes merged since a review last ran (Run now says what it will cover)."""
+    q = select(func.count()).select_from(FftPull).where(FftPull.state == "merged")
+    if since is not None:
+        q = q.where(FftPull.closed_at > since)
+    return db.scalar(q) or 0
+
+
+def review_rows(db: Session) -> list[dict]:
+    """Development › Scheduled's reviews, bucket by bucket (Brett's picks on docs/mockups/review-catalog/): each one's
+    how often, when it's next, its last finished run and its live one."""
+    from app.fft import reviews
+
+    live = reviews.live_run(db)
+    asked = {r.review: r for r in db.scalars(select(FftReviewRun).where(FftReviewRun.state == "asked"))}
+    out = []
+    for b in reviews.buckets():
+        rows = []
+        for r in (x for x in reviews.catalog()["reviews"] if x["bucket"] == b["key"]):
+            how = reviews.cadence(db, r["key"])
+            setting = reviews.setting(db, r["key"])
+            nxt = reviews.slot_after(how, rules.now()) if setting is not None and setting.scheduled else None
+            if nxt:
+                next_words = _when_words(nxt)
+            elif how in ("weekly", "monthly"):
+                next_words = "After its first run"
+            else:
+                next_words = {"phase": "When a phase ends", "on_demand": "When you run it", "off": "Not now"}[how]
+            last = db.scalar(select(FftReviewRun).where(FftReviewRun.review == r["key"], FftReviewRun.state.in_(reviews.ENDED))
+                             .order_by(FftReviewRun.id.desc()).limit(1))
+            now_run = live if live is not None and live.review == r["key"] else asked.get(r["key"])
+            rows.append({"r": r, "cadence": reviews.CADENCE_WORDS[how], "next": next_words, "last": last, "run": now_run,
+                         "run_says": run_words(db, now_run) if now_run else ""})
+        out.append({"b": b, "rows": rows})
+    return out
+
+
+def run_words(db: Session, run) -> str:
+    """What a live or waiting run says on its row: what it's on, who asked and when, or why it waits."""
+    from app.fft import reviews
+
+    if run.state == "asked":
+        if rules.frozen(db):
+            return "Waits: Deploys is Paused, so it starts once you choose another"
+        live = reviews.live_run(db)
+        return f"Waits its turn after {reviews.review(live.review)['title']}" if live is not None else "Starts within minutes while Claude listens, else within the hour"
+    if run.state == "waiting":
+        q = db.get(FftQuestion, run.question_id) if run.question_id else None
+        return f"Asks you in For you: {q.text}" if q is not None else "Asks you in For you"
+    return run.doing or ("Starting" if run.state == "starting" else "")
+
+
+def run_title(run) -> str:
+    """"Dig into a feature: Wild Shape", "Polish an area: Battle", or the review's name."""
+    from app.fft import reviews
+
+    title = reviews.review(run.review)["title"]
+    if run.inputs.get("feature"):
+        f = taxonomy.feature(run.inputs["feature"])
+        return f"{title}: {f.title if f else run.inputs['feature']}"
+    if run.inputs.get("area"):
+        a = taxonomy.area(run.inputs["area"])
+        return f"{title}: {a.title if a else run.inputs['area']}"
+    return title
+
+
+@router.get("/manage/work/reviews/{key}")
+def review_panel(request: Request, key: str, db: Session = Depends(get_db)):
+    """A review in the side panel: what it does, how often, and its runs with the same few numbers each time."""
+    from app.fft import reviews
+
+    _, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    r = reviews.review(key)
+    if r is None:
+        return HTMLResponse("There's no such review.", status_code=404)
+    row = next(x for b in review_rows(db) for x in b["rows"] if x["r"]["key"] == key)
+    bucket = next(b for b in reviews.buckets() if b["key"] == r["bucket"])
+    return templates.TemplateResponse(request, "_fft_review.html", {"x": row, "bucket": bucket, "runs": reviews.runs(db, key, 12),
+                                                                   "run_title": run_title, "quiet": reviews.quiet_streak(db, key)})
+
+
+@router.get("/manage/work/reviews/{key}/run")
+def review_run_window(request: Request, key: str, db: Session = Depends(get_db)):
+    """Run now (one confirm) or Run… (Polish an area: two steps; Dig into a feature: four)."""
+    from app.fft import reviews
+
+    _, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    r = reviews.review(key)
+    if r is None:
+        return HTMLResponse("There's no such review.", status_code=404)
+    last = db.scalar(select(FftReviewRun).where(FftReviewRun.review == key, FftReviewRun.state == "done").order_by(FftReviewRun.id.desc()).limit(1))
+    ctx = {"r": r, "fills": reviews.fills(), "paused": rules.frozen(db), "live": reviews.live_run(db), "areas": taxonomy.areas(),
+           "last": last, "merged": _merged_since(db, last.ended_at if last else None), "when": _when_words}
+    fills = reviews.fills()
+    ctx["opts"] = {"areas": [(a.key, a.title) for a in taxonomy.areas()], "devices": [(d["key"], d["label"]) for d in fills["devices"]],
+                   "against": [(a["key"], a["label"]) for a in fills["against"]], "depths": [(d["key"], d["label"]) for d in fills["depths"]]}
+    if r["launch"] == "dig":
+        names = host.review_characters(db) + [fills["test_sheets"]]
+        ctx["opts"]["characters"] = [(n, n) for n in names]
+        ctx["issues"] = list(db.scalars(select(FftIssue).where(FftIssue.state != "closed", FftIssue.feature != "").order_by(FftIssue.id.desc())))
+    return templates.TemplateResponse(request, "_fft_review_run.html", ctx)
+
+
+@router.post("/manage/work/reviews/{key}/run")
+def review_run(request: Request, key: str, form=web.FormBody, db: Session = Depends(get_db)):
+    """Run now or Run…'s Start: the run is asked, kept with who pressed it; it starts when it's its turn."""
+    from app.fft import reviews
+
+    user, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    r = reviews.review(key)
+    if r is None:
+        return HTMLResponse("There's no such review.", status_code=404)
+    inputs: dict = {}
+    if r["launch"] == "dig":
+        inputs = {"feature": form.get("feature", ""), "issues": [int(i) for i in form.getlist("issues") if str(i).isdigit()],
+                  "words": form.get("words", ""), "against": form.getlist("against"), "characters": form.getlist("characters"),
+                  "device": form.get("device", "laptop"), "depth": form.get("depth", "deep")}
+    elif r["launch"] == "polish":
+        inputs = {"area": form.get("area", ""), "focus": form.get("focus", ""), "devices": form.getlist("devices")}
+    me = views.person(db, user)
+    try:
+        run = rules.ask_review(db, f"user:{me['id']}", key, inputs)
+    except rules.RuleError as e:
+        return HTMLResponse(e.words, status_code=409 if e.code == "busy" else 400)
+    db.commit()
+    request.session["toast"] = web.notice(f"{run_title(run)}: {run_words(db, run)}")
+    return RedirectResponse("/manage/work?tab=scheduled", status_code=303)
+
+
+@router.post("/manage/work/reviews/runs/{run_id}/stop")
+def review_stop(request: Request, run_id: int, db: Session = Depends(get_db)):
+    """Stop, on a run's row while it waits or runs."""
+    user, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    run = db.get(FftReviewRun, run_id)
+    if run is None:
+        return HTMLResponse("There's no such run.", status_code=404)
+    me = views.person(db, user)
+    try:
+        rules.stop_review(db, f"user:{me['id']}", run, "Stopped from Development › Scheduled")
+    except rules.RuleError as e:
+        return HTMLResponse(e.words, status_code=409)
+    db.commit()
+    request.session["toast"] = web.notice(f"{run_title(run)}: stopped")
+    return RedirectResponse("/manage/work?tab=scheduled", status_code=303)
+
+
+@router.get("/manage/work/reviews/runs/{run_id}")
+def review_result(request: Request, run_id: int, db: Session = Depends(get_db)):
+    """A finished run's one page: what was asked, what it covered and didn't, its findings and where each went, its
+    numbers."""
+    from app.fft import reviews
+
+    _, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    run = db.get(FftReviewRun, run_id)
+    if run is None:
+        return HTMLResponse("There's no such run.", status_code=404)
+    fills = reviews.fills()
+    said = {"against": {a["key"]: a["label"] for a in fills["against"]}, "devices": {d["key"]: d["label"] for d in fills["devices"]},
+            "depths": {d["key"]: d["label"] for d in fills["depths"]}}
+    return templates.TemplateResponse(request, "_fft_review_result.html", {
+        "run": run, "r": reviews.review(run.review), "title": run_title(run), "said": said, "when": _when_words,
+        "over_time": reviews.numbers_over_time(db, run.review), "asker": _who(db, run.asked_by, {}),
+        "took": round(((run.ended_at or rules.now()) - (run.started_at or run.created_at)).total_seconds() / 60) if run.started_at else None})
