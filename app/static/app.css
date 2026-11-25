@@ -3570,6 +3570,11 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 /* Handoffs (Development, Roadmap item 45): each step of a handoff, done ones quiet, the next one plain */
 .handoff-done { color: var(--faint); }
 .handoff-next { color: var(--text); }
+/* The Sync page (app/sync_page.py; Roadmap item 44): a row's direction mark, a try's exact error, the character link at
+   the window's far end */
+.sync-dir { color: var(--faint); }
+.sync-error { display: block; margin-top: var(--sp-1); font-size: var(--fs-xs); line-height: 1.4; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.sync-open { margin-left: auto; font-size: var(--fs-sm); }
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }

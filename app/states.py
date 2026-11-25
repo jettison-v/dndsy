@@ -26,6 +26,8 @@ STATES: dict[str, tuple[str, str]] = {
     "in play": ("In play", "done"), "unused": ("Unused", "quiet"),
     # anything that runs
     "running": ("Running", "working"), "failed": ("Failed", "broken"),
+    # a piece of sync work (the Sync page, app/sync_page.py)
+    "queued": ("Waiting", "going"), "not yet": ("Not yet", "you"), "cancelled": ("Cancelled", "quiet"),
 }
 
 
