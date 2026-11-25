@@ -1161,3 +1161,11 @@ What was set up:
 
 **Why:** reviews per pull request see one change at a time; a day's worth of them drifts apart even when each was reviewed. Checking the day as one, by reviewers who didn't build it, catches the drift while it's still small.
 **Reuse:** on any project with many small changes, end the day (or the week) with an independent review of the combined diff against the written rules, plus an automated sweep. Turn each "the reviewer didn't catch this" into a rule in an automated check with a test that proves it fires, so it's caught by the machines from then on rather than by memory.
+
+## Background jobs and a worker (Nov 25, overnight)
+
+**What:** a `jobs` table in the same Postgres, and a worker that takes them one at a time per queue (#513). Work that used to run inside whichever web request asked for it can now be a row: added in the request's own transaction, taken with `SELECT … FOR UPDATE SKIP LOCKED` (two workers never take the same row), kept alive by a heartbeat, retried with a backoff, and finished only by the attempt that took it. The first work moved onto it is reading sheets from D&D Beyond (#517, waiting for your local try). It runs inside the web app for now; a separate Railway service (`askdnd-worker`) is ready when you OK its cost.
+
+**Why:** a deploy restarts the web app, and anything it was doing stops half done; reads from D&D Beyond came in bursts from every open page with no record of what failed. A queue gives one place to see what's waiting, running or failed (the Sync queue, Roadmap item 44), and lets slow work outlive a deploy.
+
+**Reuse:** before adding Redis, Celery or a queue service, use the database you already have: a jobs table with `SKIP LOCKED`, a unique key per piece of work so it's never queued twice, a heartbeat and a lease so a dead worker's job goes back, and finishing "fenced" on the attempt number. Run the worker inside the web process first and split it out only when you need it to survive deploys.
