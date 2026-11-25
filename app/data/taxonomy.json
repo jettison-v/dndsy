@@ -66,7 +66,7 @@
   {"key": "around", "title": "Getting around", "what": "What every page shares", "features": [
    {"key": "menus", "title": "Menus and the menu bar", "map": ["The Three Menus", "Menu bar"]},
    {"key": "search", "title": "Search", "map": ["Search, like Spotlight"]},
-   {"key": "cards", "title": "Corner cards", "map": ["Corner cards"]},
+   {"key": "cards", "title": "Corner cards", "map": ["Corner cards"]}, {"key": "pieces", "title": "Windows, fields and tables", "map": ["Windows, fields and tables, one way"]},
    {"key": "help", "title": "Help and the tour", "map": ["The tour and Help › What askdnd adds"]},
    {"key": "signin", "title": "Signing in and links", "map": ["Signing in returns you", "One address per page"]}
   ]},

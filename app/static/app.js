@@ -4222,7 +4222,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // (a heading's count, where it has one, is what shows under it: searching or filtering, not every row)
     want.forEach(h => { const n = h.matches('.ls-grouphead') && h.querySelector('.count'); if (n) { const k = shownIn[h.dataset.label] || 0; n.textContent = k; n.dataset.count = k; n.hidden = !k; } });  // (as count_pill draws it: no 0)
     // (a list whose title already names its first group leaves that one unlabelled: Roadmap item 47, Brett's pick T1 A)
-    if (root.hasAttribute('data-ls-quiet-first')) want.filter(n => n.matches('.ls-grouphead')).forEach((h, i) => h.toggleAttribute('data-ls-quiet', i === 0));
+    // (only the list's own first group, and only beside another: a filter showing one group alone keeps its label; the
+    // review of #528)
+    if (root.hasAttribute('data-ls-quiet-first')) {
+      const first = rows.map(groupOf).find(g => g != null), hs = want.filter(n => n.matches('.ls-grouphead'));
+      hs.forEach(h => h.toggleAttribute('data-ls-quiet', h.dataset.label === String(first) && hs.length > 1));
+    }
     heads.forEach(h => h.remove());
     const now = [...box.children].filter(n => n.matches('[data-ls-row], .ls-grouphead'));
     if (now.length !== want.length || now.some((n, i) => n !== want[i])) want.forEach(n => box.appendChild(n));

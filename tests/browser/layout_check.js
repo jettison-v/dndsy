@@ -356,7 +356,9 @@ ask => {
         .find(a => ['sticky', 'fixed'].includes(getComputedStyle(a).position));
       if (stays) {  // (something that stays put as you scroll: rows scrolled under a header, or a bar pinned at the bottom, as meant)
         const cs = getComputedStyle(stays);
-        if (cs.position === 'fixed' || cs.bottom !== 'auto') continue;  // (a bar along the screen's foot: what's under it scrolls clear)
+        const sr = stays.getBoundingClientRect();
+        if (sr.top > innerHeight / 2 || (cs.bottom !== 'auto' && cs.top === 'auto')) continue;  // (a bar along the screen's foot: what's under it scrolls clear)
+        if (cs.position === 'fixed' && scrollY > 0) continue;  // (a bar along the top, the page scrolled under it; at the top of the page, words under it are a fault)
         let sc = el.parentElement;
         while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
         if ((sc && sc !== document.body ? sc.scrollTop : scrollY) > 0) continue;

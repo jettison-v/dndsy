@@ -756,3 +756,5 @@ def test_every_window_holds_together(people, server, long_names, who, width):
     found = {f.split(" (")[0] for f in open_windows(person, server, PAGES[who], width)}
     assert len(person.opened) >= (4 if who == "admin" else 1), person.opened  # (the windows its pages open: none means the walk broke)
     assert not found - WINDOWS_LEFT, "A window that doesn't hold together:\n" + "\n".join(sorted(found - WINDOWS_LEFT))
+    if who == "admin" and width == 1280:  # (the work left only shrinks: one fixed comes off the list, the review of #528)
+        assert not WINDOWS_LEFT - found, "Fixed: take it off WINDOWS_LEFT:\n" + "\n".join(sorted(WINDOWS_LEFT - found))
