@@ -829,6 +829,19 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .stat.needs b, .stat.needs small { color: var(--amber); }
 .stats.usage-tiles { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-3); }  /* (four in one row on a laptop: US2) */
 .stat > .btn.link { margin-top: var(--sp-1); padding: 0; }
+.feature-warn { color: var(--amber); }
+/* A help tip (_form_bits.html help_tip; issue 4, Nov 25): a small ? beside an ambiguous choice, its words on hover or focus */
+.help-tip { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 4px; border: 1px solid var(--line-strong); border-radius: 50%; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); cursor: help; vertical-align: 1px; }
+.help-tip:hover, .help-tip:focus-visible { color: var(--text); border-color: var(--text); }
+.help-tip:hover::after, .help-tip:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 30; width: max-content; max-width: 260px; padding: var(--sp-2) var(--sp-3); background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--text); font-size: var(--fs-xs); font-weight: 400; line-height: 1.4; white-space: normal; text-align: left; box-shadow: var(--lift); }
+.hb-bad { color: var(--link); display: block; margin-top: 2px; }
+.hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
+.records > .record[data-modal-url] { cursor: pointer; }  /* (a row that opens its window: Items, IT3) */
+.records > .record[data-modal-url]:hover { background: var(--surface-2); }  /* (what to know before switching a feature on, beside its switch: SE2, Nov 25) */
+.feature-more > summary { font-size: var(--fs-xs); color: var(--muted); }
+.seat-row > .tag { grid-column: 4; }  /* (the role in its own column, with or without a Sheet ↗ before it: TA1) */
+.seat-sheet { grid-column: 3; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; white-space: nowrap; }
+.seat-sheet:hover { color: var(--text); text-decoration: underline; }
 /* Backups' panel (Brett's pick BK1, Nov 25): the message box (.flash), green when last night worked, red with the missed
    nights and what to check when not; its lines one under another */
 .backup-panel { display: grid; gap: var(--sp-1); }
@@ -1062,7 +1075,7 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .manage-page .section.seats > h2:not(:first-of-type) { margin-top: var(--sp-5); }
 .seat { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); margin-top: var(--sp-2); }
 .seat[open] { border-color: var(--blue-line); }
-.seat-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); cursor: pointer; list-style: none; }
+.seat-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); cursor: pointer; list-style: none; }
 .seat-row::-webkit-details-marker { display: none; }
 .seat-pic { position: relative; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); font-weight: 700; }
 .seat-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

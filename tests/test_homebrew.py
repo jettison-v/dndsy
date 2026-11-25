@@ -96,3 +96,25 @@ def test_a_custom_item_on_a_sheet_is_offered_as_a_start(dm, db, sheet):
     renamed = {**FORM, "name": "Beasty Bone of the Deep", "key": key}
     dm.post("/c/main/dm/items", data=renamed)
     assert [r.name for r in db.scalars(select(CampaignContent))] == ["Beasty Bone of the Deep"]
+
+
+def test_items_opens_its_builder_in_a_large_window_and_refuses_what_it_cant_read(dm, db, sheet):
+    """Brett's picks IT1–IT3 on docs/mockups/backstage-round-2/ (Nov 25) and the builder's issues: the page is Items, as
+    the menu says; a row, + New item and Make it homebrew open the builder in a large window over the list; custom items
+    are grouped by whose sheet, with a search; How many come back takes only dice or all (issue 20); the ambiguous choices
+    carry a help tip, and Only with it no longer says every item is a weapon (issue 4)."""
+    _carry(db, sheet, "Beasty Bone")
+    dm.post("/c/main/dm/items", data=FORM)
+    key = db.scalar(select(CampaignContent)).key
+    page = dm.get("/c/main/dm").text
+    assert "<h1>Items</h1>" in page and "<title>Items" in page
+    assert f'data-modal-url="/c/main/dm/items/{key}?part=1" data-modal-size="large"' in page
+    assert 'data-modal-url="/c/main/dm/items/new?part=1" data-modal-size="large"' in page
+    assert 'data-group-label="Cole"' in page and 'data-ls-search' in page and "new?name=Beasty%20Bone&amp;part=1" in page
+    window = dm.get(f"/c/main/dm/items/{key}?part=1").text
+    assert 'class="peek-head"' in window and "<html" not in window and "data-item-builder" in window and "Open as a page" in window
+    form = dm.get("/c/main/dm/items/new").text
+    assert "(a weapon)" not in form and form.count('class="help-tip"') >= 3
+    r = dm.post("/c/main/dm/items", data={**FORM, "name": "Another compass", "charges_regain": "lots"})
+    assert r.status_code == 422 and "how many come back, like 1d3 or all" in r.text
+    assert dm.post("/c/main/dm/items", data={**FORM, "name": "A third compass", "charges_regain": "all"}, follow_redirects=False).status_code == 303

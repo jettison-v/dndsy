@@ -78,8 +78,11 @@ def test_only_the_dm_and_admins_set_house_rules(player, admin, dm, db):
     assert player.get("/c/main/manage/house-rules").status_code == 403
     assert dm.get("/c/main/manage/house-rules").status_code == 403  # a reviewer (dm@ is on the Railway reviewer list) isn't the DM
     set_role(db, "dm@example.com", "dm")
+    assert player.get("/c/main/manage/house-rules/add-window").status_code == 403  # (+ House rule's window too: HR1, Nov 25)
     page = dm.get("/c/main/manage/house-rules").text
-    assert "No house rules yet" in page and "One roll for all darts" in page and ">Magic Missile<" in page
+    assert "No house rules yet" in page and 'data-modal-url="/c/main/manage/house-rules/add-window"' in page
+    window = dm.get("/c/main/manage/house-rules/add-window").text
+    assert "One roll for all darts" in window and ">Magic Missile<" in window
     assert player.post("/manage/house-rules", data={"spell": "Magic Missile", "field": "once"}).status_code == 403
     dm.post("/manage/house-rules", data={"spell": "Magic Missile", "field": "once", "reason": "Faster"})
     row = db.scalar(select(HouseRule))

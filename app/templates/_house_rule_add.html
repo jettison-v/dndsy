@@ -1,0 +1,32 @@
+{# + House rule's window on House rules (app/house_rules_pages.py `add_window`; Brett's pick HR1, Nov 25) #}
+<div class="peek-head">
+  <div><div class="note">House rules</div><h2 id="peek-title">Add a house rule</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body house-rule-add">
+    {% if once_spells %}
+    <h3>A correction to an item</h3>
+    <p class="hint">Open the item from a character's page and use <b>Correct this</b> at the bottom of its side panel, with <b>This campaign</b> picked. It shows here, and only this campaign changes.</p>
+    <h3>One roll for all darts</h3>
+    <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
+    <form method="post" action="{{ cbase }}/manage/house-rules">
+      <input type="hidden" name="field" value="once">
+      <div class="form-row">
+        <select name="spell" aria-label="Spell">{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>
+        <input type="text" name="reason" placeholder="Why (optional)" aria-label="Why" maxlength="500">
+        <button class="btn" type="submit">Add</button>
+      </div>
+    </form>
+    {% endif %}
+    <h3>A ruling on a spell</h3>
+    <p class="hint">A short note the roll card shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
+    <form method="post" action="{{ cbase }}/manage/house-rules">
+      <input type="hidden" name="field" value="note">
+      <div class="form-row">
+        <select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>
+        <input type="text" name="value" placeholder="The ruling" aria-label="The ruling" maxlength="500" required>
+        <button class="btn" type="submit">Add</button>
+      </div>
+      <p class="note">The list has every spell askdnd has an audited roll recipe for. A spell already ruled on gets its ruling replaced.</p>
+    </form>
+</div>

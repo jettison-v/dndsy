@@ -219,3 +219,28 @@ def test_round_one_overview_backups_usage_and_rule_books(monkeypatch, db):
     assert admin.post("/manage/usage/limit", data={"amount": "20"}, follow_redirects=False).status_code == 303
     usage = admin.get("/manage/usage").text
     assert "$20.00" in usage.split('data-tile="limit"')[1].split("</div>")[0] and 'class="stat needs"' not in usage
+
+
+def test_round_two_settings_in_tabs_and_tables_one_action(monkeypatch, db):
+    """Brett's picks on docs/mockups/backstage-round-2/ (Nov 25): Settings in four tabs, each feature one line with what
+    to know first beside its switch and the longer story in its More fold (SE1, SE2); the page's own links land on their
+    tab; Table one action and a ⋯ for Refresh all, each player's Sheet ↗ (TA1)."""
+    from markupsafe import escape
+
+    from app import vtt
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    page = admin.get("/c/main/manage/settings").text
+    tabs = [t.split('data-tab="t-')[1].split('"')[0] for t in page.split('role="tab"')[1:]]
+    assert tabs == ["campaign", "books", "pictures", "features"]
+    assert 'id="t-campaign" role="tabpanel">' in page and 'id="t-features" role="tabpanel" hidden' in page
+    feat = admin.get("/c/main/manage/settings?tab=features").text
+    assert 'id="t-features" role="tabpanel">' in feat and "Roadmap:" not in feat
+    sync = feat.split('data-feature="sync"')[1].split("</li>")[0]
+    assert str(escape(vtt.feature("sync").line)) in sync and 'data-warn' in sync and "More</summary>" in sync
+    r = admin.post("/c/main/manage/settings/vtt/sync", data={"on": "1"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/c/main/manage/settings?tab=features#features"  # (back on its tab)
+    table = admin.get("/c/main/manage/table").text
+    head = table.split('class="title-row"')[1].split("</div>")[0]
+    assert head.count('class="btn"') <= 1

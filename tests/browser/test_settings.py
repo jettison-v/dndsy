@@ -5,7 +5,7 @@ docs/mockups/one-switch/): flipped, it saves itself where it is, with a corner c
 
 def test_a_switch_saves_itself_in_place(people, server):
     dm = people("dm")
-    page = dm.open("/c/main/manage/settings#features")
+    page = dm.open("/c/main/manage/settings?tab=features#features")
     page.evaluate("window.__stayed = true")  # (a reload would lose it)
     sw = page.locator("#features form[data-switch] .switch").first
     before = sw.get_attribute("aria-checked")
@@ -15,7 +15,8 @@ def test_a_switch_saves_itself_in_place(people, server):
     assert page.evaluate("window.__stayed === true")
     page.reload()  # (saved: the page drawn again says so)
     assert page.locator("#features form[data-switch] .switch").first.get_attribute("aria-checked") != before
-    # Trophy Case: the two-way switch, saving on press
+    # Trophy Case: the two-way switch, saving on press (on the Campaign tab: Brett's pick SE1, Nov 25)
+    page = dm.open("/c/main/manage/settings?tab=campaign#trophy-case")
     choice = page.locator('form[data-choice="counts"]')
     other = choice.locator('button[aria-pressed="false"]').first
     value = other.get_attribute("value")
@@ -29,7 +30,7 @@ def test_a_switch_saves_itself_in_place(people, server):
 def test_a_switch_that_isnt_yours_is_dimmed_and_never_sends(people, server):
     """Test campaign is an admin's: the DM sees its switch dimmed, with who changes it."""
     dm = people("dm")
-    page = dm.open("/c/main/manage/settings#test")
+    page = dm.open("/c/main/manage/settings?tab=campaign#test")
     sw = page.locator('[data-setting="test"] .switch')
     assert sw.is_disabled() and page.locator('[data-setting="test"] .note').count() == 1
     assert dm.errors == []

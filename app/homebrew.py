@@ -158,8 +158,12 @@ def from_form(form) -> tuple[dict, list[str]]:
         if not charges.isdigit() or not 1 <= int(charges) <= 50:
             errors.append("Charges: a number from 1 to 50.")
         else:
-            entry["play"]["charges"] = {"count": int(charges), "back": get("charges_back") if get("charges_back") in BACK else "",
-                                        "regain": get("charges_regain")[:20]}
+            regain = get("charges_regain")[:20]
+            if regain and regain.lower() != "all" and not DICE.match(regain):  # (issue 20: a value it can't read is refused, saying what it takes)
+                errors.append("Charges: how many come back, like 1d3 or all.")
+            else:
+                entry["play"]["charges"] = {"count": int(charges), "back": get("charges_back") if get("charges_back") in BACK else "",
+                                            "regain": regain}
     if rolls:
         entry["play"]["rolls"] = rolls
     if adds:
@@ -295,9 +299,9 @@ def dm_tools(request: Request, db: Session = Depends(get_db)):
         "toast": request.session.pop("toast", None)})
 
 
-def _form_page(request: Request, user, item: dict, key: str = "", errors: list[str] | None = None, status: int = 200):
+def _form_page(request: Request, user, item: dict, key: str = "", errors: list[str] | None = None, status: int = 200, part: bool = False):
     play = item.get("play") or {}
-    return templates.TemplateResponse(request, "dm_item.html", {
+    return templates.TemplateResponse(request, "_dm_item_window.html" if part else "dm_item.html", {
         "user": user, "item": item, "key": key, "errors": errors or [], "rolls": (play.get("rolls") or []) + [{}] * (MAX_ROLLS - len(play.get("rolls") or [])),
         "adds": (play.get("adds") or []) + [{}] * (MAX_ADDS - len(play.get("adds") or [])), "charges": play.get("charges") or {},
         "categories": CATEGORIES, "rarities": RARITIES, "effect": EFFECT, "when": WHEN, "to": TO,
@@ -306,22 +310,22 @@ def _form_page(request: Request, user, item: dict, key: str = "", errors: list[s
 
 
 @router.get("/dm/items/new", response_class=HTMLResponse)
-def new_item(request: Request, name: str = "", db: Session = Depends(get_db)):
+def new_item(request: Request, name: str = "", part: int = 0, db: Session = Depends(get_db)):
     user, campaign, denied = _allowed(request, db)
     if denied:
         return denied
-    return _form_page(request, user, {"name": _clean(name)[:80], "category": "Wondrous Item", "rarity": "Uncommon"})
+    return _form_page(request, user, {"name": _clean(name)[:80], "category": "Wondrous Item", "rarity": "Uncommon"}, part=bool(part))
 
 
 @router.get("/dm/items/{key}", response_class=HTMLResponse)
-def edit_item(request: Request, key: str, db: Session = Depends(get_db)):
+def edit_item(request: Request, key: str, part: int = 0, db: Session = Depends(get_db)):
     user, campaign, denied = _allowed(request, db)
     if denied:
         return denied
     row = _row(db, campaign.id, key)
     if row is None:
         return web.not_found(request, "There's no homebrew item by that name.")
-    return _form_page(request, user, {"name": row.name, **(row.data or {})}, key=row.key)
+    return _form_page(request, user, {"name": row.name, **(row.data or {})}, key=row.key, part=bool(part))
 
 
 def _row(db: Session, campaign_id: int, key: str) -> CampaignContent | None:

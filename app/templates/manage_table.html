@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Table · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_admin_bits.html" import more_menu %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Table</h1>{# (the page's own action at the title's right, a form in a window: the UI review) #}
-    <span class="title-action row">{% if can_refresh and characters | selectattr("ddb_id") | list %}<form method="post" action="{{ cbase }}/characters/refresh?from=table" class="inline" data-busy-note="refresh-note"><button class="btn" type="submit" data-busy="Refreshing from D&amp;D Beyond…">Refresh all from D&amp;D Beyond</button></form>{% endif %}
-      {% if can_change %}<button class="btn" type="button" data-modal-url="{{ cbase }}/manage/table/add" data-item="add-to-table">+ Add to the table</button>{% endif %}</span></div>
+    <span class="title-action row">{% if can_change %}<button class="btn" type="button" data-modal-url="{{ cbase }}/manage/table/add" data-item="add-to-table">+ Add to the table</button>{% endif %}
+      {% if can_refresh and characters | selectattr("ddb_id") | list %}{% call more_menu("More for the table") %}<form method="post" action="{{ cbase }}/characters/refresh?from=table" class="inline" data-busy-note="refresh-note"><button type="submit" data-busy="Refreshing from D&amp;D Beyond…" data-item="refresh-all">Refresh all from D&amp;D Beyond</button></form>{% endcall %}{% endif %}</span></div>{# (one action and a ⋯: Brett's pick TA1 on docs/mockups/backstage-round-2/, Nov 25) #}
   <p class="subtitle">Who's at the table in {{ campaign.name }}. Click a row for everything about it. Who can sign in to askdnd at all is on {% if can_add_new %}<a href="/manage/accounts">Accounts</a>{% else %}Accounts, for admins{% endif %}.</p>
   <p class="busy-note" id="refresh-note" hidden>Fetching from D&amp;D Beyond. This takes a few seconds per character; the page reloads when it's done.</p>
 
@@ -38,7 +39,8 @@
   <details class="seat">
     <summary class="seat-row"><span class="seat-pic{{ ' none' if not c }}">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ (c.name if c else (p.name or p.email))[:1] }}</span>
       <span class="seat-who"><b>{{ c.name if c else (p.name or p.email) }}{% if c and c.copy_of_id %} <span class="tag faint">Test copy</span>{% endif %}</b>
-        <span class="note">{% if c %}{{ [p.name or p.email, classes[c.id]] | select | join(" · ") }}{% elif p.role == "player" %}No character yet{% else %}{{ p.email if p.name }}{% endif %}</span></span>
+        <span class="note">{% if c %}{{ [p.name or p.email, classes[c.id]] | select | join(" · ") }}{% elif p.role == "player" %}No character yet{% elif p.role == "dm" %}Runs the game{% else %}{{ role_labels[p.role] }}{% endif %}</span></span>{# (people by role, the address in the row's panel: S5) #}
+      {% if c and c.ddb_id %}<a class="seat-sheet" href="https://www.dndbeyond.com/characters/{{ c.ddb_id }}" target="_blank" rel="noopener" data-sheet="{{ c.id }}">Sheet ↗</a>{% endif %}{# (its D&D Beyond sheet: TA1) #}
       <span class="tag{{ ' seat-dm' if p.role == 'dm' }}">{{ role_labels[p.role] }}</span></summary>
     <div class="seat-panel">
       {% if can_change %}

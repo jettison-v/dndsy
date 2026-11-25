@@ -5,7 +5,7 @@
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
-{% from "_form_bits.html" import pick_chips, stepper, dice_picker %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip %}
 {% from "_live_link.html" import live_link %}
 {% from "_suggest_form.html" import add_fold %}
 {% from "_manage.html" import inline_edit %}
@@ -116,6 +116,8 @@
 
   <section class="section" id="forms">
     <h2>Forms</h2>
+    {{ ds("Help tip", "_form_bits.html help_tip(words) · .help-tip", "A small ? beside a choice whose name doesn't say enough (the item builder's Only with it); its words on hover or keyboard focus. Never beside a choice that says what it does (issue 4, Nov 25).") }}
+    <div class="ds-row"><span>Only with it {{ help_tip("On: it counts only for rolls made with this item. Off: every roll it names.") }}</span></div>
     {{ ds("Choice chips", "_form_bits.html pick_chips(name, options, current, label) · .pick-chips", "One of a few, inside a form you fill in and save with its button: a radio each, the chip the control (blue when picked). Two that save themselves the moment they're pressed are the two-way switch instead.") }}
     <div class="ds-row">{{ pick_chips("ds_how", [("attack", "An attack roll"), ("save", "A saving throw"), ("none", "Just the dice")], "save", "Sample choice") }}</div>
     {{ ds("Stepper", "_form_bits.html stepper(name, value, label, min, max, placeholder) · .stepper", "A number with − and + beside it (a save's DC, charges); typing still works. From empty, + takes the hint shown in the box.") }}

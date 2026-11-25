@@ -1,0 +1,9 @@
+{# An item and its builder in Items' large window (app/homebrew.py, `part=1`; Brett's pick IT3, Nov 25): the list stays
+   behind it; Save goes back to Items, Open as a page keeps its address. #}
+<div class="peek-head">
+  <div><div class="note">Items</div><h2 id="peek-title">{{ item.name or "New item" }}</h2></div>
+  <div class="row tight">{% if key %}<a class="btn link small" href="{{ cbase }}/dm/items/{{ key }}" data-no-peek>Open as a page</a>{% endif %}<button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
+</div>
+<div class="peek-body dm-item dm-tools">
+  {% include "_dm_item_form.html" %}
+</div>

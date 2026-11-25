@@ -1,41 +1,46 @@
 {% extends "base.html" %}
 {# DM Tools (app/homebrew.py; Brett chose 1B, Nov 13, docs/mockups/homebrew-items/): the things a DM makes, apart from
    Manage (settings, review, rules). Items first; the other kinds are listed as planned until they're built. #}
-{% block title %}DM Tools · askdnd{% endblock %}
+{% block title %}Items · askdnd{% endblock %}
 {% block content %}
+{% from "_lists.html" import search_box, count_pill %}
+{# Brett's picks on docs/mockups/backstage-round-2/ (Nov 25): the page named Items, as the menu says (IT1); custom items
+   grouped by whose sheet with a search (IT2); a row, + New item and Make it homebrew open the builder in a large window
+   over the list, the address kept for a link (IT3). #}
 <main class="page manage-page dm-tools">
   {% include "_manage_head.html" %}
   <div class="dm-main">
-    <div class="title-row"><h1>DM Tools</h1><a class="btn title-action" href="{{ cbase }}/dm/items/new">+ New item</a></div>
+    <div class="title-row"><h1>Items</h1><a class="btn title-action" href="{{ cbase }}/dm/items/new" data-modal-url="{{ cbase }}/dm/items/new?part=1" data-modal-size="large" data-item="new-item">+ New item</a></div>
     <p class="subtitle">What you make for this campaign. <b>Items</b>: its own magic items, with what each does in play built from what askdnd already plays (a roll, a bonus to another roll, charges). A character who carries an item of that name on their D&amp;D Beyond sheet plays it on Battle. Players see one only once it's theirs.</p>
 
     <section class="section">
-      <h2>The campaign's items{% if items %} · {{ items | length }}{% endif %}</h2>
+      <h2>The campaign's items{{ count_pill(items | length) }}</h2>
       {% if items %}
       <ul class="records dm-items">
         {% for i in items %}
-        <li class="record" data-item="{{ i.key }}">
-          <div class="record-main"><b><a href="{{ cbase }}/dm/items/{{ i.key }}">{{ i.name }}</a></b>
+        <li class="record" data-item="{{ i.key }}" data-modal-url="{{ cbase }}/dm/items/{{ i.key }}?part=1" data-modal-size="large" tabindex="0">
+          <div class="record-main"><b>{{ i.name }}</b>
             <span class="note">{{ i.data.category or "Wondrous Item" }} · {{ (i.data.rarity or "") | lower }}{% if i.data.attunement %} · attunement{% endif %}{% if i.who %} · {{ i.who | join(", ") }} {{ "has" if i.who | length == 1 else "have" }} it{% else %} · no one has it yet{% endif %}</span>
             {% if i.says %}<span class="note dm-says">{% for x in i.says %}<span data-say="{{ x.kind }}">{% if x.name %}{{ x.name }}: {% endif %}<span data-said>{{ x.said }}</span></span>{{ " · " if not loop.last }}{% endfor %}</span>{% else %}<span class="note">Nothing set for play yet: its words only.</span>{% endif %}</div>
-          <div class="record-actions"><span class="tag{{ ' ok' if i.who }}">{{ "In play" if i.who else "Ready" }}</span>
-            <a class="btn small" href="{{ cbase }}/dm/items/{{ i.key }}">Open</a></div>
+          <div class="record-actions"><span class="tag {{ 'done' if i.who else 'faint' }}">{{ "In play" if i.who else "Not carried yet" }}</span></div>
         </li>
         {% endfor %}
       </ul>
-      {% else %}<p class="muted">No homebrew items yet. <a href="{{ cbase }}/dm/items/new">Make the first one</a>{% if customs %}, or start from one already on a sheet below{% endif %}.</p>{% endif %}
+      {% else %}<p class="muted">No homebrew items yet. <a href="{{ cbase }}/dm/items/new" data-modal-url="{{ cbase }}/dm/items/new?part=1" data-modal-size="large">Make the first one</a>{% if customs %}, or start from one already on a sheet below{% endif %}.</p>{% endif %}
     </section>
 
     {% if customs %}
-    <section class="section">
-      <h2>Custom items on the table's sheets</h2>
+    <section class="section" data-list="custom-items" data-default-sort="default" data-ls-group-count>
+      <div class="section-head"><h2>Custom items on the table's sheets{{ count_pill(customs | length) }}</h2></div>
       <p class="hint">Made up on D&amp;D Beyond and not a homebrew item here yet. Make one into a homebrew item to set what it does in play.</p>
-      <ul class="records">
-        {% for c in customs %}
-        <li class="record"><div class="record-main"><b>{{ c.name }}</b><span class="note">on {{ c.who }}'s sheet</span></div>
-          <a class="btn small" href="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}">Make it homebrew</a></li>
+      {{ search_box("Search custom items") }}
+      <ul class="records" data-ls-rows>
+        {% for c in customs | sort(attribute="who") %}
+        <li class="record" data-ls-row data-group-label="{{ c.who }}" data-sort-default="{{ loop.index }}" data-name="{{ (c.name ~ ' ' ~ c.who) | lower }}"><div class="record-main"><b>{{ c.name }}</b></div>
+          <a class="btn small" href="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}" data-modal-url="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}&amp;part=1" data-modal-size="large">Make it homebrew</a></li>
         {% endfor %}
       </ul>
+      <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
     </section>
     {% endif %}
 

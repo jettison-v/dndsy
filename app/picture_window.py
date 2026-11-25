@@ -216,7 +216,7 @@ def switch_describe(request: Request, on: str = Form(""), db: Session = Depends(
         raise HTTPException(404)
     campaign.art_style = {**(campaign.art_style or {}), "off": not on}
     db.commit()
-    return web.switched(request, f"Describe it: {'on' if on else 'off'}", f"{web.base(campaign)}/manage/settings#art-style")
+    return web.switched(request, f"Describe it: {'on' if on else 'off'}", f"{web.base(campaign)}/manage/settings?tab=pictures#art-style")
 
 
 def _campaign_of_entity(db: Session, entity_id: int) -> int | None:

@@ -58,10 +58,11 @@ def test_an_item_is_built_a_piece_at_a_time_and_reads_the_same_everywhere(people
     listed = row.evaluate("r => [...r.querySelectorAll('[data-say]')].map(s => [s.dataset.say, s.querySelector('[data-said]').textContent])")
     assert listed == built  # the list says what the builder said, piece by piece (the words: tests/test_homebrew.py)
 
-    row.locator("a").first.click()
-    page.wait_for_url("**/dm/items/**")
-    assert page.locator("[data-item-builder]").evaluate(LINES) == built  # reopened, each piece folded to the same line
-    assert page.locator("[data-hb-piece][data-open]").count() == 0
+    row.click()  # (a row opens the builder in Items' large window: Brett's pick IT3, Nov 25)
+    window = page.locator(".peek.open [data-item-builder]")
+    window.wait_for()
+    assert window.evaluate(LINES) == built  # reopened, each piece folded to the same line
+    assert page.locator(".peek.open [data-hb-piece][data-open]").count() == 0
     assert dm.errors == []
 
 

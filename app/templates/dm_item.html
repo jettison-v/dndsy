@@ -4,97 +4,15 @@
    its questions in place (chips, steppers, the dice picker: _form_bits.html), + Add offers the kinds askdnd plays.
    The fields are the form's as before (roll<i>_…, add<i>_…, charges…): a piece not added is empty and saves nothing.
    app.js "the item builder" opens, adds, removes and writes each piece's sentence. #}
-{% from "_form_bits.html" import pick_chips, stepper, dice_picker %}
-{% block title %}{{ item.name or "New item" }} · DM Tools · askdnd{% endblock %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip %}
+{% block title %}{{ item.name or "New item" }} · Items · askdnd{% endblock %}
 {% block content %}
 <main class="page manage-page dm-tools dm-item">
   {% include "_manage_head.html" %}
   <div class="dm-main">
-    <p class="note"><a href="{{ cbase }}/dm">← DM Tools</a></p>
+    <p class="note"><a href="{{ cbase }}/dm">← Items</a></p>
     <div class="title-row"><h1>{{ item.name or "New item" }}</h1></div>
-    {% if errors %}<div class="card bad" role="alert">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
-    <form method="post" action="{{ cbase }}/dm/items" class="dm-form" data-item-builder>
-      <input type="hidden" name="key" value="{{ key }}">
-      <section class="section">
-        <h2>The item</h2>
-        <div class="dm-grid">
-          <label class="field">Name<input type="text" name="name" value="{{ item.name or '' }}" maxlength="80" required data-hb-name></label>
-          <label class="field">Kind<select name="category">{% for c in categories %}<option{% if c == item.category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
-          <label class="field">Rarity<select name="rarity">{% for r in rarities %}<option{% if r == item.rarity %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
-          <label class="field dm-check"><input type="checkbox" name="attunement" value="1"{% if item.attunement %} checked{% endif %}> Needs attunement</label>
-          <label class="field">Cost<input type="text" name="cost" value="{{ item.cost or '' }}" maxlength="40" placeholder="500 GP, or —"></label>
-          <label class="field">Weight<input type="text" name="weight" value="{{ item.weight or '' }}" maxlength="40" placeholder="1 lb"></label>
-        </div>
-        <label class="field">Its words (what the table reads)<textarea name="text" rows="4" maxlength="4000">{{ item.text if item.text != "A homebrew item." else "" }}</textarea></label>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><h2>What it does in play</h2></div>
-        <p class="hint">Each piece is something askdnd plays: a character carrying an item of this name gets it on Battle and the roll card. askdnd plays the numbers you set; the DM rules on the rest.</p>
-        <div class="hb-pieces" data-hb-pieces>
-          {% for r in rolls %}{% set i = loop.index0 %}
-          <div class="hb-piece" data-hb-piece="roll" data-hb-kind="A roll"{% if not r.dice %} hidden{% endif %}{% if errors and r.dice %} data-open{% endif %}>
-            <div class="hb-head"><span class="hb-ico" aria-hidden="true">🎲</span><span class="hb-what"><b data-hb-title>{{ r.name or "A roll" }}</b><span class="note" data-hb-line></span></span>
-              <button type="button" class="btn small link" data-hb-toggle aria-expanded="false">Edit</button></div>
-            <div class="hb-body">
-              <p class="hb-says" data-hb-says aria-live="polite"></p>
-              <div class="hb-row"><span class="hb-k">Called</span><input type="text" name="roll{{ i }}_name" value="{{ r.name or '' }}" maxlength="60" placeholder="{{ item.name or 'Its name' }}" aria-label="Called" data-hb-called></div>
-              <div class="hb-row"><span class="hb-k">How it lands</span>{{ pick_chips("roll%d_resolve" % i, [("attack", "An attack roll"), ("save", "A saving throw"), ("none", "Just the dice")], r.resolve or "none", "How it lands") }}</div>
-              <div class="hb-row"><span class="hb-k">Dice</span>{{ dice_picker("roll%d_dice" % i, (r.dice or [''])[0], "Or type it", types=damage_types) }}</div>
-              <div class="hb-row" data-hb-when="none"><span class="hb-k">It does</span>{{ pick_chips("roll%d_effect" % i, effect.items() | list, r.effect or "damage", "What it does") }}</div>
-              <div class="hb-row" data-hb-when="save"><span class="hb-k">Save</span><div class="dp-row">{{ pick_chips("roll%d_save" % i, save_options, r.save or "", "Which save") }}<span class="note">DC</span>{{ stepper("roll%d_dc" % i, r.dc or "", "Save DC", min=1, max=30, placeholder="14") }}</div></div>
-              <div class="hb-row" data-hb-when="save"><span class="hb-k">On a success</span>{{ pick_chips("roll%d_half" % i, [("1", "Half"), ("", "Nothing")], "1" if r.success == "half" or not r.dice else "", "On a success") }}</div>
-              <div class="hb-row"><span class="hb-k">A note</span><input type="text" name="roll{{ i }}_note" value="{{ r.note or '' }}" maxlength="160" placeholder="Shown with the roll" aria-label="A note"></div>
-              <div class="row"><button type="button" class="btn small" data-hb-toggle>Done</button><button type="button" class="btn link small" data-hb-remove>Remove this roll</button></div>
-            </div>
-          </div>
-          {% endfor %}
-          {% for a in adds %}{% set i = loop.index0 %}
-          <div class="hb-piece" data-hb-piece="add" data-hb-kind="A bonus"{% if not a.amount %} hidden{% endif %}{% if errors and a.amount %} data-open{% endif %}>
-            <div class="hb-head"><span class="hb-ico" aria-hidden="true">＋</span><span class="hb-what"><b data-hb-title>{{ a.name or "A bonus" }}</b><span class="note" data-hb-line></span></span>
-              <button type="button" class="btn small link" data-hb-toggle aria-expanded="false">Edit</button></div>
-            <div class="hb-body">
-              <p class="hb-says" data-hb-says aria-live="polite"></p>
-              <div class="hb-row"><span class="hb-k">Called</span><input type="text" name="add{{ i }}_name" value="{{ a.name or '' }}" maxlength="60" placeholder="{{ item.name or 'Its name' }}" aria-label="Called" data-hb-called></div>
-              <div class="hb-row"><span class="hb-k">Adds</span>{{ dice_picker("add%d_amount" % i, a.amount or "", "Or type it", types=damage_types, placeholder="+1, 1d4 or 1d6 fire", flat=True) }}</div>
-              <div class="hb-row"><span class="hb-k">When</span>{{ pick_chips("add%d_when" % i, when.items() | list, a.when or "before", "When") }}</div>
-              <div class="hb-row" data-hb-to><span class="hb-k">To</span>{{ pick_chips("add%d_to" % i, to.items() | list, (a.to or ["attack"])[0], "To which rolls") }}</div>
-              <div class="hb-row"><span class="hb-k">Only with it</span><label class="dm-check"><input type="checkbox" name="add{{ i }}_this" value="1"{% if 'this_item' in (a.with or []) %} checked{% endif %}> Only with this item (a weapon)</label></div>
-              <div class="hb-row"><span class="hb-k">Says</span><input type="text" name="add{{ i }}_says" value="{{ a.says or '' }}" maxlength="120" placeholder="against a Fiend" aria-label="Says"></div>
-              <div class="row"><button type="button" class="btn small" data-hb-toggle>Done</button><button type="button" class="btn link small" data-hb-remove>Remove this bonus</button></div>
-            </div>
-          </div>
-          {% endfor %}
-          <div class="hb-piece" data-hb-piece="charges" data-hb-kind="Charges"{% if not charges.count %} hidden{% endif %}{% if errors and charges.count %} data-open{% endif %}>
-            <div class="hb-head"><span class="hb-ico" aria-hidden="true">⟳</span><span class="hb-what"><b data-hb-title>Charges</b><span class="note" data-hb-line></span></span>
-              <button type="button" class="btn small link" data-hb-toggle aria-expanded="false">Edit</button></div>
-            <div class="hb-body">
-              <p class="hb-says" data-hb-says aria-live="polite"></p>
-              <div class="hb-row"><span class="hb-k">How many</span>{{ stepper("charges", charges.count or "", "How many charges", min=1, max=50, placeholder="3") }}</div>
-              <div class="hb-row"><span class="hb-k">Back at</span>{{ pick_chips("charges_back", back_options, charges.back or "", "When they come back") }}</div>
-              <div class="hb-row" data-hb-regain><span class="hb-k">How many come back</span><input type="text" name="charges_regain" value="{{ charges.regain or '' }}" maxlength="20" placeholder="1d3, or all" aria-label="How many come back"></div>
-              <p class="note">Said on the item; the count itself is D&amp;D Beyond's, as for any item.</p>
-              <div class="row"><button type="button" class="btn small" data-hb-toggle>Done</button><button type="button" class="btn link small" data-hb-remove>Remove charges</button></div>
-            </div>
-          </div>
-
-          <details class="hb-add" data-hb-add>
-            <summary><b>+ Add</b> <span>a roll, a bonus or charges</span></summary>
-            <div class="hb-menu">
-              <button type="button" data-hb-new="roll"><span class="hb-ico" aria-hidden="true">🎲</span><b>A roll</b><span class="note" data-hb-room>An attack, a save or dice</span></button>
-              <button type="button" data-hb-new="add"><span class="hb-ico" aria-hidden="true">＋</span><b>A bonus</b><span class="note" data-hb-room>To attacks, saves, checks or damage</span></button>
-              <button type="button" data-hb-new="charges"><span class="hb-ico" aria-hidden="true">⟳</span><b>Charges</b><span class="note" data-hb-room>How many, and when they come back</span></button>
-            </div>
-          </details>
-        </div>
-      </section>
-
-      <div class="btns dm-go"><button class="btn primary" type="submit">Save</button><a class="btn link" href="{{ cbase }}/dm">Cancel</a></div>
-    </form>
-    {% if key %}
-    <form method="post" action="{{ cbase }}/dm/items/{{ key }}/retire" class="dm-retire"><button class="btn link small danger" type="submit">{{ "Bring back" if item.retired else "Retire" }}</button>
-      <span class="note">{{ "It's retired: its rolls and bonuses are off." if item.retired else "Retiring takes it out of play; it's kept, with Bring back." }}</span></form>
-    {% endif %}
+    {% include "_dm_item_form.html" %}
   </div>
 </main>
 {% endblock %}
