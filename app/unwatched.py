@@ -46,16 +46,21 @@ def unwatched(db: Session) -> list:
 
 
 def tick(db: Session) -> list[int]:
-    """One round: ask for every unwatched character not read in the last MIN_AGE (last in line on the jobs queue), while
-    the bridge is awake. Returns the ids asked for."""
+    """One round: ask for every unwatched character not read in the last MIN_AGE (last in line on the jobs queue, a test
+    campaign's behind the table's), while the bridge is awake. Returns the ids asked for."""
     from app import ddb_bridge
 
     if not config.DDB_BRIDGE or not ddb_bridge.awake(db)["awake"]:
         return []
     from app import sheet_reads
+    from app.models import Campaign
 
+    tests = set(db.scalars(select(Campaign.id).where(Campaign.is_test.is_(True))))
+    # (a test campaign's sheets after the table's: they share the one line, and 13 of them made the table's 4 wait about 2
+    # minutes a round; at the back they fill the gaps, Brett Nov 25)
     read = [ch.id for ch in unwatched(db)
-            if sheet_reads.request_read(db, ch, min_age=MIN_AGE, priority=sheet_reads.UNWATCHED, by="nobody had it open") is not None]
+            if sheet_reads.request_read(db, ch, min_age=MIN_AGE, by="nobody had it open",
+                                        priority=sheet_reads.UNWATCHED_TEST if ch.campaign_id in tests else sheet_reads.UNWATCHED) is not None]
     db.commit()
     return read
 
