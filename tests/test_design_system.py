@@ -143,7 +143,6 @@ WINDOWS_TO_MOVE = {
     "_connections_modal.html",
     "_design_panel.html",
     "_dice_picker.html",
-    "_dm_item_window.html",
     "_document_window.html",
     "_email_settings.html",
     "_entity_edit.html",

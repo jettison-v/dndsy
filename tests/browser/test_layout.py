@@ -703,8 +703,6 @@ def test_show_more_opens_the_held_rows_in_place_and_folds_them(people, server):
 # collapsed), at a laptop's width and a phone's, every check run on it. WINDOWS_LEFT is the work left: the problems of
 # windows not on the one window and field yet; it may only shrink (a fixed one leaves it, a new one fails the run).
 WINDOWS_LEFT = {
-    "window /c/main/dm/items/new · it is taller than what is in it",  # (issues 119, 120: Backstage's windows, next)
-    "window /c/main/dm/items/new · its main button is not in its foot: Save",
     "window /c/main/manage/history/window · its main button is not in its foot: Restore the before",  # (issue 121)
     "window /manage/roadmap/new · its main button is not in its foot: Add the idea",
 }

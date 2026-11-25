@@ -851,7 +851,6 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .help-tip { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 4px; border: 1px solid var(--line-strong); border-radius: 50%; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); cursor: help; vertical-align: 1px; }
 .help-tip:hover, .help-tip:focus-visible { color: var(--text); border-color: var(--text); }
 .help-tip:hover::after, .help-tip:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 30; width: max-content; max-width: 260px; padding: var(--sp-2) var(--sp-3); background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--text); font-size: var(--fs-xs); font-weight: 400; line-height: 1.4; white-space: normal; text-align: left; box-shadow: var(--lift); }
-.hb-bad { color: var(--link); display: block; margin-top: 2px; }
 .hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
 /* A row that opens its window (Items, History, Feature use…): one look, the design system's row hover (the end-of-day
    review, Nov 25: it was styled four times in two colours) */
@@ -4429,7 +4428,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .hb-row > .hb-k { color: var(--muted); font-size: var(--fs-sm); }
 .hb-row input[type=text] { width: 100%; max-width: 26rem; min-width: 0; }
 .hb-row[hidden] { display: none; }
-.hb-says { font-weight: 600; color: var(--strong, var(--text)); background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.hb-says { margin: 0; font-weight: 600; color: var(--text-strong); }  /* (what the piece does, as a sentence: never drawn as a box, issue 119) */
 .hb-add > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: var(--sp-2); border: 1px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); width: 100%; }
 .hb-add > summary::-webkit-details-marker { display: none; }
 .hb-add > summary b { color: var(--text); white-space: nowrap; }
