@@ -4,18 +4,20 @@
   <div><div class="note">{{ "Rule books" if book else "Backups" }}</div><h2 id="peek-title">{{ "Upload a book" if book else "Import campaign data" }}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body">
   {% if book %}
-  <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="stack">
-    <p class="note">A book's file comes from the computer that has its offline copy (Claude makes it). Uploading it replaces that book's entries; the page says which book and how many once it's read.</p>
-    <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
-    <div class="row"><button type="submit" class="btn primary" data-busy="Loading…">Upload book</button><button class="btn peek-close" type="button">Cancel</button></div>
+  <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="peek-form">
+    <div class="peek-body stack">
+      <p class="note">A book's file comes from the computer that has its offline copy (Claude makes it). Uploading it replaces that book's entries; the page says which book and how many once it's read.</p>
+      <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
+    </div>
+    <div class="peek-foot row"><button type="submit" class="btn primary" data-busy="Loading…">Upload book</button><button class="btn link peek-close" type="button">Cancel</button></div>
   </form>
   {% else %}
-  <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="stack">
-    <p class="note">A campaign bundle (.json). You'll see exactly what it would change before anything is saved; importing the same file again updates matching records, never duplicates them.</p>
-    <input type="file" name="file" accept=".json,application/json" required aria-label="Campaign bundle">
-    <div class="row"><button type="submit" class="btn primary" data-busy="Reading…">Preview import</button><button class="btn peek-close" type="button">Cancel</button></div>
+  <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="peek-form">
+    <div class="peek-body stack">
+      <p class="note">A campaign bundle (.json). You'll see exactly what it would change before anything is saved; importing the same file again updates matching records, never duplicates them.</p>
+      <input type="file" name="file" accept=".json,application/json" required aria-label="Campaign bundle">
+    </div>
+    <div class="peek-foot row"><button type="submit" class="btn primary" data-busy="Reading…">Preview import</button><button class="btn link peek-close" type="button">Cancel</button></div>
   </form>
   {% endif %}
-</div>

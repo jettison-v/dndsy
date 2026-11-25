@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Backups · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_lists.html" import count_pill, empty_state %}
 {# Backstage › General › Backups (app/admin.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): one panel on
    top saying what happened, green when last night worked and red with the missed nights and what to check when not (BK1);
    the runs as a table marking only failures, the newest week then Show older (BK2); Import from the title row (S4); rule
@@ -29,9 +30,9 @@
       {% for b in backups[:shown] %}{% include "_backup_row.html" %}{% endfor %}
       </tbody>
     </table></div>
-    {% if backups | length > shown %}<details class="fold backup-older" data-older><summary>Show older ({{ backups | length - shown }})</summary>
+    {% if backups | length > shown %}<details class="fold" data-older><summary>Show older{{ count_pill(backups | length - shown) }}</summary>
       <div class="table-scroll"><table class="list backup-runs"><tbody>{% for b in backups[shown:] %}{% include "_backup_row.html" %}{% endfor %}</tbody></table></div></details>{% endif %}
-    {% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
+    {% else %}{{ empty_state("No runs recorded yet. The next one is tonight.") }}{% endif %}
   </section>
   {% endif %}
   {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}

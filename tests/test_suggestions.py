@@ -166,7 +166,7 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     dm.post(f"/admin/suggestions/{x.id}/use")
     db.expire_all()
     assert db.get(Fact, fact.id).status == "merged" and db.get(Suggestion, x.id).status == "used"
-    assert "✓ Nothing waiting." in dm.get("/c/main/manage/inbox").text
+    assert "data-empty" in dm.get("/c/main/manage/inbox").text
     # A player can't decide on suggestions
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sings."}, headers=HX)
     sings = db.scalar(select(Fact).where(Fact.text == "He sings."))
@@ -227,7 +227,7 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
     assert db.get(Fact, fact["He sings."].id).text == "He sings sea shanties."
     assert db.scalar(select(Correction).where(Correction.session_id == s.id)).after == "Kieran, not Kiera."
     assert db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == "Womford")).misheard_as == ["Wombford"]
-    assert "✓ Nothing waiting." in dm.get("/c/main/manage/inbox").text
+    assert "data-empty" in dm.get("/c/main/manage/inbox").text
 
     # Your notes (Brett, Nov 7, Layout A and a badge): the DM's decisions are news. A card once each (more than
     # three at once: one that says how many); the badge counts them until the player opens About the story

@@ -100,10 +100,18 @@ def usage_page(request: Request, calls: str = "", db: Session = Depends(get_db))
             rows.append({"r": r, "label": "—", "href": None})
     topups = list(db.scalars(select(CreditTopUp).order_by(CreditTopUp.added_on.desc())))
     every = calls == "all"
+    # The newest few of each kind, so All · Claude · OpenAI each has its own (the end-of-day review, Nov 25: cut first,
+    # OpenAI's view could be empty)
+    kept, seen = [], {True: 0, False: 0}
+    for row in rows:
+        kind = row["r"].source in OPENAI
+        if every or seen[kind] < CALLS_SHOWN:
+            kept.append(row)
+            seen[kind] += 1
     return templates.TemplateResponse(
         request,
         "admin_usage.html",
-        {"u": usage_summary(db), "rows": rows if every else rows[:CALLS_SHOWN], "more": 0 if every else max(len(rows) - CALLS_SHOWN, 0),
+        {"u": usage_summary(db), "rows": kept, "more": len(rows) - len(kept),
          "openai": OPENAI, "topups": topups, "toast": request.session.pop("toast", None)},
     )
 

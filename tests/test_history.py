@@ -170,3 +170,17 @@ def test_history_groups_runs_and_batches_and_opens_each_in_its_window(db, admin,
     assert "Before" in window and "After" in window and "Changed once." in window
     assert player.get(f"/c/main/manage/history/window?ids={rev.id}", follow_redirects=False).status_code in (303, 403)
     assert "Changed once." not in admin.get(f"/manage/history/window?ids={rev.id}").text  # (askdnd's window: no campaign's changes)
+
+
+def test_an_evening_change_is_under_the_tables_day(db, cole, admin):
+    """The end-of-day review (Nov 25): History's days were UTC's, so a change on game night (after about 4 pm at the
+    table) was filed under the next day."""
+    from datetime import UTC, datetime
+
+    from app.models import Revision
+
+    db.add(Revision(table="characters", row_id=cole.id, label=cole.name, field="name", old="A", new="B", actor="",
+                    created_at=datetime(2026, 11, 25, 3, 30, tzinfo=UTC)))  # (Nov 24, 7:30 pm at the table)
+    db.commit()
+    page = admin.get("/c/main/manage/history?older=1").text
+    assert 'data-group-label="Nov 24, 2026"' in page and 'data-group-label="Nov 25, 2026"' not in page

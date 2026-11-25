@@ -685,3 +685,13 @@ def test_available_turns_itself_off_on_any_of_its_signals(db):
             rules.set_mode(db, "user:1", "both")
     finally:
         rules.now = real
+
+
+def test_a_picks_answers_notes_are_only_his_words():
+    """The end-of-day review (Nov 25): picks answered on claude.ai say "Picks (on claude.ai): …", and the picks form read
+    that whole line back as notes. One reader for every shape."""
+    from app.fft import rules
+
+    assert rules.answer_notes("Picks (on claude.ai): A; B\n\nFine by me.\n\nComments on the mockup:\nPin 1: x") == "Fine by me."
+    assert rules.answer_notes("Picks: A; B") == ""
+    assert rules.answer_notes("Picks (changed on claude.ai): A\n\nKeep it.\nBefore: B") == "Keep it."

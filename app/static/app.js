@@ -4188,7 +4188,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       want.push(r);
     });
     // (a heading's count, where it has one, is what shows under it: searching or filtering, not every row)
-    want.forEach(h => { const n = h.matches('.ls-grouphead') && h.querySelector('.count'); if (n) n.textContent = shownIn[h.dataset.label] || 0; });
+    want.forEach(h => { const n = h.matches('.ls-grouphead') && h.querySelector('.count'); if (n) { const k = shownIn[h.dataset.label] || 0; n.textContent = k; n.dataset.count = k; n.hidden = !k; } });  // (as count_pill draws it: no 0)
     heads.forEach(h => h.remove());
     const now = [...box.children].filter(n => n.matches('[data-ls-row], .ls-grouphead'));
     if (now.length !== want.length || now.some((n, i) => n !== want[i])) want.forEach(n => box.appendChild(n));
@@ -4450,13 +4450,13 @@ document.addEventListener('click', e => {
     const list = document.querySelector('[data-tab-param]'); if (!list || !list.contains(document.querySelector('[data-tab="' + e.target.id + '"]'))) return;
     const u = new URL(location.href); u.searchParams.set('tab', e.target.id.replace(/^t-/, ''));
     history.replaceState(null, '', u.pathname + u.search + u.hash);
-    if (document.querySelector('.help')) try { localStorage.setItem('askdnd-help-tab:' + list.getAttribute('aria-label'), e.target.id); } catch (err) { /* private window */ }  // (Help's and the DM guide's each their own)
+    if (document.querySelector('.help')) try { localStorage.setItem('askdnd-tab:' + (list.dataset.tabKey || 'help'), e.target.id); } catch (err) { /* private window */ }  // (Help's and the DM guide's each their own, by marker: never its words)
   });
   // Help: a link to an answer (/help#id) opens the FAQ there; otherwise the tab you used last
   if (document.querySelector('.help [data-tab-param]')) {
     const answer = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
     const inTab = answer && answer.closest('[id^="t-"]');
-    let last = null; try { last = localStorage.getItem('askdnd-help-tab:' + document.querySelector('.help [data-tab-param]').getAttribute('aria-label')); } catch (err) { /* private window */ }
+    let last = null; try { last = localStorage.getItem('askdnd-tab:' + (document.querySelector('.help [data-tab-param]').dataset.tabKey || 'help')); } catch (err) { /* private window */ }
     const open = inTab ? inTab.id : new URLSearchParams(location.search).has('tab') ? null : last;
     const tab = open && document.querySelector('[role=tab][data-tab="' + open + '"]');
     if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
@@ -4868,7 +4868,6 @@ document.addEventListener('click', e => {
   if (pill) checkHealth();
   if (pill && runCheck) {
     runCheck.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › Global › D&D Beyond bridge), asked first (BR1)
-      if (!confirm(runCheck.dataset.ask)) return;
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
       if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }
@@ -4879,7 +4878,6 @@ document.addEventListener('click', e => {
 
   const all = document.querySelector('[data-br-check-all]');
   if (all) all.addEventListener('click', async () => {  // Backstage › Global › D&D Beyond bridge: every kind of change, out and back
-    if (!confirm(all.dataset.ask)) return;  // (it changes the test sheet: asked first, Nov 25)
     all.disabled = true;
     const r = await fetch('/bridge/check?full=1', { method: 'POST', headers: { Accept: 'application/json' } });
     if (r.ok) window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin);
@@ -6800,13 +6798,19 @@ document.addEventListener('askdnd:mention', e => {
 
 // ---------------------------------------------------------------- markers instead of inline handlers
 // (Nov 13: no inline handlers or evaluated text, so the Content Security Policy can run only askdnd's own files)
-//   data-confirm="…" on a form     asks before it's sent (once each form's onsubmit="return confirm(…)")
+//   data-confirm="…" on a form     asks before it's sent (once each form's onsubmit="return confirm(…)"); on a button, before its click
 //   data-reset-after on an htmx form  empties it once its request succeeded (once hx-on::after-request)
 //   data-ds-toast="…" (-kind, -undo)  the Design system page's sample corner cards
 (function () {
   document.addEventListener('submit', e => {
     const f = e.target.closest && e.target.closest('form[data-confirm]');
     if (f && !confirm(f.dataset.confirm)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  // data-confirm="…" on a button that isn't a form's: asked before its own click runs (the bridge's checks; the
+  // end-of-day review, Nov 25: confirms were done two ways)
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button[data-confirm]');
+    if (b && !b.closest('form[data-confirm]') && !confirm(b.dataset.confirm)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
   document.body.addEventListener('htmx:afterRequest', e => {
     const f = e.detail.elt && e.detail.elt.closest && e.detail.elt.closest('form[data-reset-after]');

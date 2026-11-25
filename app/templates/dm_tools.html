@@ -3,7 +3,7 @@
    Manage (settings, review, rules). Items first; the other kinds are listed as planned until they're built. #}
 {% block title %}Items · askdnd{% endblock %}
 {% block content %}
-{% from "_lists.html" import search_box, count_pill %}
+{% from "_lists.html" import search_box, count_pill, empty_state %}
 {# Brett's picks on docs/mockups/backstage-round-2/ (Nov 25): the page named Items, as the menu says (IT1); custom items
    grouped by whose sheet with a search (IT2); a row, + New item and Make it homebrew open the builder in a large window
    over the list, the address kept for a link (IT3). #}
@@ -26,7 +26,7 @@
         </li>
         {% endfor %}
       </ul>
-      {% else %}<p class="muted">No homebrew items yet. <a href="{{ cbase }}/dm/items/new" data-modal-url="{{ cbase }}/dm/items/new?part=1" data-modal-size="large">Make the first one</a>{% if customs %}, or start from one already on a sheet below{% endif %}.</p>{% endif %}
+      {% else %}{% call empty_state("No homebrew items yet.") %}<a href="{{ cbase }}/dm/items/new" data-modal-url="{{ cbase }}/dm/items/new?part=1" data-modal-size="large">Make the first one</a>{% if customs %}<span>or start from one already on a sheet below.</span>{% endif %}{% endcall %}{% endif %}
     </section>
 
     {% if customs %}

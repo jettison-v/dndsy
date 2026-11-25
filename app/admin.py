@@ -51,8 +51,9 @@ BACKUPS_SHOWN = 7  # (the newest week; Show older for the rest: Brett's pick BK2
 def backup_row(run) -> dict:
     """A backup run as its table's row: night, result, size, rows, files (the storage path stays off the page: S5). Its
     detail reads "v2/backups/x.json.gz · 4.8 MB · 10,682 rows · 236 files", or a failure's words."""
-    parts = [p.strip() for p in (run.detail or "").split("·")]
-    pick = lambda end: next((p.removesuffix(end).strip() for p in parts if p.endswith(end)), "")
+    import re
+
+    pick = lambda unit: (m.group(1) if (m := re.search(r"([\d,.]+)\s*" + unit + r"\b", run.detail or "")) else "")  # (a night that also swept files adds ", 3 deleted unused" after its count: the end-of-day review, Nov 25)
     ok = run.status == "ok"
     return {"run": run, "ok": ok, "size": pick("MB") and pick("MB") + " MB", "rows": pick("rows"), "files": pick("files"),
             "why": "" if ok else (run.detail or "")}

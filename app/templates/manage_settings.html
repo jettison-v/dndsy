@@ -80,9 +80,9 @@
   {# Features and Labs (Brett, 2026-11-03; app/vtt.py): finished features one switch each; Labs one switch that shows
      the features still being tried, each with its own toggle, what it does and where it sits on the roadmap. #}
   {% macro feature_row(f, is_on, can=true) %}
-  <li class="record" data-feature="{{ f.key }}"><span class="record-main"><b>{{ f.name }}</b>{% if f.labs %} <span class="tag {{ 'done' if f.state == 'Ready to try' else 'draft' }}">{{ f.state }}</span>{% endif %}<span class="note">{{ f.line or f.about }}</span>
+  <li class="record" data-feature="{{ f.key }}"><span class="record-main"><b>{{ f.name }}</b>{% if f.labs %}{% set said, tone = feature_states[f.state] %} <span class="tag {{ tone }}" data-state="{{ f.state }}">{{ said }}</span>{% endif %}<span class="note">{{ f.line or f.about }}</span>
     {% if f.warn %}<span class="note feature-warn" data-warn>{{ f.warn }}</span>{% endif %}
-    {% if f.line %}<details class="fold feature-more"><summary>More</summary><p class="note">{{ f.about }}</p></details>{% endif %}</span>
+    {% if f.line %}<details class="fold"><summary>More</summary><p class="note">{{ f.about }}</p></details>{% endif %}</span>
     <span class="record-actions">{% if can %}{{ switch(cbase ~ "/manage/settings/vtt/" ~ f.key, is_on, f.name ~ " on here") }}
       {% else %}<button type="button" class="btn small" data-modal-url="/dice">Your dice</button>{% endif %}</span>
   </li>

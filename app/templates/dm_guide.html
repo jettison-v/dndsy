@@ -9,7 +9,7 @@
   <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
   {# The tab bar in the order the DM works, a reading column, and only what's on (Brett's pick DG1 on
      docs/mockups/backstage-round-4/, Nov 25); a link to /…/dm-guide#backlog opens its tab (app.js, as Help does). #}
-  <div class="tabbar" role="tablist" data-tab-param aria-label="DM guide">
+  <div class="tabbar" role="tablist" data-tab-param data-tab-key="dm-guide" aria-label="DM guide">
     {% for key, label in tabs %}<button type="button" role="tab" aria-selected="{{ 'true' if key == tab else 'false' }}" data-tab="t-{{ key }}">{{ label }}</button>{% endfor %}
   </div>
   <div id="t-pages" role="tabpanel"{% if tab != "pages" %} hidden{% endif %}>

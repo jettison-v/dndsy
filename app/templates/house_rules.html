@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}House rules · Backstage · askdnd{% endblock %}
 {% block content %}
-{% from "_lists.html" import count_pill %}
+{% from "_lists.html" import count_pill, empty_state %}
 {# Backstage › This campaign › House rules (app/house_rules_pages.py). Brett's pick HR1 on docs/mockups/backstage-round-2/ (Nov 25):
    the list first with its count, the spell switches under it, + House rule from the title row opening its window. #}
 <main class="page manage-page">
@@ -21,7 +21,7 @@
       </li>
       {% endfor %}
     </ul>
-    {% else %}<p class="muted">No house rules yet: everything rolls as the 2024 rules say.</p>{% endif %}
+    {% else %}{{ empty_state("No house rules yet: everything rolls as the 2024 rules say.") }}{% endif %}
   </section>
 
   {# Spell components, the table's own way (Brett chose D, Nov 13; app/components.py) #}

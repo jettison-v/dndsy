@@ -1,9 +1,31 @@
 [
  {
+  "title": "Today's 30 pull requests, checked as one",
+  "kind": "plan",
+  "status": "Your picks",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "The end-of-day review of Nov 24–25 (#482 to #511): two independent reviewers (design system, code) and a sweep of every page as admin, DM and player at laptop and phone widths. What was plainly wrong is fixed in one pull request; nine picks for the visible choices; a new check for table columns out of balance.",
+  "line": "What today's review fixed, and nine picks",
+  "source": "docs/mockups/end-of-day-audit/index.html",
+  "link": ""
+ },
+ {
+  "title": "Would I build askdnd's backend differently?",
+  "kind": "plan",
+  "status": "Your picks",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "A look back at the whole backend, knowing every requirement and limit now: a reviewer new to askdnd read the brief, the decisions and all the code, checked against what building it taught. The core holds up; what to change is where work runs (a jobs table and a worker, D&D Beyond reads moved onto it) and a boundary around the Feedback and Testing tool. Four picks.",
+  "line": "The backend, looked back on: what to keep, what to plan",
+  "source": "docs/mockups/backend-look-back/index.html",
+  "link": ""
+ },
+ {
   "title": "Backstage, round 4: the DM's pages, the Tuning pages, and the rest",
   "kind": "design",
-  "status": "Picked, building",
-  "state": "building",
+  "status": "Picked, built",
+  "state": "done",
   "date": "Nov 25",
   "what": "Roadmap item 5, round 4 of 4: Needs you, Inbox and Sessions, the Tuning pages (Features, Dice tuning, the bridge, the Design system) and the five pages no round named (Places, DM guide, Product areas, Accounts, Campaigns), drawn today and as recommended: buttons that do what they say, the red button following the state, a row that opens its detail, health with what to do, the switch where it's needed. Thirteen picks.",
   "line": "The DM's pages, the Tuning pages and the rest: thirteen picks",
@@ -13,8 +35,8 @@
  {
   "title": "Backstage, round 3: what changed, and fixes to askdnd",
   "kind": "design",
-  "status": "Picked, building",
-  "state": "building",
+  "status": "Picked, built",
+  "state": "done",
   "date": "Nov 25",
   "what": "Roadmap item 5, round 3 of 4: the campaign's History, askdnd history and Tool corrections drawn today and as recommended: rows that name what changed, a batch as one row, before and after in the item window, a search and Show older, tool corrections in plain words with a button to send them to Claude. Six picks.",
   "line": "History, askdnd history and Tool corrections: six picks",
@@ -24,8 +46,8 @@
  {
   "title": "Backstage, round 2: the DM's table pages",
   "kind": "design",
-  "status": "Picked, building",
-  "state": "building",
+  "status": "Picked, built",
+  "state": "done",
   "date": "Nov 25",
   "what": "Roadmap item 5, round 2 of 4: Settings, House rules, Table and Items drawn today and as recommended, with the shared fixes applied: Settings in tabs with one line per feature, House rules' add in a window, Table's sheet links, Items under one name with its builder in a large window. Seven picks.",
   "line": "Settings, House rules, Table and Items: seven picks",

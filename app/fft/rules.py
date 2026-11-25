@@ -2481,6 +2481,17 @@ def picks_said(picks: list, where: str = "") -> str:
     return f"Picks{where}: " + "; ".join(f"{p.get('label') or p.get('value')}" for p in picks if p.get("value"))
 
 
+def answer_notes(text: str) -> str:
+    """A picks answer's own notes: the answer is the picks line ("Picks: …", "Picks (on claude.ai): …"), then his notes,
+    then the comments that went with them (and, when picks were changed on claude.ai, what they were before). The one
+    reader of that shape: the picks form and claude.ai's copy both ask it (the end-of-day review, Nov 25: three
+    readers had drifted, and one showed the picks line as notes)."""
+    rest = (text or "").split("\n\n", 1)[1] if "\n\n" in (text or "") else ""
+    for mark in ("Comments on the mockup:", "Before:"):
+        rest = rest.split(mark)[0]
+    return rest.strip()
+
+
 def comments_said(comments: list) -> str:
     if not comments:
         return ""
@@ -2570,12 +2581,7 @@ def doc_out(db: Session, doc: str) -> dict:
     rows = db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, FftDocComment.origin == "askdnd").order_by(FftDocComment.n))
     last = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == doc, func.jsonb_array_length(FftQuestion.picks) > 0)
                      .order_by(FftQuestion.answered_at.desc()))
-    notes = ""
-    if last is not None:  # (the answer is the picks line, then his notes, then the comments that went with them)
-        rest = last.answer_text.split("\n\n", 1)[1] if "\n\n" in last.answer_text else ""
-        for mark in ("Comments on the mockup:", "Before:"):
-            rest = rest.split(mark)[0]
-        notes = rest.strip()
+    notes = answer_notes(last.answer_text) if last is not None else ""
     return {"doc": doc,
             "comments": [{"n": c.n, "near": c.near, "words": c.words, "at": c.created_at.isoformat() if c.created_at else "",
                           "sent": c.sent_at is not None} for c in rows],

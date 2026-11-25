@@ -17,7 +17,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access, history, house_rules, picks, web
+from app import access, config, history, house_rules, picks, web
 from app import character_views as views
 from app import characters as chars
 from app import roll_recipes as rr
@@ -146,7 +146,7 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
     entries = group_changes(items)
     days: dict[str, list] = defaultdict(list)
     for e in entries:
-        days[e["at"].strftime("%b %-d, %Y")].append(e)  # (dates one way, "Nov 5, 2026": the UI review)
+        days[e["at"].astimezone(config.TABLE_TIME).strftime("%b %-d, %Y")].append(e)  # (dates one way, "Nov 5, 2026": the UI review; the table's day, never UTC's: the end-of-day review)
     every = list(days.items())
     shown = every if older else every[:DAYS_SHOWN]
     shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign

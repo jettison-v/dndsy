@@ -4,15 +4,15 @@
   <div><div class="note">Table</div><h2 id="peek-title">Add to the table</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body">
-      <form method="post" action="{{ cbase }}/manage/table/add" class="stack">
-        <label class="field">Who<select name="email"><option value="">No one yet (just a character)</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}</option>{% endfor %}</select></label>
-        {% if can_add_new %}<label class="field">Or someone new: their Google email<input type="text" name="new_email" placeholder="name@gmail.com"></label>
-        <label class="field">Their name (optional, for a new email)<input type="text" name="name" maxlength="200"></label>{% endif %}
-        <label class="field">Role here<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select></label>
-        <label class="field">Their character: a D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="dndbeyond.com/characters/…"></label>
-        <label class="field">Or a character's name, if it has no D&amp;D Beyond sheet<input type="text" name="char_name" maxlength="200"></label>
-        <div class="row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button><button class="btn peek-close" type="button">Cancel</button></div>
-        {% if can_add_new %}<p class="note">A new email gets an account and can sign in. Google also needs them on its test-user list (Accounts says how).</p>{% endif %}
-      </form>
-</div>
+      <form method="post" action="{{ cbase }}/manage/table/add" class="peek-form">
+    <div class="peek-body stack">
+          <label class="field">Who<select name="email"><option value="">No one yet (just a character)</option>{% for u in accounts %}<option value="{{ u.email }}">{{ u.name if u.name and u.name != u.email else u.email }}</option>{% endfor %}</select></label>
+          {% if can_add_new %}<label class="field">Or someone new: their Google email<input type="text" name="new_email" placeholder="name@gmail.com"></label>
+          <label class="field">Their name (optional, for a new email)<input type="text" name="name" maxlength="200"></label>{% endif %}
+          <label class="field">Role here<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select></label>
+          <label class="field">Their character: a D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="dndbeyond.com/characters/…"></label>
+          <label class="field">Or a character's name, if it has no D&amp;D Beyond sheet<input type="text" name="char_name" maxlength="200"></label>
+          {% if can_add_new %}<p class="note">A new email gets an account and can sign in. Google also needs them on its test-user list (Accounts says how).</p>{% endif %}
+    </div>
+    <div class="peek-foot row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button><button class="btn link peek-close" type="button">Cancel</button></div>
+  </form>

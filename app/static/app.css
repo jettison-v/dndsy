@@ -441,6 +441,7 @@ h1 { font-size: var(--fs-2xl); font-weight: 700; margin: 0; letter-spacing: -.01
 /* Sections */
 .section { background: var(--surface); border-radius: var(--r-lg); padding: 28px 30px; margin-bottom: 24px; }
 .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.section-head:has(> .ls-views) { flex-wrap: wrap; }  /* (its views go under the heading when there isn't room: Usage at 375px) */
 h2 { font-size: var(--fs-lg); font-weight: 600; margin: 0; flex: 1; }
 h2 .num { color: var(--red); margin-right: 8px; font-weight: 700; }
 h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
@@ -836,18 +837,15 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .help-tip:hover::after, .help-tip:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 30; width: max-content; max-width: 260px; padding: var(--sp-2) var(--sp-3); background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--text); font-size: var(--fs-xs); font-weight: 400; line-height: 1.4; white-space: normal; text-align: left; box-shadow: var(--lift); }
 .hb-bad { color: var(--link); display: block; margin-top: 2px; }
 .hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
-.records > .record[data-modal-url] { cursor: pointer; }  /* (a row that opens its window: Items, IT3) */
-.records > .record[data-modal-url]:hover { background: var(--surface-2); }
+/* A row that opens its window (Items, History, Feature use…): one look, the design system's row hover (the end-of-day
+   review, Nov 25: it was styled four times in two colours) */
+:is(.records > .record, .hist-rows > .hist-row, .ft-row)[data-modal-url] { cursor: pointer; border-radius: var(--r-sm); }
+:is(.records > .record, .hist-rows > .hist-row, .ft-row)[data-modal-url]:is(:hover, :focus-visible) { background: var(--row-hover); }
 /* History (Brett's picks HI1–HI3, Nov 25): rows that open their window; the switch and search on one row */
-.hist-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }
-.hist-tools > .filters { margin: 0; }
-.hist-tools a.chip { text-decoration: none; }
-.hist-search { flex: 1 1 16rem; max-width: 380px; }
-.hist-rows > .hist-row[data-modal-url] { cursor: pointer; }
-.hist-rows > .hist-row[data-modal-url]:hover { background: var(--surface-2); }
+.ls-toolbar > .filters { margin: 0; }
+.ls-toolbar a.chip { text-decoration: none; }
 .hist-window { display: grid; gap: var(--sp-4); }
 .hist-change { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line-soft); }  /* (what to know before switching a feature on, beside its switch: SE2, Nov 25) */
-.feature-more > summary { font-size: var(--fs-xs); color: var(--muted); }
 .seat-row > .tag { grid-column: 4; }  /* (the role in its own column, with or without a Sheet ↗ before it: TA1) */
 .seat-sheet { grid-column: 3; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; white-space: nowrap; }
 .seat-sheet:hover { color: var(--text); text-decoration: underline; }
@@ -856,7 +854,6 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .backup-panel { display: grid; gap: var(--sp-1); }
 .backup-panel b { color: var(--green); } .flash.bad.backup-panel b { color: var(--link); }
 .backup-runs tr.backup-missed td, .backup-runs tr.backup-failed td:first-child b { color: var(--link); }
-.backup-older > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); margin-top: var(--sp-2); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
 .table-scroll { overflow-x: auto; }  /* every wide table sits in one: it scrolls inside its own frame, never the page (DESIGN.md › Narrow screens) */
@@ -1781,16 +1778,18 @@ button.rm-box { cursor: pointer; }
 .tbx-ctl { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .tbx .dtable { border: 0; border-radius: 0; }
 .tbx.is-empty .tbx-head { border-bottom: 0; }
-.tbx-empty { margin: 0; padding: 0 var(--sp-3) var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
+.tbx-empty { padding: 0 var(--sp-3); }  /* (the shared empty line inside a table's box) */
 .tbx-stack { display: grid; gap: var(--sp-4); }
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
-   which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px), the title taking the rest; a row with data-open
+   which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px · dt-q a quarter of the table), the title taking the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
 .dtable { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; font-size: var(--fs-md); }
 .dtable th { text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); padding: var(--sp-2) var(--sp-2); background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dtable td { padding: var(--sp-1) var(--sp-2); height: 32px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 .dtable tr:last-child td { border-bottom: 0; }
 .dtable .dt-w1 { width: 56px; } .dtable .dt-w2 { width: 80px; } .dtable .dt-w3 { width: 120px; } .dtable .dt-w4 { width: 160px; } .dtable .dt-w5 { width: 200px; }
+.dtable .dt-q { width: 25%; }  /* (a column of words that grows with the window, a quarter of the table: so the title column never takes all the room while another is cut; Brett, Nov 25) */
+.dtable td.end .row { flex-wrap: nowrap; justify-content: flex-end; }  /* (a row's buttons stay on one line at its end: Campaigns, the end-of-day review) */
 .dtable td.dt-title { white-space: normal; color: var(--text-strong); line-height: 1.3; padding-block: var(--sp-2); }
 .dtable td.dt-title .dt-why { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .dtable td.dt-wrap { white-space: normal; line-height: 1.3; padding-block: var(--sp-2); }  /* (a cell of a few words that may wrap, never cut) */
@@ -1813,8 +1812,6 @@ button.rm-box { cursor: pointer; }
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
 /* Backstage › Global › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
-.doc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }  /* the views, then the search */
-.doc-search { flex: 1 1 18rem; max-width: 420px; }
 /* Documents: one list, its rows lined up as columns under their headings (Title, State, Date, What it is: Brett's pick
    D3, Nov 24), on the list's grid; a row is one line: its state a short word that never wraps (S6), what it is one line,
    the whole of it on hover and on the document's page */
@@ -1933,7 +1930,6 @@ a.sheet-ref { text-decoration-style: dotted; }
 /* Backstage › History */
 .hist-row { border-top: 1px solid var(--line); padding: var(--sp-3) 0; display: grid; gap: var(--sp-2); }
 .hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
-.hist-head .hist-restore { margin-left: auto; }
 .hist-short { margin: 0; }
 .import-diff.one { grid-template-columns: 1fr; }
 .keep-box { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 4px; }
@@ -2679,6 +2675,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-above-body .ls-chip { font-size: var(--fs-xs); padding: 0 10px; }
 .ls-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .ls-toolbar > .note:first-child { margin-right: auto; }
+.ls-toolbar > .ls-search { flex: 1 1 16rem; max-width: 400px; }  /* (the views or filters, then the search: History, Documents; the end-of-day review) */
+.ls-toolbar:has(> .ls-search) { margin: 0 0 var(--sp-3); }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
 .ls-select select { background: var(--surface-2); }
 /* A list's column headings stay in view while its rows scroll (feedback 73, Brett, Nov 16: the numbers had no context
@@ -3587,6 +3585,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-st { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .br-st.br-live { background: var(--green-soft); color: var(--green); }
+.br-now .br-st { white-space: normal; }  /* (a long health line wraps in Right now: the sweep at 375px) */
 .br-st.br-wait { background: var(--amber-soft); color: var(--amber); }
 .br-st.title-action { white-space: normal; max-width: 100%; text-align: left; }  /* (a long status wraps on a phone instead of pushing the page wider: sweep, Nov 5) */
 .br-st.br-off { background: var(--red-soft); color: var(--link); }
@@ -4091,8 +4090,6 @@ kbd { display: inline-block; border: 1px solid var(--line-strong); border-bottom
 .fb-form textarea { width: 100%; }
 .nt-kind { justify-self: start; align-self: flex-start; width: fit-content; }  /* a note's kind, its own size (Notes you sent) */
 .fb-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }  /* what it is: three chips, none on until picked */
-.fb-kind-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin: var(--sp-2) 0; }  /* the queue, by kind */
-.fb-kind-chips .chip { text-decoration: none; color: var(--text); }
 /* A chip you can take away (`.chip-pair`): one pill holding its name and a ✕, each its own button (a picture you added
    to a note; Brett's round, Nov 18) */
 .chip.chip-pair { padding: 0; gap: 0; overflow: hidden; }
@@ -4359,7 +4356,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .tale-acts .tale-more-link { margin: 0; }
 /* For you's count (Nov 19): the same badge, amber as Yours is; on Backstage, and on a phone's More beside Notes you sent's */
 .notes-dot-badge.for-you-badge { background: var(--amber); color: var(--chrome); }
-.manage > button:has(> .for-you-badge:not([hidden])) { padding-right: 28px; }  /* (room for it inside the door: never over its words, never outside) */
+.manage > button:has(> .for-you-badge:not([hidden])) { padding-right: 36px; }  /* (a two-figure count too: the end-of-day sweep, Nov 25, "12" over "Backstage ▾") */  /* (room for it inside the door: never over its words, never outside) */
 .manage > button .for-you-badge { top: 4px; right: 4px; }
 .bottom-nav .for-you-badge { position: static; }  /* (beside More, on its line, in the button's flow so a count of any length sits before the word, never on it (the weekly phone sweep, Nov 23: "10" covered "More"); Notes you sent's keeps the corner) */
 .bottom-nav > button:has(> .for-you-badge:not([hidden])) { grid-auto-flow: column; justify-content: center; gap: 4px; }
@@ -4518,7 +4515,8 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .act-menu.floats { position: fixed; z-index: 60; right: auto; }
 .table-scroll details.act-more[open] > .act-menu:not(.floats) { visibility: hidden; }  /* (until it's placed: never a frame in the wrong place) */  /* (a menu in a table's row: over the page, placed by app.js "A ⋯ or a lane's menu in a table's row"; issue 47) */  /* (from a button at a row's right end: it opens toward the page, not off it; Deploys, Nov 19) */
 .act-menu button, .act-menu > a { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; text-decoration: none; }
-.act-menu button:hover, .act-menu > a:hover { background: var(--surface-2); }  /* (an item that goes somewhere is a link, looking the same: + Add session, SS1) */
+.act-menu button:hover, .act-menu > a:hover { background: var(--surface-2); }
+.act-menu button.danger { color: var(--link); }  /* (Remove in a ⋯ is quiet red, as everywhere: the end-of-day review) */  /* (an item that goes somewhere is a link, looking the same: + Add session, SS1) */
 .timeline { flex: 1 1 100%; min-width: 0; }  /* (in a row, it takes the row: its lines never squeeze) */
 .timeline > summary { list-style: none; cursor: pointer; }
 .timeline > summary::-webkit-details-marker { display: none; }
@@ -4705,15 +4703,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
    will say, its history; the round's card keys and foot; Where it stands until slice 6 draws it whole */
 .fft-group { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); }
 .fft-group:first-child { margin-top: 0; }
-/* For you's sections (the work flow's slice 2, Nov 19): Try, Decide, Look at, From the table, From the Roadmap */
-.fft-section { margin: var(--sp-4) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 700; color: var(--text-strong); }
 .fft-need-name { font-weight: 600; color: var(--text-strong); }  /* (Try, a group per need: Clearer checks) */
-.fft-section-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: var(--sp-4) 0 var(--sp-1); padding-right: var(--sp-2); }  /* (a section's name, and Try's ▶ Start round at its right, as ▶ Just this area) */
-.fft-section-row:first-child { margin-top: 0; }
-.fft-section-row .fft-section { margin: 0; }
-.fft-section-row form { margin: 0; }
-.fft-section:first-child { margin-top: 0; }
-.fft-section + .fft-group, .fft-section-row + .fft-group { margin-top: var(--sp-1); }
 .fft-group-name { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .fft-group form { display: contents; }
 .fft-devices { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--muted); }
@@ -4823,13 +4813,8 @@ details.backlog[open] > ul { margin: var(--sp-2) 0; }
 .ds-find { flex: 0 0 200px; }
 .ds-find .ls-search input { min-height: var(--control-h-sm); }
 /* Feature use's rows open their window (FE1, Nov 25) */
-.ft-row[data-modal-url] { cursor: pointer; border-radius: var(--r-sm); }
-.ft-row[data-modal-url]:hover { background: var(--surface-2); }
 .ft-window { display: grid; gap: var(--sp-3); }
 .ft-window h3 { margin: var(--sp-2) 0 0; }
 /* The DM guide: a reading column (Brett's pick DG1, Nov 25) */
 main.dm-guide [role=tabpanel] > .section { max-width: calc(75ch + 2 * var(--sp-5)); }
-/* Campaigns as a table (CA1, Nov 25): its buttons on one line, the column only as wide as they are */
-.tbx[data-table="campaigns"] :is(th, td).end { width: 230px; }
-.tbx[data-table="campaigns"] th.num { width: 70px; }
-.tbx[data-table="campaigns"] td.end .row { flex-wrap: nowrap; justify-content: flex-end; }
+

@@ -24,7 +24,7 @@
         {% if round_flight %}<button class="btn primary small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ device_need }}" data-do="start-round">▶ Start round</button>
         {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ device_need }}"><button class="btn primary small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}{% endset %}
       {% call table_box("try", title, n, ("about " ~ try_minutes ~ " min · " if try_minutes else "") ~ "you use askdnd and mark what you saw",
-                        [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w1"), ("", "dt-w2")],
+                        [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w2"), ("", "dt-w3")],
                         "Nothing to try. A check reaches here once its change is live and Claude has tried it.", try_ctl, ' data-fft-list="foryou"') %}
       {% for g in gs %}
         {% if g.key == "local" %}<tr class="dt-group" data-group="local"><td colspan="5"><span class="fft-group-name">{{ g.title }}</span></td></tr>

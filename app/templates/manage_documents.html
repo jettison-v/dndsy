@@ -13,7 +13,7 @@
   <p class="subtitle">Every guide, plan and design made for askdnd: {{ count }} in all, each opened from askdnd's own copy, so none depends on claude.ai. New ones join the list as Claude makes them. Only admins can see this page.</p>
   <div class="doc-list" data-list="documents" data-noun="document" data-nouns="documents" data-default-sort="default" data-ls-start="{{ start }}" data-ls-group-count
        data-group-notes-default='{{ notes | tojson }}'>
-    <div class="doc-tools">{{ view_switch(views, "Which documents") }}<div class="doc-search">{{ search_box("Search titles and what each is") }}</div></div>
+    <div class="ls-toolbar">{{ view_switch(views, "Which documents") }}{{ search_box("Search titles and what each is") }}</div>
     <div class="doc-rows" data-ls-rows>
       <div class="doc-head" aria-hidden="true"><span>Title</span><span>State</span><span>Date</span><span>What it is</span></div>
       {% for r in rows %}{% set e = r.e %}

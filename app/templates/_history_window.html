@@ -1,3 +1,4 @@
+{% from "_lists.html" import empty_state %}
 {# A History row's window (app/history_pages.py `history_window`; Brett's pick HI2, Nov 25): each change it holds, before
    and after side by side, each with its own Restore saying what it brings back. #}
 <div class="peek-head">
@@ -15,5 +16,5 @@
     {% if x.restorable %}<form method="post" action="{{ page_url }}/{{ r.id }}/restore" class="inline" data-confirm="{{ 'Bring this back?' if r.field == 'deleted' else 'Put back ' ~ (x.old | string)[:60] ~ '?' }}">
       <button type="submit" class="btn small">{{ "Bring it back" if r.field == "deleted" else "Restore the before" }}</button></form>{% endif %}
   </section>
-  {% else %}<p class="muted">Nothing to show here.</p>{% endfor %}
+  {% else %}{{ empty_state("Nothing to show here.") }}{% endfor %}
 </div>

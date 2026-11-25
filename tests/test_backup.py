@@ -57,3 +57,15 @@ def test_overview_flags_missing_failed_and_overdue_backups(db):
     db.add(JobRun(name="backup", status="error", detail="AccessDenied", started_at=now, finished_at=now))
     db.flush()
     assert backup_status(db)["text"].startswith("Last backup failed")
+
+
+def test_a_backup_rows_numbers_survive_a_night_that_swept_files():
+    """The end-of-day review (Nov 25): a night that also deleted unused files adds ", 3 deleted unused" after its count,
+    and the Files column went blank."""
+    from types import SimpleNamespace
+
+    from app.admin import backup_row
+
+    run = SimpleNamespace(status="ok", detail="v2/backups/x.json.gz · 4.8 MB · 10,682 rows · 236 files, 3 deleted unused, 1 leftovers deleted")
+    row = backup_row(run)
+    assert (row["size"], row["rows"], row["files"]) == ("4.8 MB", "10,682", "236")
