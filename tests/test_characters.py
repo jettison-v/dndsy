@@ -161,7 +161,7 @@ def test_descriptions_underline_rule_terms_with_definitions(admin, player, db):
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "off"}).json() == {"on": False}
     panel = player.get(f"/characters/{cole.id}/detail", params={"ref": armor["key"]}).text
     assert 'data-term="abyssal"' not in panel and 'data-term="unarmed-strike"' in panel
-    assert "Underlined in descriptions" in admin.get("/manage/tool-corrections").text
+    assert "Not underlined in descriptions" in admin.get("/manage/tool-corrections").text  # (in plain words: TC1, Nov 25)
     assert admin.post("/rules/terms/abyssal/underline", data={"value": "on"}).json() == {"on": True}
     assert db.scalar(select(ToolCorrection).where(ToolCorrection.ref == "term:Abyssal")) is None  # back to the default
 
