@@ -795,6 +795,9 @@ class Job(Base):
     version: Mapped[str] = mapped_column(String(40), default="", server_default="")
     error: Mapped[str] = mapped_column(Text, default="", server_default="")
     result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Its story (the Sync page, Roadmap item 44): each try as it ended {at, n, ended: done|again|failed|stopped, took,
+    # error}, and each Retry or Cancel {at, did, by}, oldest first (app/jobs.py `_told`)
+    story: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class Revision(Base):

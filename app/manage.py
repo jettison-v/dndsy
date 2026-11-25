@@ -41,7 +41,7 @@ CAMPAIGN, ASKDND = "campaign", "askdnd"
 # the permission structure is robust and flexible", since what an admin may see may need narrowing): changing who sees
 # a page is one line there, and the Table's access chart, the menus and the pages' own checks all follow it.
 AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
-OUR_WORK, GENERAL, PEOPLE, TUNING = "Our work", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20; Our work, Nov 20: For you, Work and Feedback together, the one way between them)
+OUR_WORK, GENERAL, PEOPLE, TUNING = "Workshop", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20; Workshop, his name for the tool, Nov 25 (Our work, Nov 20): For you, Work and Feedback together, the one way between them)
 PAGES = (
     ("needs", "Needs you", "/manage", "What's waiting, and what you're preparing", CAMPAIGN, AFTER, "moderate", ()),
     ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, "moderate", ()),
@@ -75,6 +75,8 @@ PAGES = (
     # the D&D Beyond bridge (app/ddb_bridge.py): only where it may run (DDB_BRIDGE=1)
     ("bridge", "D&D Beyond bridge", "/manage/bridge", "Whether it's awake and why, and its timers", ASKDND, TUNING,
      lambda user: config.DDB_BRIDGE and is_admin(user), ()),
+    # (Roadmap item 44, Brett's pick SQ1: its own page, beside the bridge)
+    ("sync", "Sync", "/manage/sync", "Every read from D&D Beyond, change sent to it and recap draft, and what happened", ASKDND, TUNING, "admin", ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
@@ -282,6 +284,7 @@ def counts(request: Request, db: Session = Depends(get_db)):
 @router.get("/manage/askdnd")
 def overview(request: Request, db: Session = Depends(get_db)):
     """Backstage › Global › Overview: how each admin page stands, one card each, so most days none needs opening."""
+    from app import sync_page
     from app.admin_usage import usage_summary
     from app.models import Campaign, User
     from app.tool_corrections_pages import open_count
@@ -307,6 +310,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "product-areas": (_product_areas(db), ""),
         "for-you": _for_you_state(db, request),
         **_more_states(db),
+        "sync": sync_page.card_state(db),  # (its needs-you line here too: Brett's pick SQ5)
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge

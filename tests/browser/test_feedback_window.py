@@ -236,6 +236,37 @@ def test_the_pages_picture_keeps_what_the_screen_shows_when_scrolled(people, ser
     assert diff < 12, f"the list in the page's picture isn't what the screen shows (they differ by {diff:.1f})"
 
 
+def test_a_long_table_keeps_its_rows_in_the_pages_picture(people, server):
+    """Issue 132 (Brett, Nov 25: "The automatic screenshot is wrong"): Documents' 198 came out as two rows a screen tall,
+    with blank between. The rows below the screen were left out of the drawing, but the table kept its whole height,
+    and the rows it had were stretched over it. The table as the screen shows it is the table in the picture."""
+    admin = people("admin")
+    page = admin.open("/manage/documents")
+    page.set_viewport_size({"width": 1280, "height": 720})
+    page.locator('[data-ls-view="all"]').click()
+    rows = page.locator("[data-ls-rows] tr:visible")
+    assert rows.count() > 40  # (far more than a screen)
+    box = page.locator(".doc-list .table-scroll").first.bounding_box()
+    clip = {"x": box["x"], "y": box["y"], "width": box["width"], "height": 720 - box["y"] - 10}
+    page.mouse.move(2, 710)
+    screen = page.screenshot(clip=clip)
+    page.keyboard.press("\\")
+    page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    drawn = page.evaluate("""b => { const c = document.querySelector('#fb-win [data-fb-canvas]'), o = document.createElement('canvas');
+        o.width = Math.round(b.width); o.height = Math.round(b.height); o.getContext('2d').drawImage(c, b.x, b.y, b.width, b.height, 0, 0, o.width, o.height);
+        return o.toDataURL('image/png'); }""", clip)
+    assert rows.count() > 40, "the rows below the screen are back on the page once it's drawn"
+    import base64
+    import io
+
+    from PIL import Image, ImageChops, ImageStat
+
+    def small(png):
+        return Image.open(io.BytesIO(png)).convert("L").resize((48, 96))
+    diff = ImageStat.Stat(ImageChops.difference(small(screen), small(base64.b64decode(drawn.split(",", 1)[1])))).mean[0]
+    assert diff < 12, f"the table in the page's picture isn't what the screen shows (they differ by {diff:.1f})"
+
+
 def test_an_arrow_looks_the_same_on_a_large_screenshot_as_on_a_small_one(people, server, tmp_path):
     """Issue 16 (Brett's round, Nov 18): the arrow was too small on his screenshot. Marks were sized by the picture's own
     width, so a large screenshot shown small in the window got a thin arrow with a small head. Now a mark is sized as it

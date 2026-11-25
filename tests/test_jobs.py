@@ -77,6 +77,33 @@ def test_a_stopping_worker_puts_its_job_back_uncounted(db, kinds):
     assert row.state == "queued" and row.attempts == 0 and jobs.claim(db, "lane", "w2")["attempts"] == 1
 
 
+def test_a_jobs_story_keeps_each_try_and_who_pressed_retry_or_cancel(db, kinds):
+    """The Sync page (Roadmap item 44, Brett's picks SQ4 and the story of each row): each try as it ended, with its
+    error, and Retry and Cancel with who pressed them; Retry starts its tries afresh and goes first."""
+    job_id, _ = jobs.enqueue(db, "test_a", {}, "story")
+    got = jobs.claim(db, "lane", "w1")
+    jobs.fail(db, job_id, got["attempts"], "D&D Beyond answered 503")
+    db.execute(text("UPDATE jobs SET run_at = now() WHERE id = :id"), {"id": job_id})
+    got = jobs.claim(db, "lane", "w1")
+    jobs.fail(db, job_id, got["attempts"], "503 again")
+    story = _row(db, job_id).story
+    assert [(s["n"], s["ended"], s["error"]) for s in story] == [(1, "again", "D&D Beyond answered 503"), (2, "failed", "503 again")]
+    assert all(s["took"] >= 0 for s in story)
+    assert jobs.retry(db, job_id, "Brett")
+    row = _row(db, job_id)
+    assert row.state == "queued" and row.attempts == 0 and row.priority >= 10 and row.story[-1]["did"] == "retry" and row.story[-1]["by"] == "Brett"
+    got = jobs.claim(db, "lane", "w1")
+    assert not jobs.retry(db, job_id, "Brett") and not jobs.cancel(db, job_id, "Brett")  # (running: neither)
+    jobs.finish(db, job_id, got["attempts"], {"ok": True})
+    assert _row(db, job_id).story[-1]["ended"] == "done"
+    waiting, _ = jobs.enqueue(db, "test_a", {}, "waiting")
+    assert jobs.cancel(db, waiting, "Brett") and _row(db, waiting).state == "cancelled" and _row(db, waiting).story[-1]["did"] == "cancel"
+    stopped, _ = jobs.enqueue(db, "test_a", {}, "stopped")
+    got = jobs.claim(db, "lane", "w1")
+    jobs.put_back(db, stopped, got["attempts"])
+    assert _row(db, stopped).story[-1]["ended"] == "stopped"
+
+
 def test_finished_jobs_are_kept_as_long_as_their_kind_says(db, kinds):
     old_done, _ = jobs.enqueue(db, "test_b", {}, "old")
     new_done, _ = jobs.enqueue(db, "test_b", {}, "new")

@@ -84,6 +84,7 @@ from app.search import router as search_router
 from app.shifting import router as shifting_router
 from app.story import router as story_router
 from app.suggestions import router as suggestions_router
+from app.sync_page import router as sync_router
 from app.table_creatures import router as table_creatures_router
 from app.table_fight import router as table_fight_router
 from app.table_page import router as table_router
@@ -329,6 +330,7 @@ app.include_router(homebrew_router)  # DM Tools: the campaign's homebrew items
 app.include_router(workspace_router)  # the DM's Workspace: Scene notes and Places and maps in Manage
 app.include_router(campaigns_router)
 app.include_router(dice_router)
+app.include_router(sync_router)  # Backstage › Tuning › Sync: reads, changes and drafts with D&D Beyond (Roadmap item 44)
 app.include_router(documents_router)  # Backstage › Global › Documents: every page made for askdnd (docs/library.json)
 app.include_router(narration_router)  # Listen to the recap (Labs): the narration and the motion comic
 app.include_router(realtime_router)

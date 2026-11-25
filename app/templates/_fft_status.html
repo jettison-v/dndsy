@@ -46,4 +46,6 @@
   {% set late_here = [] if late_panel else bar.late %}
   {% if waiting %}
   <details class="fold fft-hands fft-status-line" data-stat="hands"><summary class="note">{{ waiting | length }} thing{{ "s" if waiting | length != 1 }} in Claude's hands now{% if late_here %} · <span class="fft-late" data-late-count>{{ late_here | length }} waiting too long</span>{% endif %}</summary>{{ hands_list(waiting, bar.gap_words) }}</details>{% endif %}
+  {# (a handoff past its usual time, beside what's in Claude's hands: Roadmap item 45, Brett's pick CQ4) #}
+  {% if bar.missed %}<a class="fft-status-line fft-late" href="/manage/work?tab=handoffs" data-stat="missed">{{ bar.missed | length }} handoff{{ "s" if bar.missed | length != 1 }} missed</a>{% endif %}
 </div>

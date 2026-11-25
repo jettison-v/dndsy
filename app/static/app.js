@@ -5584,6 +5584,22 @@ document.addEventListener('click', e => {
     const scrolled = all.filter(el => el.scrollTop || el.scrollLeft).map(el => [el, el.scrollTop, el.scrollLeft]);
     const held = [];
     const hold = (el, props) => { held.push([el, el.getAttribute('style')]); Object.assign(el.style, props); };
+    // (what's below the screen is folded away on the page too, not only left out of the drawing: the drawing copies each
+    // part's measured height, so a table whose rows below were left out kept its whole height and stretched the rows it
+    // had over it, Documents' 198 drawn as a few rows a screen tall; issue 132, Nov 25. Done just before drawing, inside
+    // what puts the page back; the page keeps its height, and if anything on screen moves all the same (a column centred
+    // in its height, a cell spanning rows below) it's unfolded and drawn as before)
+    const fold = () => {
+      const below = [...gone].filter(el => el.getBoundingClientRect().top > innerHeight && !gone.has(el.parentElement));
+      if (!below.length) return;
+      const marks = all.filter(el => !gone.has(el) && el.childElementCount === 0 && el.textContent.trim()).slice(0, 400)
+        .map(el => [el, el.getBoundingClientRect()]);
+      const from = held.length;
+      hold(document.body, { minHeight: (scrollY + innerHeight) + 'px' });
+      below.forEach(el => hold(el, { display: 'none' }));
+      const moved = marks.some(([el, r]) => { const n = el.getBoundingClientRect(); return Math.abs(n.top - r.top) > 0.5 || Math.abs(n.left - r.left) > 0.5; });
+      if (moved) held.splice(from).reverse().forEach(([el, style]) => { if (style === null) el.removeAttribute('style'); else el.setAttribute('style', style); });
+    };
     all.filter(el => !gone.has(el) && getComputedStyle(el).position === 'sticky').map(el => {
       const stuck = el.getBoundingClientRect(), was = el.getAttribute('style');
       Object.assign(el.style, { position: 'relative', top: '0px', left: '0px' });
@@ -5682,6 +5698,7 @@ document.addEventListener('click', e => {
     };
     const draw = async () => { try { return await h.toSvg(document.body, options); } finally { window.getComputedStyle = realStyle; } };
     try {
+      fold();
       const svg = (await draw()).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
       const im = new Image();
       await new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error("the page's drawing wouldn't load")); im.src = svg; });
