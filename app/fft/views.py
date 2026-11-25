@@ -552,14 +552,18 @@ def missed(db: Session) -> list[dict]:
 
 def _held_back(db: Session, p: FftPull) -> bool:
     """A green pull request that's meant to wait: its plan is Careful (Brett tries it first), in his open round, or has
-    a local try he hasn't answered."""
+    a local try he hasn't answered. One named for a Roadmap build (`r43-…`) has no plan of its own: it's held when any
+    open plan of its build is (Nov 25: #519, Careful, read as ready to merge)."""
     from app.fft.models import FftLocalTry
 
-    a = db.get(FftArea, p.area_id) if p.area_id else None
-    if a is None:
-        return False
-    waiting_try = db.scalar(select(FftLocalTry.id).where(FftLocalTry.area_id == a.id, FftLocalTry.answer == "").limit(1)) is not None
-    return rules.lane_of(a) == "careful" or rules.in_open_round(db, a) or waiting_try  # (or his local try first: After my local try)
+    plans = ([db.get(FftArea, p.area_id)] if p.area_id else
+             list(db.scalars(select(FftArea).where(FftArea.item_id == p.item_id, FftArea.archived.is_(False)))) if p.item_id else [])
+
+    def held(a: FftArea) -> bool:
+        waiting_try = db.scalar(select(FftLocalTry.id).where(FftLocalTry.area_id == a.id, FftLocalTry.answer == "").limit(1)) is not None
+        return rules.lane_of(a) == "careful" or rules.in_open_round(db, a) or waiting_try  # (or his local try first: After my local try)
+
+    return any(held(a) for a in plans if a is not None)
 
 
 def pull_row(p: FftPull) -> dict:
