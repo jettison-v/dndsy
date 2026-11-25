@@ -12,7 +12,7 @@
     <dl class="br-now">
       <dt>Health</dt><dd><span class="br-st {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span>
         <span class="note" data-bridge-todo>{{ health.todo }}</span>
-        <button type="button" class="btn small" data-br-check data-ask="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button></dd>
+        <button type="button" class="btn small" data-br-check data-confirm="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button></dd>
       <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>
       <dt>Last used</dt><dd>{{ last | clock if last else "Not yet" }}</dd>
       <dt>Extension</dt><dd>{% if health.extension %}Connected{% if health.sheets %} · sheets open: {{ health.sheets | length }}{% endif %}{% else %}Not connected{% endif %}</dd>
@@ -57,7 +57,7 @@
   <section class="section">
     <h2>Check everything</h2>
     <p class="hint">After D&amp;D Beyond changes its sheet: one of each change the bridge makes (hit points, Death Saving Throws, Heroic Inspiration, a condition, Exhaustion, a Short Rest's Hit Die, a spell slot, a limited use, equipped, attuned, an item's count, charges and container, gold) on the test character, each confirmed, then all put back. Open the test character's D&amp;D Beyond sheet first; the menu bar shows how it went.</p>
-    <button class="btn" type="button" data-br-check-all data-ask="Check everything? It makes one of each change on the test character's sheet on D&amp;D Beyond, then puts each back.">Check everything…</button>
+    <button class="btn" type="button" data-br-check-all data-confirm="Check everything? It makes one of each change on the test character's sheet on D&amp;D Beyond, then puts each back.">Check everything…</button>
   </section>
 
   <section class="section">

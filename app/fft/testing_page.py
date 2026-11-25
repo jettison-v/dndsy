@@ -967,7 +967,7 @@ def picks_read(request: Request, doc: str = "", db: Session = Depends(get_db)):
         return denied
     asked = _doc_question(db, doc, open_only=True)
     done = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == doc, func.jsonb_array_length(FftQuestion.picks) > 0).order_by(FftQuestion.answered_at.desc()))
-    return {"open": asked is not None, "picks": done.picks if done else [], "notes": done.answer_text.removeprefix(_picks_said(done.picks)).strip() if done else "",  # (what follows the picks it wrote)
+    return {"open": asked is not None, "picks": done.picks if done else [], "notes": rules.answer_notes(done.answer_text) if done else "",  # (his notes alone: never the picks line or the comments)
             "at": done.answered_at.isoformat() if done and done.answered_at else ""}
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import view_switch, count_pill %}
+{% from "_lists.html" import view_switch, count_pill, empty_state %}
 {% block title %}Usage · Backstage · askdnd{% endblock %}
 {% block content %}
 {# Backstage › Global › Usage (app/admin_usage.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): the monthly
@@ -51,8 +51,8 @@
       {% endfor %}
       </tbody>
     </table></div>
-    {% if more %}<p class="note"><a href="?calls=all" data-item="all-calls">Show all {{ rows | length + more }}</a></p>{% endif %}
-    {% else %}<p class="muted">No Claude calls yet.</p>{% endif %}
+    {% if more %}<p class="note"><a href="?calls=all" data-item="all-calls">Show every call{{ count_pill(rows | length + more) }}</a></p>{% endif %}
+    {% else %}{{ empty_state("No Claude calls yet.") }}{% endif %}
   </section>
 </main>
 {% endblock %}

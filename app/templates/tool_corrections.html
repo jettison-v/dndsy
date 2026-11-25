@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import count_pill %}
+{% from "_lists.html" import count_pill, empty_state %}
 {% block title %}Tool corrections · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_manage.html" import inline_edit %}
@@ -27,8 +27,8 @@
       <p class="note">Files them in Feedback, to be built into askdnd with a test each; then they move down here on their own. A few words on why help.</p>{% endif %}</div>{% endif %}
     {% if open %}
     <ul class="records cols-3">{% for o in open %}{{ row(o) }}{% endfor %}</ul>
-    {% elif overrides %}<p class="all-clear">✓ askdnd gets everything here right on its own.</p>
-    {% else %}<p class="muted">No corrections yet. Open any row on a Character page and use the Admin box at the bottom of the side panel, or click an underlined rule term to underline it or not.</p>{% endif %}
+    {% elif overrides %}{{ empty_state("askdnd gets everything here right on its own.") }}
+    {% else %}{{ empty_state("No corrections yet. Open any row on a Character page and use the Admin box at the bottom of the side panel, or click an underlined rule term to underline it or not.") }}{% endif %}
   </section>
 
   {% if built %}

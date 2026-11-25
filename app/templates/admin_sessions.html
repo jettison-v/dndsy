@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Sessions · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_lists.html" import empty_state %}
 {% from "_admin_bits.html" import more_menu %}
 {# Backstage › Sessions (app/admin_sessions.py). Brett's pick SS1 on docs/mockups/backstage-round-4/ (Nov 25): the red
    button follows the state (the oldest draft to review, else the next to draft, else + Add session); + Add session and
@@ -29,7 +30,7 @@
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
   <section class="section">
-    {% if not rows %}<p class="muted">No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.</p>{% else %}
+    {% if not rows %}{{ empty_state("No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.") }}{% else %}
     <div class="table-scroll"><table class="list stacked">
       <tr><th>Session</th><th>State</th><th class="num">Cost</th><th></th></tr>
       {% set shown = namespace(backlog=False) %}

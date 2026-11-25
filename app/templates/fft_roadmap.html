@@ -17,7 +17,7 @@
   {% if not rows %}{{ empty_state("Nothing shipped yet." if history else "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.") }}{% else %}
   <div class="table-scroll" id="rm-list">
   <table class="dtable dt-wide fft-table rm-table" data-roadmap>
-    <thead><tr><th class="dt-w0"></th><th class="dt-w1">No.</th><th>Item</th><th class="dt-w3">Stage</th><th class="dt-w1">Size</th><th class="num dt-w2">Steps</th><th class="dt-w5">Next</th><th class="dt-w2">Updated</th></tr></thead>
+    <thead><tr><th class="dt-w0"></th><th class="dt-w1">No.</th><th>Item</th><th class="dt-w3">Stage</th><th class="dt-w1">Size</th><th class="num dt-w2">Steps</th><th class="dt-q">Next</th><th class="dt-w2">Updated</th></tr></thead>
     {% macro item_row(r, drag=True) %}
     <tr class="rm-row" data-key="{{ r.it.id }}" data-item="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
       <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>

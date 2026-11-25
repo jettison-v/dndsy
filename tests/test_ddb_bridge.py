@@ -604,7 +604,7 @@ def test_the_bridge_page_says_what_each_connection_can_change(admin, sheet, db):
     # Health is Right now's first row with what to do, and each check asks first (Brett's pick BR1, Nov 25)
     now = page.split("<h2>Right now</h2>")[1].split("</dl>")[0]
     assert "data-bridge-health" in now and "data-bridge-todo" in now and "data-br-check" in now and "title-action" not in page.split("<h2>Right now</h2>")[0].split('class="title-row"')[1]
-    assert 'data-br-check-all data-ask="' in page and 'data-confirm="Put every timer back' in page
+    assert 'data-br-check-all data-confirm="' in page and 'data-confirm="Put every timer back' in page
     assert "todo" in ddb_bridge.health(db)
 
 

@@ -283,3 +283,20 @@ def test_round_four_pages_dm_guide_accounts_and_product_areas(monkeypatch, db):
     assert 'name="name" value="ΩSeat one"' in admin.get("/manage/accounts/rename?email=seat@example.com").text
     cards = admin.get("/manage/product-areas").text
     assert 'class="panel pa-card"' in cards
+
+
+def test_usage_keeps_the_newest_calls_of_each_kind(monkeypatch, db):
+    """The end-of-day review (Nov 25): recent calls were cut to the newest 20 before All · Claude · OpenAI filtered them,
+    so OpenAI's view could be empty though there were OpenAI calls."""
+    from app.admin_usage import CALLS_SHOWN, OPENAI
+    from app.models import ExtractionRun
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
+    openai = next(iter(OPENAI))
+    db.add(ExtractionRun(source=openai, status="done", cost_usd=0.01))
+    db.flush()
+    db.add_all([ExtractionRun(source="notes", status="done", cost_usd=0.1) for _ in range(CALLS_SHOWN + 5)])
+    db.commit()
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    page = admin.get("/manage/usage").text
+    assert page.count('data-views="openai all"') == 1 and page.count('data-views="claude all"') == CALLS_SHOWN

@@ -4,20 +4,22 @@
   <div><div class="note">Usage</div><h2 id="peek-title">{{ "Monthly limit" if kind == "limit" else "Add a top-up" }}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body">
   {% if kind == "limit" %}
-  <form method="post" action="/manage/usage/limit" class="stack">
-    <p class="note">askdnd stops calling Claude and drawing pictures once this month's spending reaches it, until the 1st. Leave it empty for no limit; the Anthropic Console's own limit still applies.</p>
-    <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
-    <div class="row"><button class="btn primary" type="submit">Save limit</button><button class="btn peek-close" type="button">Cancel</button></div>
+  <form method="post" action="/manage/usage/limit" class="peek-form">
+    <div class="peek-body stack">
+      <p class="note">askdnd stops calling Claude and drawing pictures once this month's spending reaches it, until the 1st. Leave it empty for no limit; the Anthropic Console's own limit still applies.</p>
+      <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
+    </div>
+    <div class="peek-foot row"><button class="btn primary" type="submit">Save limit</button><button class="btn link peek-close" type="button">Cancel</button></div>
   </form>
   {% else %}
-  <form method="post" action="/manage/usage/topups" class="stack">
-    <p class="note">What you bought in the Anthropic Console, for the balance estimate.</p>
-    <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
-    <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
-    <label class="field">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>
-    <div class="row"><button class="btn primary" type="submit">Add top-up</button><button class="btn peek-close" type="button">Cancel</button></div>
+  <form method="post" action="/manage/usage/topups" class="peek-form">
+    <div class="peek-body stack">
+      <p class="note">What you bought in the Anthropic Console, for the balance estimate.</p>
+      <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
+      <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
+      <label class="field">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>
+    </div>
+    <div class="peek-foot row"><button class="btn primary" type="submit">Add top-up</button><button class="btn link peek-close" type="button">Cancel</button></div>
   </form>
   {% endif %}
-</div>

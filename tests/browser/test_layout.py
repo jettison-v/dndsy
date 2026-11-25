@@ -661,3 +661,23 @@ def test_the_check_catches_words_squeezed_onto_two_lines_and_off_their_line(peop
     kinds = {(p["kind"], p["where"].split(" > ")[0]) for p in found}
     assert ("squeezed", "#even") in kinds and ("off baseline", "#boxes") in kinds
     assert not {k for k in kinds if k[1] in ("#natural", "#lined", "#icon")}  # (an icon with no words is centred on purpose)
+
+
+def test_the_check_catches_a_cell_cut_short_beside_room_and_a_clipped_button(people, server):
+    """Brett, Nov 25 ("does the review find misbalanced columns on tables such as this?"): on askdnd.ai the Roadmap's
+    Next column cut "Build each page …" while Item had a wide empty stretch, and For you's Try it button ran past its
+    cell. A cell cut with "…" while a neighbour has room is "cut short"; anything drawn past its cell is "clipped". The
+    same table with its columns balanced passes."""
+    page = people("player").open("/help")
+    cell = "white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px"
+    page.set_content(f"""<body style="font: 15px sans-serif; width: 1200px">
+      <table id="bad" style="table-layout:fixed; width:1100px"><tr>
+        <td style="{cell}">Design review</td><td style="{cell}; width:120px">Build each page from your picks</td>
+        <td style="{cell}; width:56px"><button style="width:90px">▶ Try it</button></td></tr></table>
+      <table id="good" style="table-layout:fixed; width:1100px"><tr>
+        <td style="{cell}">Design review</td><td style="{cell}; width:40%">Build each page from your picks</td>
+        <td style="{cell}; width:110px"><button style="width:90px">▶ Try it</button></td></tr></table>
+    </body>""")
+    found = page.evaluate(CHECK, {})
+    assert sorted(p["kind"] for p in found) == ["clipped", "cut short"], found  # (each once: the balanced table has none)
+    assert found[0]["where"].startswith("#bad") or found[1]["where"].startswith("#bad"), found

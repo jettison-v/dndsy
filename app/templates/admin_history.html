@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box, count_pill %}
+{% from "_lists.html" import search_box, count_pill, empty_state %}
 {% block title %}{{ "History" if in_campaign else "askdnd history" }} · Backstage · askdnd{% endblock %}
 {% block content %}
 {# Backstage › History, the campaign's and askdnd's (app/history_pages.py). Brett's picks on docs/mockups/backstage-round-3/
@@ -14,9 +14,9 @@
   {% if focus %}<p class="flash">Showing the history of <b>{{ focus }}</b>. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   {% if batch %}<p class="flash">Showing one import. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   <div class="hist-list" data-list="history" data-default-sort="default" data-ls-group-count>
-    <div class="hist-tools">
+    <div class="ls-toolbar">
       <div class="filters" role="group" aria-label="Show">{% for k, lab in filters.items() %}<a class="chip{{ ' on' if show == k }}" href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %} data-filter="{{ k or 'all' }}">{{ lab }}</a>{% endfor %}</div>{# (chips that wrap: ten filters overran a segmented switch at every width) #}
-      <div class="hist-search">{{ search_box("Search what changed or who") }}</div>
+      {{ search_box("Search what changed or who") }}
     </div>
     <div class="hist-rows" data-ls-rows>
     {% set n = namespace(i=0) %}
@@ -39,8 +39,8 @@
     {% endfor %}{% endfor %}
     </div>
     <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
-    {% if not days %}<p class="muted">{% if in_campaign or batch %}No changes recorded yet.{% else %}No askdnd-wide changes recorded yet.{% endif %} History began on 19 October 2026; changes made before that weren't recorded.</p>{% endif %}
-    {% if more_days %}<p class="note"><a href="{{ page_url }}?{{ 'show=' ~ show ~ '&' if show }}older=1" data-item="history-older">Show older ({{ more_days }} more day{{ "s" if more_days != 1 }})</a></p>{% endif %}
+    {% if not days %}{{ empty_state(("No changes recorded yet." if in_campaign or batch else "No askdnd-wide changes recorded yet.") ~ " History began on 19 October 2026; changes made before that weren't recorded.") }}{% endif %}
+    {% if more_days %}<p class="note"><a href="{{ page_url }}?{{ 'show=' ~ show ~ '&' if show }}older=1" data-item="history-older">Show older days{{ count_pill(more_days) }}</a></p>{% endif %}
   </div>
 </main>
 {% endblock %}

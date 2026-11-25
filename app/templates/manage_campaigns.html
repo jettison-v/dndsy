@@ -9,7 +9,7 @@
 
   {# A table, as every Backstage list (Brett's pick CA1 on docs/mockups/backstage-round-4/, Nov 25): DM, people and
      characters as columns; Test a plain tag (amber means something needs you). #}
-  {% call table_box("campaigns", "Campaigns", campaigns | length, cols=[("Campaign", ""), ("DM", ""), ("People", "num"), ("Characters", ""), ("", "end")], empty="No campaigns yet: + New campaign starts one.") %}
+  {% call table_box("campaigns", "Campaigns", campaigns | length, cols=[("Campaign", ""), ("DM", "dt-w4"), ("People", "num dt-w1"), ("Characters", ""), ("", "end dt-w5")], empty="No campaigns yet: + New campaign starts one.") %}
     {% for x in campaigns %}{% set c = x.c %}
     <tr data-campaign="{{ c.slug }}">
       <td class="dt-title"><b>{{ c.name }}</b>{% if c.is_test %} <span class="tag" title="A test campaign: it holds test data, and every VTT piece shows here">Test</span>{% endif %}{% if here and c.id == here.id %} <span class="tag faint">You're here</span>{% endif %}

@@ -23,17 +23,22 @@ class Feature:
     about: str  # what it does, in plain words
     roadmap: str  # where it sits on the roadmap
     labs: bool = False
-    state: str = "Ready"  # in Labs: "Being built" (still changing) or "Ready to try"
+    state: str = "ready"  # in Labs: "building" (still changing) or "ready" (ready to try): a key; its word and colour are STATES
+
     line: str = ""  # what it does in one line, on Settings (Brett's pick SE2, Nov 25); `about` is the longer story
     warn: str = ""  # what to know before switching it on, amber beside its switch
 
+
+# A Labs feature's state: its word and colour, from the one key (S2: blue while it's being built, as Documents' Building;
+# green once ready; never amber, which means something waits on you). The end-of-day review, Nov 25.
+STATES = {"building": ("Being built", "new"), "ready": ("Ready to try", "done")}
 
 FEATURES: list[Feature] = [
     Feature("sync", "Sync with D&D Beyond",
             "Every change made in askdnd or on D&D Beyond reaches the other, through the askdnd extension in each player's "
             "Chrome: hit points, conditions and death saves, Heroic Inspiration, casting, resources and rests, items and "
             "coins, adding items (Add item, Give loot) and Give, preparing spells, and the DM's browser making changes for a player whose sheet is "
-            "closed. Tell the table first: D&D Beyond's terms don't allow tools like this.",
+            "closed.",  # (what to know first is `warn`, said beside the switch: written once)
             "Live character state and the D&D Beyond bridge; finished Nov 3.",
             line="Changes in askdnd and on D&D Beyond reach each other, through the extension in each player's Chrome.",
             warn="Tell the table first: D&D Beyond's terms don't allow tools like this."),
@@ -44,7 +49,7 @@ FEATURES: list[Feature] = [
             "(Start a fight, Initiative, Next turn, Undo) and your turn's bar under the map. Being built: moving and "
             "measuring, fog and spell areas come next; the table moves from D&D Beyond's VTT once it's all here.",
             "askdnd's table: built to the fight, Nov 7; then moving, fog, areas.",
-            labs=True, state="Being built",
+            labs=True, state="building",
             line="askdnd's own virtual table in place of D&D Beyond's: places and maps, tokens, the fight."),
     Feature("creatures", "Your creatures",
             "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion, a summon or a steed "
@@ -63,7 +68,7 @@ FEATURES: list[Feature] = [
             "Sync with D&D Beyond, and extension 0.12.0 with the DM's VTT open.",
             "Initiative in askdnd, Nov 4: being built. Once askdnd's own VTT runs, nothing is "
             "sent to D&D Beyond's.",
-            labs=True, state="Being built",
+            labs=True, state="building",
             line="Everyone rolls Initiative in askdnd, and the order fills D&D Beyond's combat sidebar.",
             warn="Needs Sync with D&D Beyond, and the DM's VTT open."),
     Feature("recap_listen", "Listen to the recap",
@@ -71,7 +76,7 @@ FEATURES: list[Feature] = [
             "what each paragraph names, panning slowly, with the words on screen: a \"previously on\" to start the night. "
             "The first Listen on a recap has OpenAI read it (a few cents, counted on Backstage › Usage); after that it's kept.",
             "Nice to have, Nov 6 (Brett): tried at the table first.",
-            labs=True, state="Ready to try",
+            labs=True, state="ready",
             line="▶ Listen reads a recap aloud over its pictures, to start the night."),
 ]
 LABS = "labs"  # the campaign's Labs switch, kept with the features' keys

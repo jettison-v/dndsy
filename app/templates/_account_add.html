@@ -5,12 +5,12 @@
   <div><div class="note">Accounts</div><h2 id="peek-title">Add an account</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body">
-  <form method="post" action="/manage/accounts" class="stack">
-    <label class="field">Google email<input type="text" name="email" placeholder="name@gmail.com" required></label>
-    <label class="field">Name (optional)<input type="text" name="name"></label>
-    <label class="check"><input type="checkbox" name="admin" value="1"> Admin</label>
-    <div class="row"><button class="btn primary" type="submit">Add</button><button class="btn peek-close" type="button">Cancel</button></div>
-    <p class="note">Then add them to a campaign on its Table. Google only lets people sign in while they're on its test-user list (until the Google app is published): add their email in <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud Console › Google Auth Platform › Audience › Test users ↗</a>.</p>
+  <form method="post" action="/manage/accounts" class="peek-form">
+    <div class="peek-body stack">
+      <label class="field">Google email<input type="text" name="email" placeholder="name@gmail.com" required></label>
+      <label class="field">Name (optional)<input type="text" name="name"></label>
+      <label class="check"><input type="checkbox" name="admin" value="1"> Admin</label>
+      <p class="note">Then add them to a campaign on its Table. Google only lets people sign in while they're on its test-user list (until the Google app is published): add their email in <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud Console › Google Auth Platform › Audience › Test users ↗</a>.</p>
+    </div>
+    <div class="peek-foot row"><button class="btn primary" type="submit">Add</button><button class="btn link peek-close" type="button">Cancel</button></div>
   </form>
-</div>

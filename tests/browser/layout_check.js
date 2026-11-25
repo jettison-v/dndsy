@@ -12,6 +12,9 @@
 // - "squeezed": words in a row broke onto a second line although every part of the row would fit on one (Nov 19)
 // - "off baseline": two neighbouring parts of a row, on one line, whose words don't share a baseline (Nov 19; a rule since
 //   the Live UI Audit)
+// - "cut short": a table cell's words cut off with "…" while another cell in the same row has room to spare (Brett, Nov 25:
+//   the Roadmap's Next column cut while Item had a wide empty stretch; a table whose columns are all fixed but one)
+// - "clipped": something inside a table cell drawn past the cell's edge and cut off (For you's Try it button, Nov 25)
 // - "repeats an id": two elements with one id, so a script finds the wrong one (Help's FAQ had id="cards", the corner
 //   cards' own: every card on Help landed in a folded answer; Nov 17)
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
@@ -280,6 +283,32 @@ ask => {
       if (ya === null || yb === null) continue;
       if (Math.abs(ya - yb) > 2) add('off baseline', b, `${Math.round(Math.abs(ya - yb))}px off its neighbour's line: ${a.textContent.trim().slice(0, 30)} | ${b.textContent}`);
     }
+  }
+  // Table cells: words cut with "…" while a neighbour has room, and anything drawn past a cell's edge (Nov 25)
+  const contentWidth = cell => {  // (the width its contents take, on their widest line)
+    const range = document.createRange(); range.selectNodeContents(cell);
+    return Math.max(0, ...[...range.getClientRects()].map(r => r.right - cell.getBoundingClientRect().left));
+  };
+  for (const row of document.querySelectorAll('table tr')) {
+    if (!shown(row)) continue;
+    const cells = [...row.children].filter(c => c.matches('td') && shown(c));
+    if (cells.length < 2) continue;
+    const pad = c => { const cs = getComputedStyle(c); return parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight); };
+    const spare = cells.map(c => c.getBoundingClientRect().width - pad(c) - contentWidth(c));
+    cells.forEach((cell, i) => {
+      const box = cell.getBoundingClientRect();
+      const past = getComputedStyle(cell).overflowX !== 'visible' && [...cell.querySelectorAll('*')].find(el => shown(el)
+        && el.children.length === 0 && el.getBoundingClientRect().right > box.right + 1 && !el.closest('.act-menu, [hidden]'));
+      if (past) { add('clipped', past, `${Math.round(past.getBoundingClientRect().right - box.right)}px past its cell: ${past.textContent}`); return; }
+      for (const el of [cell, ...cell.querySelectorAll('*')]) {
+        if (!shown(el)) continue;
+        if (getComputedStyle(el).textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth + 1) {
+          const need = el.scrollWidth - el.clientWidth, room = Math.max(...spare.filter((_, j) => j !== i));
+          if (room >= need + 8) add('cut short', el, `cut by ${need}px while a column beside it has ${Math.round(room)}px spare: ${el.textContent}`);
+          break;
+        }
+      }
+    });
   }
   const ids = new Map();
   document.querySelectorAll('[id]').forEach(el => { if (el.id) ids.set(el.id, (ids.get(el.id) || 0) + 1); });
