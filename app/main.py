@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -128,7 +129,16 @@ async def lifespan(app: FastAPI):
 
     timing_saved = asyncio.create_task(speed.loop()) if listener is not None else None
     releasing = asyncio.create_task(release_when_live()) if config.running_version() and listener is not None else None
+    # Background jobs (app/jobs.py, Roadmap item 43): run here on threads unless the separate worker runs them
+    from app import worker
+
+    jobs_stop = threading.Event()
+    if listener is not None and worker.runner() == "inline":
+        from app.db import SessionLocal
+
+        worker.start(SessionLocal, jobs_stop)
     yield
+    jobs_stop.set()
     await reparsing
     for task in (listener, reading, mailing, nudging, filing, timing_saved, releasing):
         if task:
