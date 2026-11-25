@@ -1396,3 +1396,27 @@ def test_two_requests_on_a_fresh_database_both_mark_it_awake(db_engine):
             assert s.get(ToolSetting, ddb_bridge.AWAKE_KEY) is not None
     finally:
         clear()
+
+
+def test_the_bridge_reads_the_test_character_on_the_test_tables_own_sheet():
+    """Issue 127 (Nov 25): the health read used an old sheet id for the test character, so every read failed. Its id is
+    the one docs/testing-setup.md gives for the test character's sheet, and a failed read names the sheet it tried."""
+    import re
+    from pathlib import Path
+
+    from app import config
+
+    setup = (Path(__file__).resolve().parent.parent / "docs" / "testing-setup.md").read_text()
+    sheet = re.search(rf"{re.escape(config.BRIDGE_TEST_NAME)} \(\[sheet\]\(https://www\.dndbeyond\.com/characters/(\d+)\)\)", setup)
+    assert sheet and sheet.group(1) == config.BRIDGE_TEST_DDB_ID == ddb_bridge.TEST_DDB_ID
+
+
+def test_a_failed_read_says_which_sheet_and_what_to_do(monkeypatch):
+    from app import ddb
+
+    def gone(ddb_id):
+        raise ddb.DdbError("D&D Beyond has no character with that id.")
+
+    monkeypatch.setattr(ddb, "fetch_character_json", gone)
+    rc = ddb_bridge.read_check()
+    assert not rc["ok"] and rc["error"].startswith(f"Vi's sheet ({ddb_bridge.TEST_DDB_ID}) can't be read") and "problem" not in rc["error"]
