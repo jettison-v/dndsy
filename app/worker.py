@@ -210,6 +210,65 @@ def worker_seen(db: Session) -> dict | None:
         return None
 
 
+FALLBACK_QUEUES = ("ddb",)  # (what the web app runs itself while the worker is away: sheets can't wait; drafts can)
+QUIET_SECONDS = 90  # (a worker not heard from for this long is away)
+TELL_AFTER = 300  # (away this long: an error for Sentry, once)
+
+
+def quiet_for(seen: dict | None, now: datetime | None = None) -> float:
+    """Seconds since the worker last beat (infinite when it never has)."""
+    if not seen or not seen.get("at"):
+        return float("inf")
+    try:
+        at = datetime.fromisoformat(seen["at"])
+    except ValueError:
+        return float("inf")
+    return ((now or datetime.now(UTC)) - at).total_seconds()
+
+
+class Watch:
+    """The web app's eye on the worker, where jobs run in it (`JOBS_RUNNER=worker`): while it's away (quiet for
+    QUIET_SECONDS) the web app serves the D&D Beyond reads itself, so the table never waits on a worker; drafts wait for
+    it (they spend, and they'd only be cut off by the web app's own deploys). Away TELL_AFTER: one error for Sentry."""
+
+    def __init__(self, session_factory, who: str | None = None):
+        self.factory, self.who = session_factory, (who or jobs.me()) + ":fallback"
+        self.covering: threading.Event | None = None
+        self.told = False
+
+    def look(self, now: datetime | None = None) -> str:
+        """One look: "covering" (the web app serves the reads), "worker" (the worker does), or "same"."""
+        with self.factory() as db:
+            quiet = quiet_for(worker_seen(db), now)
+        if quiet > QUIET_SECONDS and self.covering is None:
+            self.covering = threading.Event()
+            for q in FALLBACK_QUEUES:
+                lane = Lane(q, self.factory, self.covering, self.who)
+                threading.Thread(target=lane.loop, name=f"jobs-{q}-fallback", daemon=True).start()
+            log.warning("The worker hasn't been heard from for %s seconds: the web app reads D&D Beyond itself meanwhile", int(min(quiet, 10**9)))
+            changed = "covering"
+        elif quiet <= QUIET_SECONDS and self.covering is not None:
+            self.covering.set()
+            self.covering, self.told = None, False
+            log.info("The worker is back: it reads D&D Beyond again")
+            changed = "worker"
+        else:
+            changed = "same"
+        if self.covering is not None and quiet > TELL_AFTER and not self.told:
+            self.told = True
+            log.error("The jobs worker has been away for over %s minutes (askdnd-worker on Railway): drafts wait for it", TELL_AFTER // 60)
+        return changed
+
+    def run(self, stop: threading.Event) -> None:
+        while not stop.wait(30):
+            try:
+                self.look()
+            except Exception:
+                log.warning("Looking for the worker failed this time", exc_info=True)
+        if self.covering is not None:
+            self.covering.set()
+
+
 def wait_for_migrations(engine, head: str, seconds: int = 600) -> None:
     """The worker never migrates: it waits until the web app's deploy has (the database's head is its own)."""
     deadline = time.monotonic() + seconds
