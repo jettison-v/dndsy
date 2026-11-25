@@ -335,7 +335,13 @@ def _more_states(db: Session) -> dict:
     scope_waits = len(rules.scope_asked(db))  # (a scope that asks for his OK)
     mode = {"available": "Deploys: After my local try", "independent": "Deploys: When tests pass", "frozen": "Deploys: Paused"}[rules.mode_of(db)]
     week = datetime.now(UTC) - timedelta(days=7)
-    used = db.scalar(select(func.count(func.distinct(UsageEvent.feature))).where(UsageEvent.at >= week)) or 0
+    from app import usage as feature_use
+    from app.models import Campaign, User
+
+    out = [u.id for u in db.scalars(select(User)) if feature_use._left_out(u.email)]  # (as the Features page counts: not
+    tests = list(db.scalars(select(Campaign.id).where(Campaign.is_test.is_(True))))  # admins', test accounts' or test campaigns')
+    used = db.scalar(select(func.count(func.distinct(UsageEvent.feature))).where(
+        UsageEvent.at >= week, func.coalesce(UsageEvent.user_id, 0).not_in(out or [-1]), func.coalesce(UsageEvent.campaign_id, 0).not_in(tests or [-1]))) or 0
     last = db.scalar(select(func.max(Revision.created_at)))
     return {
         "feedback": (_plural(open_n, "issue") + " open" + (f" · {ready_n} ready to try" if ready_n else ""), ""),
