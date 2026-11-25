@@ -15,7 +15,8 @@ def test_a_switch_saves_itself_in_place(people, server):
     assert page.evaluate("window.__stayed === true")
     page.reload()  # (saved: the page drawn again says so)
     assert page.locator("#features form[data-switch] .switch").first.get_attribute("aria-checked") != before
-    # Trophy Case: the two-way switch, saving on press
+    # Trophy Case: the two-way switch, saving on press (on the Campaign tab: Brett's pick SE1, Nov 25)
+    page = dm.open("/c/main/manage/settings?tab=campaign#trophy-case")
     choice = page.locator('form[data-choice="counts"]')
     other = choice.locator('button[aria-pressed="false"]').first
     value = other.get_attribute("value")

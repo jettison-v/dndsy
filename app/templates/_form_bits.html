@@ -31,3 +31,10 @@
   <label class="dp-box">{{ label }} <input type="text" name="{{ name }}" value="{{ value }}" maxlength="40" placeholder="{{ placeholder }}" data-dp="box" autocomplete="off"></label>
 </div>
 {%- endmacro %}
+
+{# A help tip (issue 4, Brett, Nov 25: "add help text icons to any ambiguous selections"): a small ? beside a choice whose
+   name doesn't say enough; its words show on hover or focus (a keyboard reaches it), and screen readers read them. Only
+   where a choice is ambiguous: never beside one that says what it does (Called, Adds, When). #}
+{% macro help_tip(words) -%}
+<span class="help-tip" tabindex="0" role="note" aria-label="{{ words }}" data-tip="{{ words }}">?</span>
+{%- endmacro %}

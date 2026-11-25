@@ -379,7 +379,24 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!note.dataset.said) note.dataset.said = note.textContent;
     note.textContent = left ? note.dataset.said : b.dataset.hbNew === 'charges' ? 'It has them already' : 'As many as askdnd keeps';
   });
-  document.querySelectorAll('[data-item-builder]').forEach(form => { form.querySelectorAll('[data-hb-piece]').forEach(hbDraw); hbRoom(form); });
+  const hbSetup = root => root.querySelectorAll('[data-item-builder]').forEach(form => { form.querySelectorAll('[data-hb-piece]').forEach(hbDraw); hbRoom(form); });
+  hbSetup(document);
+  // (the builder in Items' large window: Brett's pick IT3, Nov 25; its clicks and typing are the page's, its first drawing here)
+  document.addEventListener('panel:loaded', e => { e.target.querySelectorAll('[data-dice-picker]').forEach(dpSync); hbSetup(e.target); });
+  // A roll or a bonus that isn't dice says so as it's typed, not only on Save (Brett's pick A on issue 2): the same shape
+  // the server takes (app/homebrew.py DICE): 2d6 force, 1d8+2, 5; a bonus may start with +.
+  const HB_DICE = /^\s*(\d*d\d+|\d+)(\s*[+-]\s*\d+)?(\s+[a-zA-Z]+)?\s*$/;
+  const hbCheck = box => {
+    const piece = box.closest('[data-hb-piece]');
+    if (!piece || !box.matches('[data-dp="box"], [name="charges_regain"]')) return;
+    const v = box.value.trim(), regain = box.name === 'charges_regain';
+    const ok = !v || (regain ? (v.toLowerCase() === 'all' || HB_DICE.test(v)) : HB_DICE.test(v.replace(/^\+/, '')));
+    let say = box.closest('.hb-row, .dp-box').querySelector('[data-hb-bad]');
+    if (!say) { say = document.createElement('span'); say.className = 'note hb-bad'; say.dataset.hbBad = ''; say.setAttribute('role', 'alert'); box.closest('.hb-row, .dp-box').append(say); }
+    say.hidden = ok;
+    say.textContent = ok ? '' : regain ? 'Write it like 1d3, or all.' : piece.dataset.hbPiece === 'add' ? 'Write it like +1, 1d4 or 2d6 fire.' : 'Write its dice like 2d6 force, 1d8+2 or 5.';
+    box.setAttribute('aria-invalid', String(!ok));
+  };
   document.addEventListener('click', e => {
     const form = e.target.closest('[data-item-builder]');
     if (!form) return;
@@ -410,7 +427,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const form = e.target.closest && e.target.closest('[data-item-builder]');
     if (!form) return;
     const p = e.target.closest('[data-hb-piece]');
-    if (p) hbDraw(p);
+    if (p) { hbDraw(p); hbCheck(e.target); }
     else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
   }));
 
@@ -3276,9 +3293,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     pickBox.throw([{ s: 20, v: 1 + Math.floor(Math.random() * 20) }], { set: val('set'), material: val('material'), by_type: false });
   }
   document.addEventListener('panel:loaded', ev => {
-    const form = ev.target.querySelector && ev.target.querySelector('[data-dice-picker]');
-    if (!form) return;
-    const snd = form.querySelector('[data-dice-sound]'), anim = form.querySelector('[data-dice-anim]');
+    // (Your dice, found by its own sound switch: the item builder's dice picker shares data-dice-picker, and in Items'
+    // window it isn't this form: Brett's pick IT3, Nov 25)
+    const snd = ev.target.querySelector && ev.target.querySelector('[data-dice-picker] [data-dice-sound]');
+    if (!snd) return;
+    const form = snd.closest('[data-dice-picker]'), anim = form.querySelector('[data-dice-anim]');
     snd.checked = soundOn();
     snd.addEventListener('change', () => store.set('askdnd.diceSound', snd.checked ? 'on' : 'off'));
     // Dice animation on this device (it was at the bottom of Table rolls; Table rolls reads the same setting)
