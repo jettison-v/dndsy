@@ -1,12 +1,12 @@
 [
  {
-  "title": "The reviews we run",
+  "title": "The reviews we should run",
   "kind": "plan",
-  "status": "Your picks (version 2)",
+  "status": "Your picks (version 3)",
   "state": "waiting",
   "date": "Nov 25",
-  "what": "Version 2, from Brett's comments: the reviews we run renamed (Week in review, Design review, Feature deep-dive…), drawn on Development › Scheduled, how an on-demand one is launched (Run…, aimed at an area or feature), and the three things a review hands back; a cadence pick for each, and picks on the names.",
-  "line": "Which reviews run when, and which we retire",
+  "what": "Version 3, built the other way round (Brett: our past reviews help build the list, not be it): six buckets of the work (Experience, Correctness, The code, Trust, Running it, How we work), each with its question, what's already checked automatically, and the reviews that should cover the rest, five of them new; how they'd sit on Development › Scheduled, launch on demand and hand back; a cadence pick for each.",
+  "line": "Six buckets of the work, and the reviews each needs",
   "source": "docs/mockups/review-catalog/index.html",
   "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
  },
