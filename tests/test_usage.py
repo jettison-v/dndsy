@@ -84,3 +84,21 @@ def test_manage_and_admin_pages_count_as_backstage_and_keep_their_history(player
     pages = {p["page"]: p["uses"] for p in usage.summary(db, cole.campaign_id, 7)["pages"]}
     assert pages.get("Backstage") == 2 and pages.get("Backstage › Global") == 1 and "Manage" not in pages and "Admin" not in pages
     assert usage.page_of("https://askdnd.ai/c/main/manage/inbox") == "Manage"  # (recorded as before)
+
+
+def test_a_feature_row_opens_who_and_which_days(player, admin, dm, db, sheet):
+    """Brett's picks FE1 and FE2 (docs/mockups/backstage-round-4/, Nov 25): Feature use, under General, a row opening its
+    window: who used it and on which days; the legend says only what the chart draws."""
+    from tests.table_setup import char
+
+    cole = char(db, "Cole")
+    before = len(_events(db, 0, 0))
+    player.post("/rolls", data={"character": cole.id, "kind": "check", "label": "Stealth check", "mod": "+2"},
+                headers={"referer": f"https://askdnd.ai/characters/{cole.id}/battle"})
+    _events(db, before + 1)
+    page = admin.get(f"/manage/features?days=7&campaign={cole.campaign_id}").text
+    assert "<h1>Feature use</h1>" in page and "data-feature-row" in page and "/manage/features/detail?feature=Rolls%3A%20checks" in page
+    assert ("Dashed lines" in page) == ('class="ft-release"' in page)
+    window = admin.get(f"/manage/features/detail?feature=Rolls%3A%20checks&days=7&campaign={cole.campaign_id}").text
+    assert "Rolls: checks" in window and "1 use by 1 person" in window and "Which days" in window
+    assert dm.get("/manage/features/detail?feature=Rolls%3A%20checks").status_code == 403

@@ -59,6 +59,7 @@ def test_admins_tune_the_dice_for_everyone(two, db):
     page = admin.get("/manage/dice").text
     assert 'aria-current="page">Dice tuning' in page and page.count('class="tn-row"') == 10 + 7 + 10 + 10
     assert 'name="mine.gravity" min="100" max="800" step="10" value="300"' in page and "now 1.4×" in page
+    assert "data-tn-check" in page and 'role="switch"' not in page.split('data-dice-tuner')[1]  # (a checkbox saved with Save: DT1, Nov 25)
     # Save: the shadows switch posts "1" when on, nothing when off
     form = {f"{p}.{k}": ("1" if v else "") if isinstance(v, bool) else str(v) for p, knobs in dice.TUNING.items() for k, v in knobs.items()}
     admin.post("/manage/dice", data={**form, "mine.gravity": "200", "tray.shadows": "1", "vtt.stay": "5"})

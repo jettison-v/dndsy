@@ -266,6 +266,25 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
     }
 
 
+def feature_detail(db, campaign_id: int | None, days: int, feature: str, now=None) -> dict:
+    """One feature's uses (Feature use's row window, Brett's pick FE1, Nov 25): who used it and how often, and the days
+    it was used, newest first."""
+    from collections import Counter
+    from datetime import UTC, datetime, timedelta
+
+    from app.config import TABLE_TIME
+
+    now = now or datetime.now(UTC)
+    s = summary(db, campaign_id, days, now)
+    here = [e for e in counted(db, campaign_id) if e.at >= now - timedelta(days=days) and e.feature == feature]
+    names = {p["id"]: p["name"] for p in s["people"]}
+    by_who = Counter(names.get(e.user_id, "Someone else") for e in here)
+    by_day = Counter(e.at.astimezone(TABLE_TIME).date() for e in here)
+    return {"feature": feature, "uses": len(here), "who": by_who.most_common(),
+            "days": [(d.strftime("%a %b %-d"), n) for d, n in sorted(by_day.items(), reverse=True)],
+            "top": max(by_day.values() or [1])}
+
+
 def _left_out(email: str) -> bool:
     """Admins (building and trying askdnd). Test accounts play in the test campaign, which is left out as a whole: the
     feedback switch doesn't mark them (players have it too)."""
@@ -331,6 +350,25 @@ def features_page(request: Request, days: int = 30, campaign: int = 0, sort: str
     rows = sorted(s["rows"], key=key)
     top = max([r["uses"] for r in rows] or [1])
     return templates.TemplateResponse(request, "admin_features.html", {
+        "q": f"days={days}&campaign={here.id if here else ''}",
         "s": s, "rows": rows, "top": top, "days": days, "sort": sort, "campaigns": campaigns, "here": here,
         "chart": chart(s["daily"], s["releases"], s["start"]), "page_top": max([p["uses"] for p in s["pages"]] or [1]),
         "step": lambda v: 0 if not v else 1 if v < 5 else 2 if v < 20 else 3})
+
+
+@router.get("/manage/features/detail")
+def feature_window(request: Request, feature: str = "", days: int = 30, campaign: int = 0, db=Depends(get_db)):
+    """A feature's row opened (admins): who used it, and on which days."""
+    from sqlalchemy import select
+
+    from app import web
+    from app.auth import is_admin
+    from app.models import Campaign
+    from app.templating import templates
+
+    user, denied = web.require(request, is_admin, "Only admins can see which features get used.")
+    if denied:
+        return denied
+    days = days if days in (7, 30, 90) else 30
+    here = db.scalar(select(Campaign).where(Campaign.id == campaign, Campaign.is_test.is_(False))) if campaign else web.campaign(db)
+    return templates.TemplateResponse(request, "_feature_use_window.html", {"d": feature_detail(db, here.id if here else None, days, feature[:200]), "days": days})
