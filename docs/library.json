@@ -8,7 +8,7 @@
   "what": "The end-of-day review of Nov 24–25 (#482 to #511): two independent reviewers (design system, code) and a sweep of every page as admin, DM and player at laptop and phone widths. What was plainly wrong is fixed in one pull request; nine picks for the visible choices; a new check for table columns out of balance.",
   "line": "What today's review fixed, and nine picks",
   "source": "docs/mockups/end-of-day-audit/index.html",
-  "link": ""
+  "link": "https://claude.ai/artifact/L6GAdw7Vqj5ykhSYWuKdEY"
  },
  {
   "title": "Would I build askdnd's backend differently?",
@@ -19,7 +19,7 @@
   "what": "A look back at the whole backend, knowing every requirement and limit now: a reviewer new to askdnd read the brief, the decisions and all the code, checked against what building it taught. The core holds up; what to change is where work runs (a jobs table and a worker, D&D Beyond reads moved onto it) and a boundary around the Feedback and Testing tool. Four picks.",
   "line": "The backend, looked back on: what to keep, what to plan",
   "source": "docs/mockups/backend-look-back/index.html",
-  "link": ""
+  "link": "https://claude.ai/artifact/PwaBbRYMPKC6HcUonmWmfW"
  },
  {
   "title": "Backstage, round 4: the DM's pages, the Tuning pages, and the rest",

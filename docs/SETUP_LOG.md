@@ -1150,3 +1150,14 @@ What was set up:
 
 **Why:** the record of what's being built and what waits on whom lived partly in chat and in Claude's memory, so things were missed. Now each fact has one home that both sides read.
 **Reuse:** let your tools report into one record (webhooks or a scheduled job), keep reporters read-only, separate "data" (documents, decisions) from "code" so data never waits on a deploy, and make every move a rule applied to a fact, not something someone has to remember.
+
+## Checking a whole day as one, and a look back at the backend (Nov 25)
+
+**What:** after a day of 30 pull requests (#482 to #511, including four rounds of the Backstage design review, each built and reviewed on its own), one end-of-day pass over all of it:
+1. **Two independent reviewers**, each a fresh Claude given the day's diff and the rules (docs/DESIGN.md, CLAUDE.md), not the builder's notes: one for the design system and cross-page consistency, one for code structure. They found what per-pull-request reviews can't: the same problem solved four ways on four pages, and logic written twice that had drifted.
+2. **A sweep of every page** (`scripts/layout_sweep.py`) as the admin, the DM and a player, on a laptop and a phone.
+3. **A new rule in the layout check** from Brett's question about tables: a cell cut short with "…" while a neighbour has room, and anything clipped past its cell. A rule in the check, with a test proving it fires, means every page is checked for it on every pull request from now on.
+4. **A look back at the whole backend**, by a reviewer who read the brief, the decision log and all the code: what holds up, what to plan, what to leave.
+
+**Why:** reviews per pull request see one change at a time; a day's worth of them drifts apart even when each was reviewed. Checking the day as one, by reviewers who didn't build it, catches the drift while it's still small.
+**Reuse:** on any project with many small changes, end the day (or the week) with an independent review of the combined diff against the written rules, plus an automated sweep. Turn each "the reviewer didn't catch this" into a rule in an automated check with a test that proves it fires, so it's caught by the machines from then on rather than by memory.
