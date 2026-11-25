@@ -673,8 +673,12 @@ def review_rows(db: Session) -> list[dict]:
             last = db.scalar(select(FftReviewRun).where(FftReviewRun.review == r["key"], FftReviewRun.state.in_(reviews.ENDED))
                              .order_by(FftReviewRun.id.desc()).limit(1))
             now_run = live if live is not None and live.review == r["key"] else asked.get(r["key"])
+            says = run_words(db, now_run) if now_run else ""
+            behind = asked.get(r["key"]) if now_run is live and live is not None else None
+            if behind is not None:  # (another of its own runs waits after this one: said, and Stop on its panel; the review of #535)
+                says += f" · run {behind.id} waits after it"
             rows.append({"r": r, "cadence": reviews.CADENCE_WORDS[how], "next": next_words, "last": last, "run": now_run,
-                         "run_says": run_words(db, now_run) if now_run else ""})
+                         "run_says": says, "behind": behind})
         out.append({"b": b, "rows": rows})
     return out
 
@@ -770,8 +774,9 @@ def review_run(request: Request, key: str, form=web.FormBody, db: Session = Depe
     me = views.person(db, user)
     try:
         run = rules.ask_review(db, f"user:{me['id']}", key, inputs)
-    except rules.RuleError as e:
-        return HTMLResponse(e.words, status_code=409 if e.code == "busy" else 400)
+    except rules.RuleError as e:  # (said in a corner card on Scheduled, never a bare page: the review of #535)
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse("/manage/work?tab=scheduled", status_code=303)
     db.commit()
     request.session["toast"] = web.notice(f"{run_title(run)}: {run_words(db, run)}")
     return RedirectResponse("/manage/work?tab=scheduled", status_code=303)
@@ -790,7 +795,8 @@ def review_stop(request: Request, run_id: int, db: Session = Depends(get_db)):
     try:
         rules.stop_review(db, f"user:{me['id']}", run, "Stopped from Development › Scheduled")
     except rules.RuleError as e:
-        return HTMLResponse(e.words, status_code=409)
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse("/manage/work?tab=scheduled", status_code=303)
     db.commit()
     request.session["toast"] = web.notice(f"{run_title(run)}: stopped")
     return RedirectResponse("/manage/work?tab=scheduled", status_code=303)

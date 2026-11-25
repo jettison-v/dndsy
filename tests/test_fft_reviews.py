@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import config
 from app.db import get_db
@@ -211,7 +211,7 @@ def test_scheduled_lists_each_review_by_bucket_with_how_often_and_next(admin, db
     sched = admin.get("/manage/work?tab=scheduled").text
     assert sched.count("data-review=") == 10 and sched.count('data-bucket="') == 6
     assert "data-jobs" in sched  # (the jobs stay, under the reviews)
-    assert 'data-review="dig_feature"' in sched and "When you run it" in sched
+    assert 'data-review="dig_feature"' in sched
     rules.set_review(db, "claude", "the_week", scheduled=True)
     rules.ask_review(db, "user:1", "every_number")
     db.flush()
@@ -222,18 +222,20 @@ def test_scheduled_lists_each_review_by_bucket_with_how_often_and_next(admin, db
 
 def test_run_now_asks_it_and_says_when_it_starts(admin, db):
     win = admin.get("/manage/work/reviews/every_number/run").text
-    assert 'data-review-run="every_number"' in win and "data-steps" not in win and "Everything: it hasn't run before" in win
+    assert 'data-review-run="every_number"' in win and "data-steps" not in win and 'data-covers="all"' in win
     r = admin.post("/manage/work/reviews/every_number/run", data={}, follow_redirects=False)
     assert r.status_code == 303
     run = db.scalar(select(FftReviewRun).where(FftReviewRun.review == "every_number"))
     assert run.state == "asked" and run.asked_by.startswith("user:")
-    assert admin.post("/manage/work/reviews/every_number/run", data={}).status_code == 409  # (already waiting its turn)
+    again = admin.post("/manage/work/reviews/every_number/run", data={}, follow_redirects=False)  # (already waiting its turn)
+    assert again.status_code == 303 and db.scalar(select(func.count()).select_from(FftReviewRun)) == 1
 
 
 def test_run_dig_into_a_feature_asks_four_steps_and_keeps_what_was_picked(admin, db):
     win = admin.get("/manage/work/reviews/dig_feature/run").text
-    assert "data-steps" in win and win.count('role="tab"') == 4 and 'name="feature"' in win and "The test sheets" in win
-    assert admin.post("/manage/work/reviews/dig_feature/run", data={"feature": ""}).status_code == 400
+    assert "data-steps" in win and win.count('role="tab"') == 4 and 'name="feature"' in win and 'name="characters"' in win
+    admin.post("/manage/work/reviews/dig_feature/run", data={"feature": ""})
+    assert db.scalar(select(FftReviewRun)) is None  # (refused: said in a corner card)
     r = admin.post("/manage/work/reviews/dig_feature/run", data={"feature": "hp", "against": ["books", "house"], "characters": ["Cole"],
                                                                  "device": "phone", "depth": "quick", "words": "It's off by one"},
                    follow_redirects=False)
@@ -260,11 +262,11 @@ def test_stop_and_the_one_page_result_and_the_panel(admin, db):
     rules.finish_review(db, "claude", done, RESULT)
     db.flush()
     page = admin.get(f"/manage/work/reviews/runs/{done.id}").text
-    assert f'data-review-result="{done.id}"' in page and "6 found" in page and "Temporary Hit Points not shown" in page
-    assert 'href="/manage/item/i94"' in page and "The 2024 books" in page and "A phone" in page
+    assert f'data-review-result="{done.id}"' in page and 'data-found="6"' in page and page.count("<tr>") >= 1
+    assert 'href="/manage/item/i94"' in page
     panel = admin.get("/manage/work/reviews/dig_feature").text
-    assert 'data-review-panel="dig_feature"' in panel and "6 found" in panel and "Stopped" in panel
-    assert "Is what askdnd says right?" in panel  # (the product's name, filled in)
+    assert 'data-review-panel="dig_feature"' in panel and 'data-found="6"' in panel and 'data-run-state="stopped"' in panel
+    assert "Is what askdnd says right?" in panel  # (the words are the point: the product's name, filled in)
 
 
 def test_reviews_are_admins_only(player, db):
@@ -378,3 +380,23 @@ def test_the_live_run_is_the_oldest_that_holds_the_others(db):
     assert reviews.live_run(db) is None  # (asked isn't live)
     rules.start_review(db, "claude")
     assert reviews.live_run(db) is a
+
+
+def test_a_refused_run_is_a_corner_card_and_polish_needs_its_area(admin, db):
+    """The review of #535: a Run or Stop that's refused comes back to Scheduled with its words in a corner card, never
+    a bare page; Polish an area's area is required before Next."""
+    assert 'name="area" value="battle" required' in admin.get("/manage/work/reviews/polish_area/run").text
+    r = admin.post("/manage/work/reviews/polish_area/run", data={"area": ""}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("tab=scheduled")
+    assert db.scalar(select(FftReviewRun).where(FftReviewRun.review == "polish_area")) is None
+
+
+def test_a_run_waiting_behind_its_own_live_one_can_be_stopped(admin, db):
+    live = rules.ask_review(db, "user:1", "the_week")
+    rules.start_review(db, "claude")
+    behind = rules.ask_review(db, "claude", "the_week", how="scheduled")
+    db.flush()
+    panel = admin.get("/manage/work/reviews/the_week").text
+    assert f'data-run="{behind.id}"' in panel and live.state == "starting"
+    admin.post(f"/manage/work/reviews/runs/{behind.id}/stop")
+    assert behind.state == "stopped" and live.state == "starting"

@@ -15,7 +15,7 @@
 {% call window("Run a review", r.title, foot=w_foot, form=action ~ ' data-review-run="' ~ r.key ~ '"') %}
   <p>{{ r.does }}</p>
   <dl class="mech">
-    <dt>It covers</dt><dd>{% if last %}What changed since its last run: {{ merged }} change{{ "s" if merged != 1 }} merged since {{ when(last.ended_at) }}{% else %}Everything: it hasn't run before{% endif %}</dd>
+    <dt>It covers</dt><dd data-covers="{{ 'since' if last else 'all' }}">{% if last %}What changed since its last run: {{ merged }} change{{ "s" if merged != 1 }} merged since {{ when(last.ended_at) }}{% else %}Everything: it hasn't run before{% endif %}</dd>
     <dt>Starts</dt><dd>{{ starts() }}</dd>
     <dt>Takes</dt><dd>Up to {{ r.limit }} minutes, stopping at its limit and saying what it covered</dd>
     <dt>Hands back</dt><dd>One page on its row, what it found as issues in Feedback, and only real choices in your For you</dd>
@@ -30,7 +30,7 @@
   </div>
   {% if r.launch == "polish" %}
   <div id="rs-which" class="stack">
-    {% call field("Area", tag="div", key="area") %}{{ pick_chips("area", opts.areas, "", "Area") }}{% endcall %}
+    {% call field("Area", tag="div", key="area") %}{{ pick_chips("area", opts.areas, "", "Area", required=True) }}{% endcall %}
     <p class="note">Its findings land as issues under that area's features.</p>
   </div>
   <div id="rs-focus" class="stack" hidden>

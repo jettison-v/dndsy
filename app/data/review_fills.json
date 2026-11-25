@@ -15,5 +15,6 @@
     {"key": "deep", "label": "All the way", "minutes": 60}
   ],
   "product": "askdnd",
+  "where": "at the table",
   "test_sheets": "The test sheets"
 }

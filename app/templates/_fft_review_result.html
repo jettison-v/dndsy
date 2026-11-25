@@ -21,7 +21,7 @@
     {% if run.why %}<dt>Why it ended</dt><dd>{{ run.why }}</dd>{% endif %}
   </dl>
   {% if run.state == "done" %}
-  <p data-result-numbers><b>{{ n.found }} found</b> · {{ n.fixed }} fixed in the run · {{ n.picks }} pick{{ "s" if n.picks != 1 }} for you · {{ n.open }} still open</p>
+  <p data-result-numbers data-found="{{ n.found }}"><b>{{ n.found }} found</b> · {{ n.fixed }} fixed in the run · {{ n.picks }} pick{{ "s" if n.picks != 1 }} for you · {{ n.open }} still open</p>
   <p>{{ run.result.summary }}</p>
   {% if run.result.findings %}<div class="table-scroll"><table class="dtable fft-table" data-result-findings>
     <thead><tr><th>Finding</th><th class="dt-w4">Became</th></tr></thead>

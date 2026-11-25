@@ -998,6 +998,17 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (to) { selectTab(to); stepFoot(form); }
   });
   document.addEventListener('tab:shown', e => { const form = e.target.closest('form[data-steps]'); if (form) stepFoot(form); });
+  // Enter in a box sends the form only from its last step; before that it moves on, as Next does (the review of #535)
+  document.addEventListener('submit', e => {
+    const form = e.target.closest && e.target.closest('form[data-steps]');
+    if (!form) return;
+    const tabs = stepTabs(form);
+    if (tabs.length && tabs[tabs.length - 1].getAttribute('aria-selected') !== 'true') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      form.querySelector('[data-step-next]').click();
+    }
+  }, true);
   // Run…'s Dig into a feature: the feature's own open issues to start from ([data-for-feature]); the others hidden and unticked
   document.addEventListener('change', e => {
     const sel = e.target.closest('select[data-review-feature]');

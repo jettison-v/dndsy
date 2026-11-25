@@ -149,7 +149,7 @@
       <tr data-review="{{ x.r.key }}" data-panel-url="/manage/work/reviews/{{ x.r.key }}" tabindex="0"{% if x.run %} data-run-state="{{ x.run.state }}"{% endif %}>
         <td class="dt-title">{{ x.r.title }}<span class="dt-why">{% if x.run %}{{ state_word(RUN_TONE[x.run.state][0], RUN_TONE[x.run.state][1]) }} {% if x.run.inputs %}{{ run_title(x.run) }} · {% endif %}{{ x.run_says }}{% else %}{{ x.r.gets }}{% endif %}</span></td>
         <td>{{ x.cadence }}</td>
-        <td class="dt-wrap">{{ x.next }}</td>
+        <td class="dt-wrap" data-next="{{ x.r.cadence }}">{{ x.next }}</td>
         <td>{% if x.last %}<a class="link-plain" href="/manage/work/reviews/runs/{{ x.last.id }}" data-modal-url="/manage/work/reviews/runs/{{ x.last.id }}" data-modal-size="large" data-review-result>{% if x.last.state == "done" %}{{ x.last.result.numbers.found }} found · {{ x.last.ended_at | ago }}{% else %}{{ x.last.state | capitalize }} · {{ x.last.ended_at | ago }}{% endif %}</a>{% else %}<span class="dt-id">Not run yet</span>{% endif %}</td>
         <td class="end">{% if x.run %}<form method="post" action="/manage/work/reviews/runs/{{ x.run.id }}/stop" class="inline" data-confirm="Stop {{ run_title(x.run) }}?"><button class="btn small" type="submit" data-do="review-stop">Stop</button></form>
           {% else %}<button class="btn small" type="button" data-modal-url="/manage/work/reviews/{{ x.r.key }}/run" data-do="review-run">{{ "Run now" if x.r.launch == "now" else "Run…" }}</button>{% endif %}</td>
