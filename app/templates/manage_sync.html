@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sync · Backstage · askdnd{% endblock %}
+{% block content %}
+{% from "_admin_bits.html" import needs_line %}
+{% from "_lists.html" import search_box, show_more, view_switch %}
+{% from "_tables.html" import table_box %}
+{# Backstage › Tuning › Sync (app/sync_page.py; Roadmap item 44, Brett's picks SQ1–SQ6 on docs/mockups/sync-queue/, Nov 25):
+   every read from D&D Beyond, every change sent to it and Claude's recap drafts, newest first, each opening to its story
+   in the window over the list. What needs someone is said once at the top (AU3), the same on Overview. #}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Sync</h1></div>
+  <p class="subtitle">Everything askdnd does with D&amp;D Beyond, and Claude's recap drafts: what's waiting, running, done or failed. Open one for its story: when and why it was asked, each try, the exact error. Done work stays a day, failed work 30 days. Only admins can see this page.</p>
+  {% if needs %}{{ needs_line(needs.word, needs.tone, needs.says, "sync") }}{% endif %}{# (the list opens on Trouble while there's any) #}
+  <p class="sync-counts note" data-sync-counts><b>{{ counts.waiting }}</b> waiting · <b>{{ counts.running }}</b> running · <b>{{ counts.done }}</b> done · <b>{{ counts.failed }}</b> failed or not yet</p>
+  <div class="sync-list" data-list="sync" data-noun="piece of work" data-nouns="pieces of work" data-default-sort="default" data-ls-start="{{ start }}" data-ls-cap="40">{# (the newest 40, the rest a fold away: AU5; reads of unwatched sheets come every few minutes) #}
+    <div class="ls-toolbar">{{ view_switch(views, "Which work") }}{{ search_box("Search a character or what changed") }}</div>
+    {% call table_box("sync", "Sync", rows | length, cols=[("When", "dt-w2"), ("Character", "dt-w3"), ("What", ""), ("State", "dt-w2"), ("Tries", "dt-w1"), ("Took", "dt-w2")],
+                      empty="Nothing yet: reads and changes show here as askdnd makes them.", body_attrs=" data-ls-rows") %}
+      {% for r in rows %}
+      <tr data-ls-row data-views="{{ r.views }}" data-kind="{{ r.kind }}" data-sort-default="{{ loop.index }}"{% if r.trouble %} data-trouble{% endif %}
+          data-name="{{ (r.who ~ ' ' ~ r.what ~ ' ' ~ r.why) | lower }}" data-modal-url="/manage/sync/{{ r.key }}" tabindex="0">
+        <td class="note">{{ r.at | clock }}</td>
+        <td>{{ r.who }}</td>
+        <td class="dt-title"><span class="sync-dir" aria-hidden="true">{{ r.dir }}</span> {{ r.what }}{% if r.why %} <span class="note">· {{ r.why }}</span>{% endif %}</td>
+        <td>{{ state_tag(r.state) }}{% if r.late %} <span class="note">over 10 min</span>{% endif %}</td>
+        <td class="note">{{ r.tries }}</td>
+        <td class="note">{{ r.took or "—" }}</td>
+      </tr>
+      {% endfor %}
+    {% endcall %}
+    {% if rows %}{{ show_more("Show the rest", "Fold them again") }}{% endif %}
+    <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
+  </div>
+</main>
+{% endblock %}

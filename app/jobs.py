@@ -24,6 +24,10 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+# One try, added to a job's story as it ends (the Sync page, Roadmap item 44): when, which try, how it ended, how long
+# it took and the error, in the same UPDATE that ends it, so the story can't disagree with the job
+_TRIED = ("story = story || jsonb_build_array(jsonb_build_object('at', now(), 'n', attempts, 'ended', CAST(:ended AS text), "
+          "'took', round(CAST(extract(epoch FROM now() - COALESCE(started_at, now())) AS numeric), 1), 'error', CAST(:error AS text)))")
 LEASE = timedelta(seconds=60)  # (a running job whose worker hasn't beaten for this long is given up on)
 BEAT_SECONDS = 15
 
@@ -119,9 +123,9 @@ def beat(db: Session, job_id: int, attempts: int) -> bool:
 
 def finish(db: Session, job_id: int, attempts: int, result: dict | None = None) -> bool:
     """Done, fenced on the attempt it was claimed for: False (and nothing written) when the job was given up on."""
-    n = db.execute(text("UPDATE jobs SET state = 'done', finished_at = now(), result = CAST(:result AS jsonb), error = '' "
+    n = db.execute(text(f"UPDATE jobs SET state = 'done', finished_at = now(), result = CAST(:result AS jsonb), error = '', {_TRIED} "  # noqa: S608 (_TRIED is a constant)
                         "WHERE id = :id AND state = 'running' AND attempts = :n"),
-                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None}).rowcount
+                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None, "ended": "done", "error": ""}).rowcount
     db.commit()
     return bool(n)
 
@@ -137,17 +141,19 @@ def fail(db: Session, job_id: int, attempts: int, error: str, retry: bool = True
     k = KINDS.get(row.kind)
     again = retry and attempts < row.max_attempts
     wait = (k.backoff[min(attempts - 1, len(k.backoff) - 1)] if k and k.backoff else 0) if again else 0
-    db.execute(text("UPDATE jobs SET state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END, "
+    db.execute(text(f"UPDATE jobs SET {_TRIED}, state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END, "  # noqa: S608 (_TRIED is a constant)
                     "run_at = now() + make_interval(secs => :wait) WHERE id = :id AND state = 'running' AND attempts = :n"),
-               {"state": "queued" if again else "failed", "error": error[:2000], "again": again, "wait": wait, "id": job_id, "n": attempts})
+               {"state": "queued" if again else "failed", "error": error[:2000], "again": again, "wait": wait, "id": job_id, "n": attempts,
+                "ended": "again" if again else "failed"})
     db.commit()
     return "queued" if again else "failed"
 
 
 def put_back(db: Session, job_id: int, attempts: int) -> bool:
     """A worker stopping (a deploy): its job goes back to the queue as it was, this attempt not counted against it."""
-    n = db.execute(text("UPDATE jobs SET state = 'queued', attempts = attempts - 1, claimed_by = '', started_at = NULL "
-                        "WHERE id = :id AND state = 'running' AND attempts = :n"), {"id": job_id, "n": attempts}).rowcount
+    n = db.execute(text(f"UPDATE jobs SET {_TRIED}, state = 'queued', attempts = attempts - 1, claimed_by = '', started_at = NULL "  # noqa: S608 (_TRIED is a constant)
+                        "WHERE id = :id AND state = 'running' AND attempts = :n"),
+                   {"id": job_id, "n": attempts, "ended": "stopped", "error": "The worker stopped (a deploy): back in line, not counted"}).rowcount
     db.commit()
     return bool(n)
 
@@ -165,10 +171,10 @@ def reap(db: Session, now: datetime | None = None) -> int:
         if not (silent or overrun):
             continue
         again = r.attempts < r.max_attempts
-        db.execute(text("UPDATE jobs SET state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END "
+        db.execute(text(f"UPDATE jobs SET {_TRIED}, state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END "  # noqa: S608 (_TRIED is a constant)
                         "WHERE id = :id AND state = 'running' AND attempts = :n"),
                    {"state": "queued" if again else "failed", "error": "Interrupted" if silent else "Timed out", "again": again,
-                    "id": r.id, "n": r.attempts})
+                    "id": r.id, "n": r.attempts, "ended": "again" if again else "failed"})
         n += 1
     db.commit()
     return n
@@ -185,6 +191,26 @@ def sweep(db: Session, now: datetime | None = None) -> int:
                         {"kind": k.name, "cut": now - k.keep_done}).rowcount
     db.commit()
     return n
+
+
+def retry(db: Session, job_id: int, by: str) -> bool:
+    """A failed or cancelled job, or one still waiting for its next try, goes again now, first in its lane, with its
+    tries counted afresh (the Sync page's Retry, Brett's pick SQ4). Who pressed it goes in its story. False when it's
+    running or done, or gone."""
+    n = db.execute(text("UPDATE jobs SET state = 'queued', attempts = 0, run_at = now(), priority = GREATEST(priority, 10), "
+                        "finished_at = NULL, error = '', story = story || jsonb_build_array(jsonb_build_object('at', now(), 'did', 'retry', 'by', CAST(:by AS text))) "
+                        "WHERE id = :id AND state IN ('failed', 'cancelled', 'queued')"), {"id": job_id, "by": by[:200]}).rowcount
+    if n:
+        db.execute(text("SELECT pg_notify('askdnd_jobs', (SELECT queue FROM jobs WHERE id = :id))"), {"id": job_id})
+    return bool(n)
+
+
+def cancel(db: Session, job_id: int, by: str) -> bool:
+    """A waiting job won't run (the Sync page's Cancel, Brett's pick SQ4); who pressed it goes in its story. False
+    when it's already running or finished."""
+    return bool(db.execute(text("UPDATE jobs SET state = 'cancelled', finished_at = now(), "
+                                "story = story || jsonb_build_array(jsonb_build_object('at', now(), 'did', 'cancel', 'by', CAST(:by AS text))) "
+                                "WHERE id = :id AND state = 'queued'"), {"id": job_id, "by": by[:200]}).rowcount)
 
 
 def counts(db: Session) -> dict[str, int]:
