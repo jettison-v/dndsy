@@ -185,9 +185,11 @@ def needs(db: Session, user: dict) -> list[dict]:
         for s in [s for s, st in rows if st == "read"]:  # (a transcript read: its questions first, then Draft the recap)
             out.append({"text": f"{session_label(s)} has Claude's questions and suggestions",
                         "sub": "Settle them, then draft the recap", "href": f"{base}/manage/sessions/{s.id}", "go": "Open it"})
-        undrafted = [s for s, st in rows if st == "no draft" and s.source == "notes"]
-        if undrafted:  # (a button that does it: Brett's pick NY1, Nov 25; the same draft Sessions' red button starts)
-            from app.admin_sessions import draft_cost
+        from app.admin_sessions import draft_cost, numbers_with_notes
+
+        noted = numbers_with_notes(db, campaign.id)
+        undrafted = [s for s, st in rows if st == "no draft" and s.number in noted]
+        if undrafted:  # (a button that does it: Brett's pick NY1, Nov 25; the same sessions, and draft, as Sessions' red button)
 
             out.append({"text": f"{_plural(len(undrafted), 'session')} not drafted yet",
                         "sub": f"About ${draft_cost(db):.2f} each · publishing one drafts the next", "href": f"{base}/manage/sessions",

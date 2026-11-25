@@ -15,7 +15,7 @@
        name; Rename…, View as and Remove in the row's ⋯. #}
     {% macro person(p, n=0) %}{% set fixed = p.owner or p.email == me %}
     <li class="record{{ ' faded' if not p.invited }}"{% if n %} data-ls-row data-views="{{ 'test' if p.test else 'people' }} all" data-sort-default="{{ n }}" data-name="{{ ((p.shown or '') ~ ' ' ~ p.email) | lower }}"{% endif %}>
-      <span class="record-main"><b>{{ p.shown or p.email }}</b>{% if p.test %} <span class="tag">Test</span>{% endif %}
+      <span class="record-main"><b>{{ p.shown or p.email }}</b>{% if p.test %} <span class="tag" data-test-account>Test</span>{% endif %}
         <span class="note">{% if p.name %}{{ p.email }} · {% endif %}{% if p.owner %}owner (set on Railway) · {% endif %}{% if p.removed %}removed · {% elif not p.invited %}not invited yet · {% elif p.from_railway and not p.owner %}from the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}never signed in{% endif %}</span>
         <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form></span>
       <span>{% for c, r in p.campaigns %}<a href="/c/{{ c.slug }}/manage/table">{{ c.name }}</a> ({{ role_labels[r] | lower if r != "dm" else "DM" }}){{ ", " if not loop.last }}{% else %}<span class="note">No campaign yet</span>{% endfor %}</span>

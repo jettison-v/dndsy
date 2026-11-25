@@ -148,6 +148,13 @@ def _in_background(session_id: int, work_on) -> bool:
 # --- Review list -------------------------------------------------------------
 
 
+def numbers_with_notes(db: Session, campaign_id: int) -> set[int]:
+    """The session numbers the campaign doc has a section for: the ones Draft from notes can draft (Sessions and Needs
+    you count the same ones)."""
+    snap = latest_campaign_notes(db, campaign_id)
+    return set(split_notes(snap.text)[1]) if snap else set()
+
+
 DRAFT_COST = 0.13  # (a draft from notes before any has run: the figure the page gave since Oct)
 
 
@@ -168,7 +175,7 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
     sessions = timeline(db, campaign.id) if campaign else []
     running = _running_ids(db)
     snap = latest_campaign_notes(db, campaign.id) if campaign else None
-    with_notes = set(split_notes(snap.text)[1]) if snap else set()
+    with_notes = numbers_with_notes(db, campaign.id) if campaign else set()
     spent = db.scalar(select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0))) or 0.0
     rows = []
     for s in reversed(sessions):  # newest first

@@ -9,7 +9,7 @@
   <ul class="records">
     {% for x in items %}
     <li class="record"><span class="record-main"><b>{{ x.text }}</b>{% if x.admin %} <span class="tag faint">admins</span>{% endif %}<span class="note">{{ x.sub }}</span></span>
-      <span class="record-actions">{% if x.post %}<form method="post" action="{{ x.post }}">{% for i in x.ids %}<input type="hidden" name="session_ids" value="{{ i }}">{% endfor %}<button type="submit" class="btn small{{ ' primary' if loop.first }}" data-busy="Starting the draft…">{{ x.go }}</button></form>
+      <span class="record-actions">{% if x.post %}<form method="post" action="{{ x.post }}">{% for i in x.ids %}<input type="hidden" name="session_ids" value="{{ i }}">{% endfor %}<button type="submit" class="btn small{{ ' primary' if loop.first }}" data-busy="Starting the draft…" data-item="draft-next">{{ x.go }}</button></form>
         {% else %}<a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a>{% endif %}</span></li>
     {% endfor %}
   </ul>
