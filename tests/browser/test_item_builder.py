@@ -54,7 +54,7 @@ def test_an_item_is_built_a_piece_at_a_time_and_reads_the_same_everywhere(people
 
     form.locator("button[type=submit]").click()
     page.wait_for_url("**/c/main/dm")
-    row = page.locator('.dm-items [data-item="leviathan-compass"]')
+    row = page.locator('[data-table="items"] [data-item="leviathan-compass"]')
     listed = row.evaluate("r => [...r.querySelectorAll('[data-say]')].map(s => [s.dataset.say, s.querySelector('[data-said]').textContent])")
     assert listed == built  # the list says what the builder said, piece by piece (the words: tests/test_homebrew.py)
 

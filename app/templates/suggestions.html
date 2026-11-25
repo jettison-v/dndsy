@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "_lists.html" import count_pill, empty_state %}
-{% from "_form_bits.html" import help_tip %}
 {% block title %}Inbox · askdnd{% endblock %}
 {# Backstage › Inbox (content workflows step 2): everything waiting for the DM's OK. Brett's pick IN1 on
    docs/mockups/backstage-round-4/ (Nov 25): one sentence; a session's draft one row whose next step is Review it, as on
@@ -23,7 +22,7 @@
   <section class="section" id="reviews">
     <h2>Sessions to review{{ count_pill(reviews | length) }}</h2>
     <ul class="records">{% for r in reviews %}
-      <li class="record" data-review="{{ r.s.id }}"><span class="record-main"><b>{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</b> <span class="tag draft">{{ "Draft" if r.status == "draft" else "Edited since publishing" }}</span>
+      <li class="record" data-review="{{ r.s.id }}"><span class="record-main"><b>{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</b> {{ state_tag(r.status) }}
         <span class="note">A recap to review, with its key moments, Claude's questions and suggested updates</span></span>
         <span class="record-actions"><a class="btn small{{ ' primary' if loop.first }}" href="{{ cbase }}/manage/sessions/{{ r.s.id }}">Review it</a></span></li>{% endfor %}</ul>
   </section>
@@ -31,7 +30,8 @@
 
   {% if items %}
   <section class="section">
-    <h2>From the table{{ count_pill(items | length) }} {{ help_tip("Accept puts it on the page as written. Edit lets you change it first. Ask Claude to work it in drafts a new description (or recap) with it, for you to check. Dismiss drops it. Players see what happened to theirs on Your notes, with your word to them if you write one.") }}</h2>
+    <h2>From the table{{ count_pill(items | length) }}</h2>
+    <p class="note">Accept puts it on the page as written; Edit changes it first; Ask Claude works it into a new draft; Dismiss drops it.</p>{# (one plain line: the help tip is only for an unclear choice, Brett's pick AU6) #}
     {% for it in items %}{% set x = it.x %}{% set key = it.type ~ "-" ~ x.id %}
     <div class="item inbox-item" id="{{ key }}">
       <p class="item-title"><a href="{{ it.href }}"{% if it.type == "fact" %} data-no-peek{% endif %}>{{ it.label }}</a>
@@ -90,7 +90,8 @@
 
   {% if drafts %}
   <section class="section" id="drafts">
-    <h2>Claude's drafts to check{{ count_pill(drafts | length) }} {{ help_tip("New descriptions Claude wrote from an entry's facts and key moments. Nothing changes until you use one.") }}</h2>
+    <h2>Claude's drafts to check{{ count_pill(drafts | length) }}</h2>
+    <p class="note">New descriptions Claude wrote from an entry's facts and key moments; nothing changes until you use one.</p>
     {% for e in drafts %}
     <div class="item inbox-item">
       <p class="item-title"><a href="{{ entry_url(e.id) }}" data-no-peek>{{ e.name }}</a> <span class="tag draft">New description</span></p>

@@ -2,7 +2,7 @@
 {% from "_board.html" import board as work_board %}
 {% from "_tables.html" import table_box %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
-{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head %}
+{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head, show_more %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
 {% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip %}
@@ -11,7 +11,7 @@
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
-{% from "_admin_bits.html" import state_word, state_line, timeline, more_menu, rd_section, kind_word %}
+{% from "_admin_bits.html" import state_word, state_line, timeline, more_menu, rd_section, kind_word, needs_line %}
 {% block title %}Design system · Backstage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -130,6 +130,10 @@
 
   <section class="section" id="pills">
     <h2>Pills</h2>
+    {{ ds("Fields for a choice", "[data-shows-for=\"name=value\"]", "A group of fields shown only while the form's choice is that value, its inputs off while hidden (the House rule window's kinds, AU8). One form, its fields following the choice, one button in the foot.") }}
+    <form class="ds-sample stack" action="#">{{ pick_chips("ds_kind", [("a", "A ruling"), ("b", "One roll")], "a", "Sample kind") }}<label class="field" data-shows-for="ds_kind=a"><span>The ruling</span><input type="text" placeholder="Shown for A ruling"></label><label class="field" data-shows-for="ds_kind=b" hidden><span>Why</span><input type="text" placeholder="Shown for One roll" disabled></label></form>
+    {{ ds("State tag", "state_tag(key) · app/states.py", "A state as one word in its tone's colour, from the one key (Brett's picks AU2 and AU7, Nov 25): amber waiting on you, blue under way, green done or ready, grey quiet, red failed. Never pick a tag's colour by its words; a longer phrase goes on a line beside it.") }}
+    <div class="ds-row">{% for k in ("draft", "edited", "drafting", "published", "ready", "building", "unused", "failed") %}{{ state_tag(k) }} {% endfor %}</div>
     {{ ds("Tag", ".tag", "Labels something; never clickable. Status tags use a status color.") }}
     <div class="ds-row"><span class="tag">Conc.</span><span class="tag">Ritual</span><span class="tag done">Published</span><span class="tag draft">Draft</span><span class="tag new">New</span><span class="tag error">Couldn't refresh</span><span class="tag faint">Not core: Xanathar's</span><span class="tag kind-advantage">Advantage</span><span class="tag kind-resistance">Resistance</span></div>
     {{ ds("Chip", ".ls-chip · .ws-chip · .spell-chip · .cond-pill · .chip", "Clickable, one look: a filter, a Wild Shape form, a spell to cast, a condition. Blue when on (--selected-bg).") }}
@@ -266,6 +270,8 @@
     <h2>Help and empty states</h2>
     {{ ds("Note", ".note", "Small secondary text: dates, who changed something, footnotes.") }}
     <p class="note">Updated Oct 19. Every player can read this; the DM can't.</p>
+    {{ ds("Show more, in place", "_lists.html show_more(closed, opened) · data-ls-cap · data-ls-later", "Under a list that shows its newest few (data-ls-cap=\"20\" on the list) or holds its older rows back (data-ls-later on a row): one quiet fold opens them where they are and folds them again, its count the rows it holds; a search looks through all of them (Brett's pick AU5, Nov 25: History's older days, Usage's older calls).") }}
+    <div class="ds-sample" data-list="ds-more" data-default-sort="default" data-ls-cap="2"><ul class="plain" data-ls-rows>{% for w in ("Session 20 drafted", "A key moment published", "Session 19 published", "A house rule added") %}<li data-ls-row data-sort-default="{{ loop.index }}" data-name="{{ w | lower }}">{{ w }}</li>{% endfor %}</ul>{{ show_more("Show older", "Fold older") }}</div>
     {{ ds("Empty state", "_lists.html empty_state(what) · .empty-state · data-empty", "What goes here, in a sentence, and from a call block how to add the first one (the quiet add). It takes the place of a help line.") }}
     {{ empty_state("No reactions on this sheet yet.") }}
     {% call empty_state("A plan that plays out over more than one turn: the setup, then the payoff.") %}<a class="head-add" href="#">+ Battle combo</a>{% endcall %}
@@ -288,6 +294,10 @@
     {{ ds("Walkthrough", "_check_steps.html walkthrough · .walk · code.typed · .press · .walk-why", "A check's steps (app/fft/steps.py walk, docs/testing-guide.md): one action a line, numbered, a box to tick; what to type in a dashed box, a button drawn as one, a box's name in bold, why under it. The card and the Reader draw it the same.") }}
     {{ ds("An issue's kind", "_admin_bits.html kind_word(kind)", "A change to a Product Area is a Fix (red: something that exists is broken) or an Improvement (violet: something that exists, made better), the same in Feedback, a plan's Issues and an issue's window (Brett, Nov 20). An idea that needs discussion is the Roadmap's.") }}
     <div class="ds-row">{{ kind_word("fix") }} {{ kind_word("improvement") }}</div>
+    {{ ds("Needs you line", "_admin_bits.html needs_line(word, tone, sentence, key) · .needs-line[data-tone]", "Something that needs you, said once at the top of its page: its word in its colour, what's wrong in a sentence, and the one button that fixes it (Brett's pick AU3, Nov 25: Usage's limit, Overview, Backups, the bridge's health). Amber needs you, red broken, green all is well where a page always says how it stands.") }}
+    {% call needs_line("Needs you", "you", "No monthly limit: askdnd keeps spending with no stop.") %}<button class="btn small" type="button">Set a limit</button>{% endcall %}
+    {% call needs_line("Broken", "broken", "No backup for 3 nights: the last good copy is from Nov 21.") %}<button class="btn small" type="button">See what failed</button>{% endcall %}
+    {% call needs_line("Worked", "done", "Last backup 4 hours ago.") %}{% endcall %}
     {{ ds("State word and line (admin)", "_admin_bits.html state_word(word, tone) · state_line(word, tone, sentence) · .state-word.sw-*", "A state said as a word in its colour, the same in lists and headers (Readers, Rebuilt, Nov 17): ready blue, try again or a question amber, failed red, passed green, Claude's or a pick violet, quiet grey. The line adds one sentence saying what it means for you. Never a dot that needs a key.") }}
     <div class="ds-row">{{ state_word("Ready", "ready") }} {{ state_word("Try again", "again") }} {{ state_word("Failed", "failed") }} {{ state_word("Passed", "passed") }} {{ state_word("With Claude", "claude") }} {{ state_word("Question", "ask") }} {{ state_word("Pick", "pick") }} {{ state_word("Skipped", "quiet") }}</div>
     <div class="ds-row">{{ state_line("Try again", "again", "Claude fixed what you found; the fix is live. Try it again.") }}</div>

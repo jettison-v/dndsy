@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}D&amp;D Beyond bridge · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_admin_bits.html" import needs_line %}
 {# Backstage › Global › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
@@ -9,10 +10,11 @@
 
   <section class="section">
     <h2>Right now</h2>
+    {# Its health, once, as the needs-you line with what to do (Brett's picks BR1 and AU3, Nov 25); app.js keeps it current #}
+    {% set tone = {'live': 'done', 'wait': 'you', 'off': 'broken', 'asleep': 'done'}[health.state] %}
+    {% set says %}<span data-bridge-health>{{ health.text | replace("D&D Beyond · ", "") | replace("D&D Beyond bridge · ", "") }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span> <span class="note" data-bridge-todo>{{ health.todo }}</span>{% endset %}
+    {% call needs_line({'live': 'Working', 'wait': 'Waiting', 'off': 'Problem', 'asleep': 'Asleep'}[health.state], tone, says, "bridge") %}<button type="button" class="btn small" data-br-check data-confirm="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button>{% endcall %}
     <dl class="br-now">
-      <dt>Health</dt><dd><span class="br-st {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span>
-        <span class="note" data-bridge-todo>{{ health.todo }}</span>
-        <button type="button" class="btn small" data-br-check data-confirm="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button></dd>
       <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>
       <dt>Last used</dt><dd>{{ last | clock if last else "Not yet" }}</dd>
       <dt>Extension</dt><dd>{% if health.extension %}Connected{% if health.sheets %} · sheets open: {{ health.sheets | length }}{% endif %}{% else %}Not connected{% endif %}</dd>
