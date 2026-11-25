@@ -154,4 +154,27 @@ def test_nothing_starts_without_a_kind_of_job(monkeypatch):
     from app import worker
 
     monkeypatch.setattr(jobs, "KINDS", {})
+    monkeypatch.setattr(jobs, "load_kinds", lambda: None)
     assert worker.start(lambda: None, threading.Event()) == [] and worker.runner() in ("inline", "worker")
+
+
+def test_a_lane_that_cant_reach_its_queue_says_so_once_and_waits_longer(monkeypatch, caplog):
+    """The database away, or a deploy's migration not run yet: one error for Sentry, not one every five seconds."""
+    import threading
+
+    from app import worker
+
+    stop, waits = threading.Event(), []
+    lane = worker.Lane("lane", lambda: None, stop, "w1")
+
+    def broken():
+        if len(waits) >= 4:
+            stop.set()
+        raise RuntimeError("relation jobs does not exist")
+
+    monkeypatch.setattr(lane, "run_once", broken)
+    monkeypatch.setattr(lane.wake, "wait", lambda s: waits.append(s))
+    with caplog.at_level("ERROR", logger="askdnd.worker"):
+        lane.loop()
+    assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
+    assert waits[:3] == [10, 20, 40] and all(w <= 60 for w in waits)

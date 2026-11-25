@@ -158,28 +158,20 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
             "every": SYNC_SECONDS}
 
 
-def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
-    """Fetch from D&D Beyond unless someone did in the last `min_age`. True if it fetched."""
-    if not ch.ddb_id:
-        return False
-    snap = ch.snapshot
-    last = snap.attempted_at if snap else None
-    if last is not None and datetime.now(UTC) - last < min_age:
-        return False
-    chars.store(db, ch, chars.read_released(db, ch))  # (open pages ask often: never hold the database while D&D Beyond answers)
-    db.commit()
-    return True
-
-
 def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
-    """The character on screen (else your own) first, then everyone else linked in the campaign, each at
-    most every AUTO_MIN_AGE."""
+    """Ask for the party's sheets (app/sheet_reads.py, the jobs queue): the character on screen (else your own) a step
+    ahead, then everyone else linked in the campaign, each at most every AUTO_MIN_AGE. Nothing waits for D&D Beyond
+    here: each new copy reaches the pages showing it through the live connection."""
+    from app import sheet_reads
+
     tn = table(user, "", rows_from(db), focus_id)
     first = [tn["focus"]["id"]] if tn["focus"] and tn["focus"]["linked"] else []
     for i in first + [r["id"] for r in tn["linked"] if r["id"] not in first]:
         ch = db.get(Character, i)
         if ch is not None:
-            maybe_refresh(db, ch, AUTO_MIN_AGE)
+            sheet_reads.request_read(db, ch, min_age=AUTO_MIN_AGE, priority=sheet_reads.PAGE + (1 if i in first else 0),
+                                     by=sheet_reads.who(user))
+    db.commit()
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
@@ -278,14 +270,31 @@ def live_refresh_one(request: Request, character_id: int, db: Session = Depends(
         return HTMLResponse("", status_code=404)
     if all(c["id"] != ch.campaign_id for c in access.campaigns_for(user.get("email"))):  # (its table's: tests/test_refusals.py)
         return HTMLResponse("", status_code=403)
+    from app import sheet_reads
+
     name = ch.name
-    if not maybe_refresh(db, ch, MANUAL_MIN_AGE):
+    snap = ch.snapshot
+    if snap is not None and snap.attempted_at is not None and datetime.now(UTC) - snap.attempted_at < MANUAL_MIN_AGE:
         msg = f"{name} was updated a moment ago"
-    elif ch.snapshot.status == "ok":
-        msg = f"Updated {name} from D&D Beyond"
     else:
-        msg = f"Couldn't update {name}; showing the last good copy"
+        msg = said_one(name, sheet_reads.read_now(db, [ch], by=sheet_reads.who(user))[ch.id])
     return panel(request, db, user, character_id, msg, [character_id])
+
+
+def said_one(name: str, how: str) -> str:
+    """What a press of Refresh says about one sheet (app/sheet_reads.py `read_now`)."""
+    return {"done": f"Updated {name} from D&D Beyond", "failed": f"Couldn't update {name}; showing the last good copy",
+            "waiting": f"Asked D&D Beyond for {name}: it updates when it answers"}.get(how, f"{name} has no D&D Beyond link")
+
+
+def said_all(names: dict[int, str], got: dict[int, str]) -> tuple[str, bool]:
+    """What Refresh everyone says (and whether it's a warning): how many updated, which couldn't, which are on their way."""
+    ok = sum(1 for h in got.values() if h == "done")
+    failed = [names[i] for i, h in got.items() if h == "failed"]
+    waiting = [names[i] for i, h in got.items() if h == "waiting"]
+    msg = f"Updated {ok} from D&D Beyond" + (f"; couldn't update {', '.join(failed)}" if failed else "") + \
+        (f"; still asking for {', '.join(waiting)}" if waiting else "")
+    return msg, bool(failed)
 
 
 @router.post("/live/refresh-all")
@@ -294,8 +303,10 @@ def live_refresh_all(request: Request, c: int = 0, db: Session = Depends(get_db)
     user = current_user(request)
     if not is_reviewer(user):
         return web.forbidden(request)
+    from app import sheet_reads
+
     campaign = web.campaign(db)
-    ok, failed = chars.refresh_all(db, campaign.id) if campaign else (0, [])
-    db.commit()
-    msg = f"Updated {ok} from D&D Beyond" + (f"; couldn't update {', '.join(failed)}" if failed else "")
+    linked = [ch for ch in chars.campaign_characters(db, campaign.id) if ch.ddb_id] if campaign else []
+    names = {ch.id: ch.name for ch in linked}
+    msg, _ = said_all(names, sheet_reads.read_now(db, linked, by=sheet_reads.who(user), seconds=sheet_reads.WAIT_SECONDS * 2))
     return panel(request, db, user, c or None, msg, [r["id"] for r in rows_from(db)])

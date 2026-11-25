@@ -46,16 +46,17 @@ def unwatched(db: Session) -> list:
 
 
 def tick(db: Session) -> list[int]:
-    """One round: read every unwatched character not read in the last MIN_AGE, while the bridge is awake. Returns the
-    ids read."""
-    from app import ddb_bridge, live
+    """One round: ask for every unwatched character not read in the last MIN_AGE (last in line on the jobs queue), while
+    the bridge is awake. Returns the ids asked for."""
+    from app import ddb_bridge
 
     if not config.DDB_BRIDGE or not ddb_bridge.awake(db)["awake"]:
         return []
-    read = []
-    for ch in unwatched(db):
-        if live.maybe_refresh(db, ch, MIN_AGE):
-            read.append(ch.id)
+    from app import sheet_reads
+
+    read = [ch.id for ch in unwatched(db)
+            if sheet_reads.request_read(db, ch, min_age=MIN_AGE, priority=sheet_reads.UNWATCHED, by="nobody had it open") is not None]
+    db.commit()
     return read
 
 

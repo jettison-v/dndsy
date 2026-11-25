@@ -10,7 +10,7 @@ from app import characters, live
 from app.importer import import_bundle
 from tests.menu import door, items
 from tests.roles import set_role
-from tests.table_setup import BUNDLE, char, down, owned_by
+from tests.table_setup import BUNDLE, char, down, owned_by, run_reads
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -192,9 +192,12 @@ def test_an_open_page_keeps_the_party_fresh(player, dm, db, monkeypatch):
 
     monkeypatch.setattr(live.chars, "read_released", counting)
     pill = player.post("/live/sync").text  # no character on screen: your own first, then the rest of the party
-    assert calls == ["Cole", "Trah"] and 'id="live-pill"' in pill and "just now" in pill and "<html" not in pill
+    assert 'id="live-pill"' in pill and "<html" not in pill
+    run_reads(db)  # (the jobs queue reads them: app/sheet_reads.py)
+    assert calls == ["Cole", "Trah"] and "just now" in player.get("/live/pill").text
     player.post("/live/sync")
     dm.post("/live/sync")
+    run_reads(db)
     assert calls == ["Cole", "Trah"]  # throttled, whoever asks
 
 
