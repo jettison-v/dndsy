@@ -97,14 +97,19 @@ class Lane:
     def loop(self) -> None:
         _serving.add(self.queue)
         try:
+            broken = 0  # (looks in a row that couldn't reach the queue: the database away, or a deploy's migration not run yet)
             while not self.stop.is_set():
                 try:
                     if self.run_once():
+                        broken = 0
                         self.stop.wait(self.pause())
                         continue
+                    broken = 0
                 except Exception:
-                    log.exception("The %s lane couldn't take a job", self.queue)
-                self.wake.wait(POLL_SECONDS)
+                    broken += 1
+                    if broken == 1:  # (said once, not every look: Sentry hears it once)
+                        log.exception("The %s lane couldn't take a job", self.queue)
+                self.wake.wait(min(POLL_SECONDS * 2 ** min(broken, 4), 60) if broken else POLL_SECONDS)
                 self.wake.clear()
         finally:
             _serving.discard(self.queue)
