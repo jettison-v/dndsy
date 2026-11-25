@@ -3,6 +3,7 @@
 {% block content %}
 {% from "_lists.html" import empty_state %}
 {% from "_admin_bits.html" import more_menu %}
+{% from "_tables.html" import table_box %}
 {# Backstage › Sessions (app/admin_sessions.py). Brett's pick SS1 on docs/mockups/backstage-round-4/ (Nov 25): the red
    button follows the state (the oldest draft to review, else the next to draft, else + Add session); + Add session and
    Draft all in the ⋯, Draft all saying its cost before it starts; the sessions not drafted yet one row, opened to see
@@ -29,15 +30,13 @@
   {% if running %}<div class="flash warn">Claude is drafting… this page updates by itself. Each session takes about a minute.</div>{% endif %}
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
-  <section class="section">
-    {% if not rows %}{{ empty_state("No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.") }}{% else %}
-    <div class="table-scroll"><table class="list stacked">
-      <tr><th>Session</th><th>State</th><th class="num">Cost</th><th></th></tr>
+  {# Every list a table (Brett's pick AU1, Nov 25) #}
+  {% call table_box("sessions", "Sessions", rows | length, cols=[("Session", ""), ("State", "dt-w3"), ("Cost", "num dt-w3"), ("", "end dt-w4")], empty="No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.") %}
       {% set shown = namespace(backlog=False) %}
       {% for r in rows %}
       {% if r.s.id in backlog %}{% if not shown.backlog %}{% set shown.backlog = True %}
       <tr data-backlog>
-        <td><details class="backlog"><summary><b>{{ backlog | length }} not drafted yet</b></summary>
+        <td class="dt-wrap"><details class="backlog"><summary><b>{{ backlog | length }} not drafted yet</b></summary>
           <ul class="plain">{% for b in rows if b.s.id in backlog %}<li>{{ b.label }}{% if b.s.title %} · <span class="note">{{ b.s.title }}</span>{% endif %}</li>{% endfor %}</ul>
           <p class="note">One at a time works best: review and publish one, and the next drafts by itself, knowing the people and places you accepted.</p></details></td>
         <td><span class="tag">Not drafted</span></td>
@@ -46,7 +45,7 @@
       </tr>{% endif %}
       {% else %}
       <tr>
-        <td><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<div class="note">{{ r.s.title }}</div>{% endif %}</td>
+        <td class="dt-title"><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<span class="dt-why">{{ r.s.title }}</span>{% endif %}</td>
         <td>{{ state_tag(r.status) }}</td>
         <td class="note num" data-label="Cost">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ r.last_run.cost_usd | money }}{% endif %}{% endif %}</td>
         <td class="end">
@@ -59,7 +58,6 @@
       </tr>
       {% endif %}
       {% endfor %}
-    </table></div>{% endif %}
-  </section>
+  {% endcall %}
 </main>
 {% endblock %}

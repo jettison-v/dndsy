@@ -127,6 +127,6 @@ def test_the_list_starts_on_what_waits_on_you_newest_first_and_moves_what_was_re
     monkeypatch.setattr(documents, "library", lambda: tuple(rows))
     page = admin.get("/manage/documents").text
     assert 'data-ls-start="waiting"' in page and 'data-ls-view="waiting"' in page
-    assert 'href="/manage/documents/d" data-modal-url="/manage/documents/d?part=1" data-modal-size="full"' in page
+    assert 'data-modal-url="/manage/documents/d?part=1" data-modal-size="full"' in page and 'href="/manage/documents/d"' in page  # (a row opens the window; its title links to the page: AU1)
     monkeypatch.setattr(documents, "library", lambda: tuple(r for r in rows if r["state"] != "waiting"))
     assert 'data-ls-start="current"' in admin.get("/manage/documents").text  # (nothing waits: it starts on Current)

@@ -24,8 +24,8 @@ STATES: dict[str, tuple[str, str]] = {
     "waiting": ("Yours", "you"), "current": ("Current", "done"), "done": ("Done", "done"), "earlier": ("Earlier", "quiet"),
     # a homebrew item (Items)
     "in play": ("In play", "done"), "unused": ("Unused", "quiet"),
-    # anything that ran
-    "failed": ("Failed", "broken"),
+    # anything that runs
+    "running": ("Running", "working"), "failed": ("Failed", "broken"),
 }
 
 

@@ -4176,6 +4176,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       : (by(sort)(b) - by(sort)(a)) || name(a).localeCompare(name(b)));
     // Move rows only when the order or the headings change, and keep the scroll position: moving every
     // row on each press (a bookmark) made the page jump to the top.
+    if (!box) return;  // (a list whose table has no rows yet draws only its empty line: AU1)
     const scroller = root.closest('.peek-body'), y = window.scrollY, sy = scroller ? scroller.scrollTop : 0;
     const heads = new Map([...box.querySelectorAll('.ls-grouphead')].map(h => [h.dataset.label, h]));
     const want = [], shownIn = {};
@@ -4187,12 +4188,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         let h = heads.get(last);
         if (h) heads.delete(last);
         else {
-          h = document.createElement('div'); h.className = 'ls-grouphead'; h.dataset.label = last; h.textContent = last;
+          const inTable = box.tagName === 'TBODY';  // (a list that's a table: its heading is a row across it, AU1)
+          h = document.createElement(inTable ? 'tr' : 'div'); h.className = 'ls-grouphead'; h.dataset.label = last;
+          const cell = inTable ? document.createElement('td') : h;
+          if (inTable) { cell.colSpan = r.children.length || 1; h.append(cell); }
+          cell.textContent = last;
           if (root.hasAttribute('data-ls-group-count')) {  // (how many show under it, beside its name: Documents, Nov 24)
             const lab = document.createElement('span'), c = document.createElement('span');
-            c.className = 'count'; lab.append(last, ' ', c); h.replaceChildren(lab);
+            c.className = 'count'; lab.append(last, ' ', c); cell.replaceChildren(lab);
           }
-          if (notes[last]) { const n = document.createElement('span'); n.className = 'ls-group-note'; n.textContent = notes[last]; h.append(n); }
+          if (notes[last]) { const n = document.createElement('span'); n.className = 'ls-group-note'; n.textContent = notes[last]; cell.append(n); }
         }
         want.push(h);
       }

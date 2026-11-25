@@ -3,6 +3,7 @@
 {% block title %}Usage · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_admin_bits.html" import needs_line %}
+{% from "_tables.html" import table_box %}
 {# Backstage › Global › Usage (app/admin_usage.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): the monthly
    limit first, said as the needs-you line until one is set and red once reached (AU3), changed from its tile (US1); each tile says what it counts
    (US2); recent calls the newest few, All · Claude · OpenAI (US3); a top-up from the title row's action (S4). #}
@@ -37,25 +38,21 @@
   </section>
   {% endif %}
 
-  <section class="section"{% if rows %} data-list="usage-calls" data-default-sort="default" data-ls-cap="{{ shown }}"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
-    <div class="section-head"><h2>Recent calls</h2>{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}</div>
-    {% if rows %}
-    <div class="table-scroll"><table class="list stacked usage-calls">
-      <thead><tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead>
-      <tbody data-ls-rows>
+  {# The one table (AU1): the newest few of the kind that's on, the rest in place (AU5) #}
+  <div{% if rows %} data-list="usage-calls" data-default-sort="default" data-ls-cap="{{ shown }}"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
+  {% set switch %}{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}{% endset %}
+  {% call table_box("calls", "Recent calls", rows | length, cols=[("When", "dt-w4"), ("For", ""), ("What", ""), ("Tokens in / out", "num dt-w4"), ("Cost", "num dt-w2")], empty="No Claude calls yet.", controls=switch, body_attrs=" data-ls-rows") %}
       {% for row in rows %}{% set r = row.r %}
       <tr data-ls-row data-views="{{ 'openai' if r.source in openai else 'claude' }} all" data-sort-default="{{ loop.index }}">
         <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)", "narration": "A recap read aloud (OpenAI)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · <span class="tag error">Failed</span>{% elif r.status == "running" %} · <span class="tag working">Running</span>{% endif %}</td>
+        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)", "narration": "A recap read aloud (OpenAI)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · {{ state_tag("failed") }}{% elif r.status == "running" %} · {{ state_tag("running") }}{% endif %}</td>
         <td class="note num" data-label="Tokens">{% if r.input_tokens or r.output_tokens %}{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}{% else %}—{% endif %}</td>
         <td class="num" data-label="Cost">{{ r.cost_usd | money }}</td>
       </tr>
       {% endfor %}
-      </tbody>
-    </table></div>
-    {{ show_more("Show older calls", "Fold older calls") }}
-    {% else %}{{ empty_state("No Claude calls yet.") }}{% endif %}
-  </section>
+  {% endcall %}
+  {% if rows %}{{ show_more("Show older calls", "Fold older calls") }}{% endif %}
+  </div>
 </main>
 {% endblock %}
