@@ -301,7 +301,7 @@
       {% set ds_foot %}<button class="btn primary" type="button">Add</button><button class="btn link" type="button">Cancel</button><button class="btn link danger end" type="button">Remove…</button>{% endset %}
       {% call window("House rules", "Add a house rule", foot=ds_foot, title_attrs=' data-ds-window', title_id="") %}{% call field("Spell", key="ds-spell") %}<select aria-label="Spell"><option>Magic Missile</option></select>{% endcall %}{% endcall %}
     </div>
-    <div class="ds-sample" style="max-width: 480px; margin-top: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-2)">
+    <div class="ds-sample" style="max-width: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-2)">
       {% set ds_pic %}<span class="roll-av hue2" aria-hidden="true">E</span>{% endset %}
       {% call window("", "Enemy 1", pic=ds_pic, sub="Medium Humanoid · its turn", body_class="detail", title_attrs=' data-ds-panel', title_id="") %}<p class="note">A side panel: a picture before its name, a line under it, and its body laid out its own way.</p>{% endcall %}
     </div>
