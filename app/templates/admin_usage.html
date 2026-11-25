@@ -34,8 +34,8 @@
   </section>
   {% endif %}
 
-  <section class="section" data-list="usage-calls" data-default-sort="default">
-    <div class="section-head"><h2>Recent calls</h2>{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}</div>
+  <section class="section"{% if rows %} data-list="usage-calls" data-default-sort="default"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
+    <div class="section-head"><h2>Recent calls</h2>{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}</div>
     {% if rows %}
     <div class="table-scroll"><table class="list stacked usage-calls">
       <thead><tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead>
