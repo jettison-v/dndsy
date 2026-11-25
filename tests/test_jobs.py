@@ -178,3 +178,39 @@ def test_a_lane_that_cant_reach_its_queue_says_so_once_and_waits_longer(monkeypa
         lane.loop()
     assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
     assert waits[:3] == [10, 20, 40] and all(w <= 60 for w in waits)
+
+
+def test_the_web_app_reads_dnd_beyond_itself_while_the_worker_is_away(db, monkeypatch, caplog):
+    """With jobs in the separate worker: quiet 90 seconds, the web app serves the D&D Beyond reads (drafts wait); back,
+    it stops; away five minutes, one error for Sentry."""
+    import contextlib
+    from datetime import timedelta
+
+    from app import worker
+
+    started = []
+    monkeypatch.setattr(worker.threading, "Thread", lambda target, name, daemon: type("T", (), {"start": lambda self: started.append(name)})())
+    watch = worker.Watch(lambda: contextlib.nullcontext(db), "web")
+    assert watch.look() == "covering" and started == ["jobs-ddb-fallback"]  # (never heard from)
+    worker.heartbeat(lambda: contextlib.nullcontext(db))
+    assert watch.look() == "worker" and watch.covering is None
+    assert watch.look(datetime.now(UTC) + timedelta(seconds=60)) == "same"
+    caplog.clear()
+    with caplog.at_level("ERROR", logger="askdnd.worker"):
+        assert watch.look(datetime.now(UTC) + timedelta(seconds=100)) == "covering"
+        watch.look(datetime.now(UTC) + timedelta(minutes=6))
+        watch.look(datetime.now(UTC) + timedelta(minutes=7))
+    assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
+
+
+def test_health_says_how_jobs_run(db, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    monkeypatch.setenv("JOBS_RUNNER", "worker")
+    got = client.get("/health").json()
+    assert got["jobs"] == "worker" and "quiet_seconds" in got["worker"]
+    monkeypatch.setenv("JOBS_RUNNER", "inline")
+    assert "worker" not in client.get("/health").json()

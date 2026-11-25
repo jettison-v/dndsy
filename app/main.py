@@ -130,13 +130,18 @@ async def lifespan(app: FastAPI):
     timing_saved = asyncio.create_task(speed.loop()) if listener is not None else None
     releasing = asyncio.create_task(release_when_live()) if config.running_version() and listener is not None else None
     # Background jobs (app/jobs.py, Roadmap item 43): run here on threads unless the separate worker runs them
-    from app import worker
+    from app import jobs, worker
 
     jobs_stop = threading.Event()
     if listener is not None and worker.runner() == "inline":
         from app.db import SessionLocal
 
         worker.start(SessionLocal, jobs_stop)
+    elif listener is not None:  # (the worker runs them: watch it, and read D&D Beyond here while it's away)
+        from app.db import SessionLocal
+
+        jobs.load_kinds()
+        threading.Thread(target=worker.Watch(SessionLocal).run, args=(jobs_stop,), name="jobs-watch", daemon=True).start()
     yield
     jobs_stop.set()
     await reparsing
@@ -362,7 +367,18 @@ LOGIN_ERRORS = {
 def health() -> dict:
     """Up, and which commit it runs (Railway's, on beta): scripts/deploy_check.py waits for the new one, and the Mac
     Mini's after-deploy check runs when it changes."""
-    return {"status": "ok", "env": config.APP_ENV, "version": (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "local")[:12]}
+    out = {"status": "ok", "env": config.APP_ENV, "version": (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "local")[:12]}
+    from app import worker
+
+    out["jobs"] = worker.runner()
+    if out["jobs"] == "worker":  # (when the separate worker runs them: how long since it was heard from, and its version)
+        try:
+            with SessionLocal() as db:
+                seen = worker.worker_seen(db)
+            out["worker"] = {"quiet_seconds": int(min(worker.quiet_for(seen), 10**9)), "version": (seen or {}).get("version", "")[:12]}
+        except Exception:
+            out["worker"] = {"quiet_seconds": None}
+    return out
 
 
 @app.get("/login")
