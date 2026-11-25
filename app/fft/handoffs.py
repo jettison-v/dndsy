@@ -33,7 +33,7 @@ from app.fft.models import (
 
 SHOWN = timedelta(days=14)  # (the list's reach: older handoffs are still kept, in the rows they're read from)
 DONE_TODAY = timedelta(hours=24)  # (done in the last day: under the fold; older done ones only through search)
-LOOKED = "fft_claude_ai_looked"  # (a ToolSetting: when Claude last looked at claude.ai, from its sync in and out)
+LOOKED = rules.CLAUDE_AI_LOOKED  # (a ToolSetting: when Claude last looked at claude.ai, from its sync in and out)
 # How long a step usually takes, past which it's missed (the mockup's "Missed")
 LATE = {"claude": timedelta(minutes=30), "claude.ai": timedelta(minutes=15), "askdnd": timedelta(minutes=10), "live": timedelta(minutes=30)}
 AREAS = [("all", "All"), ("feedback", "Feedback"), ("testing", "Testing"), ("roadmap", "Roadmap"), ("code", "Code")]
@@ -41,10 +41,7 @@ ORDER = {"missed": 0, "you": 1, "claude": 2, "askdnd": 3, "done": 4}
 
 
 def looked(db: Session) -> None:
-    """Claude looked at claude.ai (a page brought in or sent out): kept for the claude.ai row's missed step."""
-    row = db.get(host.ToolSetting, LOOKED) or host.ToolSetting(key=LOOKED)
-    row.value = rules.now().isoformat()
-    db.add(row)
+    rules.claude_ai_looked(db)  # (the change itself is rules.py's, as every one in Workshop)
 
 
 def _looked_at(db: Session) -> datetime | None:
@@ -93,7 +90,7 @@ def rows(db: Session, now: datetime | None = None) -> list[dict]:
     for r in out:
         if r["whose"] and r["late"] and now > r["late"] and (r["whose"] != "claude" or listening):
             r["state"] = "missed"
-        else:
+        if r["state"] != "missed" or r["whose"] != "claude":  # (a button only where Claude can do the step: the review of #527)
             r["wake"] = ""
         r["views"] = " ".join(["all", r["area"]] + (["open"] if r["state"] != "done" else []))
         r["later"] = r["state"] == "done"
@@ -104,22 +101,29 @@ def missed(db: Session) -> list[dict]:
     return [r for r in rows(db) if r["state"] == "missed"]
 
 
-def _first_claude_line(db: Session, note: FftNote) -> datetime | None:
-    cond = FftLine.note_id == note.id
-    if note.issue_id:
-        cond = cond | (FftLine.issue_id == note.issue_id)
-    return db.scalar(select(func.min(FftLine.created_at)).where(cond, FftLine.who == "claude", FftLine.created_at >= note.created_at))
+def _first_events(db, thing: str, ids: list[int], kinds: tuple[str, ...]) -> dict[int, datetime]:
+    """Each thing's first event of these kinds, in one query (the review of #527: a query a row slowed For you)."""
+    if not ids:
+        return {}
+    return dict(db.execute(select(FftEvent.thing_id, func.min(FftEvent.at)).where(FftEvent.thing == thing, FftEvent.thing_id.in_(ids),
+                                                                                   FftEvent.kind.in_(kinds)).group_by(FftEvent.thing_id)).all())
 
 
 def _notes(db, now, since) -> list[dict]:
-    """A note: sent → (an admin's OK, for a player's) → Claude's answer."""
+    """A note: sent → (an admin's OK, for a player's) → Claude's answer: a line from Claude on the note or its issue, or
+    its filing as an idea or an answer (Claude answers those on the Roadmap item or in the answer itself)."""
+    notes = list(db.scalars(select(FftNote).where(FftNote.created_at > since)))
+    filed_at = _first_events(db, "note", [n.id for n in notes], ("note_filed", "note_joined", "note_declined"))
+    lines = db.execute(select(FftLine.note_id, FftLine.issue_id, FftLine.created_at).where(
+        FftLine.who == "claude", FftLine.created_at > since,
+        (FftLine.note_id.in_([n.id for n in notes] or [0])) | (FftLine.issue_id.in_([n.issue_id for n in notes if n.issue_id] or [0])))).all()
     out = []
-    for n in db.scalars(select(FftNote).where(FftNote.created_at > since)):
+    for n in notes:
         mine = n.role == "admin"
-        filed = db.scalar(select(func.min(FftEvent.at)).where(FftEvent.thing == "note", FftEvent.thing_id == n.id,
-                                                                FftEvent.kind.in_(("note_filed", "note_joined", "note_declined"))))
-        answered = _first_claude_line(db, n) if n.state == "filed" else None
-        if n.state == "declined" or n.filed_as == "answered":
+        filed = filed_at.get(n.id)
+        answered = min((at for nid, iid, at in lines if at >= n.created_at and (nid == n.id or (n.issue_id and iid == n.issue_id))), default=None) \
+            if n.state == "filed" else None
+        if n.state == "declined" or n.filed_as in ("answered", "idea"):
             answered = answered or filed or n.created_at
         steps = [("sent", True)] + ([] if mine else [("an admin's OK", bool(filed) or n.state == "declined")]) + [("Claude's answer", bool(answered))]
         whose = "" if answered else ("you" if n.state == "waiting" and not mine else "claude" if n.state == "filed" else "")
@@ -133,13 +137,16 @@ def _notes(db, now, since) -> list[dict]:
 
 def _questions(db, now, since, read) -> list[dict]:
     """A question: Claude asks → you answer → Claude reads it."""
+    qs = list(db.scalars(select(FftQuestion).where(FftQuestion.created_at > since)))
+    ids = [q.id for q in qs] or [0]
+    answers = dict(db.execute(select(FftEvent.thing_id, func.max(FftEvent.id)).where(FftEvent.thing == "question", FftEvent.thing_id.in_(ids),
+                                                                                     FftEvent.kind.in_(("question_answered", "picks_changed"))).group_by(FftEvent.thing_id)).all())
+    gone = _first_events(db, "question", ids, ("question_withdrawn",))
     out = []
-    for q in db.scalars(select(FftQuestion).where(FftQuestion.created_at > since)):
-        ev = db.scalar(select(func.max(FftEvent.id)).where(FftEvent.thing == "question", FftEvent.thing_id == q.id,
-                                                            FftEvent.kind.in_(("question_answered", "picks_changed")))) if q.answered_at else None
-        withdrawn = db.scalar(select(FftEvent.at).where(FftEvent.thing == "question", FftEvent.thing_id == q.id, FftEvent.kind == "question_withdrawn").limit(1))
+    for q in qs:
+        ev = answers.get(q.id) if q.answered_at else None
         seen = bool(ev and ev <= read)
-        done = withdrawn or (q.answered_at if seen else None)
+        done = gone.get(q.id) or (q.answered_at if seen else None)
         whose = "" if done else "you" if not q.answered_at else "claude"
         out.append(_row(f"q{q.id}", "roadmap" if q.about in ("document", "area") else "feedback", q.created_at,
                         f"Q{q.id}: {q.text[:90]}", [("asked", True), ("your answer", bool(q.answered_at)), ("read by Claude", seen)], whose, now,
@@ -163,25 +170,30 @@ def _comments(db, now, since, read) -> list[dict]:
 
 
 def _checks(db, now, since) -> list[dict]:
-    """A check: waits for its deploy → live → reaches For you → tried."""
-    out = []
+    """A check: waits for its deploy → live → reaches For you → tried there (a try before then, a local one, doesn't
+    count: the review of #527)."""
+    waits = list(db.scalars(select(FftCheckWait).where(FftCheckWait.created_at > since)))
+    ids = list({w.check_id for w in waits}) or [0]
+    checks = {c.id: c for c in db.scalars(select(FftCheck).where(FftCheck.id.in_(ids)))}
     pulls = {f"/pull/{p.number}": p for p in db.scalars(select(FftPull).where(FftPull.created_at > since - SHOWN))}
-    for w in db.scalars(select(FftCheckWait).where(FftCheckWait.created_at > since)):
-        c = db.get(FftCheck, w.check_id)
+    reached_at = _first_events(db, "check", ids, ("check_deployed",))
+    retired_at = _first_events(db, "check", ids, ("check_retired",))
+    tries = db.execute(select(FftTry.check_id, FftTry.created_at).where(FftTry.check_id.in_(ids), FftTry.actor == "person")).all()
+    out = []
+    for w in waits:
+        c = checks.get(w.check_id)
         if c is None:
             continue
         p = next((v for k, v in pulls.items() if w.pr.rstrip("/").endswith(k)), None)
         live = p.live_at if p else None
-        reached = db.scalar(select(func.min(FftEvent.at)).where(FftEvent.thing == "check", FftEvent.thing_id == c.id, FftEvent.kind == "check_deployed"))
-        tried = db.scalar(select(func.min(FftTry.created_at)).where(FftTry.check_id == c.id, FftTry.actor == "person",
-                                                                     FftTry.created_at >= (reached or w.created_at)))
-        retired = db.scalar(select(func.min(FftEvent.at)).where(FftEvent.thing == "check", FftEvent.thing_id == c.id, FftEvent.kind == "check_retired")) \
-            if c.retired else None
+        reached = reached_at.get(c.id)
+        tried = min((at for cid, at in tries if cid == c.id and at >= reached), default=None) if reached else None
+        retired = retired_at.get(c.id) if c.retired else None
         whose = "" if (tried or retired) else "you" if reached else "askdnd"
         late = live + LATE["askdnd"] if whose == "askdnd" and live else None
         out.append(_row(f"c{c.id}-{w.id}", "testing", w.created_at, f"C{c.id}: {c.title[:80]}",
                         [("waits for its deploy", True), ("live", bool(live)), ("on your For you", bool(reached)), ("tried", bool(tried))],
-                        whose, now, late, link=f"/manage/work?tab=checks&open=C{c.id}", wake="askdnd", end=tried or retired))
+                        whose, now, late, link=f"/manage/work?tab=checks&open=C{c.id}", end=tried or retired))
     return out
 
 
@@ -194,7 +206,7 @@ def _pulls(db, now, since) -> list[dict]:
         whose = "" if end else "askdnd" if merged else "claude"
         out.append(_row(f"p{p.number}", "code", p.created_at, f"#{p.number} {p.title[:80]}",
                         [("opened", True), ("tests", p.tests == "passed" or bool(merged)), ("merged", bool(merged)), ("live", bool(p.live_at))],
-                        whose, now, merged + LATE["live"] if whose == "askdnd" and merged else None, link="/manage/work", wake="askdnd", end=end))
+                        whose, now, merged + LATE["live"] if whose == "askdnd" and merged else None, link="/manage/work", end=end))
     return out
 
 
@@ -209,6 +221,4 @@ def _chats(db, now, since) -> list[dict]:
 
 
 def wake(db: Session, actor: str, what: str, key: str = "") -> None:
-    """A missed step's button (CQ3): Wake Claude, or Bring in now for claude.ai. Either is an event, which ends Claude's
-    listener at once (its wait returns on anything new), kept with who pressed it."""
-    rules._event(db, actor, "claude_woken", "tool", 0, what=what[:20], key=key[:40])
+    rules.wake_claude(db, actor, what, key)

@@ -60,7 +60,8 @@ def test_a_chat_line_and_a_merged_pull_request_are_missed_when_late(db):
     p = FftPull(number=900, title="The Sync page", state="merged", closed_at=rules.now() - timedelta(minutes=45), created_at=rules.now() - timedelta(hours=2))
     db.add_all([c, p])
     db.flush()
-    assert _row(db, f"t{c.id}")["state"] == "missed" and _row(db, "p900")["state"] == "missed" and _row(db, "p900")["wake"] == "askdnd"
+    assert _row(db, f"t{c.id}")["state"] == "missed" and _row(db, f"t{c.id}")["wake"] == "claude"
+    assert _row(db, "p900")["state"] == "missed" and not _row(db, "p900")["wake"]  # (askdnd's step: no Wake Claude, the review of #527)
     c.filed_at = rules.now()
     p.live_at = rules.now()
     db.flush()
@@ -104,3 +105,51 @@ def test_a_standing_rule_handoffs_are_for_admins(dm, player):
     for who in (dm, player):
         assert who.get("/manage/work?tab=handoffs", follow_redirects=False).status_code in (303, 403)
         assert who.post("/manage/work/handoffs/wake", data={"what": "claude"}, follow_redirects=False).status_code in (303, 403)
+
+
+def test_a_note_filed_as_an_idea_is_answered_where_ideas_are(db):
+    """The review of #527: Claude answers an idea on its Roadmap item, never as a line on the note."""
+    _listening(db)
+    n = FftNote(role="admin", first_name="Brett", kind="idea", text="A catalog of reviews", state="filed", filed_as="idea",
+                created_at=rules.now() - timedelta(hours=2))
+    db.add(n)
+    db.flush()
+    assert _row(db, f"n{n.id}")["state"] == "done"
+
+
+def test_a_try_before_the_check_reached_for_you_isnt_its_try(db):
+    """The review of #527: a local try before the deploy left the check's handoff done although the live one was never tried."""
+    from app.fft.models import FftCheck, FftCheckWait, FftTry
+
+    c = FftCheck(title="The card stays on For you")
+    db.add(c)
+    db.flush()
+    db.add_all([FftCheckWait(check_id=c.id, pr="https://github.com/o/r/pull/901"), FftTry(check_id=c.id, version=1, result="passed", where="local")])
+    db.flush()
+    r = next(r for r in handoffs.rows(db) if r["key"].startswith(f"c{c.id}-"))
+    assert r["state"] == "askdnd" and ("tried", False) in r["steps"]
+
+
+def test_the_list_costs_the_same_few_queries_however_many_handoffs(db):
+    """The review of #527: the status bar builds it on every For you and Development load."""
+    from sqlalchemy import event
+
+    def count():
+        n = [0]
+
+        def hit(*a):
+            n[0] += 1
+        event.listen(db.get_bind(), "before_cursor_execute", hit)
+        handoffs.rows(db)
+        event.remove(db.get_bind(), "before_cursor_execute", hit)
+        return n[0]
+    for i in range(3):
+        db.add(FftNote(role="admin", kind="problem", text=f"note {i}", state="filed"))
+        db.add(FftQuestion(about="document", text=f"q {i}", choices=[]))
+    db.flush()
+    few = count()
+    for i in range(30):
+        db.add(FftNote(role="admin", kind="problem", text=f"more {i}", state="filed"))
+        db.add(FftQuestion(about="document", text=f"more q {i}", choices=[]))
+    db.flush()
+    assert count() == few

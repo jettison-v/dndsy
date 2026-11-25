@@ -449,6 +449,24 @@ def may_merge(db: Session, issue: FftIssue) -> tuple[bool, str]:
 LANES = ("ship", "look", "careful")  # (Brett's picks, Nov 19: how much of his testing a plan needs)
 LANE_SAID = {"ship": "Ship", "look": "Look", "careful": "Careful", "": "No lane yet"}
 INCIDENT_DAYS = 30
+CLAUDE_AI_LOOKED = "fft_claude_ai_looked"  # (a ToolSetting: when Claude last looked at claude.ai; Handoffs, Roadmap item 45)
+
+
+def claude_ai_looked(db: Session) -> None:
+    """Claude looked at claude.ai for Brett's comments and picks (its sync in or out): Handoffs' claude.ai row."""
+    from app.fft.host import ToolSetting
+
+    row = db.get(ToolSetting, CLAUDE_AI_LOOKED) or ToolSetting(key=CLAUDE_AI_LOOKED)
+    row.value = now().isoformat()
+    db.add(row)
+
+
+def wake_claude(db: Session, actor: str, what: str, key: str = "") -> None:
+    """A missed handoff's button (Roadmap item 45, Brett's pick CQ3): Wake Claude, or Bring in now for claude.ai. An event,
+    which ends Claude's listener at once (its wait returns on anything new), kept with who pressed it."""
+    _event(db, actor, "claude_woken", "tool", 0, what=what[:20], key=key[:40])
+
+
 FREEZE = "fft_freeze"  # (a ToolSetting: who turned it on and when, or empty; Brett, Nov 19: a switch, kept by hand)
 
 
