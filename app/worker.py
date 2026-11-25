@@ -181,14 +181,21 @@ def _listen(lanes: list[Lane], stop: threading.Event) -> None:
         log.warning("The jobs listener stopped; lanes poll instead", exc_info=True)
 
 
-def heartbeat(session_factory) -> None:
-    """The worker is alive: when and which version (Backstage and /health read it)."""
+def heartbeat(session_factory, waiting: str | None = None, now: datetime | None = None) -> None:
+    """The worker is alive: when and which version (Backstage and /health read it). `waiting`: it has started but
+    can't take jobs yet (the deploy's migration): it keeps the last working beat's time, so the web app still covers
+    for it, and says why and when, so the web app's Watch holds its error meanwhile (issue 133)."""
     import json
 
     from app.models import ToolSetting
 
+    at = (now or datetime.now(UTC)).isoformat()
     with session_factory() as db:
-        said = json.dumps({"at": datetime.now(UTC).isoformat(), "version": jobs.version(), "who": jobs.me()})
+        if waiting:
+            seen = worker_seen(db) or {}
+            said = json.dumps({**{k: seen[k] for k in ("at", "version", "who") if k in seen}, "waiting": waiting, "waiting_at": at})
+        else:
+            said = json.dumps({"at": at, "version": jobs.version(), "who": jobs.me()})
         row = db.get(ToolSetting, "jobs_worker")
         if row is None:
             db.add(ToolSetting(key="jobs_worker", value=said))
@@ -239,7 +246,9 @@ class Watch:
     def look(self, now: datetime | None = None) -> str:
         """One look: "covering" (the web app serves the reads), "worker" (the worker does), or "same"."""
         with self.factory() as db:
-            quiet = quiet_for(worker_seen(db), now)
+            seen = worker_seen(db)
+        quiet = quiet_for(seen, now)
+        waiting = bool(seen and seen.get("waiting")) and quiet_for({"at": seen.get("waiting_at")}, now) <= QUIET_SECONDS
         if quiet > QUIET_SECONDS and self.covering is None:
             self.covering = threading.Event()
             for q in FALLBACK_QUEUES:
@@ -254,7 +263,7 @@ class Watch:
             changed = "worker"
         else:
             changed = "same"
-        if self.covering is not None and quiet > TELL_AFTER and not self.told:
+        if self.covering is not None and quiet > TELL_AFTER and not self.told and not waiting:  # (a deploy's migration: not away)
             self.told = True
             log.error("The jobs worker has been away for over %s minutes (askdnd-worker on Railway): drafts wait for it", TELL_AFTER // 60)
         return changed
@@ -269,14 +278,21 @@ class Watch:
             self.covering.set()
 
 
-def wait_for_migrations(engine, head: str, seconds: int = 600) -> None:
-    """The worker never migrates: it waits until the web app's deploy has (the database's head is its own)."""
-    deadline = time.monotonic() + seconds
+def wait_for_migrations(engine, head: str, seconds: int = 600, beat=None) -> None:
+    """The worker never migrates: it waits until the web app's deploy has (the database's head is its own), saying so
+    with `beat` meanwhile (issue 133: a deploy with a migration read as the worker gone for five minutes)."""
+    deadline, beaten = time.monotonic() + seconds, None
     while time.monotonic() < deadline:
         with engine.connect() as conn:
             now = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         if now == head:
             return
+        if beat is not None and (beaten is None or time.monotonic() - beaten >= jobs.BEAT_SECONDS):
+            beaten = time.monotonic()
+            try:
+                beat()
+            except Exception:
+                log.warning("Saying the worker waits for the migration didn't save", exc_info=True)
         time.sleep(5)
     raise SystemExit(f"The database is at {now}, not {head}: the worker waits for the web app's migration")
 
@@ -291,7 +307,7 @@ def main() -> None:  # pragma: no cover  (the service's own start; its parts are
     logging.basicConfig(level=logging.INFO)
     realtime.NOTIFY_ALWAYS = True  # (no listener here: its announcements go through Postgres to the web app's pages)
     head = ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
-    wait_for_migrations(engine, head)
+    wait_for_migrations(engine, head, beat=lambda: heartbeat(SessionLocal, waiting="migration"))
     stop = threading.Event()
     lanes = start(lambda: Session(engine) if SessionLocal is None else SessionLocal(), stop)
 

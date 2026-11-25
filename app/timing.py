@@ -109,6 +109,8 @@ def _report(method: str, route: str, total: float, steps: dict) -> None:
         scope.set_tag("source", "timing")
         scope.set_tag("route", route)
         scope.set_extra("took_ms", round(total * 1000))
+        steps = dict(steps)
+        scope.set_extra("queries", steps.pop(READS, 0))  # (a count: issue 134, it was sent ×1000 among the times)
         scope.set_extra("steps_ms", {k: round(v * 1000) for k, v in steps.items()})
         scope.set_extra("pool", pool)
         scope.fingerprint = ["slow", method, route]
