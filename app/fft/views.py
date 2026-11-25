@@ -365,6 +365,9 @@ def event_words(ev) -> str:
         return f"Check {d.get('check')}: {ev.kind[4:]} on the {d.get('device')} ({d.get('where')})"
     if ev.kind == "question_answered":
         return f"Brett answered question {ev.thing_id}"
+    if ev.kind == "doc_comments_sent":  # (Send now, issue 116: before his picks; their words with `feedback.py sync out <doc>`)
+        n = d.get("n") or 0
+        return f"Brett sent {n} comment{'s' if n != 1 else ''} on question {ev.thing_id}'s mockup, before his picks ({d.get('doc', '')})"
     if ev.kind == "question_withdrawn":
         return f"Claude withdrew question {ev.thing_id} (a later pick replaced it)"
     if ev.kind == "line_added":  # (its "to" is who it's for, never a state: the review of PR #417)
