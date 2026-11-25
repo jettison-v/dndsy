@@ -731,6 +731,8 @@ def chat(a) -> None:
     if a.do == "said":
         try:
             hook = json.loads(sys.stdin.read() or "{}")
+            if hook.get("prompt", "").lstrip().startswith("<scheduled-task"):  # (a scheduled task's own prompt, like askdnd-reviews: not Brett's words)
+                return
             got = call(a.base, "/chat", {"words": hook.get("prompt", ""), "session": hook.get("session_id", "")}, timeout=5)  # (never holds his message long)
             if got.get("id"):
                 print(f"askdnd saved this message as chat {got['id']}: file it onto its item or issue, or as just chat (feedback.py chat file {got['id']} …).")
