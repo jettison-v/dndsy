@@ -144,6 +144,8 @@ def test_the_worker_says_it_is_alive_and_announces_without_a_listener(db, kinds,
     monkeypatch.setattr(realtime, "NOTIFY_ALWAYS", False)
     realtime.publish(3, "job", id=1, state="done")
     assert sent == [3]
+    worker._announce({"id": 1, "kind": "test_a", "campaign_id": 3}, "done")  # (as a lane says it: a job's kind is `job`)
+    assert sent == [3, 3]
 
 
 def test_nothing_starts_without_a_kind_of_job(monkeypatch):

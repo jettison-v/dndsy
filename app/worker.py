@@ -99,7 +99,7 @@ def _announce(job: dict, state: str) -> None:
     try:
         from app import realtime
 
-        realtime.publish(job.get("campaign_id"), "job", id=job["id"], kind=job["kind"], state=state)
+        realtime.publish(job.get("campaign_id"), "job", id=job["id"], job=job["kind"], state=state)
     except Exception:
         log.warning("Couldn't announce job %s", job["id"], exc_info=True)
 
