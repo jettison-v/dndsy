@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 CSS = (Path(__file__).parent.parent / "app" / "static" / "app.css").read_text()
+TEMPLATES = Path(__file__).parent.parent / "app" / "templates"
 SCREEN_WIDTHS = {640, 641, 900, 901, 999, 1000, 1099, 1100, 1200, 1240, 1241, 1360}  # phone, tablet, wide (and the pixel either side); the menu bar's
 # collapse order (docs/DESIGN.md › Navigation: 1360 the word askdnd, 1200 your character's name, 1100 the Live pill's short words, 1000 the campaign's name)
 
@@ -130,3 +131,56 @@ def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
     jump = page.split("data-ds-jump")[1].split("</nav>")[0]
     sections = set(re.findall(r'<section class="section" id="([a-z-]+)"', page))
     assert sections <= set(re.findall(r'href="#([a-z-]+)"', jump))
+
+
+# Windows still to move onto the one window (Roadmap item 47, Brett's pick W1 A, Nov 25): the work left, which may only
+# shrink. A window that moves leaves this list; a new window is built from _window.html from its first day.
+WINDOWS_TO_MOVE = {
+    "_account_add.html",
+    "_account_rename.html",
+    "_brief.html",
+    "_check_numbers.html",
+    "_connections_modal.html",
+    "_design_panel.html",
+    "_dice_picker.html",
+    "_dm_item_window.html",
+    "_document_window.html",
+    "_email_settings.html",
+    "_entity_edit.html",
+    "_entity_new.html",
+    "_feature_use_window.html",
+    "_fft_cant.html",
+    "_fft_change.html",
+    "_fft_close.html",
+    "_fft_same.html",
+    "_fft_split.html",
+    "_history_window.html",
+    "_house_rule_add.html",
+    "_hp_window.html",
+    "_import_window.html",
+    "_item_browser.html",
+    "_new_campaign.html",
+    "_note_panel.html",
+    "_panel_detail.html",
+    "_panel_options.html",
+    "_panel_vital.html",
+    "_peek.html",
+    "_picture_window.html",
+    "_roadmap_discuss.html",
+    "_roadmap_new.html",
+    "_roll_checks.html",
+    "_round_heads_up.html",
+    "_scene_panel.html",
+    "_table_add.html",
+    "_token_panel.html",
+    "_trophy_view.html",
+    "_usage_window.html",
+}
+
+
+def test_every_window_is_the_one_window():
+    """Roadmap item 47 (Brett, Nov 25: "fix these holistically"): a window's head, body and foot come from _window.html,
+    so Save sits in its foot and the window fits what's in it, everywhere. Those still to move are listed above."""
+    hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head"' in p.read_text() and p.name != "_window.html"}
+    assert not hand_made - WINDOWS_TO_MOVE, f"A window built by hand: build it from _window.html's window(): {sorted(hand_made - WINDOWS_TO_MOVE)}"
+    assert not WINDOWS_TO_MOVE - hand_made, f"Moved onto the one window: take it off WINDOWS_TO_MOVE: {sorted(WINDOWS_TO_MOVE - hand_made)}"

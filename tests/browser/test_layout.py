@@ -696,3 +696,63 @@ def test_show_more_opens_the_held_rows_in_place_and_folds_them(people, server):
     assert all(r.is_visible() for r in rows.all()) and fold.get_attribute("aria-expanded") == "true"
     fold.click()
     assert [r.is_visible() for r in rows.all()] == [True, True, False, False]
+
+
+# Every window a page opens, opened (Roadmap item 47; Brett, Nov 25: his Backstage round found eleven window and form
+# problems no check had seen, because only the Spell Book's window was ever opened). Each kind of window once (ids
+# collapsed), at a laptop's width and a phone's, every check run on it. WINDOWS_LEFT is the work left: the problems of
+# windows not on the one window and field yet; it may only shrink (a fixed one leaves it, a new one fails the run).
+WINDOWS_LEFT = {
+    "window /c/main/dm/items/new · it is taller than what is in it",  # (issues 119, 120: Backstage's windows, next)
+    "window /c/main/dm/items/new · its main button is not in its foot: Save",
+    "window /c/main/manage/history/window · its main button is not in its foot: Restore the before",  # (issue 121)
+    "window /manage/roadmap/new · its main button is not in its foot: Add the idea",
+}
+
+
+# A window's Save, Add or other main button sits in its foot, at the window's bottom edge (Brett's pick W1 A; issue 120:
+# Save floated mid-window over an empty stretch), and a window fits what's in it (no more than a little empty below)
+FOOT = """() => {
+  const win = document.querySelector('.peek.open'); if (!win) return [];
+  const out = [];
+  const main = [...win.querySelectorAll('button[type=submit], .btn.primary')].filter(b => b.checkVisibility() && !b.closest('.peek-foot, .act-menu, [hidden], tr, li, [data-ls-row], .ri'));  // (a row's own button, Cast in a list, is the row's)
+  if (main.length) out.push('its main button is not in its foot: ' + main[0].textContent.trim());
+  const body = win.querySelector('.peek-body'), last = body && [...body.children].filter(c => c.checkVisibility()).pop();
+  if (body && last && body.scrollHeight <= body.clientHeight && body.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom > 120)
+    out.push('it is taller than what is in it');
+  return out;
+}"""
+
+
+def open_windows(person, server, paths, width) -> list[str]:
+    import re
+
+    page, found, seen = person.page, [], set()
+    page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+    for path in paths:
+        person.open(path.format(cole=server["cole"]))
+        page.wait_for_load_state("load")
+        for url in dict.fromkeys(page.eval_on_selector_all("main [data-modal-url]", "els => els.filter(e => e.checkVisibility()).map(e => e.dataset.modalUrl)")):
+            kind = re.sub(r"\d+", "N", url.split("?")[0])
+            if kind in seen:
+                continue
+            seen.add(kind)
+            page.locator(f'main [data-modal-url="{url}"]').first.click()
+            page.wait_for_selector(".peek.open")
+            page.wait_for_timeout(350)
+            found += [f"window {kind} · {p['kind']}: {p['where']} ({p['detail']})" for p in page.evaluate(CHECK)
+                      if p["kind"] in HARD | {"covered", "stacked buttons", "wraps", "spills"}]
+            found += [f"window {kind} · {w}" for w in page.evaluate(FOOT)]
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(200)
+    person.opened = sorted(seen)
+    return found
+
+
+@pytest.mark.parametrize("who", ["player", "admin"])
+@pytest.mark.parametrize("width", [1280, 375])
+def test_every_window_holds_together(people, server, long_names, who, width):
+    person = people(who)
+    found = {f.split(" (")[0] for f in open_windows(person, server, PAGES[who], width)}
+    assert len(person.opened) >= (4 if who == "admin" else 1), person.opened  # (the windows its pages open: none means the walk broke)
+    assert not found - WINDOWS_LEFT, "A window that doesn't hold together:\n" + "\n".join(sorted(found - WINDOWS_LEFT))

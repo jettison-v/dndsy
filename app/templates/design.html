@@ -5,8 +5,9 @@
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head, show_more %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
-{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip, field %}
 {% from "_live_link.html" import live_link %}
+{% from "_window.html" import window %}
 {% from "_suggest_form.html" import add_fold %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
@@ -118,6 +119,12 @@
 
   <section class="section" id="forms">
     <h2>Forms</h2>
+    {{ ds("The one field", "_form_bits.html field(name, help, key, tag) · .fld · app.js fieldError(input, words)", "Every field in every form (Roadmap item 47, Brett's pick F1 B, Nov 25): its name in a column beside the box, its help under the box, and its error there too, in red, taking the help's place, set only through fieldError; on a phone the name goes above. tag=\"div\" for a group of chips or several boxes.") }}
+    <div class="ds-sample" style="max-width: 640px">
+      {% call field("Called", help="What the roll card says, e.g. Fire breath.", key="ds-called") %}<input type="text" placeholder="Its name" aria-label="Called">{% endcall %}
+      {% call field("Dice", key="ds-dice", error="Write its dice like 2d6, 1d8+2 or 5.") %}<input type="text" value="lot" aria-label="Dice" aria-invalid="true">{% endcall %}
+      {% call field("Damage type", tag="div", key="ds-type") %}{{ pick_chips("ds_type", [("fire", "Fire"), ("force", "Force"), ("cold", "Cold")], "force", "Damage type") }}{% endcall %}
+    </div>
     {{ ds("Help tip", "_form_bits.html help_tip(words) · .help-tip", "A small ? beside a choice whose name doesn't say enough (the item builder's Only with it); its words on hover or keyboard focus. Never beside a choice that says what it does (issue 4, Nov 25).") }}
     <div class="ds-row"><span>Only with it {{ help_tip("On: it counts only for rolls made with this item. Off: every roll it names.") }}</span></div>
     {{ ds("Choice chips", "_form_bits.html pick_chips(name, options, current, label) · .pick-chips", "One of a few, inside a form you fill in and save with its button: a radio each, the chip the control (blue when picked). Two that save themselves the moment they're pressed are the two-way switch instead.") }}
@@ -289,6 +296,12 @@
 
   <section class="section" id="panels">
     <h2>Panels, toasts and bands</h2>
+    {{ ds("The one window", "_window.html window(kind, title, foot, form, tall) · [data-window] · [data-window-foot]", "Every window and side panel (Roadmap item 47, Brett's pick W1 A, Nov 25): its head (what it is, its name, ✕), its body, and its foot at the window's bottom edge while the body scrolls, Save and Cancel first and Remove or Retire at the far end (.end). As tall as what's in it, up to the screen (tall=True keeps a list's window one height while it filters). tests/test_design_system.py fails on a window built by hand; the layout tests open every window and fail on a main button outside its foot.") }}
+    <div class="ds-sample" style="max-width: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-2)">
+      {% set ds_foot %}<button class="btn primary" type="button">Add</button><button class="btn link" type="button">Cancel</button><button class="btn link danger end" type="button">Remove…</button>{% endset %}
+      {% call window("House rules", "Add a house rule", foot=ds_foot, title_attrs=' data-ds-window', title_id="") %}{% call field("Spell", key="ds-spell") %}<select aria-label="Spell"><option>Magic Missile</option></select>{% endcall %}{% endcall %}
+    </div>
+    {{ ds("A table with groups", "the list engine's data-group-label · data-ls-quiet-first · tr.dt-group", "A group in a table is a small label in the list that scrolls with its rows, never a second header band under the column names (Roadmap item 47, Brett's pick T1 A, issue 129); a list whose title already names its first group leaves that one unlabelled (data-ls-quiet-first).") }}
     {{ ds("The round's card", "_fft_card.html · .check-card.fft-card (in .check-card-slot)", "A round of checks (Testing, admins; Found, Fixed, Tried screens 2 and 4): on every page while it's open, left by default, with the walkthrough, what you should see, ✓ Passed, ✗ Something's wrong…, Can't try… (keys P, F, C) and End round. Its top bar drags it to any corner; — folds it to a pill; both kept in a cookie, so it's drawn as it was left. After a fail it says so, with ✗ Another…, Change result… and Next check →. Never in a note's picture.") }}
     <div class="ds-sample" style="max-width: 380px">{% with c = {"id": 0, "title": "A mistake keeps what you typed", "makes": false}, steps = [{"parts": [{"kind": "text", "text": "Press "}, {"kind": "press", "text": "+ Add"}, {"kind": "text", "text": "."}], "why": ""}, {"parts": [{"kind": "text", "text": "In "}, {"kind": "box", "text": "Or type it"}, {"kind": "text", "text": ", type "}, {"kind": "typed", "text": "lots"}, {"kind": "text", "text": "."}], "why": "not a dice roll, on purpose"}], v = {"expect": "A red line says how to write it; what you typed stays."}, devices = {"laptop": "to_try"}, device = "laptop", device_said = {"laptop": "your laptop"}, area = {"title": "DM Tools"}, n = 2, of = 3, failed = none, sent = 0, corner = "br", folded = false, sample = true %}{% include "_fft_card.html" %}{% endwith %}</div>
     {{ ds("Walkthrough", "_check_steps.html walkthrough · .walk · code.typed · .press · .walk-why", "A check's steps (app/fft/steps.py walk, docs/testing-guide.md): one action a line, numbered, a box to tick; what to type in a dashed box, a button drawn as one, a box's name in bold, why under it. The card and the Reader draw it the same.") }}

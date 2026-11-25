@@ -38,3 +38,11 @@
 {% macro help_tip(words) -%}
 <span class="help-tip" tabindex="0" role="note" aria-label="{{ words }}" data-tip="{{ words }}">?</span>
 {%- endmacro %}
+
+{# The one field (Roadmap item 47, Brett's pick F1 B, Nov 25): its name in a column beside the box, its help under the
+   box, and its error there too, in red, taking the help's place (app.js `fieldError` fills [data-field-error]; on a
+   phone the name goes above). `key` marks it for code and tests; `tag="div"` for a group of chips or several boxes; `error`, one the server
+   found (a form drawn again after a refusal). #}
+{% macro field(name, help="", key="", tag="label", attrs="", error="") -%}
+<{{ tag }} class="fld{{ ' has-error' if error }}"{% if key %} data-field="{{ key }}"{% endif %}{{ attrs | safe }}><span class="fld-name">{{ name }}</span><span class="fld-box">{{ caller() }}</span>{% if help %}<span class="fld-help">{{ help }}</span>{% endif %}<span class="fld-err" data-field-error role="alert"{% if not error %} hidden{% endif %}>{{ error }}</span></{{ tag }}>
+{%- endmacro %}

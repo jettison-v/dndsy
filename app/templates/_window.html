@@ -1,0 +1,16 @@
+{# The one window (Roadmap item 47, Brett's pick W1 A on docs/mockups/windows-forms-tables/, Nov 25): its head (what it
+   is, its name, ✕), its body, and its foot, which stays at the window's bottom edge while the body scrolls: Save and
+   Cancel first, Remove or Retire at the far end (`.end`). The window is as tall as what's in it, up to the screen
+   (`data-window-fit`; `tall=True` keeps a list's window one height while it filters). A form wraps body and foot
+   (`form`: its attributes, e.g. 'method="post" action="…"'), so Save submits it. tests/test_design_system.py fails on a
+   window built any other way, outside its list of those still to move. #}
+{% macro window(kind, title, foot="", form="", tall=False, attrs="", title_attrs="", title_id="peek-title") -%}
+<div class="peek-head" data-window{% if not tall %} data-window-fit{% endif %}{{ attrs | safe }}>
+  <div><div class="note">{{ kind }}</div><h2{% if title_id %} id="{{ title_id }}"{% endif %}{{ title_attrs | safe }}>{{ title }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+{% if form %}<form {{ form | safe }} class="peek-form">{% endif %}
+<div class="peek-body stack">{{ caller() }}</div>
+{% if foot %}<div class="peek-foot row" data-window-foot>{{ foot }}</div>{% endif %}
+{% if form %}</form>{% endif %}
+{%- endmacro %}

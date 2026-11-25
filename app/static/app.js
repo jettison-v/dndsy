@@ -59,6 +59,21 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) clocks(n); })))
     .observe(document.body, { childList: true, subtree: true });
 
+  // ---------------------------------------------------------------- a field's error
+  // The one place a field's error shows (Roadmap item 47, Brett's pick F1: under its box, in red, in place of its help;
+  // issue 131 had one beside the box and the next under it): the field piece's [data-field-error], or, in a form not on
+  // the piece yet, a line made after the box. Empty words clear it.
+  function fieldError(input, words) {
+    const fld = input && input.closest('.fld');
+    let slot = fld ? fld.querySelector('[data-field-error]') : input && input.parentElement.querySelector(':scope > [data-field-error]');
+    if (!slot && input && words) { slot = Object.assign(document.createElement('span'), { className: 'fld-err' }); slot.dataset.fieldError = ''; input.after(slot); }
+    if (!slot) return;
+    slot.textContent = words || ''; slot.hidden = !words;
+    if (fld) fld.classList.toggle('has-error', !!words);
+    if (input) { if (words) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid'); }
+  }
+  window.askdndFieldError = fieldError;
+
   // ---------------------------------------------------------------- corner cards
   // (Brett, 2026-10-29; docs/mockups/temporary-items.html) Everything you read and dismiss, in one place: bottom right,
   // the newest at the bottom, three at most (one on a phone). Its kind gives its icon, colour and how long it stays:
@@ -4206,6 +4221,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     });
     // (a heading's count, where it has one, is what shows under it: searching or filtering, not every row)
     want.forEach(h => { const n = h.matches('.ls-grouphead') && h.querySelector('.count'); if (n) { const k = shownIn[h.dataset.label] || 0; n.textContent = k; n.dataset.count = k; n.hidden = !k; } });  // (as count_pill draws it: no 0)
+    // (a list whose title already names its first group leaves that one unlabelled: Roadmap item 47, Brett's pick T1 A)
+    if (root.hasAttribute('data-ls-quiet-first')) want.filter(n => n.matches('.ls-grouphead')).forEach((h, i) => h.toggleAttribute('data-ls-quiet', i === 0));
     heads.forEach(h => h.remove());
     const now = [...box.children].filter(n => n.matches('[data-ls-row], .ls-grouphead'));
     if (now.length !== want.length || now.some((n, i) => n !== want[i])) want.forEach(n => box.appendChild(n));
