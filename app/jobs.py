@@ -195,14 +195,26 @@ def sweep(db: Session, now: datetime | None = None) -> int:
 
 def retry(db: Session, job_id: int, by: str) -> bool:
     """A failed or cancelled job, or one still waiting for its next try, goes again now, first in its lane, with its
-    tries counted afresh (the Sync page's Retry, Brett's pick SQ4). Who pressed it goes in its story. False when it's
-    running or done, or gone."""
-    n = db.execute(text("UPDATE jobs SET state = 'queued', attempts = 0, run_at = now(), priority = GREATEST(priority, 10), "
-                        "finished_at = NULL, error = '', story = story || jsonb_build_array(jsonb_build_object('at', now(), 'did', 'retry', 'by', CAST(:by AS text))) "
-                        "WHERE id = :id AND state IN ('failed', 'cancelled', 'queued')"), {"id": job_id, "by": by[:200]}).rowcount
-    if n:
-        db.execute(text("SELECT pg_notify('askdnd_jobs', (SELECT queue FROM jobs WHERE id = :id))"), {"id": job_id})
-    return bool(n)
+    tries counted afresh (the Sync page's Retry, Brett's pick SQ4). Who pressed it goes in its story. When the same work
+    is already on its way (its dedup_key queued or running in a newer job), that one goes first instead and the press is
+    kept on both (the review of #526: setting the old one back broke the one-at-a-time rule). False when it's running or
+    done, or gone."""
+    row = db.execute(text("SELECT dedup_key, state FROM jobs WHERE id = :id FOR UPDATE"), {"id": job_id}).one_or_none()
+    if row is None or row.state not in ("failed", "cancelled", "queued"):
+        return False
+    pressed = "story = story || jsonb_build_array(jsonb_build_object('at', now(), 'did', 'retry', 'by', CAST(:by AS text)))"
+    other = db.scalar(text("SELECT id FROM jobs WHERE dedup_key = :k AND id <> :id AND state IN ('queued', 'running')"),
+                      {"k": row.dedup_key, "id": job_id}) if row.dedup_key else None
+    target = other or job_id
+    if other:
+        db.execute(text(f"UPDATE jobs SET {pressed} WHERE id = :id"), {"id": job_id, "by": by[:200]})  # noqa: S608 (a constant)
+        db.execute(text(f"UPDATE jobs SET priority = GREATEST(priority, 10), run_at = LEAST(run_at, now()), {pressed} WHERE id = :id"),  # noqa: S608 (a constant)
+                   {"id": other, "by": by[:200]})
+    else:
+        db.execute(text(f"UPDATE jobs SET state = 'queued', attempts = 0, run_at = now(), priority = GREATEST(priority, 10), "  # noqa: S608 (a constant)
+                        f"finished_at = NULL, error = '', {pressed} WHERE id = :id"), {"id": job_id, "by": by[:200]})
+    db.execute(text("SELECT pg_notify('askdnd_jobs', (SELECT queue FROM jobs WHERE id = :id))"), {"id": target})
+    return True
 
 
 def cancel(db: Session, job_id: int, by: str) -> bool:

@@ -122,3 +122,62 @@ def test_its_states_come_from_the_one_key():
 
     assert all(s in STATES for s in ("queued", "running", "done", "failed", "not yet", "cancelled"))
     assert datetime.now(UTC)  # (the page's times are written in UTC for app.js to show in the reader's own)
+
+
+def test_retry_joins_the_same_work_already_on_its_way(db, cole):
+    """The review of #526: a failed read retried while a newer read of the same sheet waits used to break the
+    one-at-a-time rule (a 500). The newer one goes first instead, the press kept on both."""
+    old = _read(db, cole, "failed", "503")
+    db.execute(text("UPDATE jobs SET dedup_key = 'ddb:char:x' WHERE id = :id"), {"id": old})
+    newer, _ = jobs.enqueue(db, sheet_reads.KIND, {"character_id": cole.id}, "ddb:char:x", priority=sheet_reads.UNWATCHED)
+    assert jobs.retry(db, old, "Brett")
+    rows = {r.id: r for r in db.execute(text("SELECT * FROM jobs WHERE id IN (:a, :b)"), {"a": old, "b": newer})}
+    assert rows[old].state == "failed" and rows[newer].priority >= 10
+    assert rows[old].story[-1]["did"] == "retry" and rows[newer].story[-1]["by"] == "Brett"
+
+
+def test_a_failure_since_put_right_needs_no_one_and_test_campaigns_never(db, cole, monkeypatch):
+    """The review of #526: a 2 am failure the next read put right kept Overview red all day; a live test's seat too."""
+    failed = _read(db, cole, "failed", "503", ago=timedelta(hours=1))
+    db.execute(text("UPDATE jobs SET dedup_key = 'ddb:char:y' WHERE id = :id"), {"id": failed})
+    assert sync_page.needs(db)["tone"] == "broken"
+    fixed, _ = jobs.enqueue(db, sheet_reads.KIND, {"character_id": cole.id}, "ddb:char:y")
+    db.execute(text("UPDATE jobs SET state = 'done', finished_at = now() WHERE id = :id"), {"id": fixed})
+    assert sync_page.needs(db) is None
+    row = next(r for r in sync_page.rows(db) if r["key"] == f"j{failed}")
+    assert not row["trouble"] and row["why"].endswith("since done")
+    db.execute(text("UPDATE campaigns SET is_test = true WHERE id = :c"), {"c": cole.campaign_id})
+    db.add(BridgeIntent(character_id=cole.id, kind="hp", label="A test seat's change", state="not_yet", data={}))
+    db.flush()
+    assert sync_page.needs(db) is None
+
+
+def test_failures_stay_listed_behind_any_number_of_routine_reads(db, cole, monkeypatch):
+    """The review of #526: the list cut at its newest few hundred lost an earlier failure behind reads every few minutes."""
+    monkeypatch.setattr(sync_page, "LIMIT", 2)
+    failed = _read(db, cole, "failed", "503", ago=timedelta(hours=3))
+    for n in range(4):
+        _read(db, cole, "done", ago=timedelta(minutes=n))
+    listed = [r["key"] for r in sync_page.rows(db)]
+    assert f"j{failed}" in listed and len(listed) == 3
+
+
+def test_a_draft_is_named_by_its_sessions_number(db, cole):
+    from app import drafts
+    from app.models import GameSession
+
+    s = GameSession(campaign_id=cole.campaign_id, number=20, title="", source="transcript")
+    db.add(s)
+    db.flush()
+    job_id, _ = jobs.enqueue(db, drafts.STEPS[-1], {"session_id": s.id}, f"draft:x:{s.id}")
+    row = next(r for r in sync_page.rows(db) if r["key"] == f"j{job_id}")
+    assert row["who"] == "Session 20" and sync_page.story(db, f"j{job_id}")["title"].startswith("Session 20 ·")
+
+
+def test_retrying_a_change_tells_the_extension_to_make_it(db, cole):
+    stuck = BridgeIntent(character_id=cole.id, kind="hp", label="Drank a Potion of Healing", state="not_yet", data={})
+    db.add(stuck)
+    db.flush()
+    assert sync_page.act(db, f"c{stuck.id}", "retry", "Brett")
+    said = [k for _, k, _ in db.info.get("announce", [])]
+    assert "deliver" in said and "character" in said

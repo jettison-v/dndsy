@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app import drafts, jobs, sheet_reads, web
 from app.auth import is_admin
 from app.db import get_db
-from app.models import BridgeBatch, BridgeIntent, Character
+from app.models import BridgeBatch, BridgeIntent, Campaign, CampaignCharacter, Character
 from app.templating import templates
 
 router = APIRouter()
@@ -49,28 +49,42 @@ def _took(start: datetime | None, end: datetime | None) -> str:
     return f"{s:.1f} s" if s < 60 else f"{int(s // 60)} min {int(s % 60)} s" if s < 3600 else f"{s / 3600:.1f} h"
 
 
+# A failed job whose work has since been done (a later job with its dedup_key finished done): listed, but nothing needs
+# anyone (the review of #526: a 2 am failure the next read put right kept Overview red all day)
+_PUT_RIGHT = ("EXISTS (SELECT 1 FROM jobs k WHERE k.dedup_key = j.dedup_key AND k.state = 'done' AND k.id <> j.id "
+              "AND k.finished_at > j.finished_at)")
+_JOBS = ("SELECT j.id, j.kind, j.state, j.label, j.requested_by, j.priority, j.attempts, j.created_at, j.started_at, j.finished_at, "
+         "j.run_at, j.error, j.payload, c.name AS character, gs.number AS session, EXISTS (SELECT 1 FROM jobs k WHERE k.dedup_key = j.dedup_key "
+         "AND k.state = 'done' AND k.id <> j.id AND k.finished_at > j.finished_at) AS put_right FROM jobs j "
+         "LEFT JOIN characters c ON j.kind = :read AND c.id = CAST(j.payload->>'character_id' AS integer) "
+         "LEFT JOIN game_sessions gs ON j.kind <> :read AND gs.id = CAST(j.payload->>'session_id' AS integer) WHERE j.kind = ANY(:kinds) AND ")  # (put_right: _PUT_RIGHT)
+
+
 def _jobs(db: Session, now: datetime) -> list[dict]:
+    """Everything still open and every failure in its 30 days, then the newest done work (the review of #526: one list cut
+    at its newest few hundred lost a failure from earlier the same game night behind routine reads)."""
     kinds = [sheet_reads.KIND, *drafts.STEPS]
-    rows = db.execute(text(
-        "SELECT j.id, j.kind, j.state, j.label, j.requested_by, j.priority, j.attempts, j.created_at, j.started_at, j.finished_at, "
-        "j.run_at, j.error, j.payload, c.name AS character FROM jobs j "
-        "LEFT JOIN characters c ON j.kind = :read AND c.id = CAST(j.payload->>'character_id' AS integer) "
-        "WHERE j.kind = ANY(:kinds) AND (j.state IN ('queued', 'running') OR (j.state = 'done' AND j.finished_at > :done) "
-        "OR (j.state IN ('failed', 'cancelled') AND j.finished_at > :failed)) ORDER BY j.created_at DESC LIMIT :n"),
-        {"read": sheet_reads.KIND, "kinds": kinds, "done": now - DONE_FOR, "failed": now - FAILED_FOR, "n": LIMIT}).all()
+    args = {"read": sheet_reads.KIND, "kinds": kinds, "done": now - DONE_FOR, "failed": now - FAILED_FOR, "n": LIMIT}
+    found = db.execute(text(_JOBS + "(j.state IN ('queued', 'running') OR (j.state IN ('failed', 'cancelled') AND j.finished_at > :failed)) "
+                            "ORDER BY j.created_at DESC LIMIT 2000"), args).all()
+    found += db.execute(text(_JOBS + "j.state = 'done' AND j.finished_at > :done ORDER BY j.created_at DESC LIMIT :n"), args).all()
     out = []
-    for r in rows:
+    for r in found:
         read = r.kind == sheet_reads.KIND
-        state = JOB_STATE.get(r.state, r.state)
         waiting_again = r.state == "queued" and bool(r.error)  # (tried, didn't work, waiting out its backoff)
         out.append({
             "key": f"j{r.id}", "kind": "read" if read else "draft", "at": r.created_at,
-            "who": (r.character or "A character") if read else f"Session {r.payload.get('session_id', '')}",
+            "who": (r.character or "A character") if read else _session(r.session),
             "what": "Read the sheet" if read else drafts_step(r.kind),
-            "why": _why(read, r.priority, r.requested_by),
-            "state": state, "tries": r.attempts, "took": _took(r.started_at, r.finished_at) if r.state in ("done", "failed") else "",
-            "trouble": r.state == "failed" or waiting_again, "dir": "←" if read else "✎"})
+            "why": _why(read, r.priority, r.requested_by) + (" · since done" if r.state == "failed" and r.put_right else ""),
+            "state": JOB_STATE.get(r.state, r.state), "tries": r.attempts, "took": _took(r.started_at, r.finished_at) if r.state in ("done", "failed") else "",
+            "trouble": (r.state == "failed" and not r.put_right) or waiting_again, "dir": "←" if read else "✎"})
     return out
+
+
+def _session(number: int | None) -> str:
+    """A draft's session, as the table numbers it (the review of #526: never its row's id)."""
+    return f"Session {number}" if number else "A session"
 
 
 def _why(read: bool, priority: int, by: str) -> str:
@@ -88,11 +102,11 @@ def drafts_step(kind: str) -> str:
 
 
 def _changes(db: Session, now: datetime) -> list[dict]:
-    rows = db.execute(select(BridgeIntent, Character.name).join(Character, Character.id == BridgeIntent.character_id)
-                      .where(or_(BridgeIntent.state.in_(("waiting", "sending")),
-                                 (BridgeIntent.state == "live") & (BridgeIntent.updated_at > now - DONE_FOR),
-                                 BridgeIntent.state.in_(("not_yet", "dismissed")) & (BridgeIntent.updated_at > now - FAILED_FOR)))
-                      .order_by(BridgeIntent.created_at.desc()).limit(LIMIT)).all()
+    """Every change still open or not made, and every cancelled one, in their 30 days; then the newest made ones."""
+    q = select(BridgeIntent, Character.name).join(Character, Character.id == BridgeIntent.character_id).order_by(BridgeIntent.created_at.desc())
+    rows = db.execute(q.where(or_(BridgeIntent.state.in_(("waiting", "sending")),
+                                  BridgeIntent.state.in_(("not_yet", "dismissed")) & (BridgeIntent.updated_at > now - FAILED_FOR))).limit(2000)).all()
+    rows += db.execute(q.where(BridgeIntent.state == "live", BridgeIntent.updated_at > now - DONE_FOR).limit(LIMIT)).all()
     ids = [it.id for it, _ in rows]
     tries: dict[int, int] = {}  # (each change's tries: the attempts of every batch that carried it)
     if ids:
@@ -116,20 +130,25 @@ def _changes(db: Session, now: datetime) -> list[dict]:
 def rows(db: Session, now: datetime | None = None) -> list[dict]:
     """The list, newest first: reads, changes and drafts together (Brett's pick SQ2), each with its view keys."""
     now = now or _now()
-    out = sorted(_jobs(db, now) + _changes(db, now), key=lambda r: r["at"], reverse=True)[:LIMIT]
+    out = sorted(_jobs(db, now) + _changes(db, now), key=lambda r: r["at"], reverse=True)
     for r in out:
         r["views"] = " ".join(["all", r["kind"]] + (["trouble"] if r["trouble"] else []))
     return out
 
 
 def needs(db: Session, now: datetime | None = None) -> dict | None:
-    """What needs someone, said once (Brett's pick SQ5): failed work of the last day, and changes waiting over 10
-    minutes. {word, tone, says} or None. The same on Overview's Sync card."""
+    """What needs someone, said once (Brett's pick SQ5): failed work of the last day not since put right, changes not
+    made yet, and changes waiting over 10 minutes; a test campaign's never (the review of #526: a live test's seat
+    turned Overview red). {word, tone, says} or None. The same on Overview's Sync card."""
     now = now or _now()
-    failed = db.scalar(text("SELECT count(*) FROM jobs WHERE kind = ANY(:kinds) AND state = 'failed' AND finished_at > :since"),
+    failed = db.scalar(text(f"SELECT count(*) FROM jobs j LEFT JOIN campaigns cp ON cp.id = j.campaign_id WHERE j.kind = ANY(:kinds) "  # noqa: S608 (a constant)
+                            f"AND j.state = 'failed' AND j.finished_at > :since AND NOT {_PUT_RIGHT} AND NOT COALESCE(cp.is_test, false)"),
                        {"kinds": [sheet_reads.KIND, *drafts.STEPS], "since": now - DONE_FOR}) or 0
-    stuck = db.scalar(select(func.count()).select_from(BridgeIntent).where(BridgeIntent.state == "not_yet", BridgeIntent.updated_at > now - DONE_FOR)) or 0
-    late = db.scalar(select(func.count()).select_from(BridgeIntent).where(BridgeIntent.state == "waiting", BridgeIntent.created_at < now - LATE)) or 0
+    played = (select(CampaignCharacter.character_id).join(Campaign, Campaign.id == CampaignCharacter.campaign_id)
+              .where(CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
+    changes = select(func.count()).select_from(BridgeIntent).where(BridgeIntent.character_id.not_in(played))
+    stuck = db.scalar(changes.where(BridgeIntent.state == "not_yet", BridgeIntent.updated_at > now - DONE_FOR)) or 0
+    late = db.scalar(changes.where(BridgeIntent.state == "waiting", BridgeIntent.created_at < now - LATE)) or 0
     parts = ([f"{failed} failed in the last day"] if failed else []) + ([f"{stuck} change{'s' if stuck != 1 else ''} not made yet"] if stuck else []) \
         + ([f"{late} change{'s' if late != 1 else ''} waiting over 10 minutes"] if late else [])
     if not parts:
@@ -153,8 +172,9 @@ def story(db: Session, key: str) -> dict | None:
     if not num.isdigit():
         return None
     if kind == "j":
-        r = db.execute(text("SELECT j.*, c.name AS character FROM jobs j LEFT JOIN characters c ON j.kind = :read "
-                            "AND c.id = CAST(j.payload->>'character_id' AS integer) WHERE j.id = :id AND j.kind = ANY(:kinds)"),
+        r = db.execute(text("SELECT j.*, c.name AS character, gs.number AS session FROM jobs j LEFT JOIN characters c ON j.kind = :read "
+                            "AND c.id = CAST(j.payload->>'character_id' AS integer) LEFT JOIN game_sessions gs ON j.kind <> :read "
+                            "AND gs.id = CAST(j.payload->>'session_id' AS integer) WHERE j.id = :id AND j.kind = ANY(:kinds)"),
                        {"id": int(num), "read": sheet_reads.KIND, "kinds": [sheet_reads.KIND, *drafts.STEPS]}).one_or_none()
         if r is None:
             return None
@@ -173,7 +193,7 @@ def story(db: Session, key: str) -> dict | None:
             steps.append({"at": r.started_at, "tone": "working", "words": f"Try {r.attempts}: running now"})
         elif r.state == "queued" and r.error:
             steps.append({"at": r.run_at, "tone": "you", "words": "Next try at this time"})
-        return {"key": key, "title": f"{r.character or 'A character'} · Read the sheet" if read else f"Session {r.payload.get('session_id', '')} · {drafts_step(r.kind)}",
+        return {"key": key, "title": f"{r.character or 'A character'} · Read the sheet" if read else f"{_session(r.session)} · {drafts_step(r.kind)}",
                 "kind": "read" if read else "draft", "state": JOB_STATE.get(r.state, r.state), "error": r.error,
                 "facts": [("Asked", r.created_at), ("Tries", f"{r.attempts} of {r.max_attempts}"), ("Took", _took(r.started_at, r.finished_at))],
                 "steps": steps, "retry": r.state in ("failed", "cancelled") or (r.state == "queued" and bool(r.error)),
@@ -225,6 +245,13 @@ def act(db: Session, key: str, did: str, by: str) -> bool:
             return False
         (ddb_bridge.retry if did == "retry" else ddb_bridge.dismiss)(db, it.id)
         _mark(it, did, by)
+        ch = db.get(Character, it.character_id)
+        if ch is not None and ch.campaign_id:  # (as the bridge's own Retry and Undo do: the extension told to make it now, open pages to show it)
+            from app import realtime
+
+            if did == "retry" and ch.ddb_id:
+                realtime.announce(db, ch.campaign_id, "deliver", ddb=str(ch.ddb_id))
+            realtime.announce(db, ch.campaign_id, "character", id=ch.id)
         return True
     return False
 
