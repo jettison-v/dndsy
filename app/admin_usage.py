@@ -58,8 +58,29 @@ def usage_summary(db: Session, now: datetime | None = None) -> dict:
     }
 
 
+@router.get("/usage/limit-window")
+def limit_window(request: Request, db: Session = Depends(get_db)):
+    """The monthly limit's window, from its tile (Brett's pick US1, Nov 25)."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_usage_window.html", {"kind": "limit", "u": usage_summary(db)})
+
+
+@router.get("/usage/topup-window")
+def topup_window(request: Request):
+    """+ Add top-up's window, from the title row (Brett's pick S4, Nov 25: a form opens on demand)."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_usage_window.html", {"kind": "topup", "today_iso": config.table_today().isoformat()})
+
+
+CALLS_SHOWN = 20  # (the newest; Show all for the rest: Brett's pick US3, Nov 25)
+
+
 @router.get("/usage")
-def usage_page(request: Request, db: Session = Depends(get_db)):
+def usage_page(request: Request, calls: str = "", db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
@@ -78,10 +99,12 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
         else:
             rows.append({"r": r, "label": "—", "href": None})
     topups = list(db.scalars(select(CreditTopUp).order_by(CreditTopUp.added_on.desc())))
+    every = calls == "all"
     return templates.TemplateResponse(
         request,
         "admin_usage.html",
-        {"u": usage_summary(db), "rows": rows, "topups": topups, "today_iso": config.table_today().isoformat(), "toast": request.session.pop("toast", None)},
+        {"u": usage_summary(db), "rows": rows if every else rows[:CALLS_SHOWN], "more": 0 if every else max(len(rows) - CALLS_SHOWN, 0),
+         "openai": OPENAI, "topups": topups, "toast": request.session.pop("toast", None)},
     )
 
 

@@ -27,7 +27,7 @@ PAGES = {
                "/characters/{cole}/plan", "/c/main/campaign?tab=glossary", "/party", "/help", "/your-notes", "/your-notes?tab=askdnd"),
     "admin": tuple(f"/c/main/manage{p}" for p in ("", "/inbox", "/sessions", "/table", "/house-rules", "/history", "/settings", "/places",
                                                   "/dm-guide"))
-             + tuple(f"/manage/{p}" for p in ("askdnd", "campaigns", "accounts", "tool-corrections", "usage", "features", "backups", "history",
+             + tuple(f"/manage/{p}" for p in ("askdnd", "campaigns", "accounts", "tool-corrections", "usage", "features", "backups", "books", "history",
                                                "design", "dice", "feedback", "roadmap", "work", "work?tab=queue", "work?tab=checks", "work?tab=scheduled", "work?tab=how", "product-areas"))
              + ("/c/main/dm", "/c/main/dm/items/new"),  # (DM Tools: app/homebrew.py)
 }

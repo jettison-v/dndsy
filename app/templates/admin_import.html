@@ -1,18 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Backups and imports · Backstage · askdnd{% endblock %}
+{% block title %}Backups · Backstage · askdnd{% endblock %}
 {% block content %}
+{# Backstage › General › Backups (app/admin.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): one panel on
+   top saying what happened, green when last night worked and red with the missed nights and what to check when not (BK1);
+   the runs as a table marking only failures, the newest week then Show older (BK2); Import from the title row (S4); rule
+   books on a page of their own (BK3). #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Backups and imports</h1></div>
+  <div class="title-row"><h1>Backups</h1><button class="btn title-action" type="button" data-modal-url="/manage/backups/import-window" data-item="import">+ Import</button></div>
   <p class="subtitle">askdnd's nightly backups, then importing campaign data. Only admins can see this page.</p>
   {% if backup is defined %}
   <section class="section" id="backups">
-    <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
-    <p class="hint">Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
-    {% if backups %}<div class="table-scroll"><table class="list">{% for b in backups %}
-      <tr><td><b>{{ b.finished_at | clock(date=True) }}</b><div class="note">{{ b.detail }}</div></td>
-        <td class="end"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
-    {% endfor %}</table></div>{% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
+    {% if backup.attention %}
+    <div class="flash bad backup-panel" data-backup="attention">
+      {% if backup.last and backup.last.status != "ok" %}<b>Last night's backup failed</b><span>{{ backup.last.detail or "It didn't say why." }}</span>
+      {% elif backup.last %}<b>{{ backup.text }}</b><span>The last one that worked was {{ backup.good.finished_at | clock(date=True) if backup.good else "never" }}: the nightly job on Railway (askdnd-backup) hasn't run, or hasn't finished, since.</span>
+      {% else %}<b>{{ backup.text }}</b><span>The first one runs tonight at 2:00 AM Pacific.</span>{% endif %}
+      {% if backup.last %}<span class="note">What to check: its last run on Railway › askdnd-backup › Deployments. Or tell Claude "check the backups".</span>{% endif %}
+    </div>
+    {% else %}
+    <div class="flash backup-panel" data-backup="ok"><b>{{ backup.text }}</b><span class="note">Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days.</span></div>
+    {% endif %}
+    {% if backups %}
+    <div class="table-scroll"><table class="list backup-runs">
+      <thead><tr><th>Night</th><th>Result</th><th class="num">Size</th><th class="num">Rows</th><th class="num">Files</th></tr></thead>
+      <tbody>
+      {% if backup.missed %}<tr class="backup-missed"><td>Since {{ backup.last.finished_at | clock(date=True) }}</td><td colspan="4">{{ backup.missed }} night{{ "s" if backup.missed != 1 }} missed</td></tr>{% endif %}
+      {% for b in backups[:shown] %}{% include "_backup_row.html" %}{% endfor %}
+      </tbody>
+    </table></div>
+    {% if backups | length > shown %}<details class="fold backup-older" data-older><summary>Show older ({{ backups | length - shown }})</summary>
+      <div class="table-scroll"><table class="list backup-runs"><tbody>{% for b in backups[shown:] %}{% include "_backup_row.html" %}{% endfor %}</tbody></table></div></details>{% endif %}
+    {% else %}<p class="muted">No runs recorded yet. The next one is tonight.</p>{% endif %}
   </section>
   {% endif %}
   {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}
@@ -63,28 +82,7 @@
       </div>
     </form>
   </section>
-  {% else %}
-  <section class="section">
-    <h2>Import campaign data</h2>
-    <p class="hint">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
-    <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="stack">
-      <input type="file" name="file" accept=".json,application/json" required>
-      <div><button type="submit" class="btn" data-busy="Reading…">Preview import</button></div>
-    </form>
-  </section>
   {% endif %}
-  <section class="section" id="books">
-    <h2>Books</h2>
-    <p class="hint">Private rules books the DM owns, only ever in this database (never in git). Their entries come from a file Claude makes on the computer that has the book's offline copy (the book's upload file). Uploading it again replaces the book's entries.</p>
-    <div class="table-scroll"><table class="list">{% for b in books %}
-      <tr><td><b>{{ b.title }}</b> <span class="note">{{ b.short }}</span></td>
-        <td class="end">{% for k, n in b.kinds.items() %}{{ n }} {{ k }}{{ "s" if n != 1 }}{{ ", " if not loop.last }}{% else %}<span class="note">nothing here yet</span>{% endfor %}</td></tr>
-    {% endfor %}</table></div>
-    <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="stack">
-      <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
-      <div><button type="submit" class="btn" data-busy="Loading…">Upload book</button></div>
-    </form>
-  </section>
   {% if imports %}
   <section class="section">
     <h2>Recent imports</h2>

@@ -825,6 +825,16 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .stat small { color: var(--muted); }
 .stats.stats-fit { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-2); }  /* (as many as there are, side by side: a plan's Overview on Work) */
 .stat.attention { box-shadow: inset 3px 0 0 var(--red); }
+.stat.needs { box-shadow: inset 3px 0 0 var(--amber); }  /* (needs you: Usage's limit while none is set, Brett's pick US1, Nov 25) */
+.stat.needs b, .stat.needs small { color: var(--amber); }
+.stats.usage-tiles { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--sp-3); }  /* (four in one row on a laptop: US2) */
+.stat > .btn.link { margin-top: var(--sp-1); padding: 0; }
+/* Backups' panel (Brett's pick BK1, Nov 25): the message box (.flash), green when last night worked, red with the missed
+   nights and what to check when not; its lines one under another */
+.backup-panel { display: grid; gap: var(--sp-1); }
+.backup-panel b { color: var(--green); } .flash.bad.backup-panel b { color: var(--link); }
+.backup-runs tr.backup-missed td, .backup-runs tr.backup-failed td:first-child b { color: var(--link); }
+.backup-older > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); margin-top: var(--sp-2); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
 .table-scroll { overflow-x: auto; }  /* every wide table sits in one: it scrolls inside its own frame, never the page (DESIGN.md › Narrow screens) */
@@ -1836,7 +1846,13 @@ button.rm-box { cursor: pointer; }
 .doc-pin-n { flex: none; min-width: 20px; height: 20px; border-radius: var(--r-pin); background: var(--amber); color: var(--bg); font-size: var(--fs-xs); font-weight: 700; line-height: 20px; text-align: center; }
 .doc-comment-bar { margin: 0 0 var(--sp-2); }
 .ov-state { font-size: var(--fs-sm); }
-.ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
+.ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); } .ov-state.bad { color: var(--link); }
+/* Overview in the menu's sections (Brett's pick OV1 C, Nov 25): a quiet heading per section; a card that needs you
+   amber, one that's broken red, where it sits (the page and the menu one map) */
+.ov-section { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.ov-section-h { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
+.ov-card[data-tone="warn"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 8%, var(--surface)); }
+.ov-card[data-tone="bad"] { border-color: var(--link); background: color-mix(in srgb, var(--link) 9%, var(--surface)); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); overflow-x: auto; scrollbar-width: none; }  /* (narrower than its tabs, it scrolls as the tab bar does) */
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; white-space: nowrap; }  /* (one line always: the UI review, Nov 16) */

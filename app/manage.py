@@ -65,6 +65,7 @@ PAGES = (
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, GENERAL, "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, GENERAL, "admin", ()),
     ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, GENERAL, "admin", ()),
+    ("books", "Rule books", "/manage/books", "The rules books askdnd reads, and uploading one", ASKDND, GENERAL, "admin", ()),
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, "admin", ()),
     ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, "admin", ()),
     ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, "admin", ()),
@@ -140,8 +141,9 @@ def backup_status(db: Session) -> dict:
     if last.status != "ok":
         return {"text": f"Last backup failed ({_ago(last.finished_at)})", "attention": True, "last": last, "good": good}
     overdue = datetime.now(UTC) - last.finished_at > BACKUP_DUE
-    return {"text": f"Last backup {_ago(last.finished_at)}" + (" (overdue)" if overdue else ""),
-            "attention": overdue, "last": last, "good": good}
+    nights = (datetime.now(UTC) - last.finished_at).days  # (the nights since the last good one: Brett's pick BK1, Nov 25)
+    return {"text": f"No backup for {_plural(nights, 'night')}" if overdue else f"Last backup {_ago(last.finished_at)}",
+            "attention": overdue, "last": last, "good": good, "missed": nights if overdue else 0}
 
 
 def _plural(n: int, one: str, many: str | None = None) -> str:
@@ -293,9 +295,10 @@ def overview(request: Request, db: Session = Depends(get_db)):
     camps = list(db.scalars(select(Campaign)))
     fixes = open_count(db)
     state = {
-        "usage": (f"${u['month']:.2f} of ${u['limit']:.2f} this month" if u["limit"] is not None else f"${u['month']:.2f} this month",
-                  "warn" if u["limit_reached"] else "ok"),
-        "backups": (b["text"], "warn" if b["attention"] else "ok"),
+        # (what needs you is amber, or red when something's broken, where its card sits: Brett's pick OV1 C, Nov 25)
+        "usage": (f"${u['month']:.2f} of ${u['limit']:.2f} this month" if u["limit"] is not None else "No monthly limit set",
+                  "bad" if u["limit_reached"] else "ok" if u["limit"] is not None else "warn"),
+        "backups": (b["text"], "bad" if b["attention"] else "ok"),
         "accounts": ((f"{_plural(sum(1 for p in people if p in (access.MEMBER, access.ADMIN)), 'person', 'people')}, "
                      f"{_plural(sum(1 for p in people if p == access.ADMIN), 'admin')}"), ""),
         "campaigns": (f"{_plural(len(camps), 'campaign')}" + (f", {sum(1 for c in camps if c.is_test)} test" if any(c.is_test for c in camps) else ""), ""),
@@ -303,6 +306,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "documents": (_plural(len(documents.library()), "document"), ""),
         "product-areas": (_product_areas(db), ""),
         "for-you": _for_you_state(db, request),
+        **_more_states(db),
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge
@@ -312,15 +316,62 @@ def overview(request: Request, db: Session = Depends(get_db)):
         db.commit()
     cards = [p | {"state": state.get(p["key"], ("", ""))} for p in pages_for(user, "/manage/askdnd")
              if p["group"] == ASKDND and p["key"] != "overview"]
-    return templates.TemplateResponse(request, "manage_askdnd.html", {"cards": cards})
+    sections: dict[str, list[dict]] = {}
+    for c in cards:  # (in the menu's own sections and order, so the page and the menu are one map: Brett's pick OV1 C)
+        sections.setdefault(c["section"], []).append(c)
+    return templates.TemplateResponse(request, "manage_askdnd.html", {"sections": list(sections.items())})
+
+
+def _more_states(db: Session) -> dict:
+    """Overview's cards that said nothing about how their page stands (Brett's pick OV2 B, Nov 25: every card a state)."""
+    from app import dice
+    from app.fft import rules
+    from app.fft.models import FftIssue, FftItem
+    from app.models import Revision, UsageEvent
+
+    open_n = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state != "closed")) or 0
+    ready_n = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state == "ready")) or 0
+    items = list(db.scalars(select(FftItem).where(FftItem.section.in_(("now", "next")), FftItem.standing.is_(False))))
+    scope_waits = len(rules.scope_asked(db))  # (a scope that asks for his OK)
+    mode = {"available": "Deploys: After my local try", "independent": "Deploys: When tests pass", "frozen": "Deploys: Paused"}[rules.mode_of(db)]
+    week = datetime.now(UTC) - timedelta(days=7)
+    from app import usage as feature_use
+    from app.models import Campaign, User
+
+    out = [u.id for u in db.scalars(select(User)) if feature_use._left_out(u.email)]  # (as the Features page counts: not
+    tests = list(db.scalars(select(Campaign.id).where(Campaign.is_test.is_(True))))  # admins', test accounts' or test campaigns')
+    used = db.scalar(select(func.count(func.distinct(UsageEvent.feature))).where(
+        UsageEvent.at >= week, func.coalesce(UsageEvent.user_id, 0).not_in(out or [-1]), func.coalesce(UsageEvent.campaign_id, 0).not_in(tests or [-1]))) or 0
+    last = db.scalar(select(func.max(Revision.created_at)))
+    return {
+        "feedback": (_plural(open_n, "issue") + " open" + (f" · {ready_n} ready to try" if ready_n else ""), ""),
+        "roadmap": (f"{sum(1 for it in items if it.section == 'now')} now · {sum(1 for it in items if it.section == 'next')} next"
+                    + (f" · {_plural(scope_waits, 'scope')} wait on you" if scope_waits else ""), "warn" if scope_waits else ""),
+        "work": (mode, "warn" if mode.endswith("Paused") else ""),
+        "features": (f"{_plural(used, 'feature')} used this week", ""),
+        "askdnd-history": (f"Last change {_ago(last)}" if last else "No changes yet", ""),
+        "dice": ("askdnd's own timings" if dice.tuning_from(db) == dice.clean_tuning({}) else "Tuned for everyone", ""),
+        "books": _books_state(db),
+    }
+
+
+def _books_state(db: Session) -> tuple[str, str]:
+    """Rule books' card: how many books have entries here, and how many entries."""
+    from app import books
+
+    have = books.counts(db)
+    loaded = [k for k in have if sum(have[k].values())]
+    n = sum(sum(v.values()) for v in have.values())
+    return (f"{len(loaded)} of {len(books.BOOKS)} books · {n:,} entries" if loaded else "No books loaded yet", "" if loaded else "warn")
 
 
 def _for_you_state(db: Session, request: Request) -> tuple[str, str]:
-    """For you's card on Overview: how much waits on you (its summary line); waiting is normal, so no warning tone."""
+    """For you's card on Overview: how much waits on you (its summary line), amber while anything does (Brett's pick
+    OV1 C on docs/mockups/backstage-round-1/, Nov 25: what needs you amber where it sits)."""
     from app.fft import testing_page
 
     s = testing_page.summary(testing_page.for_you(db, testing_page.device_of(request)))
-    return (f"{s["n"]} waiting on you: {s["line"]}" if s["n"] else "Nothing waiting on you", "")
+    return (f"{s["n"]} waiting on you: {s["line"]}", "warn") if s["n"] else ("Nothing waiting on you", "ok")
 
 
 # ------------------------------------------------------------------ old addresses (Manage layout, 2026-10-23)

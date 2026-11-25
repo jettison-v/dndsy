@@ -53,7 +53,7 @@ def test_overview_flags_missing_failed_and_overdue_backups(db):
     assert not st["attention"] and st["text"] == "Last backup 3 hours ago"
     db.add(JobRun(name="backup", status="ok", detail="", started_at=now, finished_at=now - timedelta(hours=40)))
     db.flush()  # newest by id is now the 40-hour-old one: a missed night
-    assert backup_status(db)["attention"] and "(overdue)" in backup_status(db)["text"]
+    assert backup_status(db)["attention"] and backup_status(db)["text"] == "No backup for 1 night"  # (Brett's pick BK1: the nights missed)
     db.add(JobRun(name="backup", status="error", detail="AccessDenied", started_at=now, finished_at=now))
     db.flush()
     assert backup_status(db)["text"].startswith("Last backup failed")

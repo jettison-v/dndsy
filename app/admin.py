@@ -16,6 +16,7 @@ from app.importer import BundleError, import_bundle
 from app.templating import templates
 
 router = APIRouter(prefix="/manage/backups")  # askdnd-wide
+books_router = APIRouter(prefix="/manage/books")  # Rule books, a page of their own (Brett's pick BK3, Nov 25: they aren't backups)
 
 MAX_UPLOAD_BYTES = 2_000_000
 
@@ -38,10 +39,50 @@ def import_form(request: Request, db: Session = Depends(get_db)):
     from app.manage import backup_status
     from app.models import JobRun
 
-    runs = list(db.scalars(select(JobRun).where(JobRun.name == "backup").order_by(JobRun.id.desc()).limit(10)))
+    runs = list(db.scalars(select(JobRun).where(JobRun.name == "backup").order_by(JobRun.id.desc()).limit(30)))
     return templates.TemplateResponse(request, "admin_import.html", {"user": user, "toast": request.session.pop("toast", None),
-                                                                     "imports": recent_imports(db), "backups": runs,
-                                                                     "backup": backup_status(db), "books": _books(db)})
+                                                                     "imports": recent_imports(db), "backups": [backup_row(r) for r in runs],
+                                                                     "backup": backup_status(db), "shown": BACKUPS_SHOWN})
+
+
+BACKUPS_SHOWN = 7  # (the newest week; Show older for the rest: Brett's pick BK2, Nov 25)
+
+
+def backup_row(run) -> dict:
+    """A backup run as its table's row: night, result, size, rows, files (the storage path stays off the page: S5). Its
+    detail reads "v2/backups/x.json.gz · 4.8 MB · 10,682 rows · 236 files", or a failure's words."""
+    parts = [p.strip() for p in (run.detail or "").split("·")]
+    pick = lambda end: next((p.removesuffix(end).strip() for p in parts if p.endswith(end)), "")
+    ok = run.status == "ok"
+    return {"run": run, "ok": ok, "size": pick("MB") and pick("MB") + " MB", "rows": pick("rows"), "files": pick("files"),
+            "why": "" if ok else (run.detail or "")}
+
+
+@router.get("/import-window")
+def import_window(request: Request):
+    """+ Import's window, from the title row (Brett's pick S4, Nov 25: a form opens on demand)."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_import_window.html", {})
+
+
+@books_router.get("")
+def books_page(request: Request, db: Session = Depends(get_db)):
+    """Backstage › General › Rule books: the private rules books in this database, and uploading one."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "manage_books.html", {"books": _books(db), "toast": request.session.pop("toast", None)})
+
+
+@books_router.get("/upload-window")
+def book_window(request: Request, db: Session = Depends(get_db)):
+    """+ Upload a book's window (S4): the file, and which book's entries it replaces is said once it's read."""
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_import_window.html", {"book": True})
 
 
 def _books(db: Session) -> list[dict]:
@@ -82,7 +123,7 @@ def book_upload(request: Request, file: UploadFile = File(...), db: Session = De
     except (OSError, ValueError, TypeError, KeyError, IndexError) as e:
         db.rollback()
         request.session["toast"] = web.notice(f"Nothing was written: {e}", "error")
-    return RedirectResponse("/manage/backups#books", status_code=303)
+    return RedirectResponse("/manage/books", status_code=303)
 
 
 @router.post("/import")
