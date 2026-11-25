@@ -112,11 +112,15 @@ def _present(db: Session, r: Revision, people: dict[int, str]) -> dict:
         o = r.old
         text = house_rules.describe(o.get("field", ""), o.get("value", ""), rr.spell(o.get("target_key", "")))
         return {"old": f"{o.get('target_key', '')}: {text}" + (f" ({o['reason']})" if o.get("reason") else "")}
+    if r.field == "deleted" and isinstance(r.old, dict):  # (what was deleted, by its name or words, not its fields: HI1)
+        o = r.old
+        said = next((str(o[k]) for k in ("name", "title", "term", "text", "summary", "value", "label") if o.get(k)), "")
+        return {"old": " ".join(said.split())[:300] or "Something with no name"}
     return {"old": history.shown(r.old, r.field), "new": history.shown(r.new, r.field)}
 
 
 @router.get("")
-def history_page(request: Request, show: str = "", table: str = "", row: int | None = None, batch: str = "",
+def history_page(request: Request, show: str = "", table: str = "", row: int | None = None, batch: str = "", older: int = 0,
                  db: Session = Depends(get_db)):
     in_campaign = access.path_slug.get() is not None
     user, denied = _guard(request, allow=is_reviewer if in_campaign else is_admin)
@@ -136,22 +140,115 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         revs = _matching(db, q, lambda r, c: True)  # one import, in every campaign
     else:
         revs = _matching(db, q, lambda r, c: c is None)
-    days: dict[str, list] = defaultdict(list)
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     known = history.targets(db, revs)
-    for r in revs:
-        days[r.created_at.strftime("%b %-d, %Y")].append({  # (dates one way, "Nov 5, 2026": the UI review)
-            "r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
-            **_present(db, r, people),
-            "long": r.field in ("summary", "description", "data", "note", "deleted"),
-            "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)})
+    items = [_item(db, user, r, people, known) for r in revs]
+    entries = group_changes(items)
+    days: dict[str, list] = defaultdict(list)
+    for e in entries:
+        days[e["at"].strftime("%b %-d, %Y")].append(e)  # (dates one way, "Nov 5, 2026": the UI review)
+    every = list(days.items())
+    shown = every if older else every[:DAYS_SHOWN]
     shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign
                      else {k: FILTERS[k][0] for k in ("", "people", "characters")})
     return templates.TemplateResponse(request, "admin_history.html", {
-        "days": list(days.items()), "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
+        "days": shown, "more_days": len(every) - len(shown), "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
         "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history",  # not "here": every page already has that (the campaign)
         "focus": revs[0].label if (table and row is not None and revs) else "", "batch": batch,
         "toast": request.session.pop("toast", None)})
+
+
+LONG = 160  # (before and after longer than this together: Open it, in the row)
+DAYS_SHOWN = 7  # (the newest week of days with changes, then Show older: Brett's pick HI3, Nov 25)
+RUN_SECONDS = 180  # (changes to many things alike within three minutes are one: a publish, Brett's pick HI1)
+NOUNS = {"story_events": ("key moment", "key moments"), "entities": ("entry", "entries"), "glossary_terms": ("glossary term", "glossary terms"),
+         "game_sessions": ("session", "sessions"), "characters": ("character", "characters"), "campaign_characters": ("character", "characters"),
+         "users": ("person", "people"), "campaign_members": ("person", "people"), "facts": ("fact", "facts"),
+         "relationships": ("relationship", "relationships"), "entity_aliases": ("name", "names"), "house_rules": ("house rule", "house rules"),
+         "player_notes": ("note", "notes"), "character_picks": ("mark", "marks"), "campaigns": ("campaign", "campaigns")}
+
+
+def _subject(r: Revision, known: dict) -> str:
+    """What a change is about, named (Brett's pick HI1): a key moment by its own words, else the row's label."""
+    t = known.get((r.table, r.row_id))
+    if r.table == "story_events":
+        text = getattr(t, "text", None) or (r.old.get("text") if isinstance(r.old, dict) else "")
+        if text:
+            words = " ".join(str(text).split())
+            return f"“{words[:60]}{'…' if len(words) > 60 else ''}”"
+    return r.label or NOUNS.get(r.table, (r.table, r.table))[0].capitalize()
+
+
+def _item(db: Session, user: dict, r: Revision, people: dict, known: dict) -> dict:
+    by_email = {e: n for n, e in people.values()}
+    return {"r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
+            "subject": _subject(r, known), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
+            **_present(db, r, people),
+            "long": r.field in ("summary", "description", "data", "note", "deleted") or len(str(r.old or "")) + len(str(r.new or "")) > LONG,  # (a rule's data is for the window, not the row)
+            "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)}
+
+
+def group_changes(items: list[dict]) -> list[dict]:
+    """The changes, newest first, as History's rows (Brett's picks HI1 and AH1, Nov 25): one import is one row; the
+    same field of one thing changed again and again is one row (changed 8 times, now Nobody); the same change to many
+    things together (a session's 24 key moments published) is one row. Each row keeps its changes, in order."""
+    out: list[dict] = []
+    for x in items:
+        r, last = x["r"], (out[-1] if out else None)
+        if last is not None:
+            y = last["items"][-1]["r"]
+            same_batch = r.batch and r.batch == y.batch
+            same_run = (r.table, r.row_id, r.field, r.actor) == (y.table, y.row_id, y.field, y.actor) and not r.batch and not y.batch
+            alike = ((r.table, r.field, r.actor) == (y.table, y.field, y.actor) and r.new == y.new and r.row_id != y.row_id
+                     and not r.batch and abs((y.created_at - r.created_at).total_seconds()) <= RUN_SECONDS)
+            if same_batch or (same_run and last["kind"] in ("one", "run")) or (alike and last["kind"] in ("one", "alike")):
+                last["items"].append(x)
+                last["kind"] = "batch" if same_batch else "run" if same_run else "alike"
+                continue
+        out.append({"kind": "one", "items": [x]})
+    for e in out:
+        first, newest = e["items"][-1], e["items"][0]
+        e["at"], e["ids"] = newest["r"].created_at, [x["r"].id for x in e["items"]]
+        e["who"] = newest["who"]
+        n = len(e["items"])
+        if e["kind"] == "one":
+            e["title"] = newest["subject"]
+        elif e["kind"] == "batch":
+            e["title"] = f"An import: {n} changes" if newest["r"].source in ("import", "undo-import") else f"{n} changes together"
+        elif e["kind"] == "run":
+            e["title"] = f"{newest['subject']}: {newest['field'].lower()}"
+            e["run"] = {"n": n, "since": first["r"].created_at, "now": newest.get("new") or newest.get("change") or "—"}  # (times through `clock`: the viewer's own)
+        else:
+            noun = NOUNS.get(newest["r"].table, ("thing", "things"))[1]
+            field, value = newest["field"], str(newest.get("new") or "")
+            if newest["r"].field == "deleted":
+                e["title"] = f"{n} {noun} deleted"
+            elif value.lower() == field.lower() or newest["r"].field == "status":
+                e["title"] = f"{n} {noun} {value.lower() or field.lower()}"  # (24 key moments published)
+            else:
+                e["title"] = f"{n} {noun}: {field.lower()} → {value}" if value else f"{n} {noun}: {field.lower()} changed"
+    return out
+
+
+@router.get("/window")
+def history_window(request: Request, ids: str = "", db: Session = Depends(get_db)):
+    """A History row's window (Brett's pick HI2, Nov 25): each of its changes, before and after, with its Restore. Only
+    changes this person may see, and only in the campaign of the address (or none, on askdnd's)."""
+    in_campaign = access.path_slug.get() is not None
+    user, denied = _guard(request, allow=is_reviewer if in_campaign else is_admin)
+    if denied:
+        return denied
+    campaign = web.campaign(db) if in_campaign else None
+    want = [int(i) for i in ids.split(",") if i.strip().isdigit()][:PAGE]
+    revs = list(db.scalars(select(Revision).where(Revision.id.in_(want or [0]), Revision.table.in_(visible_tables(user))).order_by(Revision.id.desc())))
+    where = history.campaigns_of(db, revs)
+    revs = [r for r in revs if (where[r.id] == campaign.id if campaign is not None else (not in_campaign and (where[r.id] is None or r.batch)))]
+    people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
+    known = history.targets(db, revs)
+    items = [_item(db, user, r, people, known) for r in revs]
+    entry = (group_changes(items) or [{"title": "Nothing to show", "items": [], "kind": "one", "who": ""}])[0]
+    return templates.TemplateResponse(request, "_history_window.html", {
+        "e": entry, "all": items, "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history"})
 
 
 @router.post("/{rev_id:int}/restore")

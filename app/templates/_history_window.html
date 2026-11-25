@@ -1,0 +1,19 @@
+{# A History row's window (app/history_pages.py `history_window`; Brett's pick HI2, Nov 25): each change it holds, before
+   and after side by side, each with its own Restore saying what it brings back. #}
+<div class="peek-head">
+  <div><div class="note">History</div><h2 id="peek-title">{{ e.title }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body hist-window">
+  {% for x in all %}{% set r = x.r %}
+  <section class="hist-change" data-rev="{{ r.id }}">
+    <div class="hist-head"><b>{{ x.subject }}</b> <span class="tag">{{ x.field }}</span>
+      <span class="note">{{ r.created_at | clock(date=True) }}{% if x.who %} · <span title="{{ r.actor }}">{{ x.who }}</span>{% endif %}{% if r.source in ("import", "undo-import") %} · {{ x.source }}{% endif %}</span></div>
+    {% if r.field == "deleted" %}<div class="import-diff one"><div><small>What was deleted</small><p>{{ x.old }}</p></div></div>
+    {% elif x.change %}<p class="note">{{ x.change }}</p>
+    {% else %}<div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div>{% endif %}
+    {% if x.restorable %}<form method="post" action="{{ page_url }}/{{ r.id }}/restore" class="inline" data-confirm="{{ 'Bring this back?' if r.field == 'deleted' else 'Put back ' ~ (x.old | string)[:60] ~ '?' }}">
+      <button type="submit" class="btn small">{{ "Bring it back" if r.field == "deleted" else "Restore the before" }}</button></form>{% endif %}
+  </section>
+  {% else %}<p class="muted">Nothing to show here.</p>{% endfor %}
+</div>

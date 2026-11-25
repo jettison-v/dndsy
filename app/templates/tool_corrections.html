@@ -6,11 +6,13 @@
 {# A fix list (Brett, 2026-10-23): each correction patches askdnd until askdnd's own code gets it right. When it does
    (tool_corrections_pages.automatic), the correction moves to "Built into askdnd" and can be removed. #}
 {% macro row(o, built=False) %}{% set n = names[o.ref] %}
-<li class="record{{ ' faded' if built }}">
-  <div class="record-main"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
-    <span class="note">{{ field_labels.get(o.field, o.field) }}: {{ labels.get(o.field, {}).get(o.value, o.value) }} · {{ o.updated_at | ago }}{% if o.id in unseen %} · no character has it now{% endif %}</span></div>
-  <div>{% if built %}{{ o.reason or "" }}{% else %}{{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}{% endif %}</div>
-  <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"{% if built %} data-confirm="Remove this correction? askdnd already chooses the same."{% endif %}><button class="btn small{{ ' link danger' if built }}" type="submit">{{ "Remove" if built else "Undo" }}</button></form>
+{# Each in plain words (Brett's pick TC1, docs/mockups/backstage-round-3/, Nov 25): the thing, what it is ("its Turn
+   invisible action"), the change as said ("Costs an Action"), Why labelled; the row opens the side panel it was made from. #}
+<li class="record tc-row{{ ' faded' if built }}" data-correction="{{ o.id }}">
+  <div class="record-main">{% if n.panel %}<button type="button" class="link-plain tc-name" data-panel-url="{{ n.panel }}" title="Open it on a character's sheet"><b>{{ n.name }}</b></button>{% else %}<b>{{ n.name }}</b>{% endif %}{% if n.what %} <span class="note">{{ n.what }}</span>{% endif %}
+    <span class="note">{{ says[o.id] }} · {{ o.updated_at | ago }}{% if o.id in unseen %} · no character has it now{% endif %}</span></div>
+  <div class="tc-why">{% if built %}{% if o.reason %}<span class="note"><b>Why:</b> {{ o.reason }}</span>{% endif %}{% else %}<span class="note"><b>Why:</b></span> {{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}{% endif %}</div>
+  <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"{% if built %} data-confirm="Remove this correction? askdnd already chooses the same."{% endif %}><button class="btn small link{{ ' danger' if built }}" type="submit">{{ "Remove" if built else "Undo" }}</button></form>
 </li>
 {% endmacro %}
 <main class="page manage-page">
@@ -20,7 +22,9 @@
 
   <section class="section">
     <div class="section-head"><h2>Needs a fix in askdnd</h2>{% if open %}{{ count_pill(open | length) }}{% endif %}</div>
-    <p class="hint">Ask Claude to “build in the tool corrections”: each one becomes part of askdnd, with a test, and moves down here on its own. A few words on why help.</p>
+    {% if open %}<div class="tc-send">{% if sent %}<p class="note" data-sent>Sent to Claude {{ sent.at | ago }}: <a href="/manage/feedback?open=i{{ sent.issue }}" data-panel-url="/manage/item/i{{ sent.issue }}">in Feedback</a>, to be built into askdnd with a test each.</p>
+      {% else %}<form method="post" action="/manage/tool-corrections/send"><button class="btn small" type="submit" data-item="send-corrections">Send these to Claude</button></form>
+      <p class="note">Files them in Feedback, to be built into askdnd with a test each; then they move down here on their own. A few words on why help.</p>{% endif %}</div>{% endif %}
     {% if open %}
     <ul class="records cols-3">{% for o in open %}{{ row(o) }}{% endfor %}</ul>
     {% elif overrides %}<p class="all-clear">✓ askdnd gets everything here right on its own.</p>

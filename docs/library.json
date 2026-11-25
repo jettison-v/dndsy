@@ -1,9 +1,42 @@
 [
  {
-  "title": "Backstage, round 1: what needs you",
+  "title": "Backstage, round 4: the DM's pages, the Tuning pages, and the rest",
   "kind": "design",
   "status": "Your picks",
   "state": "waiting",
+  "date": "Nov 25",
+  "what": "Roadmap item 5, round 4 of 4: Needs you, Inbox and Sessions, the Tuning pages (Features, Dice tuning, the bridge, the Design system) and the five pages no round named (Places, DM guide, Product areas, Accounts, Campaigns), drawn today and as recommended: buttons that do what they say, the red button following the state, a row that opens its detail, health with what to do, the switch where it's needed. Thirteen picks.",
+  "line": "The DM's pages, the Tuning pages and the rest: thirteen picks",
+  "source": "docs/mockups/backstage-round-4/index.html",
+  "link": "https://claude.ai/artifact/6mWYAiJ6ZAxdKiRC5nDETp"
+ },
+ {
+  "title": "Backstage, round 3: what changed, and fixes to askdnd",
+  "kind": "design",
+  "status": "Picked, building",
+  "state": "building",
+  "date": "Nov 25",
+  "what": "Roadmap item 5, round 3 of 4: the campaign's History, askdnd history and Tool corrections drawn today and as recommended: rows that name what changed, a batch as one row, before and after in the item window, a search and Show older, tool corrections in plain words with a button to send them to Claude. Six picks.",
+  "line": "History, askdnd history and Tool corrections: six picks",
+  "source": "docs/mockups/backstage-round-3/index.html",
+  "link": "https://claude.ai/artifact/Gs8wP4YxRt5DVsx4Rv3zk6"
+ },
+ {
+  "title": "Backstage, round 2: the DM's table pages",
+  "kind": "design",
+  "status": "Picked, building",
+  "state": "building",
+  "date": "Nov 25",
+  "what": "Roadmap item 5, round 2 of 4: Settings, House rules, Table and Items drawn today and as recommended, with the shared fixes applied: Settings in tabs with one line per feature, House rules' add in a window, Table's sheet links, Items under one name with its builder in a large window. Seven picks.",
+  "line": "Settings, House rules, Table and Items: seven picks",
+  "source": "docs/mockups/backstage-round-2/index.html",
+  "link": "https://claude.ai/artifact/NLBx8U1aJ3ENqSbT8A3hgg"
+ },
+ {
+  "title": "Backstage, round 1: what needs you",
+  "kind": "design",
+  "status": "Picked, built",
+  "state": "done",
   "date": "Nov 24",
   "what": "Roadmap item 5, round 1 of 4: Overview, Backups and Usage drawn today and as recommended, with the shared fixes applied: what needs you first, a backup panel that says what happened and what to check, a monthly spending limit, tiles that say what they count. Eight picks.",
   "line": "Overview, Backups and Usage: what needs you first, eight picks",

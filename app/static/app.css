@@ -837,7 +837,16 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .hb-bad { color: var(--link); display: block; margin-top: 2px; }
 .hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
 .records > .record[data-modal-url] { cursor: pointer; }  /* (a row that opens its window: Items, IT3) */
-.records > .record[data-modal-url]:hover { background: var(--surface-2); }  /* (what to know before switching a feature on, beside its switch: SE2, Nov 25) */
+.records > .record[data-modal-url]:hover { background: var(--surface-2); }
+/* History (Brett's picks HI1–HI3, Nov 25): rows that open their window; the switch and search on one row */
+.hist-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); }
+.hist-tools > .filters { margin: 0; }
+.hist-tools a.chip { text-decoration: none; }
+.hist-search { flex: 1 1 16rem; max-width: 380px; }
+.hist-rows > .hist-row[data-modal-url] { cursor: pointer; }
+.hist-rows > .hist-row[data-modal-url]:hover { background: var(--surface-2); }
+.hist-window { display: grid; gap: var(--sp-4); }
+.hist-change { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line-soft); }  /* (what to know before switching a feature on, beside its switch: SE2, Nov 25) */
 .feature-more > summary { font-size: var(--fs-xs); color: var(--muted); }
 .seat-row > .tag { grid-column: 4; }  /* (the role in its own column, with or without a Sheet ↗ before it: TA1) */
 .seat-sheet { grid-column: 3; font-size: var(--fs-sm); color: var(--muted); text-decoration: none; white-space: nowrap; }

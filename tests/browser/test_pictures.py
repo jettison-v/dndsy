@@ -54,6 +54,8 @@ def test_pictures_of_every_main_page(people, server, browser_db, who):
                             mask=[page.locator(MASK)], mask_color="#888")
     if who == "player":
         band(person, server, browser_db)
+    if who == "admin":
+        corrections_waiting(person, server, browser_db)
 
 
 def band(person, server, browser_db):
@@ -79,3 +81,27 @@ def band(person, server, browser_db):
                             mask=[page.locator(MASK)], mask_color="#888")
     finally:
         _pieces(browser_db, server, was)
+
+
+def corrections_waiting(person, server, browser_db):
+    """Tool corrections with one askdnd still gets wrong (Brett's picks TC1 and TC2, Nov 25): the row in plain words,
+    its Why, and Send these to Claude, a state the seeded data never shows."""
+    page = person.page
+    engine = create_engine(browser_db[0])
+    put = text("INSERT INTO tool_corrections (ref, field, value, reason, set_by) VALUES "
+               "('spell:Healing Word', 'cost', 'Action', 'A bonus action on the sheet', '') RETURNING id")
+    with engine.begin() as conn:
+        made = conn.execute(put).scalar()
+    try:
+        for width_name, width in WIDTHS.items():
+            page.set_viewport_size({"width": width, "height": 800})
+            person.open("/manage/tool-corrections")
+            page.wait_for_load_state("networkidle")
+            page.add_style_tag(content=STILL)
+            page.evaluate(SAME)
+            page.screenshot(path=str(OUT / name("admin", "tool-corrections-one-waiting", width_name)),
+                            mask=[page.locator(MASK)], mask_color="#888")
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM tool_corrections WHERE id = :i"), {"i": made})
+        engine.dispose()

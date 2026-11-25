@@ -2,7 +2,7 @@
 shows; Manage › Tool corrections lists them as a fix list."""
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import characters
 from app.importer import import_bundle
@@ -90,3 +90,32 @@ def test_tool_corrections_are_a_fix_list(admin, db):
     assert "Healing Word" in needs and "Arrows" not in needs and "Arrows" in built and "Remove" in built
     assert "Divine Smite" in needs and "no character has it now" in needs
     assert "1 tool correction to build into askdnd" in admin.get("/c/main/manage", follow_redirects=True).text  # not the unseen one
+    # In plain words (Brett's pick TC1, Nov 25): what it is and the change as said, Why labelled, its side panel a press away
+    assert "Costs an Action" in needs and "a spell" in needs and "Listed under Weapons" in built and "Section (what it costs)" not in page
+    cole = char(db, "Cole")
+    assert f'data-panel-url="/characters/{cole.id}/detail?ref=' in needs.split("Healing Word")[0].rsplit("<li", 1)[1]
+
+
+def test_send_these_to_claude_files_one_issue(admin, player, db):
+    """Brett's pick TC2 (docs/mockups/backstage-round-3/, Nov 25): the corrections askdnd still gets wrong go to Feedback
+    as one issue under Corrections; the page then says they were sent, until one changes."""
+    from app.fft.models import FftIssue, FftNote
+    from app.models import ToolCorrection
+
+    import_bundle(db, BUNDLE)
+    characters.refresh(db, char(db, "Cole"))
+    db.add_all([ToolCorrection(ref="spell:Healing Word", field="cost", value="Action", reason="It's a bonus action on the sheet"),
+                ToolCorrection(ref="item:Arrows", field="item_group", value="Weapons")])  # (built in: not sent)
+    db.flush()
+    assert 'data-item="send-corrections"' in admin.get("/manage/tool-corrections").text
+    assert player.post("/manage/tool-corrections/send").status_code == 403
+    assert admin.post("/manage/tool-corrections/send", follow_redirects=False).status_code == 303
+    note = db.scalar(select(FftNote).where(FftNote.url == "/manage/tool-corrections"))
+    issue = db.get(FftIssue, note.issue_id)
+    assert issue.title == "Build in 1 tool correction" and issue.feature == "corrections"
+    assert "Healing Word" in note.text and "Costs an Action. Why: It's a bonus action on the sheet" in note.text and "Arrows" not in note.text
+    assert "@" not in note.first_name
+    page = admin.get("/manage/tool-corrections").text
+    assert "data-sent" in page and 'data-item="send-corrections"' not in page
+    admin.post("/manage/tool-corrections/send")  # (a second press files nothing more)
+    assert db.scalar(select(func.count()).select_from(FftNote).where(FftNote.url == "/manage/tool-corrections")) == 1
