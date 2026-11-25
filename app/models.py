@@ -17,6 +17,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -760,6 +761,40 @@ class JobRun(Base):
     detail: Mapped[str] = mapped_column(Text, default="", server_default="")
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Job(Base):
+    """One piece of background work, waiting, running or done, that a worker takes one at a time (app/jobs.py; Roadmap
+    item 43, Brett's pick LB1, Nov 25). Its payload holds ids only, never what people wrote."""
+
+    __tablename__ = "jobs"
+    __table_args__ = (
+        Index("ix_jobs_claim", "queue", sql("priority DESC"), "run_at", "id", postgresql_where=sql("state = 'queued'")),
+        Index("ix_jobs_dedup", "dedup_key", unique=True, postgresql_where=sql("state IN ('queued', 'running')")),
+        Index("ix_jobs_running", "heartbeat_at", postgresql_where=sql("state = 'running'")),
+        Index("ix_jobs_campaign", "campaign_id", sql("created_at DESC")),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    queue: Mapped[str] = mapped_column(String(20))
+    state: Mapped[str] = mapped_column(String(12), default="queued", server_default="queued")  # queued | running | done | failed | cancelled
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    dedup_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
+    label: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    requested_by: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    priority: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    claimed_by: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    version: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    error: Mapped[str] = mapped_column(Text, default="", server_default="")
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class Revision(Base):

@@ -68,6 +68,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **The fight**: app/fight.py, extension/askdnd-bridge/vtt-page.js, _fight_band.html
 - **Initiative from askdnd**: app/initiative.py, app/gamelog.py
 - **Corner cards**: app/static/app.js ("corner cards"), app/web.py (`notice`)
+- **Background jobs**: app/jobs.py, app/worker.py
 - **Where a slow request's time went**: app/timing.py, app/characters.py
 - **Pages stay quick as the campaign grows**: scripts/page_speed.py, tests/test_page_speed.py
 - **Error reporting**: app/errors.py

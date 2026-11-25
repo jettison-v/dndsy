@@ -190,7 +190,8 @@ def test_a_question_answered_by_picks_in_its_mockup_leaves_for_you_without_a_rel
     row.click()
     page.locator("#peek.open .fft-doc a[data-modal-url]").click()
     frame = page.frame_locator(".peek.full.open iframe.doc-frame")
-    frame.locator('form.decide .saved[data-state="none"]').wait_for()
+    # (askdnd has answered the frame: nothing saved yet, or another test's picks on the same mockup when run after it)
+    frame.locator('form.decide .saved:is([data-state="none"], [data-state="loaded"])').wait_for()
     for name, value in (("queue", "quiet"), ("split", "issue"), ("shot", "browser")):
         frame.locator(f"input[name={name}][value={value}]").check()
     frame.locator("form.decide button[type=submit]").click()

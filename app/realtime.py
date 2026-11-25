@@ -113,6 +113,7 @@ def connected(campaign_id: int) -> int:
 
 # ------------------------------------------------------------------ announcing a change
 _bus = {"up": False}  # this copy's listener is on the channel
+NOTIFY_ALWAYS = False  # (the worker, which has no listener: its announcements go through Postgres; app/worker.py)
 
 
 def publish(campaign_id: int | None, kind: str, **data) -> None:
@@ -120,7 +121,7 @@ def publish(campaign_id: int | None, kind: str, **data) -> None:
     if campaign_id is None:
         return
     msg = json.dumps({"type": kind, **data})
-    if _bus["up"]:
+    if _bus["up"] or NOTIFY_ALWAYS:
         try:
             from app.db import engine
 

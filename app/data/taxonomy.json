@@ -80,6 +80,7 @@
   {"key": "behind", "title": "Behind the scenes", "what": "What no one sees until it breaks", "features": [
    {"key": "speed", "title": "Speed", "map": ["Where a slow request's time went", "Pages stay quick as the campaign grows"]},
    {"key": "errors", "title": "Errors", "map": ["Error reporting"]},
+   {"key": "jobs", "title": "Background jobs", "map": ["Background jobs"]},
    {"key": "backups", "title": "Backups and staging", "map": ["Backups", "Local data"]},
    {"key": "deploys", "title": "Deploys and tests", "map": []}
   ]}
