@@ -271,7 +271,7 @@ def test_quick_checks_for_your_character(table, db):
     wis = page.index('data-label="Wisdom check"')
     assert wis < page.index('data-label="Wis save"') < page.index('data-label="Perception check"') < page.index('data-label="Charisma check"')
     assert "Roll for Cole" in page and "data-manual" in page  # (and Any dice, the manual roll, in the same window)
-    assert 'data-tab="rb-dice"' in page and "data-dice-picker" in page and 'name="material"' in page  # (and Your dice, its second tab)
+    assert 'data-tab="rb-dice"' in page and "data-your-dice" in page and 'name="material"' in page  # (and Your dice, its second tab)
     dm = table["dm"].get("/rolls/checks").text
     assert "data-roll" not in dm and "Roll dice" in dm and "data-manual" in dm and "link your character" not in dm  # (the DM: Any dice)
 
