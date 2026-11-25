@@ -297,6 +297,41 @@ def test_comments_pinned_to_a_mockup_go_with_the_picks(people, server, browser_d
     page.wait_for_function("!document.querySelector('[data-doc-comments] .doc-comment.held')")  # (sent: no longer held)
 
 
+def test_send_now_shows_while_comments_wait_and_the_column_keeps_its_place(people, server, browser_db):
+    """Issue 116 (Brett, Nov 25): Send now, beside Comment, shows only while a comment of his waits; it sends them and
+    goes; the question stays open for his picks. And the column keeps its place without the mockup beside it (a page's
+    picture can't copy the sealed frame: the comments slid under the mockup's own picture)."""
+    from app.documents import doc_id
+
+    path = "docs/mockups/fft-round-2/index.html"
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        qid = conn.execute(text("INSERT INTO fft_questions (about, about_id, doc_path, text, choices, workspace_id) VALUES "
+                                "('document', NULL, :p, 'Which?', '[]', 1) RETURNING id"), {"p": path}).scalar()
+    engine.dispose()
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")
+    page = admin.open(f"/manage/documents/{doc_id(path)}")
+    frame = page.frame_locator("iframe.doc-frame")
+    page.locator("[data-doc-comments]").wait_for()
+    send_now = page.locator("[data-comments-send]")
+    assert not send_now.is_visible()  # (nothing waiting)
+    page.locator("[data-comment-mode]").click()
+    frame.locator("h1").first.click()
+    composer = page.locator("[data-comment-composer]")
+    composer.wait_for(state="visible")
+    composer.locator("textarea").fill("Would a fourth pick change it?")
+    composer.locator("button[type=submit]").click()
+    send_now.wait_for(state="visible")
+    send_now.click()
+    send_now.wait_for(state="hidden")
+    page.wait_for_function("!document.querySelector('[data-doc-comments] .doc-comment.held')")
+    assert _one(browser_db[0], "SELECT answered_at FROM fft_questions WHERE id = :i", i=qid)[0] is None  # (still open for his picks)
+    page.evaluate("document.querySelector('.doc-with-comments iframe.doc-frame').remove()")  # (as the picture's copy has it)
+    box, col = (page.locator(".doc-with-comments").bounding_box(), page.locator("[data-comments-slot]").bounding_box())
+    assert col["x"] > box["x"] + box["width"] / 2  # (still in its own column, on the right)
+
+
 def test_a_comment_made_on_claude_ai_is_pinned_by_its_words(people, server, browser_db):
     """Item 39, 6 of 6: a comment brought in from claude.ai has no spot, only the words it was pinned to; askdnd lists it
     as made on claude.ai and pins it at those words on the mockup."""

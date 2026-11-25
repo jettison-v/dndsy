@@ -180,10 +180,10 @@ def test_an_evening_change_is_under_the_tables_day(db, cole, admin):
     from app.models import Revision
 
     db.add(Revision(table="characters", row_id=cole.id, label=cole.name, field="name", old="A", new="B", actor="",
-                    created_at=datetime(2026, 11, 25, 3, 30, tzinfo=UTC)))  # (Nov 24, 7:30 pm at the table)
+                    created_at=datetime(2026, 3, 11, 3, 30, tzinfo=UTC)))  # (Mar 10, 7:30 pm at the table)
     db.commit()
-    page = admin.get("/c/main/manage/history?older=1").text
-    assert 'data-group-label="Nov 24, 2026"' in page and 'data-group-label="Nov 25, 2026"' not in page
+    page = admin.get("/c/main/manage/history?older=1").text  # (a day long past: today's own changes never share it, Nov 25)
+    assert 'data-group-label="Mar 10, 2026"' in page and 'data-group-label="Mar 11, 2026"' not in page
 
 
 def test_history_chips_turn_on_and_off_several_at_once(db, cole, admin):

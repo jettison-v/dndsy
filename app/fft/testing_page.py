@@ -1010,7 +1010,8 @@ def _comments_rail(request: Request, db: Session, doc: str, user_id: int | None)
     rows = list(db.scalars(select(FftDocComment).where(FftDocComment.doc == doc, (FftDocComment.sent_at.is_not(None)) | (FftDocComment.user_id == user_id)
                                                        | (FftDocComment.origin == "claude.ai"))
                            .order_by(FftDocComment.sent_at.is_(None), FftDocComment.n)))
-    return templates.TemplateResponse(request, "_doc_comments.html", {"doc": doc, "comments": rows, "open": asked is not None,
+    held = sum(1 for c in rows if c.sent_at is None and c.user_id == user_id)  # (his own waiting: Send now shows while there are any)
+    return templates.TemplateResponse(request, "_doc_comments.html", {"doc": doc, "comments": rows, "open": asked is not None, "held": held,
                                                                       "pins": [{"n": c.n, "x": c.x, "y": c.y, "page": c.page, "held": c.sent_at is None, "near": c.near if c.origin == "claude.ai" else ""}
                                                                                for c in rows]})
 
@@ -1044,6 +1045,23 @@ def comment_add(request: Request, body=web.JsonBody, db: Session = Depends(get_d
     n = (db.scalar(select(func.max(FftDocComment.n)).where(FftDocComment.doc == doc)) or 0) + 1
     db.add(FftDocComment(doc=doc, page=str(body.get("page", ""))[:300], n=n, x=x, y=min(y, 100000.0), near=str(body.get("near", "")).strip()[:200],
                          words=words, user_id=me["id"]))
+    db.commit()
+    return _comments_rail(request, db, doc, me["id"])
+
+
+@router.post("/manage/testing/comments/send")
+def comments_send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
+    """Send now (issue 116): your comments not sent yet go to Claude at once; the question stays open for your picks."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    body = body if isinstance(body, dict) else {}
+    doc = str(body.get("doc", ""))[:300]
+    me = views.person(db, user)
+    try:
+        rules.comments_sent(db, f"user:{me['id']}", doc, me["id"])
+    except rules.RuleError as e:
+        raise HTTPException(409, e.words) from e
     db.commit()
     return _comments_rail(request, db, doc, me["id"])
 

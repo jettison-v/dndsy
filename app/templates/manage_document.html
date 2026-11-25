@@ -17,7 +17,7 @@
   {% if body %}
   <article class="section doc-text">{{ body }}</article>
   {% else %}
-  <p class="row tight doc-comment-bar"><button class="btn small" type="button" data-comment-mode aria-pressed="false" hidden>Comment</button></p>
+  <p class="row tight doc-comment-bar"><button class="btn small" type="button" data-comment-mode aria-pressed="false" hidden>Comment</button><button class="btn primary small" type="button" data-comments-send hidden>Send now</button>{# (your unsent comments to Claude before your picks: issue 116) #}</p>
   <div class="doc-with-comments">
     <iframe class="doc-frame" src="{{ frame }}" data-doc="{{ e.source }}" title="{{ e.title }}" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" loading="lazy"></iframe>
     <div data-comments-slot="{{ e.source }}"></div>{# (its comments, beside it: issue 24) #}

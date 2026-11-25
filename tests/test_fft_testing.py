@@ -615,3 +615,32 @@ def test_comments_on_a_mockup_wait_for_an_open_question_and_go_with_the_picks(ad
     frame = admin.get(f"/manage/documents/{doc_id(doc)}").text
     url = frame.split('class="doc-frame" src="')[1].split('"')[0]
     assert "doc-layer.js" in admin.get(url).text  # (the layer on every mockup, older ones too)
+
+
+def test_send_now_sends_your_comments_before_your_picks(admin, db):
+    """Issue 116 (Brett, Nov 25: "I do not want to Save my picks when my comments could change my decision"): Send now
+    sends his held comments to Claude at once, says so in Claude's inbox, and leaves the question open for his picks; a
+    comment made after waits again, and goes with the picks."""
+    from app.fft import views
+    from app.fft.models import FftDocComment, FftEvent
+
+    doc = "docs/mockups/fft-round-2/index.html"
+    pin = {"doc": doc, "x": 0.4, "y": 120, "near": "Split into 3", "words": "Would a fourth pick change it?"}
+    assert admin.post("/manage/testing/comments/send", json={"doc": doc}).status_code == 409  # (no open question)
+    q = rules.ask(db, "claude", about="document", about_id=None, text="Which?", doc_path=doc)
+    db.flush()
+    rail = admin.post("/manage/testing/comments", json=pin).text
+    assert 'data-held="1"' in rail
+    rail = admin.post("/manage/testing/comments/send", json={"doc": doc}).text
+    assert 'data-held="0"' in rail and "Sent to Claude" in rail
+    c = db.scalar(select(FftDocComment))
+    db.refresh(c)
+    db.refresh(q)
+    assert c.sent_at is not None and c.question_id == q.id and q.answered_at is None  # (sent; the question still open)
+    ev = db.scalar(select(FftEvent).where(FftEvent.kind == "doc_comments_sent"))
+    assert ev.thing_id == q.id and views.event_words(ev).startswith("Brett sent 1 comment on question") and "fourth pick" not in views.event_words(ev)
+    admin.post("/manage/testing/comments", json=pin | {"words": "And one more."})
+    r = admin.post("/manage/testing/picks", json={"doc": doc, "picks": [{"name": "queue", "value": "quiet", "label": "1 A"}], "notes": ""})
+    assert r.json()["comments"] == 1  # (only the one made after Send now went with the picks)
+    db.refresh(q)
+    assert "And one more." in q.answer_text and "fourth pick" not in q.answer_text
