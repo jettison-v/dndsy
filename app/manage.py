@@ -327,7 +327,7 @@ def _more_states(db: Session) -> dict:
     from app import dice
     from app.fft import rules
     from app.fft.models import FftIssue, FftItem
-    from app.models import Revision, UsageEvent
+    from app.models import Revision
 
     open_n = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state != "closed")) or 0
     ready_n = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state == "ready")) or 0
@@ -336,12 +336,8 @@ def _more_states(db: Session) -> dict:
     mode = {"available": "Deploys: After my local try", "independent": "Deploys: When tests pass", "frozen": "Deploys: Paused"}[rules.mode_of(db)]
     week = datetime.now(UTC) - timedelta(days=7)
     from app import usage as feature_use
-    from app.models import Campaign, User
 
-    out = [u.id for u in db.scalars(select(User)) if feature_use._left_out(u.email)]  # (as the Features page counts: not
-    tests = list(db.scalars(select(Campaign.id).where(Campaign.is_test.is_(True))))  # admins', test accounts' or test campaigns')
-    used = db.scalar(select(func.count(func.distinct(UsageEvent.feature))).where(
-        UsageEvent.at >= week, func.coalesce(UsageEvent.user_id, 0).not_in(out or [-1]), func.coalesce(UsageEvent.campaign_id, 0).not_in(tests or [-1]))) or 0
+    used = len(feature_use.families_used(feature_use.counted(db, None, week)))  # (as Feature use counts them: one rule)
     last = db.scalar(select(func.max(Revision.created_at)))
     return {
         "feedback": (_plural(open_n, "issue") + " open" + (f" · {ready_n} ready to try" if ready_n else ""), ""),
