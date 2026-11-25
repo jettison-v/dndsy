@@ -1,11 +1,10 @@
 {# The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2): Upload, Describe it,
    From D&D Beyond, for a World entry or one of a character's creatures. app.js "the Picture window" handles dropping and
    pasting a picture into Upload and shows it before it's sent. #}
-<div class="peek-head">
-  <div><div class="note">Picture</div><h2 id="peek-title">{{ o.name }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body pw" data-picture-window>
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set w_kind %}Picture{% endset %}{% set w_title %}{{ o.name }}{% endset %}
+{% call window(w_kind, w_title, body_class="pw", body_attrs=' data-picture-window') %}
   <div class="tabbar" role="tablist" aria-label="How to add it">
     <button type="button" role="tab" aria-selected="{{ 'false' if start == 'draw' else 'true' }}" data-tab="pw-up">Upload</button>
     <button type="button" role="tab" aria-selected="{{ 'true' if start == 'draw' else 'false' }}" data-tab="pw-draw">Describe it</button>
@@ -29,7 +28,7 @@
     {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
     <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" class="pw-form pw-draw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
-      <label class="field">What it looks like<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea></label>
+      {% call field("What it looks like") %}<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea>{% endcall %}
       <p class="pw-style"><span class="tag">Drawn as</span> <span class="note">{{ o.framing }}</span></p>
       <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
       {# The Art style's pictures only when asked (Brett, Nov 6: matched every time, everyone looked alike): off for a person or creature, whose look is their own #}
@@ -66,4 +65,4 @@
     {% if pic and pic.file_key %}<button class="btn small" type="button" hx-get="/pictures/frame?for={{ o.ref }}" hx-swap="none">Frame it</button>{% endif %}
     <button class="btn link small danger" type="submit">Remove picture</button>
   </form>{% endif %}
-</div>
+{% endcall %}

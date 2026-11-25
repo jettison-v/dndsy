@@ -3,7 +3,7 @@
 {% from "_window.html" import window %}
 {% set w_kind %}Connections{% endset %}{% set w_title %}{{ cx.e.name }}{% endset %}
 {% set w_foot %}<a class="btn" href="{{ cbase }}/campaign?{{ 'tab=quests&' if cx.e.kind.value == 'quest' }}open={{ cx.e.id }}">More about {{ cx.e.name }}</a>{% endset %}
-{% call window(w_kind, w_title, foot=w_foot) %}
+{% call window(w_kind, w_title, foot=w_foot, body_class="") %}
   {% if cx.nodes %}{{ connections_diagram(cx, "window") }}
   {% else %}<p class="muted">No relationships yet. The DM adds them in an entry's Edit window.</p>{% endif %}
 {% endcall %}

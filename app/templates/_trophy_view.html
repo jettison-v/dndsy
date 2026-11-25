@@ -2,13 +2,10 @@
    their numbers, every d20 they rolled and their awards newest first, each opening its session. #}
 {% from "_lists.html" import empty_state %}
 {% set r = row %}{% set s = r.sheet %}
-<div class="peek-head">
-  <div class="tr-head"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
-    <div><div class="note">Trophies</div><h2 id="peek-title">{{ r.name }}</h2>
-      <span class="note">{% if s %}{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %} · {% endif %}{{ r.played }} session{{ "s" if r.played != 1 }}</span></div></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body trophy-view">
+{% from "_window.html" import window %}
+{% set w_pic %}<span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>{% endset %}
+{% set w_sub %}{% if s %}{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %} · {% endif %}{{ r.played }} session{{ "s" if r.played != 1 }}{% endset %}
+{% call window("Trophies", r.name, body_class="trophy-view", pic=w_pic, sub=w_sub) %}
   <h3 class="tale-label">The shelf{% if r.awards %} · {{ r.awards | length }} award{{ "s" if r.awards | length != 1 }}{% endif %}</h3>
   {% if r.shelf %}<div class="tr-shelf">
     {% for a in r.shelf %}<div class="tr-trophy{{ ' dice' if a.dice }}"><span class="award-name">{{ a.award }}</span><b>×{{ a.n }}</b><span class="note">{{ a.sessions | join(", ") }}</span></div>{% endfor %}
@@ -43,4 +40,4 @@
     </section>
   </div>
   <p class="note">Counting {{ mode_says | lower }}, from the rolls everyone saw in Table rolls{% if r.dm %} with no character (the monsters'){% endif %}. Rolls made on paper or before askdnd's Table rolls aren't counted. For fun, never a ranking.</p>
-</div>
+{% endcall %}

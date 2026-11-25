@@ -1,22 +1,24 @@
 {# Large modal: add or edit a player note. Repeating rows (turns, levels, steps) use [data-repeat] in app.js. #}
+{% from "_form_bits.html" import field %}
 {% set d = data %}
-<div class="peek-head fm-head" data-private>
-  <div class="fm-title"><div class="note">{{ c.name }} · {{ meta.label }}</div>
-    <h2 id="peek-title">{{ n.title if n else meta.new }}</h2>
-    <div class="note">{{ meta.about }}</div></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-{# hx-post: saving updates the page in place (no reload, you stay on your tab); the plain post is the fallback #}
-<form class="peek-form" data-private method="post" action="/characters/{{ c.id }}/notes" hx-post="/characters/{{ c.id }}/notes" hx-swap="none">
-<div class="peek-body note-form">
+{% from "_window.html" import window %}
+{% set w_foot %}
+    <button class="btn primary" type="submit">Save</button>
+    <span class="note">Every player can read this; the DM can't.</span>
+    {% if n %}<button class="btn link danger push" type="button" hx-post="/characters/{{ c.id }}/notes/{{ n.id }}/delete" hx-swap="none"
+      hx-confirm="Delete this note?">Delete</button>{% endif %}
+{% endset %}
+{# hx-post: saving updates the page in place (no reload, you stay on your tab); the plain post is the fallback. On the one
+   window (Roadmap item 47). #}
+{% call window(c.name ~ " · " ~ meta.label, n.title if n else meta.new, foot=w_foot, form='data-private method="post" action="/characters/' ~ c.id ~ '/notes" hx-post="/characters/' ~ c.id ~ '/notes" hx-swap="none"', tall=True, attrs=" data-private", body_class="note-form", sub=meta.about) %}
   {% if n %}<input type="hidden" name="note_id" value="{{ n.id }}">{% else %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
-  <label class="field"><span>Title</span><input type="text" name="title" maxlength="200" value="{{ n.title if n else '' }}"
-    placeholder="{{ {'combo': 'e.g. Grapple, then Moonbeam', 'leveling': 'e.g. Moon Druid with a Monk dip', 'quest': 'e.g. Find out what happened to my father', 'general': 'e.g. Things the DM told me'}[kind] }}" autofocus></label>
+  {% call field("Title") %}<input type="text" name="title" maxlength="200" value="{{ n.title if n else '' }}"
+    placeholder="{{ {'combo': 'e.g. Grapple, then Moonbeam', 'leveling': 'e.g. Moon Druid with a Monk dip', 'quest': 'e.g. Find out what happened to my father', 'general': 'e.g. Things the DM told me'}[kind] }}" autofocus>{% endcall %}
 
   {% if kind == "combo" %}
   <div class="form-2">
-    <label class="field"><span>When to use it</span><textarea name="when" rows="2" placeholder="e.g. A big melee enemy, allies nearby">{{ d.when }}</textarea></label>
-    <label class="field"><span>What it needs</span><textarea name="needs" rows="2" placeholder="Resources, position, conditions: e.g. a 2nd-level slot, Wild Shape use, enemy within 5 ft">{{ d.needs }}</textarea></label>
+    {% call field("When to use it") %}<textarea name="when" rows="2" placeholder="e.g. A big melee enemy, allies nearby">{{ d.when }}</textarea>{% endcall %}
+    {% call field("What it needs") %}<textarea name="needs" rows="2" placeholder="Resources, position, conditions: e.g. a 2nd-level slot, Wild Shape use, enemy within 5 ft">{{ d.needs }}</textarea>{% endcall %}
   </div>
   <h3>Turns</h3>
   <p class="note">Most combos need a setup turn and a payoff turn. List each turn's steps in the order you take them: a Bonus action can come before or after your Action, and you can move between them.</p>
@@ -35,19 +37,19 @@
         <template>{{ step_row({"kind": "action"}) }}</template>
         <button type="button" class="btn small" data-repeat-add>+ Add a step</button>
       </div>
-      <label class="field"><span>Notes</span><input type="text" name="turn_notes" value="{{ t.notes }}" placeholder="e.g. Only if the Grapple worked"></label>
+      {% call field("Notes") %}<input type="text" name="turn_notes" value="{{ t.notes }}" placeholder="e.g. Only if the Grapple worked">{% endcall %}
     </fieldset>{% endmacro %}
     {% for t in turns %}{{ turn_row(t) }}{% endfor %}
     <template>{{ turn_row({"label": ""}) }}</template>
     <button type="button" class="btn small" data-repeat-add>+ Add a turn</button>
   </div>
   <div class="form-2">
-    <label class="field"><span>Payoff</span><textarea name="payoff" rows="2" placeholder="What it achieves">{{ d.payoff }}</textarea></label>
-    <label class="field"><span>Risks</span><textarea name="risks" rows="2" placeholder="What can go wrong">{{ d.risks }}</textarea></label>
+    {% call field("Payoff") %}<textarea name="payoff" rows="2" placeholder="What it achieves">{{ d.payoff }}</textarea>{% endcall %}
+    {% call field("Risks") %}<textarea name="risks" rows="2" placeholder="What can go wrong">{{ d.risks }}</textarea>{% endcall %}
   </div>
 
   {% elif kind == "leveling" %}
-  <label class="field"><span>Where you're heading</span><textarea name="goal" rows="2" placeholder="e.g. A Moon Druid who fights in Wild Shape, with two Monk levels for Bonus-action strikes">{{ d.goal }}</textarea></label>
+  {% call field("Where you're heading") %}<textarea name="goal" rows="2" placeholder="e.g. A Moon Druid who fights in Wild Shape, with two Monk levels for Bonus-action strikes">{{ d.goal }}</textarea>{% endcall %}
   <h3>Level by level</h3>
   <div class="repeat" data-repeat>
     {% macro step_row(st) %}<fieldset class="repeat-row level-edit">
@@ -64,10 +66,10 @@
   </div>
 
   {% elif kind == "quest" %}
-  <label class="field"><span>Goal</span><textarea name="goal" rows="2">{{ d.goal }}</textarea></label>
+  {% call field("Goal") %}<textarea name="goal" rows="2">{{ d.goal }}</textarea>{% endcall %}
   <div class="form-2">
-    <label class="field"><span>Why it matters</span><textarea name="why" rows="2">{{ d.why }}</textarea></label>
-    <label class="field"><span>Who and where</span><textarea name="who" rows="2" placeholder="People and places from the campaign become links">{{ d.who }}</textarea></label>
+    {% call field("Why it matters") %}<textarea name="why" rows="2">{{ d.why }}</textarea>{% endcall %}
+    {% call field("Who and where") %}<textarea name="who" rows="2" placeholder="People and places from the campaign become links">{{ d.who }}</textarea>{% endcall %}
   </div>
   <h3>Steps and leads</h3>
   <div class="repeat" data-repeat>
@@ -80,7 +82,7 @@
     <template>{{ qstep({}) }}</template>
     <button type="button" class="btn small" data-repeat-add>+ Add a step</button>
   </div>
-  <label class="field short"><span>Status</span><select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select></label>
+  {% call field("Status") %}<select name="status">{% for k, v in statuses.items() %}<option value="{{ k }}"{{ ' selected' if status == k }}>{{ v }}</option>{% endfor %}</select>{% endcall %}
 
   {% else %}
   {# app.js richNotes swaps the textarea for an editor with formatting buttons; the textarea still holds the Markdown that's saved #}
@@ -88,11 +90,4 @@
     <template class="rich-src">{{ body_html }}</template></div>
   {% endif %}
 
-</div>
-  <div class="peek-foot row">
-    <button class="btn primary" type="submit">Save</button>
-    <span class="note">Every player can read this; the DM can't.</span>
-    {% if n %}<button class="btn link danger push" type="button" hx-post="/characters/{{ c.id }}/notes/{{ n.id }}/delete" hx-swap="none"
-      hx-confirm="Delete this note?">Delete</button>{% endif %}
-  </div>
-</form>
+{% endcall %}

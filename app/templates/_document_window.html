@@ -3,7 +3,7 @@
    plan written as text, its words, scrolling in the window (Nov 19: a plan showed the whole page there, unscrollable). #}
 {% from "_window.html" import window %}
 {% set w_tools %}<a class="btn link small" href="/manage/documents/{{ e.id }}" data-no-peek>Open as a page</a>{# (its address, to keep or send: Brett's pick D2, Nov 24) #}{% if not body %}<button class="btn small" type="button" data-comment-mode aria-pressed="false" hidden>Comment</button><button class="btn primary small" type="button" data-comments-send hidden>Send now</button>{# (your unsent comments to Claude before your picks: issue 116) #}{% endif %}{% if e.link %}<a class="btn link small" href="{{ e.link }}" target="_blank" rel="noopener noreferrer">On claude.ai ↗</a>{% endif %}{% endset %}
-{% call window({"guide": "Guide", "plan": "Plan", "design": "Design", "earlier": "Earlier"}.get(e.kind, "Document"), e.title, tools=w_tools, tall=True, body_class="" if body else "doc-window doc-with-comments") %}
+{% call window({"guide": "Guide", "plan": "Plan", "design": "Design", "earlier": "Earlier"}.get(e.kind, "Document"), e.title, tools=w_tools, tall=True, body_class="stack" if body else "doc-window doc-with-comments") %}
 {% if body %}<article class="doc-text" data-doc="{{ e.source }}">{{ body }}</article>{# (a plan: its words, scrolling in the window) #}
 {% else %}
   <iframe class="doc-frame" src="{{ frame }}" data-doc="{{ e.source }}" title="{{ e.title }}" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>

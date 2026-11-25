@@ -3,11 +3,9 @@
    fails (app/data/jobs.json), and its latest runs, each the item window's section (issue 68: page panels drew no box,
    only their spacing). #}
 {% from "_admin_bits.html" import state_line, rd_section %}
-<div class="peek-head fft-item-head" data-job-panel="{{ j.key }}">
-  <div><div class="note">Scheduled job · {{ j.where }}</div><h2 id="peek-title" class="sr">{{ j.title }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body fft-item-body">
+{% from "_window.html" import window %}
+{% set w_head %} data-job-panel="{{ j.key }}"{% endset %}
+{% call window("Scheduled job · " ~ j.where, j.title, attrs=w_head, title_attrs=' class="sr"', body_class="fft-item-body") %}
 <article class="reader-article fb-read">
   <h2 class="nt-h">{{ j.title }}</h2>
   {% if j.reads == "elsewhere" %}{{ state_line("On " ~ j.where, "quiet", j.when ~ " · it doesn't report here") }}{% if j.link %}<p><a href="{{ j.link }}" target="_blank" rel="noopener noreferrer" data-job-link>Its runs on {{ j.where }} ↗</a></p>{% endif %}
@@ -22,4 +20,4 @@
     {% if runs %}<ol class="tl fft-tl">{% for r in runs %}<li class="tl-{{ 'passed' if r.result == 'ok' else 'failed' }}"><span>{{ "OK" if r.result == "ok" else "Failed" }}{% if r.words %}: {{ r.words }}{% endif %}</span> <span class="note tl-when"><time datetime="{{ r.at.isoformat() }}" data-clock="date">{{ r.at | ago }}</time></span></li>{% endfor %}</ol>
     {% else %}<p class="note">{{ "It doesn't report here." if j.reads == "elsewhere" else "None reported here yet." }}</p>{% endif %}{% endcall %}
 </article>
-</div>
+{% endcall %}

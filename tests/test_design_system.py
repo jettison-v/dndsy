@@ -135,30 +135,20 @@ def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
 
 # Windows still to move onto the one window (Roadmap item 47, Brett's pick W1 A, Nov 25): the work left, which may only
 # shrink. A window that moves leaves this list; a new window is built from _window.html from its first day.
-WINDOWS_TO_MOVE = {
-    "_brief.html",
-    "_check_numbers.html",
-    "_dice_picker.html",
-    "_email_settings.html",
-    "_hp_window.html",
-    "_item_browser.html",
-    "_note_panel.html",
-    "_panel_detail.html",
-    "_panel_options.html",
-    "_panel_vital.html",
-    "_peek.html",
-    "_picture_window.html",
-    "_roll_checks.html",
-    "_scene_panel.html",
-    "_token_panel.html",
-    "_trophy_view.html",
-}
+WINDOWS_TO_MOVE: set[str] = set()  # (every window is on the one window: Roadmap item 47, step 3)
+# The three immersive windows keep a head of their own (Brett's picks: the Spell Book's Concentration pill and Change
+# spells, the Change window's reason chip and its reasons under the title, a Wild Shape form's picture, tags and Shift
+# into it): their bodies and feet are the window's, their heads aren't yet. Item 47 named them; a fourth may not join.
+IMMERSIVE_HEADS = {"_change_window.html", "_panel_form.html", "_spellbook.html"}
 
 
 def test_every_window_is_the_one_window():
     """Roadmap item 47 (Brett, Nov 25: "fix these holistically"): a window's head, body and foot come from _window.html,
     so Save sits in its foot and the window fits what's in it, everywhere. Those still to move are listed above."""
-    hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head"' in p.read_text() and p.name != "_window.html"}
+    hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head' in p.read_text() and p.name != "_window.html"}
+    assert hand_made - WINDOWS_TO_MOVE <= IMMERSIVE_HEADS | WINDOWS_TO_MOVE, "A window's head of its own: " + str(sorted(hand_made - WINDOWS_TO_MOVE - IMMERSIVE_HEADS))
+    assert hand_made >= IMMERSIVE_HEADS, f"Moved onto the one window: take it off IMMERSIVE_HEADS: {sorted(IMMERSIVE_HEADS - hand_made)}"
+    hand_made -= IMMERSIVE_HEADS
     assert not hand_made - WINDOWS_TO_MOVE, f"A window built by hand: build it from _window.html's window(): {sorted(hand_made - WINDOWS_TO_MOVE)}"
     assert not WINDOWS_TO_MOVE - hand_made, f"Moved onto the one window: take it off WINDOWS_TO_MOVE: {sorted(WINDOWS_TO_MOVE - hand_made)}"
 
