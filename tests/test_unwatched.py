@@ -97,3 +97,23 @@ def test_a_sheet_read_from_itself_a_moment_ago_is_left_alone(db, sheet):
     trah.snapshot.sheet_at -= characters.PUBLIC_TRAILS
     db.flush()
     assert trah.id in [c.id for c in unwatched.unwatched(db)]
+
+
+def test_a_test_campaigns_sheets_wait_behind_the_tables(db, sheet, monkeypatch):
+    """Brett, Nov 25: the test campaign's 13 sheets shared the one line with the table's 4 and slowed them to about 2
+    minutes a round; a test campaign's unwatched sheets now go to the back."""
+    from sqlalchemy import text
+
+    from app.models import Campaign
+
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    test = Campaign(slug="vtt-test", name="VTT test", is_test=True, vtt_pieces=["sync"])
+    db.add(test)
+    db.flush()
+    characters.move(db, trah, test.id)  # (Trah at the test table)
+    for ch in (cole, trah):
+        ch.sheet_heard_at = None
+    _old(db)
+    assert sorted(unwatched.tick(db)) == sorted([cole.id, trah.id])
+    got = dict(db.execute(text("SELECT payload->>'character_id', priority FROM jobs WHERE kind = 'ddb_refresh'")).all())
+    assert got[str(trah.id)] < got[str(cole.id)]

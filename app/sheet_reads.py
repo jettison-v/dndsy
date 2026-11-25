@@ -25,7 +25,7 @@ from app import jobs
 
 KIND = "ddb_refresh"
 QUEUE = "ddb"
-PRESS, PAGE, UNWATCHED = 10, 0, -5  # (priorities)
+PRESS, PAGE, UNWATCHED, UNWATCHED_TEST = 10, 0, -5, -10  # (priorities: a test campaign's sheets last, Brett Nov 25)
 WAIT_SECONDS = 8.0  # (a press waits this long for its answer, then says it's on its way)
 
 
