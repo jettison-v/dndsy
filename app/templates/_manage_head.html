@@ -6,7 +6,7 @@
 {% set camp = here.name if here else "This campaign" %}
 {% set mine = manage_pages | selectattr("group", "equalto", grp) | selectattr("listed") | list %}
 {% macro manage_list() %}
-  {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}{% if p.planned %}<span class="manage-planned" data-item="{{ p.key }}" title="{{ p.about }}">{{ p.label }} <small>planned</small></span>{% else %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}" data-item="{{ p.key }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endif %}{% endfor %}
+  {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}" data-item="{{ p.key }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
 {% endmacro %}
 <div class="manage-band {{ 'camp' if grp == 'campaign' else 'tool' }}">
   <span class="sr">{{ (camp + ": this campaign's Backstage") if grp == "campaign" else "Global: askdnd, the same in every campaign" }}</span>{# (no way across here: Backstage in the menu bar has both halves; issue 23, Nov 20) #}

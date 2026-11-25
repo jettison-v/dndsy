@@ -83,7 +83,7 @@ def test_needs_you_lists_whats_waiting_and_admin_items(monkeypatch, db):
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     page = reviewer.get("/c/main/manage").text
-    assert "Backlog: 2 sessions not drafted yet" in page and "No backup recorded yet" not in page  # admins only
+    assert "2 sessions not drafted yet" in page and "Draft the next one" in page and "No backup recorded yet" not in page  # admins only (a button that does it: NY1)
     admin = client_for(monkeypatch, db, "brett@example.com")
     page = admin.get("/c/main/manage").text
     assert "No backup recorded yet" in page and 'href="/manage/backups"' in page

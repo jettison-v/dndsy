@@ -51,9 +51,10 @@ def test_the_dm_sees_what_they_make_under_the_next_game(dm, db):
     page = dm.get("/c/main/manage").text
     assert items(page, "manage")[:6] == ["needs", "inbox", "sessions", "dm-tools", "scene-notes", "places"]
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
-    assert 'data-item="planned:shops"' in side and 'href=""' not in side  # (planned kinds listed, never links)
-    for tile in ("items", "scene-notes", "places", "shops"):
+    assert "planned:" not in side and 'href=""' not in side  # (the planned kinds left the menu: Brett's pick NY1, Nov 25)
+    for tile in ("items", "scene-notes", "places"):
         assert f'data-tile="{tile}"' in page
+    assert 'data-tile="shops"' not in page and "shops" in page.split("data-coming")[1][:200]  # (one quiet line, never a tile)
     assert 'data-workbench="table"' in page and 'data-workbench="make"' in page
 
 

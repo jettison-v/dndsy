@@ -1,6 +1,6 @@
 """The DM's Workspace (Brett chose B, Nov 13, docs/mockups/dm-workspace/): Manage as one place for the DM, its list down
 the left grouped by the DM's week (app/manage.py PAGES), and its home a workbench: what needs you, who's at the table,
-then a tile per kind of thing the DM makes (the planned kinds as dashed tiles until they're built).
+then a tile per kind of thing the DM makes (the planned kinds one quiet line until they're built: Brett's pick NY1, Nov 25).
 
 Two pages join The next game here: **Scene notes** (every place's pins, the DM's alone: the `scene_notes` rule, never
 an admin as such, never View as; app/scene_notes.py) and **Places and maps** (askdnd's table's places, each opening the
@@ -53,8 +53,7 @@ def workbench(db: Session, request: Request, user: dict, campaign) -> dict:
         tiles.append({"key": "places", "name": "Places and maps", "count": len(ps),
                       "says": f"{len(ps)} place{'s' if len(ps) != 1 else ''} · {mapped} with a map" if ps else "None yet",
                       "open": f"{base}/manage/places"})
-    if homebrew.can_make(user, campaign):
-        tiles += [{"key": key, "name": name, "says": what, "planned": True} for key, name, what in homebrew.PLANNED]
+    coming = [name.lower() for _, name, _ in homebrew.PLANNED] if homebrew.can_make(user, campaign) else []  # (one quiet line, never tiles: NY1)
     from app import live
 
     says = {"step": "connected", "via": "through your browser", "closed": "sheet closed"}
@@ -62,7 +61,7 @@ def workbench(db: Session, request: Request, user: dict, campaign) -> dict:
     for r in live.rows_from(db):
         tone = "step" if r["step"] else "via" if r["via"] else "closed" if r["connects"] else ""
         who.append({"name": r["name"], "portrait": r["portrait"], "tone": tone, "says": says.get(tone, "")})
-    return {"tiles": tiles, "who": who}
+    return {"tiles": tiles, "who": who, "coming": coming}
 
 
 @router.get("/manage/scene-notes")  # under the campaign: /c/<campaign>/manage/scene-notes

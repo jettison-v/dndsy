@@ -103,14 +103,8 @@ def pages_for(user: dict | None, path: str = "") -> list[dict]:
         same = path == href or (href != "/manage" and path.startswith(href + "/")) or any(path.startswith(p) for p in extra)
         out.append({"key": key, "label": label, "href": (base if group == CAMPAIGN else "") + href, "about": about,
                     "group": group, "section": section, "menu": key in IN_MENU, "counted": key in COUNTED,
-                    "listed": key not in UNLISTED, "planned": False,
+                    "listed": key not in UNLISTED,
                     "here": same and (group == CAMPAIGN) == in_campaign})
-    if may(user, "house_rules"):  # (what a DM will make next: listed at the end of The next game, never a link, until built)
-        from app.homebrew import PLANNED
-
-        at = max((i + 1 for i, p in enumerate(out) if p["section"] == NEXT), default=len(out))
-        out[at:at] = [{"key": f"planned:{k}", "label": name, "href": "", "about": what, "group": CAMPAIGN, "section": NEXT,
-                       "menu": False, "counted": False, "listed": True, "planned": True, "here": False} for k, name, what in PLANNED]
     return out
 
 
@@ -176,7 +170,7 @@ def needs(db: Session, user: dict) -> list[dict]:
         n = waiting_count(db)
         if n:
             out.append({"text": f"{_plural(n, 'suggestion')} or draft{'s' if n != 1 else ''} from the table",
-                        "sub": "Waiting for your OK", "href": f"{base}/manage/inbox", "go": "Open the inbox"})
+                        "sub": "Waiting for your OK", "href": f"{base}/manage/inbox", "go": "Decide on them"})
     if campaign and is_reviewer(user):
         status = review.statuses(db, campaign.id)
         rows = [(s, status.get(s.id, "no draft")) for s in timeline(db, campaign.id)]
@@ -187,14 +181,17 @@ def needs(db: Session, user: dict) -> list[dict]:
                         else f"{_plural(len(ready), 'session')} ready to review",
                         "sub": "Nothing reaches the table until you publish it",
                         "href": f"{base}/manage/sessions/{first.id}" if len(ready) == 1 else f"{base}/manage/sessions",
-                        "go": "Review it" if len(ready) == 1 else "Sessions"})
+                        "go": "Review it" if len(ready) == 1 else "Review them"})
         for s in [s for s, st in rows if st == "read"]:  # (a transcript read: its questions first, then Draft the recap)
             out.append({"text": f"{session_label(s)} has Claude's questions and suggestions",
                         "sub": "Settle them, then draft the recap", "href": f"{base}/manage/sessions/{s.id}", "go": "Open it"})
-        undrafted = sum(1 for s, st in rows if st == "no draft" and s.source == "notes")
-        if undrafted:
-            out.append({"text": f"Backlog: {_plural(undrafted, 'session')} not drafted yet",
-                        "sub": "Publishing a session drafts the next one", "href": f"{base}/manage/sessions", "go": "Sessions"})
+        undrafted = [s for s, st in rows if st == "no draft" and s.source == "notes"]
+        if undrafted:  # (a button that does it: Brett's pick NY1, Nov 25; the same draft Sessions' red button starts)
+            from app.admin_sessions import draft_cost
+
+            out.append({"text": f"{_plural(len(undrafted), 'session')} not drafted yet",
+                        "sub": f"About ${draft_cost(db):.2f} each · publishing one drafts the next", "href": f"{base}/manage/sessions",
+                        "go": "Draft the next one", "post": f"{base}/manage/sessions/draft", "ids": [undrafted[0].id]})
         snaps = db.execute(select(CharacterSnapshot.status, CharacterSnapshot.fetched_at)  # (not the sheets themselves)
                            .join(CampaignCharacter, CampaignCharacter.character_id == CharacterSnapshot.character_id)
                            .join(Character, Character.id == CharacterSnapshot.character_id)
@@ -205,10 +202,10 @@ def needs(db: Session, user: dict) -> list[dict]:
         where = (f"{base}/manage/table", "Table") if can_see_table(user) else ("/party", "Party")
         if failed:
             out.append({"text": f"{_plural(len(failed), 'character')} couldn't refresh from D&D Beyond",
-                        "sub": "askdnd shows the last good copy; check the character is Public", "href": where[0], "go": where[1]})
+                        "sub": "askdnd shows the last good copy; check the character is Public", "href": where[0], "go": "Check them"})
         elif oldest and datetime.now(UTC) - oldest > STALE_CHARACTERS:
             out.append({"text": f"Characters last refreshed {_ago(oldest)}", "sub": "Refresh them from D&D Beyond",
-                        "href": where[0], "go": where[1]})
+                        "href": where[0], "go": "Refresh them" if where[1] == "Table" else "See them"})
     if campaign and is_dm(user, campaign.id):  # (healing given to someone, not applied yet: the DM can apply it, app/heals.py)
         from app.heals import open_heals
 
@@ -222,24 +219,25 @@ def needs(db: Session, user: dict) -> list[dict]:
         n = open_count(db)
         if n:
             out.append({"text": f"{n} tool correction{'s' if n != 1 else ''} to build into askdnd", "admin": True,
-                        "sub": "Ask Claude to build them in; each is a patch until then", "href": "/manage/tool-corrections", "go": "Tool corrections"})
+                        "sub": "Each is a patch until askdnd's code is fixed", "href": "/manage/tool-corrections", "go": "Send them to Claude"})
         from app.fft import views as fft_views
 
         notes = fft_views.to_approve(db)
         if notes:  # (the table's notes for Claude wait for an admin's approval, Brett, Nov 6)
             out.append({"text": f"{notes} note{'s' if notes != 1 else ''} from the table to approve", "admin": True,
-                        "sub": "Claude sees none of it until you approve it", "href": "/manage/feedback?tab=approve", "go": "Feedback"})
+                        "sub": "Claude sees none of it until you approve it", "href": "/manage/feedback?tab=approve", "go": "Approve them"})
         b = backup_status(db)
         if b["attention"]:
-            out.append({"text": b["text"], "sub": "Only admins see askdnd-wide items like this", "href": "/manage/backups",
-                        "go": "Backups", "admin": True})
+            last = b["good"].finished_at.astimezone(config.TABLE_TIME).strftime("%b %-d") if b.get("good") else ""
+            out.append({"text": b["text"], "sub": f"The last good copy is from {last}" if last else "askdnd has no good copy yet",
+                        "href": "/manage/backups", "go": "See what failed", "admin": True})
         u = usage_summary(db)
         if u["limit_reached"]:
             out.append({"text": f"Monthly limit of ${u['limit']:.2f} reached", "sub": "Drafting is paused until next month or a higher limit",
-                        "href": "/manage/usage", "go": "Usage", "admin": True})
+                        "href": "/manage/usage", "go": "Raise the limit", "admin": True})
         elif u["balance"] is not None and u["balance"] < 5:
             out.append({"text": f"About ${u['balance']:.2f} of Claude credit left", "sub": "Top up on the Anthropic console, then record it",
-                        "href": "/manage/usage", "go": "Usage", "admin": True})
+                        "href": "/manage/usage", "go": "Record a top-up", "admin": True})
     return out
 
 
@@ -259,7 +257,7 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
     campaign = web.campaign(db)
     return templates.TemplateResponse(request, "manage.html", {
         "items": needs(db, user), "campaign": campaign,
-        "pages": [p for p in pages if p["group"] == CAMPAIGN and p["key"] != "needs" and p["listed"] and not p["planned"]],
+        "pages": [p for p in pages if p["group"] == CAMPAIGN and p["key"] != "needs" and p["listed"]],
         **(workspace.workbench(db, request, user, campaign) if campaign else {"tiles": []})})
 
 
