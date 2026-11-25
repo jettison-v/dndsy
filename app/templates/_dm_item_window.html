@@ -5,7 +5,7 @@
 {% set foot %}<button class="btn primary" type="submit">Save</button><button class="btn link peek-close" type="button">Cancel</button>
   {% if key %}<a class="btn link" href="{{ cbase }}/dm/items/{{ key }}" data-no-peek>Open as a page</a>
   <button class="btn link danger end" type="submit" formaction="{{ cbase }}/dm/items/{{ key }}/retire" formnovalidate data-do="hb-retire"{% if not item.retired %} data-confirm="Retire it? Its rolls and bonuses go out of play; it's kept, with Bring back."{% endif %}>{{ "Bring back" if item.retired else "Retire…" }}</button>{% endif %}{% endset %}
-{% call window("Items", item.name or "New item", foot=foot, form='method="post" action="' ~ cbase ~ '/dm/items" data-item-builder', attrs=' data-dm-item') %}
+{% call window("Items", item.name or "New item", foot=foot, form='method="post" action="' ~ cbase ~ '/dm/items" data-item-builder', form_class="dm-form", attrs=' data-dm-item') %}
   {% if errors %}<div class="card bad" role="alert">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
 {% include "_dm_item_fields.html" %}
 {% endcall %}

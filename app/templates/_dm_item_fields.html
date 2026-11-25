@@ -3,6 +3,7 @@
    (_dm_item_window.html) or the page's (_dm_item_form.html). #}
 {% from "_form_bits.html" import pick_chips, stepper, dice_picker, field %}
       <input type="hidden" name="key" value="{{ key }}">
+      {% if item.retired %}<p class="note" data-hb-retired>It's retired: its rolls and bonuses are off. Bring back puts it in play again.</p>{% endif %}
       <section class="section stack">
         <h2>The item</h2>
         {% call field("Name", key="hb-name") %}<input type="text" name="name" value="{{ item.name or '' }}" maxlength="80" required data-hb-name>{% endcall %}

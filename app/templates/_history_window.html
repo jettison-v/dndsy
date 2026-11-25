@@ -3,7 +3,8 @@
 {# A History row's window (app/history_pages.py `history_window`; Brett's pick HI2, Nov 25), on the one window
    (_window.html; Roadmap item 47): one change shows its before and after side by side, as tall as their words, with
    Restore in the window's foot (issue 121); a row of many (a session's moments published) is one line each, named by
-   its session and its own words, with its own Restore (issue 123). #}
+   its session and its own words, with its own Restore (issue 123), a value change's before and after a fold away
+   (Brett's pick HI2; the review of #529). #}
 {% set one = all | length == 1 %}
 {% macro restore_form(x, cls) -%}
 <form method="post" action="{{ page_url }}/{{ x.r.id }}/restore" class="inline" data-confirm="{{ 'Bring this back?' if x.r.field == 'deleted' else 'Put back ' ~ (x.old | string)[:60] ~ '?' }}">
@@ -23,7 +24,8 @@
   <ul class="records hist-lines">
     {% for x in all %}{% set r = x.r %}
     <li class="record" data-rev="{{ r.id }}"><span class="record-main"><b>{{ x.subject }}</b>
-        <span class="note">{{ "Deleted" if r.field == "deleted" else x.change or x.field }} · {{ r.created_at | clock(date=True) }}{% if x.who %} · {{ x.who }}{% endif %}</span></span>
+        <span class="note">{{ "Deleted" if r.field == "deleted" else x.change or x.field }} · {{ r.created_at | clock(date=True) }}{% if x.who %} · {{ x.who }}{% endif %}</span>
+        {% if r.field != "deleted" and not x.change %}<details class="fold"><summary class="note">Before and after</summary><div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div></details>{% endif %}</span>
       {% if x.restorable %}<span class="record-actions">{{ restore_form(x, "btn small") }}</span>{% endif %}</li>
     {% endfor %}
   </ul>
