@@ -172,3 +172,12 @@ def test_every_window_is_the_one_window():
     hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head"' in p.read_text() and p.name != "_window.html"}
     assert not hand_made - WINDOWS_TO_MOVE, f"A window built by hand: build it from _window.html's window(): {sorted(hand_made - WINDOWS_TO_MOVE)}"
     assert not WINDOWS_TO_MOVE - hand_made, f"Moved onto the one window: take it off WINDOWS_TO_MOVE: {sorted(WINDOWS_TO_MOVE - hand_made)}"
+
+
+def test_a_window_on_the_one_window_opens_and_closes_its_own_boxes():
+    """The review of #530: a window moved onto window() kept a stray </div> and an unclosed foot inside its body (the
+    design system's sample panel), which drew the rest of its page inside the window. Each one's boxes balance."""
+    for p in TEMPLATES.glob("*.html"):
+        text = p.read_text()
+        if 'import window %}' in text and "{% call window(" in text:
+            assert text.count("<div") == text.count("</div>"), f"{p.name}: its <div>s don't close"

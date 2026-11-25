@@ -1,11 +1,10 @@
-{# The component page's sample side panel (and modal): the parts every panel has. Made-up content. #}
+{# The component page's sample side panel (and modal): the parts every panel has, on the one window (Roadmap item 47).
+   Made-up content. #}
 {% from "_window.html" import window %}
-{% set w_kind %}Sample character · Spell{% endset %}{% set w_title %}Fire Bolt{% endset %}
-{% call window(w_kind, w_title) %}
+{% set w_foot %}<button class="btn primary" type="button">Save</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Sample character · Spell", "Fire Bolt", foot=w_foot) %}
   <p>Every panel has a head (what it belongs to, then its name, then ✕), a body that scrolls, and an optional foot for its buttons.</p>
   <dl class="mech note-mech"><dt>Casting time</dt><dd>Action</dd><dt>Range</dt><dd>120 feet</dd><dt>Damage</dt><dd>1d10 Fire</dd></dl>
   <h3 class="divider">Your note</h3>
   <p class="muted">Panels open from the right edge on desktop and from the bottom on phones. Modals sit in the middle; "large" is wider.</p>
-</div>
-<div class="peek-foot row"><button class="btn primary" type="button">Save</button><button class="btn peek-close" type="button">Cancel</button>
 {% endcall %}
