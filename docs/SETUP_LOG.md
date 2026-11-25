@@ -1169,3 +1169,11 @@ What was set up:
 **Why:** a deploy restarts the web app, and anything it was doing stops half done; reads from D&D Beyond came in bursts from every open page with no record of what failed. A queue gives one place to see what's waiting, running or failed (the Sync queue, Roadmap item 44), and lets slow work outlive a deploy.
 
 **Reuse:** before adding Redis, Celery or a queue service, use the database you already have: a jobs table with `SKIP LOCKED`, a unique key per piece of work so it's never queued twice, a heartbeat and a lease so a dead worker's job goes back, and finishing "fenced" on the attempt number. Run the worker inside the web process first and split it out only when you need it to survive deploys.
+
+## A second Railway service: the worker (Nov 25, morning)
+
+**What:** Brett created `askdnd-worker` on Railway from the same GitHub repo, with its own start command (`python -m app.worker`) and variables that are references to the website's (`${{askdnd-v2.DATABASE_URL}}` and the rest). Claude checked it beat within seconds, then set `JOBS_RUNNER=worker` on the website. Since then every D&D Beyond read runs on the worker; the website watches it and reads D&D Beyond itself if it goes quiet for 90 seconds; `/health` shows `"jobs": "worker"` and how long since the worker was heard from.
+
+**Why:** a website deploy restarts it, and anything it was doing in the background stopped half done. The worker deploys on its own and finishes or hands back what it's doing first (`RAILWAY_DEPLOYMENT_DRAINING_SECONDS`).
+
+**Reuse:** one repo can run as several services: same code, different start command. Use reference variables so a key is set once. Give a background service no domain and no health check, and give the main service a fallback for when it's down. Switch over with one variable, so going back is one variable too.
