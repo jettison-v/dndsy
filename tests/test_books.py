@@ -116,7 +116,7 @@ def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, pl
     settings = dm.get("/c/main/manage/settings").text
     assert '<section class="section" id="books">' in settings and "Monster Manual (2024)" in settings and "1 monster" in settings
     r = dm.post("/c/main/manage/settings/books/mm-2024", data={}, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/c/main/manage/settings#books"
+    assert r.status_code == 303 and r.headers["location"] == "/c/main/manage/settings?tab=books#books"
     db.refresh(db.get(Campaign, cole.campaign_id))
     assert "mm-2024" not in db.get(Campaign, cole.campaign_id).books
     page = player.get(url).text

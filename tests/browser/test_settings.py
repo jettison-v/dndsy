@@ -5,7 +5,7 @@ docs/mockups/one-switch/): flipped, it saves itself where it is, with a corner c
 
 def test_a_switch_saves_itself_in_place(people, server):
     dm = people("dm")
-    page = dm.open("/c/main/manage/settings#features")
+    page = dm.open("/c/main/manage/settings?tab=features#features")
     page.evaluate("window.__stayed = true")  # (a reload would lose it)
     sw = page.locator("#features form[data-switch] .switch").first
     before = sw.get_attribute("aria-checked")
@@ -29,7 +29,7 @@ def test_a_switch_saves_itself_in_place(people, server):
 def test_a_switch_that_isnt_yours_is_dimmed_and_never_sends(people, server):
     """Test campaign is an admin's: the DM sees its switch dimmed, with who changes it."""
     dm = people("dm")
-    page = dm.open("/c/main/manage/settings#test")
+    page = dm.open("/c/main/manage/settings?tab=campaign#test")
     sw = page.locator('[data-setting="test"] .switch')
     assert sw.is_disabled() and page.locator('[data-setting="test"] .note').count() == 1
     assert dm.errors == []

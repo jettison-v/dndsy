@@ -24,6 +24,8 @@ class Feature:
     roadmap: str  # where it sits on the roadmap
     labs: bool = False
     state: str = "Ready"  # in Labs: "Being built" (still changing) or "Ready to try"
+    line: str = ""  # what it does in one line, on Settings (Brett's pick SE2, Nov 25); `about` is the longer story
+    warn: str = ""  # what to know before switching it on, amber beside its switch
 
 
 FEATURES: list[Feature] = [
@@ -32,7 +34,9 @@ FEATURES: list[Feature] = [
             "Chrome: hit points, conditions and death saves, Heroic Inspiration, casting, resources and rests, items and "
             "coins, adding items (Add item, Give loot) and Give, preparing spells, and the DM's browser making changes for a player whose sheet is "
             "closed. Tell the table first: D&D Beyond's terms don't allow tools like this.",
-            "Live character state and the D&D Beyond bridge; finished Nov 3."),
+            "Live character state and the D&D Beyond bridge; finished Nov 3.",
+            line="Changes in askdnd and on D&D Beyond reach each other, through the extension in each player's Chrome.",
+            warn="Tell the table first: D&D Beyond's terms don't allow tools like this."),
     Feature("vtt", "askdnd's VTT",
             "The menu bar's Table button opens askdnd's own table instead of D&D Beyond's VTT: places with their maps (a "
             "picture or a Dungeon Alchemist file), the party's and the DM's creatures as tokens, the DM's scene notes "
@@ -40,7 +44,8 @@ FEATURES: list[Feature] = [
             "(Start a fight, Initiative, Next turn, Undo) and your turn's bar under the map. Being built: moving and "
             "measuring, fog and spell areas come next; the table moves from D&D Beyond's VTT once it's all here.",
             "askdnd's table: built to the fight, Nov 7; then moving, fog, areas.",
-            labs=True, state="Being built"),
+            labs=True, state="Being built",
+            line="askdnd's own virtual table in place of D&D Beyond's: places and maps, tokens, the fight."),
     Feature("creatures", "Your creatures",
             "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion, a summon or a steed "
             "is a small character of its own: a switch by its master's name on Battle (Vi · Homunculus) shows its Hit "
@@ -49,7 +54,8 @@ FEATURES: list[Feature] = [
             "Points; summons and steeds are worked out for the level cast. Each has its own card on Party and its place "
             "in the fight, and a familiar or steed its own World entry. With Sync with D&D Beyond, its Hit Points and a "
             "familiar's form are kept in step on the sheet's Extras.",
-            "Your creatures: finished Nov 5, out of Labs."),
+            "Your creatures: finished Nov 5, out of Labs.",
+            line="Familiars, companions, summons and steeds as small characters of their own, on Battle and Party."),
     Feature("initiative", "Initiative from askdnd",
             "Everyone rolls their own Initiative in askdnd before the DM presses Start Combat in D&D Beyond's VTT, a "
             "character's familiar with it, and the number fills in the VTT's combat sidebar (a Homunculus right after "
@@ -57,13 +63,16 @@ FEATURES: list[Feature] = [
             "Sync with D&D Beyond, and extension 0.12.0 with the DM's VTT open.",
             "Initiative in askdnd, Nov 4: being built. Once askdnd's own VTT runs, nothing is "
             "sent to D&D Beyond's.",
-            labs=True, state="Being built"),
+            labs=True, state="Being built",
+            line="Everyone rolls Initiative in askdnd, and the order fills D&D Beyond's combat sidebar.",
+            warn="Needs Sync with D&D Beyond, and the DM's VTT open."),
     Feature("recap_listen", "Listen to the recap",
             "On Campaign › Previously on… and each session in Sessions, ▶ Listen plays the recap read aloud by a narrator, over the pictures of who and "
             "what each paragraph names, panning slowly, with the words on screen: a \"previously on\" to start the night. "
             "The first Listen on a recap has OpenAI read it (a few cents, counted on Backstage › Usage); after that it's kept.",
             "Nice to have, Nov 6 (Brett): tried at the table first.",
-            labs=True, state="Ready to try"),
+            labs=True, state="Ready to try",
+            line="▶ Listen reads a recap aloud over its pictures, to start the night."),
 ]
 LABS = "labs"  # the campaign's Labs switch, kept with the features' keys
 

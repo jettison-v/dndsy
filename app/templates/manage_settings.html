@@ -2,10 +2,17 @@
 {% block title %}Settings · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_settings.html" import switch, set_row, choice %}
+{# Backstage › This campaign › Settings (app/campaigns_admin.py). Brett's picks SE1 and SE2 on docs/mockups/backstage-round-2/
+   (Nov 25): four tabs in place of one long scroll (Campaign, Books, Pictures, Features with Labs inside), each saving one
+   way; each feature one line, what to know first amber beside its switch, the longer story in its More fold. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Settings</h1></div>
   <p class="subtitle">{{ campaign.name }}'s own details. Its DM and admins can change them.</p>
+  <div class="tabbar" role="tablist" data-tab-param aria-label="Settings">
+    {% for key, label in tabs %}<button type="button" role="tab" aria-selected="{{ 'true' if key == tab else 'false' }}" data-tab="t-{{ key }}">{{ label }}</button>{% endfor %}
+  </div>
+  <div id="t-campaign" role="tabpanel"{% if tab != "campaign" %} hidden{% endif %}>
   <section class="section">
   <h2>Campaign details</h2>
   <form method="post" action="{{ cbase }}/manage/settings" class="form-narrow" data-reload>
@@ -17,6 +24,19 @@
   </form>
   <p class="note page-note">Its address stays askdnd.ai/c/{{ campaign.slug }}, so links people saved keep working.</p>
   </section>
+  {# Trophy Case (app/trophies.py; Brett, Nov 10): what Party's Trophies tab counts #}
+  <section class="section" id="trophy-case">
+    <h2>Trophy Case</h2>
+    <p class="hint">What Party's <b>Trophies</b> tab counts. A session's own time comes from its recording (the start the Processor sends, for the recording's length), or its evening when there's no start time. Choose every roll for a table that doesn't record its sessions.</p>
+    {% call set_row("What Party's Trophies counts", key="trophy-case") %}{{ choice(cbase ~ "/manage/settings/trophies", "counts", [("sessions", "During sessions", trophy_modes["sessions"]), ("all", "Every roll", trophy_modes["all"])], trophy_mode, "What Trophy Case counts") }}{% endcall %}
+  </section>
+  <section class="section" id="test">
+    <h2>Test campaign</h2>
+    {% call set_row("This campaign holds test data", "Tagged Test, and it can have test copies of the table's characters (Backstage › Table), which never reach their real D&D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign." ~ ("" if can_set_test else " Only admins change this."), "test") %}{{ switch(cbase ~ "/manage/settings/test", campaign.is_test, "Test campaign", name="is_test", disabled=not can_set_test) }}{% endcall %}
+  </section>
+  </div>
+
+  <div id="t-books" role="tabpanel"{% if tab != "books" %} hidden{% endif %}>
 
   {# Books (data strategy, 2026-10-27; app/books.py): private rules books this campaign's lookups use #}
   <section class="section" id="books">
@@ -35,13 +55,9 @@
     {% else %}<p class="muted">No books are in askdnd yet, so lookups use the SRD alone.</p>{% endif %}
   </section>
 
-  {# Trophy Case (app/trophies.py; Brett, Nov 10): what Party's Trophies tab counts #}
-  <section class="section" id="trophy-case">
-    <h2>Trophy Case</h2>
-    <p class="hint">What Party's <b>Trophies</b> tab counts. A session's own time comes from its recording (the start the Processor sends, for the recording's length), or its evening when there's no start time. Choose every roll for a table that doesn't record its sessions.</p>
-    {% call set_row("What Party's Trophies counts", key="trophy-case") %}{{ choice(cbase ~ "/manage/settings/trophies", "counts", [("sessions", "During sessions", trophy_modes["sessions"]), ("all", "Every roll", trophy_modes["all"])], trophy_mode, "What Trophy Case counts") }}{% endcall %}
-  </section>
+  </div>
 
+  <div id="t-pictures" role="tabpanel"{% if tab != "pictures" %} hidden{% endif %}>
   {# Art style (Brett, 2026-11-04, docs/mockups/pictures/ board 3; app/drawing.py): every picture drawn from a description in
      this campaign gets it. #}
   <section class="section" id="art-style">
@@ -58,10 +74,15 @@
     </form>
   </section>
 
+  </div>
+
+  <div id="t-features" role="tabpanel"{% if tab != "features" %} hidden{% endif %}>
   {# Features and Labs (Brett, 2026-11-03; app/vtt.py): finished features one switch each; Labs one switch that shows
      the features still being tried, each with its own toggle, what it does and where it sits on the roadmap. #}
   {% macro feature_row(f, is_on, can=true) %}
-  <li class="record"><span class="record-main"><b>{{ f.name }}</b> <span class="tag {{ 'done' if f.state == 'Ready' else 'draft' }}">{{ f.state }}</span><span class="note">{{ f.about }}</span><span class="note faint">Roadmap: {{ f.roadmap }}</span></span>
+  <li class="record" data-feature="{{ f.key }}"><span class="record-main"><b>{{ f.name }}</b>{% if f.labs %} <span class="tag {{ 'done' if f.state == 'Ready to try' else 'draft' }}">{{ f.state }}</span>{% endif %}<span class="note">{{ f.line or f.about }}</span>
+    {% if f.warn %}<span class="note feature-warn" data-warn>{{ f.warn }}</span>{% endif %}
+    {% if f.line %}<details class="fold feature-more"><summary>More</summary><p class="note">{{ f.about }}</p></details>{% endif %}</span>
     <span class="record-actions">{% if can %}{{ switch(cbase ~ "/manage/settings/vtt/" ~ f.key, is_on, f.name ~ " on here") }}
       {% else %}<button type="button" class="btn small" data-modal-url="/dice">Your dice</button>{% endif %}</span>
   </li>
@@ -86,9 +107,6 @@
     {% endif %}
   </section>
 
-  <section class="section" id="test">
-    <h2>Test campaign</h2>
-    {% call set_row("This campaign holds test data", "Tagged Test, and it can have test copies of the table's characters (Backstage › Table), which never reach their real D&D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign." ~ ("" if can_set_test else " Only admins change this."), "test") %}{{ switch(cbase ~ "/manage/settings/test", campaign.is_test, "Test campaign", name="is_test", disabled=not can_set_test) }}{% endcall %}
-  </section>
+  </div>
 </main>
 {% endblock %}

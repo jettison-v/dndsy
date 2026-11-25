@@ -48,6 +48,17 @@ def page(request: Request, db: Session = Depends(get_db)):
         "toast": request.session.pop("toast", None)})
 
 
+@router.get("/add-window")
+def add_window(request: Request, db: Session = Depends(get_db)):
+    """+ House rule's window (Brett's pick HR1 on docs/mockups/backstage-round-2/, Nov 25: the forms open on demand)."""
+    user, denied = web.require(request, can_set_house_rules, DENIED)
+    if denied:
+        return denied
+    spells = sorted((rr.recipes().get("spells") or {}).items())
+    return templates.TemplateResponse(request, "_house_rule_add.html", {
+        "spells": [name for name, _ in spells], "once_spells": [name for name, r in spells if house_rules.can_roll_once(r)]})
+
+
 @router.post("")
 def add(request: Request, spell: str = Form(""), field: str = Form(""), value: str = Form(""), reason: str = Form(""),
         db: Session = Depends(get_db)):

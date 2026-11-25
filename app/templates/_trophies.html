@@ -12,7 +12,7 @@
     </div>
     {% endfor %}
   </div>
-  <p class="note">For fun, never a ranking. Counting {{ mode_says | lower }}{% if mode == "sessions" %} ({{ sessions }} published session{{ "s" if sessions != 1 }}){% endif %}, from the rolls everyone saw in Table rolls; the DM's row is the monsters' rolls and the party's drops to 0, recorded since Nov 10.{% if can_set %} <a href="{{ cbase }}/manage/settings#trophy-case">Change what counts</a>.{% endif %}</p>
+  <p class="note">For fun, never a ranking. Counting {{ mode_says | lower }}{% if mode == "sessions" %} ({{ sessions }} published session{{ "s" if sessions != 1 }}){% endif %}, from the rolls everyone saw in Table rolls; the DM's row is the monsters' rolls and the party's drops to 0, recorded since Nov 10.{% if can_set %} <a href="{{ cbase }}/manage/settings?tab=campaign#trophy-case">Change what counts</a>.{% endif %}</p>
 </section>
 {% else %}
 <p class="muted">Nobody at this table yet.</p>

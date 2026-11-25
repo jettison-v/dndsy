@@ -95,8 +95,11 @@ def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_
     return RedirectResponse(f"/c/{c.slug}/manage/table", status_code=303)
 
 
+SETTINGS_TABS = (("campaign", "Campaign"), ("books", "Books"), ("pictures", "Pictures"), ("features", "Features"))  # (SE1, Nov 25)
+
+
 @router.get("/manage/settings")
-def settings_page(request: Request, db: Session = Depends(get_db)):
+def settings_page(request: Request, tab: str = "", db: Session = Depends(get_db)):
     user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
     if denied:
         return denied
@@ -107,7 +110,8 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
         "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None),
         "art": drawing.style(campaign), "art_choices": picture_window.style_choices(db, campaign), "art_refs": drawing.REFS,
-        "trophy_mode": trophies.mode(campaign), "trophy_modes": trophies.MODES})
+        "trophy_mode": trophies.mode(campaign), "trophy_modes": trophies.MODES,
+        "tabs": SETTINGS_TABS, "tab": tab if tab in dict(SETTINGS_TABS) else "campaign"})
 
 
 @router.post("/manage/settings")
@@ -143,7 +147,7 @@ def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(ge
         db.commit()
         access.invalidate()
         toast = f"{c.name} is {'a test campaign: test copies of characters can be added on Backstage › Table' if c.is_test else 'no longer a test campaign'}."
-    return web.switched(request, toast, f"{web.base(c)}/manage/settings#test")
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings?tab=campaign#test")
 
 
 @router.post("/manage/settings/vtt/{key}")
@@ -159,7 +163,7 @@ def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = D
         db.commit()
         access.invalidate()
     f = vtt.feature(key)
-    return web.switched(request, toast, f"{web.base(c)}/manage/settings#{'labs' if key == vtt.LABS or (f and f.labs) else 'features'}",
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings?tab=features#{'labs' if key == vtt.LABS or (f and f.labs) else 'features'}",
                         reload=key == vtt.LABS)  # (Labs on shows its features, off hides them)
 
 
@@ -175,7 +179,7 @@ def switch_book(request: Request, key: str, on: str = Form(""), db: Session = De
     if c is not None:
         toast = books.switch(c, key, bool(on))
         db.commit()
-    return web.switched(request, toast, f"{web.base(c)}/manage/settings#books")
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings?tab=books#books")
 
 
 @router.post(BACK + "/characters/{character_id:int}/move")

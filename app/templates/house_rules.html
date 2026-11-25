@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 {% block title %}House rules · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_lists.html" import count_pill %}
+{# Backstage › This campaign › House rules (app/house_rules_pages.py). Brett's pick HR1 on docs/mockups/backstage-round-2/ (Nov 25):
+   the list first with its count, the spell switches under it, + House rule from the title row opening its window. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>House rules</h1></div>
+  <div class="title-row"><h1>House rules</h1><button class="btn title-action" type="button" data-modal-url="{{ cbase }}/manage/house-rules/add-window" data-item="add-house-rule">+ House rule</button></div>
   <p class="subtitle">Your rulings on how askdnd rolls and shows things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll card shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
 
   <section class="section">
-    <h2>This table's house rules</h2>
+    <h2>This table's house rules{{ count_pill(rules | length) }}</h2>
     {% if rules %}
     <ul class="records">
       {% for x in rules %}{% set r = x.r %}
@@ -18,12 +21,12 @@
       </li>
       {% endfor %}
     </ul>
-    {% else %}<p class="muted">No house rules yet: everything rolls as the 2024 rules say. Add one below.</p>{% endif %}
+    {% else %}<p class="muted">No house rules yet: everything rolls as the 2024 rules say.</p>{% endif %}
   </section>
 
   {# Spell components, the table's own way (Brett chose D, Nov 13; app/components.py) #}
   <section class="section" data-rules="components">
-    <h2>Spells: components</h2>
+    <h2>How askdnd plays spells here</h2>
     <ul class="records">
       {% for key, title, what in [("costly_only", "Components without a cost don't matter", "No pouch or focus needed: only a component with a cost is marked."),
                                   ("use_up", "Use up consumed components", "A spell that consumes its component takes it from the inventory on D&D Beyond as it's cast; Undo puts it back.")] %}
@@ -34,33 +37,5 @@
     </ul>
   </section>
 
-  <section class="section">
-    <h2>Add a house rule</h2>
-    {% if once_spells %}
-    <h3>A correction to an item</h3>
-    <p class="hint">Open the item from a character's page and use <b>Correct this</b> at the bottom of its side panel, with <b>This campaign</b> picked. It shows here, and only this campaign changes.</p>
-    <h3>One roll for all darts</h3>
-    <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
-    <form method="post" action="{{ cbase }}/manage/house-rules">
-      <input type="hidden" name="field" value="once">
-      <div class="form-row">
-        <select name="spell" aria-label="Spell">{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>
-        <input type="text" name="reason" placeholder="Why (optional)" aria-label="Why" maxlength="500">
-        <button class="btn" type="submit">Add</button>
-      </div>
-    </form>
-    {% endif %}
-    <h3>A ruling on a spell</h3>
-    <p class="hint">A short note the roll card shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
-    <form method="post" action="{{ cbase }}/manage/house-rules">
-      <input type="hidden" name="field" value="note">
-      <div class="form-row">
-        <select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>
-        <input type="text" name="value" placeholder="The ruling" aria-label="The ruling" maxlength="500" required>
-        <button class="btn" type="submit">Add</button>
-      </div>
-      <p class="note">The list has every spell askdnd has an audited roll recipe for. A spell already ruled on gets its ruling replaced.</p>
-    </form>
-  </section>
 </main>
 {% endblock %}
