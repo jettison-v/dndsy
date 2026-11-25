@@ -2,15 +2,21 @@
 {% block title %}Overview · Backstage · askdnd{% endblock %}
 {% block content %}
 {# Backstage › Global › Overview (app/manage.py overview; docs/mockups/manage-menu.html): one card per admin page, saying
-   how it stands. #}
+   how it stands, in the menu's own sections and order (Brett's picks OV1 C and OV2 B on docs/mockups/backstage-round-1/,
+   Nov 25: the page and the menu one map, every card a state); what needs you amber, what's broken red, where it sits. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Global</h1></div>
+  <div class="title-row"><h1>Overview</h1></div>
   <p class="subtitle">How askdnd stands, the same in every campaign. Open a card for its page. Only admins can see this page.</p>
-  <div class="ov-cards">
-    {% for c in cards %}
-    <a class="ov-card" href="{{ c.href }}"><b>{{ c.label }}</b>{% if c.state[0] %}<span class="ov-state {{ c.state[1] }}">{{ c.state[0] }}</span>{% endif %}<span class="note">{{ c.about }}</span></a>
-    {% endfor %}
-  </div>
+  {% for name, cards in sections %}
+  <section class="ov-section" aria-labelledby="ov-{{ loop.index }}">
+    <h2 class="ov-section-h" id="ov-{{ loop.index }}">{{ name }}</h2>
+    <div class="ov-cards">
+      {% for c in cards %}
+      <a class="ov-card" href="{{ c.href }}" data-card="{{ c.key }}"{% if c.state[1] in ("warn", "bad") %} data-tone="{{ c.state[1] }}"{% endif %}><b>{{ c.label }}</b>{% if c.state[0] %}<span class="ov-state {{ c.state[1] }}">{{ c.state[0] }}</span>{% endif %}<span class="note">{{ c.about }}</span></a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
 </main>
 {% endblock %}

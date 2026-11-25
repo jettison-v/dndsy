@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from app import characters, config, errors, realtime
+from app.admin import books_router
 from app.admin import router as admin_router
 from app.admin_notes import router as admin_notes_router
 from app.admin_sessions import router as admin_sessions_router
@@ -263,6 +264,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 app.include_router(auth_router)
 app.include_router(view_as_router)
 app.include_router(admin_router)
+app.include_router(books_router)
 app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(check_numbers_router)  # Check your numbers (Show the Math, E)

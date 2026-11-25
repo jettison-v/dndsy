@@ -256,12 +256,12 @@ def test_beta_gets_a_book_through_its_own_upload(admin, player, db):
     assert db.scalar(select(BookEntry).where(BookEntry.key == "dusk-hound")) is None  # (not an admin: nothing written)
 
     r = admin.post("/manage/backups/books", files={"file": ("mm.json.gz", packed)}, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/manage/backups#books"
+    assert r.status_code == 303 and r.headers["location"] == "/manage/books"  # (Rule books, a page of their own: BK3)
     db.expire_all()
     assert sorted(db.scalars(select(BookEntry.key).where(BookEntry.book == "mm-2024"))) == ["dusk-hound", "glimmer-hound"]
     assert db.get(BookEntry, old) is None  # (no longer in the file)
-    page = admin.get("/manage/backups").text
-    assert "Monster Manual" in page and "2 monsters" in page and "Upload book" in page
+    page = admin.get("/manage/books").text
+    assert "Monster Manual" in page and "2 monsters" in page and "Upload a book" in page
 
     bad = gzip.compress(json.dumps({"book": "mm-2024", "kind": "monster", "rows": [[{"name": "Nothing"}, 1, ""]]}).encode())
     admin.post("/manage/backups/books", files={"file": ("bad.json.gz", bad)})

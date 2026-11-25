@@ -82,7 +82,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Backups**: scripts/restore_db.py
 - **Local data**: scripts/pull_beta.sh
 - **Rules content**: app/rules_data.py, scripts/srd_import.py
-- **Books**: app/books.py, scripts/book_load.py
+- **Books**: app/books.py, scripts/book_load.py, Backstage › Rule books (app/admin.py `books_router`, manage_books.html)
 - **Signing in returns you**: app/auth.py
 - **The tour and Help › What askdnd adds**: app/tour.py
 - **D&D Beyond bridge**: app/ddb_bridge.py, scripts/build_extension.py, _char.html

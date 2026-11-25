@@ -41,7 +41,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "Global" in half(page, "askdnd")
-    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "accounts", "campaigns",
+    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "books", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
     assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
 
@@ -58,7 +58,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert side.index(">Overview<") < side.index(">Usage<") < side.index(">Accounts<") < side.index(">Design system<")  # (the menu is the page list)
 
     overview = admin.get("/manage/askdnd").text
-    assert "<h1>Global</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
+    assert "<h1>Overview</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
     assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0, "feedback": 0, "for-you": 0}  # (the backup to check; notes for Claude and checks to try, admins)
 
 
@@ -182,3 +182,40 @@ def test_needs_you_says_when_a_character_couldnt_refresh(monkeypatch, db, no_net
     cole.snapshot.status = "error"
     db.flush()
     assert "1 character couldn&#39;t refresh from D&amp;D Beyond" in reviewer.get(f"/c/{slug}/manage").text
+
+
+def test_round_one_overview_backups_usage_and_rule_books(monkeypatch, db):
+    """Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): Overview's cards in the menu's sections, every card a
+    state, what needs you amber and what's broken red where it sits (OV1 C, OV2 B); Backups a panel saying what
+    happened and what to check, its runs a table marking only failures (BK1, BK2); rule books a page of their own (BK3);
+    Usage's limit first, amber until set, changed from its tile; a top-up and an import from their windows (US1, S4)."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import JobRun
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    now = datetime.now(UTC)
+    db.add(JobRun(name="backup", status="ok", detail="v2/backups/a.json.gz · 4.8 MB · 10,682 rows · 236 files", started_at=now, finished_at=now - timedelta(days=3)))
+    db.flush()
+    ov = admin.get("/manage/askdnd").text
+    heads = [h.split("</h2>")[0] for h in ov.split('class="ov-section-h"')[1:]]
+    assert [h.split(">", 1)[1] for h in heads] == ["Our work", "General", "People", "Tuning"]
+    assert 'data-card="backups" data-tone="bad"' in ov and "No backup for 3 nights" in ov
+    assert 'data-card="usage" data-tone="warn"' in ov and "No monthly limit set" in ov
+    for key in ("feedback", "roadmap", "work", "books", "features", "askdnd-history", "dice"):  # (every card a state: OV2 B)
+        card = ov.split(f'data-card="{key}"')[1].split("</a>")[0]
+        assert 'class="ov-state' in card, key
+    bk = admin.get("/manage/backups").text
+    assert 'data-backup="attention"' in bk and "3 nights missed" in bk and "4.8 MB" in bk and "10,682" in bk
+    assert "v2/backups/" not in bk and 'id="books"' not in bk and 'action="/manage/backups/import"' not in bk  # (the form opens on demand)
+    assert 'data-modal-url="/manage/backups/import-window"' in bk and 'type="file"' in admin.get("/manage/backups/import-window").text
+    books = admin.get("/manage/books").text
+    assert "<h1>Rule books</h1>" in books and 'data-modal-url="/manage/books/upload-window"' in books
+    assert 'action="/manage/backups/books"' in admin.get("/manage/books/upload-window").text
+    usage = admin.get("/manage/usage").text
+    assert 'data-tile="limit"' in usage and "None set" in usage and 'data-modal-url="/manage/usage/limit-window"' in usage
+    assert 'action="/manage/usage/topups"' not in usage and 'action="/manage/usage/topups"' in admin.get("/manage/usage/topup-window").text
+    assert admin.post("/manage/usage/limit", data={"amount": "20"}, follow_redirects=False).status_code == 303
+    usage = admin.get("/manage/usage").text
+    assert "$20.00" in usage.split('data-tile="limit"')[1].split("</div>")[0] and 'class="stat needs"' not in usage

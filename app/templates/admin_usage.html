@@ -1,61 +1,57 @@
 {% extends "base.html" %}
+{% from "_lists.html" import view_switch, count_pill %}
 {% block title %}Usage · Backstage · askdnd{% endblock %}
 {% block content %}
+{# Backstage › Global › Usage (app/admin_usage.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): the monthly
+   limit first, amber until one is set and red once reached, changed from its tile (US1); each tile says what it counts
+   (US2); recent calls the newest few, All · Claude · OpenAI (US3); a top-up from the title row's action (S4). #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Usage</h1></div>
+  <div class="title-row"><h1>Usage</h1><button class="btn title-action" type="button" data-modal-url="/manage/usage/topup-window" data-item="add-topup">+ Add top-up</button></div>
   <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call, and on OpenAI (drawn pictures and Listen's voice, at their price). The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> and <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's billing page</a> have the official balances. Only admins can see this page.</p>
 
-  <div class="stats">
-    <div class="stat"><span>Estimated balance</span><b>{% if u.balance is not none %}${{ "%.2f" | format(u.balance) }}{% else %}—{% endif %}</b>
-      <small>{% if u.bought %}of ${{ "%.2f" | format(u.bought) }} bought{% else %}add a top-up below{% endif %}</small></div>
-    <div class="stat{% if u.limit_reached %} attention{% endif %}"><span>This month</span><b>${{ "%.2f" | format(u.month) }}</b><small>{% if u.limit is not none %}{% if u.limit_reached %}limit of ${{ "%.2f" | format(u.limit) }} reached{% else %}${{ "%.2f" | format(u.limit_left) }} left of ${{ "%.2f" | format(u.limit) }}{% endif %} · {% endif %}today ${{ "%.2f" | format(u.today) }}</small></div>
-    <div class="stat"><span>Claude, all time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ u.average | money }} each{% endif %}</small></div>
-    <div class="stat"><span>OpenAI</span><b>${{ "%.2f" | format(u.openai_month) }}</b><small>this month · ${{ "%.2f" | format(u.openai_total) }} all time · <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">its balance ↗</a></small></div>
+  <div class="stats usage-tiles">
+    <div class="stat{% if u.limit_reached %} attention{% elif u.limit is none %} needs{% endif %}" data-tile="limit"><span>Monthly limit</span>
+      <b>{% if u.limit is not none %}${{ "%.2f" | format(u.limit) }}{% else %}None set{% endif %}</b>
+      <small>{% if u.limit_reached %}Reached: askdnd stops until the 1st{% elif u.limit is not none %}${{ "%.2f" | format(u.month) }} used · ${{ "%.2f" | format(u.limit_left) }} left{% else %}askdnd keeps spending with no stop{% endif %}</small>
+      <button class="btn link small" type="button" data-modal-url="/manage/usage/limit-window" data-item="set-limit">{{ "Change" if u.limit is not none else "Set a limit" }}</button></div>
+    <div class="stat" data-tile="month"><span>Spent this month</span><b>${{ "%.2f" | format(u.month) }}</b>
+      <small>Claude ${{ "%.2f" | format(u.claude_month) }} · OpenAI ${{ "%.2f" | format(u.openai_month) }} · today ${{ "%.2f" | format(u.today) }}</small></div>
+    <div class="stat" data-tile="balance"><span>Claude balance left</span><b>{% if u.balance is not none %}${{ "%.2f" | format(u.balance) }}{% else %}—{% endif %}</b>
+      <small>{% if u.bought %}of ${{ "%.2f" | format(u.bought) }} bought{% else %}add a top-up for an estimate{% endif %}</small></div>
+    <div class="stat" data-tile="all"><span>All time</span><b>${{ "%.2f" | format(u.total + u.openai_total) }}</b>
+      <small>Claude ${{ "%.2f" | format(u.total) }} · OpenAI ${{ "%.2f" | format(u.openai_total) }} · <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's balance ↗</a></small></div>
   </div>
+  {% if u.limit_reached %}<div class="flash warn">The monthly limit is reached: new drafts and pictures are paused until the 1st, or until you raise it.</div>{% endif %}
 
-  {# Settings first and side by side, then every call full width (Brett, 2026-10-23: the old side column left the page half empty) #}
-  <div class="section-pair">
-    <section class="section">
-      <h2>Monthly limit</h2>
-      <p class="hint">askdnd stops calling Claude (drafts, account checks, descriptions) once this month's spending reaches it, until the 1st. Leave it empty for no limit. The Anthropic Console's own limit still applies.</p>
-      {% if u.limit_reached %}<div class="flash warn">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
-      <form method="post" action="/manage/usage/limit" class="form-row">
-        <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
-        <button type="submit" class="btn">Save limit</button>
-      </form>
-    </section>
-    <section class="section">
-      <h2>Credit top-ups</h2>
-      <p class="hint">What you've bought in the Anthropic Console, for the balance estimate.</p>
-      {% if topups %}<ul class="records">{% for t in topups %}
-        <li class="record"><span class="record-main"><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
-          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" data-confirm="Remove this top-up?"><button type="submit" class="btn link danger small">Remove</button></form></li>
-      {% endfor %}</ul>{% endif %}
-      <form method="post" action="/manage/usage/topups" class="form-row">
-        <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
-        <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
-        <label class="field grow">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>
-        <button type="submit" class="btn">Add top-up</button>
-      </form>
-    </section>
-  </div>
-
+  {% if topups %}
   <section class="section">
-    <h2>Recent Claude calls</h2>
+    <h2>Credit top-ups{{ count_pill(topups | length) }}</h2>
+    <ul class="records">{% for t in topups %}
+      <li class="record"><span class="record-main"><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
+        <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" data-confirm="Remove this top-up?"><button type="submit" class="btn link danger small">Remove</button></form></li>
+    {% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section class="section" data-list="usage-calls" data-default-sort="default">
+    <div class="section-head"><h2>Recent calls</h2>{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}</div>
     {% if rows %}
     <div class="table-scroll"><table class="list stacked usage-calls">
-      <tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr>
+      <thead><tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead>
+      <tbody data-ls-rows>
       {% for row in rows %}{% set r = row.r %}
-      <tr>
+      <tr data-ls-row data-views="{{ 'openai' if r.source in openai else 'claude' }} all" data-sort-default="{{ loop.index }}">
         <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · <span class="tag error">Failed</span>{% elif r.status == "running" %} · <span class="tag working">Running</span>{% endif %}</td>
-        <td class="note num" data-label="Tokens">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
+        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)", "narration": "A recap read aloud (OpenAI)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · <span class="tag error">Failed</span>{% elif r.status == "running" %} · <span class="tag working">Running</span>{% endif %}</td>
+        <td class="note num" data-label="Tokens">{% if r.input_tokens or r.output_tokens %}{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}{% else %}—{% endif %}</td>
         <td class="num" data-label="Cost">{{ r.cost_usd | money }}</td>
       </tr>
       {% endfor %}
+      </tbody>
     </table></div>
+    {% if more %}<p class="note"><a href="?calls=all" data-item="all-calls">Show all {{ rows | length + more }}</a></p>{% endif %}
     {% else %}<p class="muted">No Claude calls yet.</p>{% endif %}
   </section>
 </main>
