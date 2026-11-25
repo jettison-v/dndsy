@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Backups · Backstage · askdnd{% endblock %}
 {% block content %}
-{% from "_lists.html" import count_pill, empty_state %}
+{% from "_lists.html" import count_pill, empty_state, show_more %}
+{% from "_tables.html" import table_box %}
+{% from "_admin_bits.html" import needs_line %}
 {# Backstage › General › Backups (app/admin.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): one panel on
    top saying what happened, green when last night worked and red with the missed nights and what to check when not (BK1);
    the runs as a table marking only failures, the newest week then Show older (BK2); Import from the title row (S4); rule
@@ -11,29 +13,27 @@
   <div class="title-row"><h1>Backups</h1><button class="btn title-action" type="button" data-modal-url="/manage/backups/import-window" data-item="import">+ Import</button></div>
   <p class="subtitle">askdnd's nightly backups, then importing campaign data. Only admins can see this page.</p>
   {% if backup is defined %}
-  <section class="section" id="backups">
+  <div class="tbx-stack" id="backups">
+    {# How the backups stand, once on top: red with what to do when one's missing or failed, green when last night worked
+       (Brett's picks BK1 and AU3, Nov 25: the shared needs-you line, not a panel of its own) #}
     {% if backup.attention %}
-    <div class="flash bad backup-panel" data-backup="attention">
-      {% if backup.last and backup.last.status != "ok" %}<b>Last night's backup failed</b><span>{{ backup.last.detail or "It didn't say why." }}</span>
-      {% elif backup.last %}<b>{{ backup.text }}</b><span>The last one that worked was {{ backup.good.finished_at | clock(date=True) if backup.good else "never" }}: the nightly job on Railway (askdnd-backup) hasn't run, or hasn't finished, since.</span>
-      {% else %}<b>{{ backup.text }}</b><span>The first one runs tonight at 2:00 AM Pacific.</span>{% endif %}
-      {% if backup.last %}<span class="note">What to check: its last run on Railway › askdnd-backup › Deployments. Or tell Claude "check the backups".</span>{% endif %}
-    </div>
+    {% if backup.last and backup.last.status != "ok" %}{% set says = "Last night's backup failed: " ~ (backup.last.detail or "it didn't say why.") %}
+    {% elif backup.last %}{% set says = backup.text ~ ". The last one that worked was " ~ (backup.good.finished_at | clock(date=True) if backup.good else "never") ~ ": the nightly job on Railway (askdnd-backup) hasn't run, or hasn't finished, since." %}
+    {% else %}{% set says = backup.text ~ ". The first one runs tonight at 2:00 AM Pacific." %}{% endif %}
+    {% call needs_line("Broken", "broken", says, "backup-attention") %}{% if backup.last %}<a class="btn small" href="https://railway.com/" target="_blank" rel="noopener">Railway ↗</a>{% endif %}{% endcall %}
+    {% if backup.last %}<p class="note">What to check: its last run on Railway › askdnd-backup › Deployments. Or tell Claude "check the backups".</p>{% endif %}
     {% else %}
-    <div class="flash backup-panel" data-backup="ok"><b>{{ backup.text }}</b><span class="note">Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days.</span></div>
+    {% call needs_line("Worked", "done", backup.text ~ ". Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days.", "backup-ok") %}{% endcall %}
     {% endif %}
-    {% if backups %}
-    <div class="table-scroll"><table class="list backup-runs">
-      <thead><tr><th>Night</th><th>Result</th><th class="num">Size</th><th class="num">Rows</th><th class="num">Files</th></tr></thead>
-      <tbody>
-      {% if backup.missed %}<tr class="backup-missed"><td>Since {{ backup.last.finished_at | clock(date=True) }}</td><td colspan="4">{{ backup.missed }} night{{ "s" if backup.missed != 1 }} missed</td></tr>{% endif %}
-      {% for b in backups[:shown] %}{% include "_backup_row.html" %}{% endfor %}
-      </tbody>
-    </table></div>
-    {% if backups | length > shown %}<details class="fold" data-older><summary>Show older{{ count_pill(backups | length - shown) }}</summary>
-      <div class="table-scroll"><table class="list backup-runs"><tbody>{% for b in backups[shown:] %}{% include "_backup_row.html" %}{% endfor %}</tbody></table></div></details>{% endif %}
-    {% else %}{{ empty_state("No runs recorded yet. The next one is tonight.") }}{% endif %}
-  </section>
+    {# The runs as the one table (AU1), the newest week showing and older nights in place (AU5) #}
+    <div data-list="backup-runs" data-default-sort="default">
+    {% call table_box("runs", "Nightly backups", backups | length, cols=[("Night", ""), ("Result", ""), ("Size", "num dt-w2"), ("Rows", "num dt-w2"), ("Files", "num dt-w2")], empty="No runs recorded yet. The next one is tonight.", body_attrs=" data-ls-rows") %}
+      {% if backup.missed %}<tr class="backup-missed" data-ls-row data-sort-default="0"><td>Since {{ backup.last.finished_at | clock(date=True) }}</td><td colspan="4">{{ backup.missed }} night{{ "s" if backup.missed != 1 }} missed</td></tr>{% endif %}
+      {% for b in backups %}{% set later = loop.index > shown %}{% set n = loop.index %}{% include "_backup_row.html" %}{% endfor %}
+    {% endcall %}
+    {{ show_more("Show older nights", "Fold older nights") }}
+    </div>
+  </div>
   {% endif %}
   {% if error %}<div class="flash bad">{% if filename %}<b>{{ filename }}</b>: {% endif %}{{ error }}</div>{% endif %}
   {% if counts %}<div class="flash"><b>Imported {{ filename }}.</b>{% if kept %} Existing descriptions were kept.{% endif %}<ul>{% for k, v in counts.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul></div>{% endif %}
@@ -85,16 +85,12 @@
   </section>
   {% endif %}
   {% if imports %}
-  <section class="section">
-    <h2>Recent imports</h2>
-    <p class="hint">Each import's changes are in <a href="/manage/history">History</a>. Undo puts back everything an import changed, except anything edited again since.</p>
-    <div class="table-scroll"><table class="list stacked">{% for b in imports %}
-      <tr><td><b>{{ b.at | clock(date=True) }}</b><div class="note">{{ b.actor or "someone" }} · {{ b.changes }} change{{ "s" if b.changes != 1 }} to {{ b.things }} thing{{ "s" if b.things != 1 }}</div></td>
-        <td class="end"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
+    {% call table_box("imports", "Recent imports", imports | length, "each one's changes are in History; Undo puts back what it changed, except anything edited since", cols=[("When", ""), ("", "end dt-w5")]) %}{% for b in imports %}
+      <tr><td class="dt-title"><b>{{ b.at | clock(date=True) }}</b><span class="dt-why">{{ b.actor or "someone" }} · {{ b.changes }} change{{ "s" if b.changes != 1 }} to {{ b.things }} thing{{ "s" if b.things != 1 }}</span></td>
+        <td class="end"><span class="row tight"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
           <form method="post" action="/manage/history/undo-import" class="inline" data-confirm="Undo this import? Its changes are put back to how they were before.">
-            <input type="hidden" name="batch" value="{{ b.batch }}"><button type="submit" class="btn small">Undo</button></form></td></tr>
-    {% endfor %}</table></div>
-  </section>
+            <input type="hidden" name="batch" value="{{ b.batch }}"><button type="submit" class="btn small">Undo</button></form></span></td></tr>
+    {% endfor %}{% endcall %}
   {% endif %}
 </main>
 {% endblock %}

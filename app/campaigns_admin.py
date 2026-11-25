@@ -108,7 +108,7 @@ def settings_page(request: Request, tab: str = "", db: Session = Depends(get_db)
         return web.not_found(request, "Pick a campaign first.")
     return templates.TemplateResponse(request, "manage_settings.html", {
         "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
-        "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "feature_states": vtt.STATES, "can_set_test": is_admin(user), "toast": request.session.pop("toast", None),
+        "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None),
         "art": drawing.style(campaign), "art_choices": picture_window.style_choices(db, campaign), "art_refs": drawing.REFS,
         "trophy_mode": trophies.mode(campaign), "trophy_modes": trophies.MODES,
         "tabs": SETTINGS_TABS, "tab": tab if tab in dict(SETTINGS_TABS) else "campaign"})

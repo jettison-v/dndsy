@@ -184,3 +184,15 @@ def test_an_evening_change_is_under_the_tables_day(db, cole, admin):
     db.commit()
     page = admin.get("/c/main/manage/history?older=1").text
     assert 'data-group-label="Nov 24, 2026"' in page and 'data-group-label="Nov 25, 2026"' not in page
+
+
+def test_history_chips_turn_on_and_off_several_at_once(db, cole, admin):
+    """Brett's pick AU4 (docs/mockups/end-of-day-audit/, Nov 25): History's filters are the design system's chips: several
+    on at once, a press turns one over, none on is everything (no Everything chip)."""
+    import re
+
+    page = admin.get("/c/main/manage/history?show=entries,sessions").text
+    chips = dict(re.findall(r'href="([^"]*)" aria-pressed="(true|false)" data-filter="(?:entries|sessions)"', page))
+    pressed = re.findall(r'aria-pressed="true" data-filter="([a-z]+)"', page)
+    assert sorted(pressed) == ["entries", "sessions"] and 'data-filter="all"' not in page
+    assert 'href="/c/main/manage/history?show=sessions" aria-pressed="true" data-filter="entries"' in page, chips

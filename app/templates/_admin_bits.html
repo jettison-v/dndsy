@@ -22,6 +22,13 @@
 {%- endmacro %}
 
 {# The state line under a title: the word, then one sentence saying what it means for you #}
+{# Something that needs you, said once at the top of its page (Brett's pick AU3 on docs/mockups/end-of-day-audit/, Nov 25):
+   a full-width line in its colour, its word, what's wrong in a sentence, and from a call block the one button that fixes
+   it. tone: you (amber, waiting on you), broken (red), done (green: all is well, where a page always says how it stands). #}
+{% macro needs_line(word, tone, sentence, key="") -%}
+<div class="needs-line" data-tone="{{ tone }}"{% if key %} data-needs="{{ key }}"{% endif %}><b class="needs-word">{{ word }}</b><span class="needs-says">{{ sentence }}</span>{% if caller is defined %}<span class="needs-act">{{ caller() }}</span>{% endif %}</div>
+{%- endmacro %}
+
 {% macro state_line(word, tone, sentence) -%}
 <p class="state-line">{{ state_word(word, tone) }}<span>{{ sentence }}</span></p>
 {%- endmacro %}

@@ -681,3 +681,18 @@ def test_the_check_catches_a_cell_cut_short_beside_room_and_a_clipped_button(peo
     found = page.evaluate(CHECK, {})
     assert sorted(p["kind"] for p in found) == ["clipped", "cut short"], found  # (each once: the balanced table has none)
     assert found[0]["where"].startswith("#bad") or found[1]["where"].startswith("#bad"), found
+
+
+def test_show_more_opens_the_held_rows_in_place_and_folds_them(people, server):
+    """Brett's pick AU5 (docs/mockups/end-of-day-audit/, Nov 25): one way to show more, a fold under the list that opens
+    the rows it holds right where they are and folds them again (the Design system's sample: two of four shown)."""
+    page = people("admin").open("/manage/design")
+    box = page.locator('[data-list="ds-more"]')
+    rows, fold = box.locator("[data-ls-row]"), box.locator("[data-ls-unfold]")
+    fold.wait_for()
+    assert [r.is_visible() for r in rows.all()] == [True, True, False, False]
+    assert fold.locator("[data-ls-unfold-n]").get_attribute("data-count") == "2"
+    fold.click()
+    assert all(r.is_visible() for r in rows.all()) and fold.get_attribute("aria-expanded") == "true"
+    fold.click()
+    assert [r.is_visible() for r in rows.all()] == [True, True, False, False]

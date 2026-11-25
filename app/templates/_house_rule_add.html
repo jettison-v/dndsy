@@ -1,32 +1,28 @@
-{# + House rule's window on House rules (app/house_rules_pages.py `add_window`; Brett's pick HR1, Nov 25) #}
+{# + House rule's window on House rules (app/house_rules_pages.py `add_window`; Brett's pick HR1, Nov 25). One form (his pick
+   AU8 on docs/mockups/end-of-day-audit/): what kind of rule, then its own fields (`data-shows-for`, the design system's
+   fields for a choice), one Add in the window's foot. A correction to an item is made from the item itself. #}
+{% from "_form_bits.html" import pick_chips %}
 <div class="peek-head">
   <div><div class="note">House rules</div><h2 id="peek-title">Add a house rule</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body house-rule-add">
+<form method="post" action="{{ cbase }}/manage/house-rules" class="peek-form" data-house-rule-add>
+  <div class="peek-body stack house-rule-add">
+    {% set kinds = [("note", "A ruling on a spell")] + ([("once", "One roll for all darts")] if once_spells else []) %}
+    <div class="field"><span>What kind</span>{{ pick_chips("field", kinds, "note", "What kind of house rule") }}</div>
+    <div class="stack" data-shows-for="field=note">
+      <label class="field"><span>Spell</span><select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select></label>
+      <label class="field"><span>The ruling</span><input type="text" name="value" placeholder="e.g. The DM decides who is in the area on the Zoom map" maxlength="500" required></label>
+      <p class="note">The roll card shows it whenever someone rolls the spell. A spell already ruled on gets its ruling replaced.</p>
+    </div>
     {% if once_spells %}
-    <h3>A correction to an item</h3>
-    <p class="hint">Open the item from a character's page and use <b>Correct this</b> at the bottom of its side panel, with <b>This campaign</b> picked. It shows here, and only this campaign changes.</p>
-    <h3>One roll for all darts</h3>
-    <p class="hint">The rules roll each dart of Magic Missile on its own. Many tables roll once and every dart deals that damage.</p>
-    <form method="post" action="{{ cbase }}/manage/house-rules">
-      <input type="hidden" name="field" value="once">
-      <div class="form-row">
-        <select name="spell" aria-label="Spell">{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>
-        <input type="text" name="reason" placeholder="Why (optional)" aria-label="Why" maxlength="500">
-        <button class="btn" type="submit">Add</button>
-      </div>
-    </form>
+    <div class="stack" data-shows-for="field=once" hidden>
+      <label class="field"><span>Spell</span><select name="spell" aria-label="Spell" disabled>{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Why (optional)</span><input type="text" name="reason" maxlength="500" disabled></label>
+      <p class="note">The rules roll each dart on its own; many tables roll once and every dart deals that damage.</p>
+    </div>
     {% endif %}
-    <h3>A ruling on a spell</h3>
-    <p class="hint">A short note the roll card shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
-    <form method="post" action="{{ cbase }}/manage/house-rules">
-      <input type="hidden" name="field" value="note">
-      <div class="form-row">
-        <select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>
-        <input type="text" name="value" placeholder="The ruling" aria-label="The ruling" maxlength="500" required>
-        <button class="btn" type="submit">Add</button>
-      </div>
-      <p class="note">The list has every spell askdnd has an audited roll recipe for. A spell already ruled on gets its ruling replaced.</p>
-    </form>
-</div>
+    <p class="note">A correction to an item: open it from a character's page and use Correct this, with This campaign picked.</p>
+  </div>
+  <div class="peek-foot row"><button class="btn primary" type="submit">Add</button><button class="btn link peek-close" type="button">Cancel</button></div>
+</form>

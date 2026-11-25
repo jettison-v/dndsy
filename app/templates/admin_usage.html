@@ -1,17 +1,22 @@
 {% extends "base.html" %}
-{% from "_lists.html" import view_switch, count_pill, empty_state %}
+{% from "_lists.html" import view_switch, count_pill, empty_state, show_more %}
 {% block title %}Usage · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_admin_bits.html" import needs_line %}
+{% from "_tables.html" import table_box %}
 {# Backstage › Global › Usage (app/admin_usage.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): the monthly
-   limit first, amber until one is set and red once reached, changed from its tile (US1); each tile says what it counts
+   limit first, said as the needs-you line until one is set and red once reached (AU3), changed from its tile (US1); each tile says what it counts
    (US2); recent calls the newest few, All · Claude · OpenAI (US3); a top-up from the title row's action (S4). #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Usage</h1><button class="btn title-action" type="button" data-modal-url="/manage/usage/topup-window" data-item="add-topup">+ Add top-up</button></div>
   <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call, and on OpenAI (drawn pictures and Listen's voice, at their price). The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> and <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's billing page</a> have the official balances. Only admins can see this page.</p>
 
+  {# What needs you, once, on top (Brett's pick AU3, Nov 25) #}
+  {% if u.limit_reached %}{% call needs_line("Reached", "broken", "This month's limit of $" ~ ("%.2f" | format(u.limit)) ~ " is reached: new drafts and pictures wait until the 1st, or until you raise it.", "limit") %}<button class="btn small" type="button" data-modal-url="/manage/usage/limit-window">Raise the limit</button>{% endcall %}
+  {% elif u.limit is none %}{% call needs_line("Needs you", "you", "No monthly limit: askdnd keeps spending with no stop.", "limit") %}<button class="btn small" type="button" data-modal-url="/manage/usage/limit-window">Set a limit</button>{% endcall %}{% endif %}
   <div class="stats usage-tiles">
-    <div class="stat{% if u.limit_reached %} attention{% elif u.limit is none %} needs{% endif %}" data-tile="limit"><span>Monthly limit</span>
+    <div class="stat" data-tile="limit"><span>Monthly limit</span>
       <b>{% if u.limit is not none %}${{ "%.2f" | format(u.limit) }}{% else %}None set{% endif %}</b>
       <small>{% if u.limit_reached %}Reached: askdnd stops until the 1st{% elif u.limit is not none %}${{ "%.2f" | format(u.month) }} used · ${{ "%.2f" | format(u.limit_left) }} left{% else %}askdnd keeps spending with no stop{% endif %}</small>
       <button class="btn link small" type="button" data-modal-url="/manage/usage/limit-window" data-item="set-limit">{{ "Change" if u.limit is not none else "Set a limit" }}</button></div>
@@ -22,7 +27,6 @@
     <div class="stat" data-tile="all"><span>All time</span><b>${{ "%.2f" | format(u.total + u.openai_total) }}</b>
       <small>Claude ${{ "%.2f" | format(u.total) }} · OpenAI ${{ "%.2f" | format(u.openai_total) }} · <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's balance ↗</a></small></div>
   </div>
-  {% if u.limit_reached %}<div class="flash warn">The monthly limit is reached: new drafts and pictures are paused until the 1st, or until you raise it.</div>{% endif %}
 
   {% if topups %}
   <section class="section">
@@ -34,25 +38,21 @@
   </section>
   {% endif %}
 
-  <section class="section"{% if rows %} data-list="usage-calls" data-default-sort="default"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
-    <div class="section-head"><h2>Recent calls</h2>{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}</div>
-    {% if rows %}
-    <div class="table-scroll"><table class="list stacked usage-calls">
-      <thead><tr><th>When</th><th>For</th><th>What</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead>
-      <tbody data-ls-rows>
+  {# The one table (AU1): the newest few of the kind that's on, the rest in place (AU5) #}
+  <div{% if rows %} data-list="usage-calls" data-default-sort="default" data-ls-cap="{{ shown }}"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
+  {% set switch %}{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}{% endset %}
+  {% call table_box("calls", "Recent calls", rows | length, cols=[("When", "dt-w4"), ("For", ""), ("What", ""), ("Tokens in / out", "num dt-w4"), ("Cost", "num dt-w2")], empty="No Claude calls yet.", controls=switch, body_attrs=" data-ls-rows") %}
       {% for row in rows %}{% set r = row.r %}
       <tr data-ls-row data-views="{{ 'openai' if r.source in openai else 'claude' }} all" data-sort-default="{{ loop.index }}">
         <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)", "narration": "A recap read aloud (OpenAI)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · <span class="tag error">Failed</span>{% elif r.status == "running" %} · <span class="tag working">Running</span>{% endif %}</td>
+        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)", "narration": "A recap read aloud (OpenAI)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · {{ state_tag("failed") }}{% elif r.status == "running" %} · {{ state_tag("running") }}{% endif %}</td>
         <td class="note num" data-label="Tokens">{% if r.input_tokens or r.output_tokens %}{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}{% else %}—{% endif %}</td>
         <td class="num" data-label="Cost">{{ r.cost_usd | money }}</td>
       </tr>
       {% endfor %}
-      </tbody>
-    </table></div>
-    {% if more %}<p class="note"><a href="?calls=all" data-item="all-calls">Show every call{{ count_pill(rows | length + more) }}</a></p>{% endif %}
-    {% else %}{{ empty_state("No Claude calls yet.") }}{% endif %}
-  </section>
+  {% endcall %}
+  {% if rows %}{{ show_more("Show older calls", "Fold older calls") }}{% endif %}
+  </div>
 </main>
 {% endblock %}

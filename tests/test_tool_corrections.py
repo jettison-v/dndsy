@@ -86,7 +86,7 @@ def test_tool_corrections_are_a_fix_list(admin, db):
                 ToolCorrection(ref="spell:Divine Smite", field="battle", value="common")])   # nobody here has it
     db.flush()
     page = admin.get("/manage/tool-corrections").text
-    needs, built = page.split("<h2>Built into askdnd</h2>")
+    needs, built = page.split('data-table="built-in"')  # (each list its own table: AU1)
     assert "Healing Word" in needs and "Arrows" not in needs and "Arrows" in built and "Remove" in built
     assert "Divine Smite" in needs and "no character has it now" in needs
     assert "1 tool correction to build into askdnd" in admin.get("/c/main/manage", follow_redirects=True).text  # not the unseen one

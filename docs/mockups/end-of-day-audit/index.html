@@ -218,6 +218,22 @@ figure { margin: 0; } figcaption { color: var(--muted); font-size: .8rem; margin
 svg text { fill: currentColor; font: 12px Inter, system-ui, sans-serif; }
 @media (max-width: 760px) { .lb .row2 { grid-template-columns: 1fr; } }
 </style>
+<style>
+.tline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 8px; background: var(--surface); border-left: 3px solid var(--amber); }
+.tline.bad { border-left-color: var(--red); } .tline .w { font-weight: 700; color: var(--amber); font-size: .72rem; } .tline.bad .w { color: var(--red); }
+.tline .s { color: var(--text); font-size: .74rem; } .tl.bad { border-color: var(--red); } .tl.bad .v { color: var(--red); }
+.ex-h { color: var(--faint); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+</style>
+<style>
+.ex-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chipy { display: inline-block; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: .7rem; color: var(--muted); }
+.chipy.on { border-color: var(--blue); color: var(--strong); background: var(--blue-soft); }
+.pillw { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: .66rem; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; }
+.pillw.amb { border-color: var(--amber); color: var(--amber); } .pillw.grn { border-color: var(--green); color: var(--green); } .pillw.blu { border-color: var(--blue); color: var(--blue); } .pillw.gry { color: var(--faint); }
+.qtip { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line-strong); font-size: .6rem; color: var(--muted); }
+.foot { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; }
+.lnkq { color: var(--muted); font-size: .7rem; } .fake-in { border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; color: var(--faint); font-size: .7rem; }
+</style>
 <div class="wrap">
   <header style="display:grid;gap:10px">
     <span class="lbl">The end-of-day review · Nov 25 · nine picks</span>
@@ -229,6 +245,65 @@ svg text { fill: currentColor; font: 12px Inter, system-ui, sans-serif; }
   <section style="display:grid;gap:10px" aria-labelledby="h-d"><h2 id="h-d">Back on the design system</h2><div class="lb"><ul class="keeplist"><li>A row that opens a window looks the same everywhere (it was styled four ways, in two colours).</li><li>Every “nothing here yet” is one piece now (it was five), the shared table's own included.</li><li>Windows put their buttons in the footer, Cancel as a quiet link: Rename, Add an account, Import, the limit and top-up windows, New campaign, Add to the table.</li><li>Remove in a ⋯ menu is quiet red; confirms are one way for buttons and forms alike.</li><li>Labs' Being built is blue and Ready to try green, from a key, never from their words (Being built was amber, which means “waiting on you”).</li><li>Rule books on the shared table; History and Documents on the shared search-and-filter row; Campaigns' widths from the table's own classes.</li><li>Show older counts in a count pill, not “(17)” in the link's words; folds plain.</li><li>The Design system page shows today's new states (Overview's tinted cards, the amber stat tile, a red Remove in a ⋯).</li><li>Help and the DM guide remember their own last tab, by a marker.</li><li>Dead styles from today removed; MAP.md and CLAUDE.md brought up to date.</li></ul></div></section>
   <section style="display:grid;gap:10px" aria-labelledby="h-t"><h2 id="h-t">Tables whose columns are out of balance</h2><div class="lb"><ul class="keeplist"><li><b>Your question about the tables:</b> the layout check didn't look for it. It now flags a cell <b>cut short</b> (its words cut with … while a column beside it has room) and anything <b>clipped</b> past its cell, with a test proving both.</li><li>The table piece gets <code>dt-q</code>, a quarter of the table, for a second column of words that grows with the window. The Roadmap's Next column uses it; For you's Takes and Try it columns are wider.</li></ul></div></section>
   <section style="display:grid;gap:10px" aria-labelledby="h-l"><h2 id="h-l">Found, not fixed tonight</h2><div class="lb"><ul class="keeplist"><li><b>Claude's work order is computed twice</b> and the two disagree about a Roadmap build with no plan yet (the Board's Ready column vs what I claim). Fix with the next Feedback-tool change.</li><li><b>Picks answers kept as words</b> and read back by pattern; they should be stored as data (an added column). Fix with the next picks change.</li><li><b>Background jobs' mail and locking copied three times</b>; <b>Feature use counted two ways</b> (Overview and the page); a page module imported by a background job. Folded into the look-back's worker plan.</li><li><b>Documents' dates have no year</b> (they'll collide next October); <b>the dice pattern is written twice</b> (server and page). Small, when nearby.</li><li><b>The menu bar's D&amp;D Beyond buttons squeeze</b> when the Live menu is open on a laptop. It was like this before today; a small fix with the next menu bar change.</li></ul></div></section>
+  <section style="display:grid;gap:10px" aria-labelledby="h-au3"><h2 id="h-au3">AU3, drawn: the same four warnings both ways</h2>
+  <p class="note">You asked to see both before deciding. Each page's warning, as it would look either way; on every page it sits at the top, where it is today.</p>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · The toned line</b></div><div class="mini-pg"><span class="ex-h">Usage</span><div class="tline"><span class="w">Needs you</span><span class="s">No monthly limit: askdnd keeps spending with no stop</span><span class="sbtn">Set a limit</span></div>
+<span class="ex-h">Overview</span><div class="tline"><span class="w">Needs you</span><span class="s">Usage: no monthly limit set</span><span class="sbtn">Open</span></div>
+<span class="ex-h">Backups</span><div class="tline bad"><span class="w">Broken</span><span class="s">No backup for 3 nights: the last good copy is from Nov 21</span><span class="sbtn">See what failed</span></div>
+<span class="ex-h">D&amp;D Beyond bridge</span><div class="tline"><span class="w">Needs you</span><span class="s">Extension not connected: open any D&amp;D Beyond page in Chrome with it on</span><span class="sbtn">Run the check…</span></div></div><div class="cap">A full-width line in its colour: what's wrong, in a sentence, and the one button that fixes it. Reads the same on every page; takes one row.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · The stat tile</b></div><div class="mini-pg"><span class="ex-h">Usage</span><div class="tile4"><div class="tl warn"><span class="k">Monthly limit</span><span class="v">None set</span><span class="m">keeps spending with no stop · Set a limit</span></div></div>
+<span class="ex-h">Overview</span><div class="tile4"><div class="tl warn"><span class="k">Usage</span><span class="v">No limit</span><span class="m">Open</span></div></div>
+<span class="ex-h">Backups</span><div class="tile4"><div class="tl bad"><span class="k">Last backup</span><span class="v">3 nights ago</span><span class="m">last good copy Nov 21 · See what failed</span></div></div>
+<span class="ex-h">D&amp;D Beyond bridge</span><div class="tile4"><div class="tl warn"><span class="k">Extension</span><span class="v">Not connected</span><span class="m">open a D&amp;D Beyond page · Run the check…</span></div></div></div><div class="cap">A tile with a big word, like Usage's tiles today. Strong when it's one of several numbers; on a page with no other tiles it stands alone, and its sentence is squeezed into the small line.</div></div></div>
+  </section>
+  <section style="display:grid;gap:10px" aria-labelledby="h-ex"><h2 id="h-ex">The other picks, drawn</h2>
+  <p class="note">Each pick you'd see, both ways, so you can decide by looking (your comments on AU3 and AU5).</p>
+  <h3 style="margin:6px 0 0">AU2 · One colour key for every state</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · One key</b></div><div class="mini-pg"><div class="hrow"><span><b>Items</b> · Pearl of Power</span><span class="pillw grn">Ready</span></div>
+<div class="hrow"><span><b>Settings</b> · Initiative from askdnd</span><span class="pillw grn">Ready</span></div>
+<div class="hrow"><span><b>Sessions</b> · Session 20</span><span class="pillw amb">Draft</span></div>
+<div class="hrow"><span><b>Documents</b> · Round 4</span><span class="pillw blu">Building</span></div></div><div class="cap">The same state is the same colour on every page: green done or ready, amber waiting on you, blue under way, grey quiet.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · Each page its own</b></div><div class="mini-pg"><div class="hrow"><span><b>Items</b> · Pearl of Power</span><span class="pillw gry">Ready</span></div>
+<div class="hrow"><span><b>Settings</b> · Initiative from askdnd</span><span class="pillw grn">Ready</span></div>
+<div class="hrow"><span><b>Sessions</b> · Session 20</span><span class="pillw amb">Draft to review</span></div>
+<div class="hrow"><span><b>History</b> · a key moment</span><span class="pillw gry">Published</span></div></div><div class="cap">Today: Ready is grey on Items and green on Settings; Published grey on History, green on Sessions.</div></div></div>
+  <h3 style="margin:6px 0 0">AU4 · History's filters</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · Chips that turn on and off</b></div><div class="mini-pg"><div class="ex-row"><span class="chipy on">Key moments ✓</span><span class="chipy on">Sessions ✓</span><span class="chipy">Entries</span><span class="chipy">Glossary</span><span class="chipy">Characters</span><span class="chipy">People</span></div>
+<span class="note">Showing key moments and sessions · press one again to turn it off · none on shows everything</span></div><div class="cap">Several at once, no Everything chip: as the Feedback page's filters work.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · One at a time</b></div><div class="mini-pg"><div class="ex-row"><span class="chipy">Everything</span><span class="chipy on">Key moments</span><span class="chipy">Sessions</span><span class="chipy">Entries</span><span class="chipy">Glossary</span><span class="chipy">Characters</span></div>
+<span class="note">Showing key moments only · Everything to go back</span></div><div class="cap">As today: one filter, Everything to clear it.</div></div></div>
+  <h3 style="margin:6px 0 0">AU5 · One way to show more</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · A fold</b></div><div class="mini-pg"><div class="hrow"><span><b>27 key moments published</b><br><span class="m">Nov 10 · 9:26 AM</span></span><span></span></div>
+<div class="hrow"><span><b>House rule: Beasty Bone</b><br><span class="m">Nov 9 · 1:38 PM</span></span><span></span></div>
+<span class="fold">▸ Show older days <span class="cnt">12</span></span>
+<span class="note">Pressed: the older days open right here, below; the page doesn't change or scroll away. Press again to fold them.</span></div><div class="cap">The same on Backups (older runs), History (older days) and Usage (older calls).</div></div>
+  <div class="shot"><div class="shot-h"><b>B · A link</b></div><div class="mini-pg"><div class="hrow"><span><b>27 key moments published</b><br><span class="m">Nov 10 · 9:26 AM</span></span><span></span></div>
+<div class="hrow"><span><b>House rule: Beasty Bone</b><br><span class="m">Nov 9 · 1:38 PM</span></span><span></span></div>
+<span class="lnk">Show older days <span class="cnt">12</span></span>
+<span class="note">Pressed: the page reloads with everything on it, back at the top.</span></div><div class="cap">As History and Usage are today; Backups would change to match.</div></div></div>
+  <h3 style="margin:6px 0 0">AU6 · The help tip</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · Only beside an ambiguous choice</b></div><div class="mini-pg"><b style="color:var(--strong)">From the table <span class="cnt">2</span></b>
+<span class="note">Accept puts it on the page as written; Edit lets you change it first.</span>
+<div class="ex-row"><span class="sbtn">Accept</span><span class="sbtn">Edit</span><span class="sbtn">Ask Claude to work it in</span><span class="lnkq">Dismiss</span></div>
+<span class="note">Kept where a choice is truly unclear, like the item builder's "Only with it" <span class="qtip">?</span></span></div><div class="cap">A section explains itself in one plain line (or not at all, under your no-help-lines rule); the ? stays for unclear choices.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · Also for a section's explanation</b></div><div class="mini-pg"><b style="color:var(--strong)">From the table <span class="cnt">2</span> <span class="qtip">?</span></b>
+<div class="ex-row"><span class="sbtn">Accept</span><span class="sbtn">Edit</span><span class="sbtn">Ask Claude to work it in</span><span class="lnkq">Dismiss</span></div>
+<span class="note">The explanation appears when you point at the ?</span></div><div class="cap">As the Inbox is now: tidier, but the words are hidden until you look for them.</div></div></div>
+  <h3 style="margin:6px 0 0">AU7 · One word in a state pill</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · One word</b></div><div class="mini-pg"><div class="hrow"><span><b>Session 20</b> · The monastery<br><span class="m">to review · drafted today</span></span><span class="pillw amb">Draft</span></div>
+<div class="hrow"><span><b>Nov 6</b> · Terra in the Observatory<br><span class="m">edited since publishing</span></span><span class="pillw blu">Edited</span></div></div><div class="cap">The pill a word; what more there is goes on the line under the name.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · Longer pills</b></div><div class="mini-pg"><div class="hrow"><span><b>Session 20</b> · The monastery</span><span class="pillw amb">Draft to review</span></div>
+<div class="hrow"><span><b>Nov 6</b> · Terra in the Observatory</span><span class="pillw blu">Edited since publishing</span></div></div><div class="cap">As today: the pill carries the whole phrase and grows wide.</div></div></div>
+  <h3 style="margin:6px 0 0">AU8 · The House rule window</h3>
+  <div class="pair"><div class="shot"><div class="shot-h"><b>A · One form</b></div><div class="mini-pg"><b style="color:var(--strong)">Add a house rule</b>
+<span class="m">What kind</span><div class="ex-row"><span class="chipy on">A ruling on a spell</span><span class="chipy">One roll for all darts</span></div>
+<span class="m">Spell</span><span class="fake-in">Fireball ▾</span>
+<span class="m">The ruling</span><span class="fake-in">The DM decides who is in the area on the Zoom map</span>
+<div class="foot"><span class="redbtn">Add</span><span class="lnkq">Cancel</span></div></div><div class="cap">Pick the kind, its fields follow, one Add along the bottom edge.</div></div>
+  <div class="shot"><div class="shot-h"><b>B · As today</b></div><div class="mini-pg"><b style="color:var(--strong)">Add a house rule</b>
+<span class="m">One roll for all darts</span><div class="ex-row"><span class="fake-in">Magic Missile ▾</span><span class="fake-in">Why (optional)</span><span class="sbtn">Add</span></div>
+<span class="m">A ruling on a spell</span><div class="ex-row"><span class="fake-in">Fireball ▾</span><span class="fake-in">The ruling</span><span class="sbtn">Add</span></div></div><div class="cap">Two small forms, each with its own Add, no Cancel.</div></div></div>
+  </section>
   <form class="decide" aria-label="Your picks">
     <h2>Your picks</h2>
     <fieldset><legend>AU1 · Every remaining list onto the one table</legend><label class="opt"><input type="radio" name="au1" value="yes"><span>A · One pass <span class="mine">my pick</span></span><small>Backups, Sessions, Usage's calls, Accounts, Items, House rules, Tool corrections, History, Documents and Feature use, in one pass: one look, one set of column rules, the new checks on all of them.</small></label><label class="opt"><input type="radio" name="au1" value="no"><span>B · As each is touched</span><small>As each page is next changed.</small></label></fieldset>
@@ -239,7 +314,7 @@ svg text { fill: currentColor; font: 12px Inter, system-ui, sans-serif; }
     <fieldset><legend>AU6 · The help tip, only beside an ambiguous choice</legend><label class="opt"><input type="radio" name="au6" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Inbox's explanations become one plain line (or go, under your no-help-lines rule).</small></label><label class="opt"><input type="radio" name="au6" value="no"><span>B · Not now</span><small>Also allow it for a section's explanation.</small></label></fieldset>
     <fieldset><legend>AU7 · One word in a state pill</legend><label class="opt"><input type="radio" name="au7" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Draft, Edited, Building, Ready: the longer words on a line beside it.</small></label><label class="opt"><input type="radio" name="au7" value="no"><span>B · Not now</span><small>Keep the longer pills.</small></label></fieldset>
     <fieldset><legend>AU8 · The House rule window as one form</legend><label class="opt"><input type="radio" name="au8" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Pick what kind of rule, then its fields, one Add in the footer.</small></label><label class="opt"><input type="radio" name="au8" value="no"><span>B · Not now</span><small>Keep its three small forms.</small></label></fieldset>
-    <fieldset><legend>AU9 · Test accounts renamed once</legend><label class="opt"><input type="radio" name="au9" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>Drop the Ω from their names in the database; the Test tag says what they are.</small></label><label class="opt"><input type="radio" name="au9" value="no"><span>B · Not now</span><small>Keep the Ω and hide it on Accounts.</small></label></fieldset>
+    <fieldset><legend>AU9 · Test accounts in their own group, then the Ω dropped</legend><label class="opt"><input type="radio" name="au9" value="yes"><span>A · Yes <span class="mine">my pick</span></span><small>The Ω sorted them to the bottom (your comment). Instead, every list of people (Accounts, a campaign's Table, View as) puts test accounts in their own group under everyone else, by the account itself; then the Ω comes off their names, once.</small></label><label class="opt"><input type="radio" name="au9" value="no"><span>B · Not now</span><small>Keep the Ω, which keeps sorting them last, and hide it on Accounts.</small></label></fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(something today that still looks off to you)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
