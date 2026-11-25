@@ -214,7 +214,7 @@ def test_round_one_overview_backups_usage_and_rule_books(monkeypatch, db):
         card = ov.split(f'data-card="{key}"')[1].split("</a>")[0]
         assert 'class="ov-state' in card, key
     bk = admin.get("/manage/backups").text
-    assert 'data-backup="attention"' in bk and "3 nights missed" in bk and "4.8 MB" in bk and "10,682" in bk
+    assert 'data-needs="backup-attention"' in bk and "3 nights missed" in bk and "4.8 MB" in bk and "10,682" in bk
     assert "v2/backups/" not in bk and 'id="books"' not in bk and 'action="/manage/backups/import"' not in bk  # (the form opens on demand)
     assert 'data-modal-url="/manage/backups/import-window"' in bk and 'type="file"' in admin.get("/manage/backups/import-window").text
     books = admin.get("/manage/books").text
@@ -287,7 +287,8 @@ def test_round_four_pages_dm_guide_accounts_and_product_areas(monkeypatch, db):
 
 def test_usage_keeps_the_newest_calls_of_each_kind(monkeypatch, db):
     """The end-of-day review (Nov 25): recent calls were cut to the newest 20 before All · Claude · OpenAI filtered them,
-    so OpenAI's view could be empty though there were OpenAI calls."""
+    so OpenAI's view could be empty though there were OpenAI calls. Now every call is in the page and the list shows the
+    newest 20 of the kind that's on, the rest one fold away (Brett's pick AU5)."""
     from app.admin_usage import CALLS_SHOWN, OPENAI
     from app.models import ExtractionRun
 
@@ -299,4 +300,5 @@ def test_usage_keeps_the_newest_calls_of_each_kind(monkeypatch, db):
     db.commit()
     admin = client_for(monkeypatch, db, "brett@example.com")
     page = admin.get("/manage/usage").text
-    assert page.count('data-views="openai all"') == 1 and page.count('data-views="claude all"') == CALLS_SHOWN
+    assert page.count('data-views="openai all"') == 1 and page.count('data-views="claude all"') == CALLS_SHOWN + 5
+    assert f'data-ls-cap="{CALLS_SHOWN}"' in page and "data-ls-unfold" in page  # (each kind's newest few, the rest in place: AU5)

@@ -113,7 +113,7 @@ def test_edit_recap_and_publish_records_correction(client, db):
     c = db.scalar(select(Correction).where(Correction.kind == "edit"))
     assert (c.after, c.note, c.standing_instruction) == ("The party fought three devils.", "Count the devils", True)
     r = client.post(f"/manage/sessions/{s.id}/recap", data={"body": "Changed again."}, headers=HX)
-    assert "Edited since publishing" in r.text and "Publish changes" in r.text
+    assert 'data-state="edited"' in r.text and "Publish changes" in r.text
 
 
 def test_key_moments_edit_add_delete(client, db):

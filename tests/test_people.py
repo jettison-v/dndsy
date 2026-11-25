@@ -97,7 +97,7 @@ def test_removed_person_is_locked_out_even_if_on_railway_list(env, monkeypatch, 
     assert player.get("/party", follow_redirects=False).headers["location"] == "/login"
     _, r = sign_in(monkeypatch, "player@example.com")
     assert "not_allowed" in r.headers["location"]
-    assert "Removed or not invited yet (1)" in owner.get("/manage/accounts").text  # folded at the bottom
+    assert 'data-table="away"' in owner.get("/manage/accounts").text  # folded at the bottom
 
 
 def test_owner_cant_be_demoted_and_admins_cant_lower_themselves(env, monkeypatch, db):

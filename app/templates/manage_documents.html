@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Documents · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_tables.html" import table_box %}
 {# Backstage › Global › Documents (app/documents.py; Brett, Nov 6): every page made for askdnd, from docs/library.json.
    Brett's picks on docs/mockups/backstage-design-review/ (Nov 24): Waiting on you · Current · All, starting on what waits
    on him (D1); a row opens its document in the large window over the list, the page's own address kept for a link (D2);
@@ -14,19 +15,19 @@
   <div class="doc-list" data-list="documents" data-noun="document" data-nouns="documents" data-default-sort="default" data-ls-start="{{ start }}" data-ls-group-count
        data-group-notes-default='{{ notes | tojson }}'>
     <div class="ls-toolbar">{{ view_switch(views, "Which documents") }}{{ search_box("Search titles and what each is") }}</div>
-    <div class="doc-rows" data-ls-rows>
-      <div class="doc-head" aria-hidden="true"><span>Title</span><span>State</span><span>Date</span><span>What it is</span></div>
+    {# The one table (Brett's pick AU1, Nov 25): a row opens its document in the large window; its title links to the page #}
+    {% call table_box("documents", "Documents", rows | length, cols=[("Title", ""), ("State", "dt-w2"), ("Date", "dt-w2"), ("What it is", "dt-q")], body_attrs=" data-ls-rows") %}
       {% for r in rows %}{% set e = r.e %}
-      <a class="doc-row" data-ls-row data-views="{{ r.views }}" data-state="{{ r.state }}" data-group-label="{{ r.group }}" data-sort-default="{{ r.rank }}"
+      <tr data-ls-row data-views="{{ r.views }}" data-state="{{ r.state }}" data-group-label="{{ r.group }}" data-sort-default="{{ r.rank }}"
          data-name="{{ (e.title ~ ' ' ~ r.word ~ ' ' ~ (e.status or '') ~ ' ' ~ r.line ~ ' ' ~ (e.what or '')) | lower }}"
-         href="/manage/documents/{{ e.id }}" data-modal-url="/manage/documents/{{ e.id }}?part=1" data-modal-size="full">
-        <span class="doc-title">{{ e.title }}</span>
-        <span class="doc-status"><span class="tag {{ r.tone }}" title="{{ e.status }}">{{ r.word }}</span></span>
-        <span class="doc-date">{{ e.date }}</span>
-        <span class="doc-what" title="{{ e.what }}">{{ r.line }}</span>
-      </a>
+         data-modal-url="/manage/documents/{{ e.id }}?part=1" data-modal-size="full" tabindex="0">
+        <td class="dt-title"><a class="link-plain" href="/manage/documents/{{ e.id }}">{{ e.title }}</a></td>
+        <td>{{ state_tag(r.state) }}</td>
+        <td class="note">{{ e.date }}</td>
+        <td class="note" title="{{ e.what }}">{{ r.line }}</td>
+      </tr>
       {% endfor %}
-    </div>
+    {% endcall %}
     <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
   </div>
 </main>

@@ -7,8 +7,7 @@
 <div id="review" {% if drafting %}hx-get="{{ cbase }}/manage/sessions/{{ s.id }}/body" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
   <div class="title-row">
     <h1>{{ ("Session " ~ s.number) if s.number is not none else label }}{% if s.title %}: {{ s.title }}{% endif %}</h1>
-    <span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(status, '') }}">
-      {{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Claude is drafting…', 'no draft': 'No draft yet', 'read': 'Recap to draft'}[status] }}</span>
+    {{ state_tag(status) }}
   </div>
   <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ {"transcript": "from a transcript", "account": "written up from memory", "manual": "written by hand"}.get(s.source, "from the campaign notes") }} · only the DM, reviewers and admins see this page</p>
 
