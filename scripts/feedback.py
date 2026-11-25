@@ -155,6 +155,13 @@ def _peek(base: str, listener: str) -> dict | None:
 CHECKED = ROOT / "logs" / ".claude-ai-checked"  # (when Claude last looked at claude.ai: `sync list` touches it)
 
 
+def _looked() -> None:
+    """Claude has looked at claude.ai (a page brought in or sent out, or nothing to look at): the listener's next look
+    is counted from now. (`sync list` alone isn't a look: the review of #525)"""
+    CHECKED.parent.mkdir(exist_ok=True)
+    CHECKED.touch()
+
+
 def _checked_at() -> float:
     try:
         return CHECKED.stat().st_mtime
@@ -621,17 +628,17 @@ def sync(a) -> None:
     own store on claude.ai (its "askdnd" collection, doc "comments"; and answers/verdict when askdnd's picks are newer)."""
     if a.do == "list":
         docs = call(a.base, "/docs/check")["docs"]
-        CHECKED.parent.mkdir(exist_ok=True)
-        CHECKED.touch()  # (the listener counts its next look at claude.ai from now)
         for d in docs:
             print(f"{d['doc']}  {d['link']}" + (f"  (question {d['open_question']} open)" if d["open_question"] else ""))
         if not docs:
             print("Nothing to check on claude.ai.")
+            _looked()
         return
     if not a.doc:
         sys.exit("sync in|out <doc>")
     from urllib.parse import quote
 
+    _looked()
     if a.do == "out":
         got = call(a.base, "/docs/out?doc=" + quote(a.doc))
         text = json.dumps(got, indent=1, ensure_ascii=False)
