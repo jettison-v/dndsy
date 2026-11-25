@@ -102,3 +102,21 @@ def test_a_feature_row_opens_who_and_which_days(player, admin, dm, db, sheet):
     window = admin.get(f"/manage/features/detail?feature=Rolls%3A%20checks&days=7&campaign={cole.campaign_id}").text
     assert "Rolls: checks" in window and "1 use by 1 person" in window and "Which days" in window
     assert dm.get("/manage/features/detail?feature=Rolls%3A%20checks").status_code == 403
+
+
+def test_overview_and_feature_use_count_features_one_way(player, db, sheet):
+    """The end-of-day audit (LB4): Overview's card and the Feature use page counted features two ways (raw names against
+    the map's features); both count the map's features now, the DM's and admins' own left out."""
+    from app.manage import _more_states
+    from tests.table_setup import char
+
+    cole = char(db, "Cole")
+    player.post("/rolls", data={"character": cole.id, "kind": "check", "label": "Stealth check", "mod": "+2"},
+                headers={"referer": f"https://askdnd.ai/characters/{cole.id}/battle"})
+    who = db.scalar(select(UsageEvent.user_id).where(UsageEvent.user_id.is_not(None)).limit(1))
+    for feature in ("Rolls: attacks", "Rolls: saves", "Admin pages", "Inbox"):
+        db.add(UsageEvent(campaign_id=cole.campaign_id, user_id=who, feature=feature, page="Battle"))
+    db.commit()
+    page = usage.summary(db, None, 7)["families"]
+    assert page == len(usage.families_used(usage.counted(db, None))) and page >= 2  # (Rolls once, Inbox; Admin pages not)
+    assert _more_states(db)["features"][0].startswith(f"{page} feature")
