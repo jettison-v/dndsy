@@ -2,6 +2,6 @@
    Everything in it saves in place (HTMX swaps #entity); ✕ closes it. #}
 {% from "_window.html" import window %}
 {% set w_kind %}Edit · {{ kind_label }}{% endset %}{% set w_title %}{{ e.name }}{% endset %}
-{% call window(w_kind, w_title, body_class="entity-edit") %}
+{% call window(w_kind, w_title, body_class="entity-edit", tall=True) %}{# (one height while its parts save in place: the review of #531) #}
   {% include "_entity_body.html" %}
 {% endcall %}
