@@ -3293,11 +3293,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     pickBox.throw([{ s: 20, v: 1 + Math.floor(Math.random() * 20) }], { set: val('set'), material: val('material'), by_type: false });
   }
   document.addEventListener('panel:loaded', ev => {
-    // (Your dice, found by its own sound switch: the item builder's dice picker shares data-dice-picker, and in Items'
-    // window it isn't this form: Brett's pick IT3, Nov 25)
-    const snd = ev.target.querySelector && ev.target.querySelector('[data-dice-picker] [data-dice-sound]');
-    if (!snd) return;
-    const form = snd.closest('[data-dice-picker]'), anim = form.querySelector('[data-dice-anim]');
+    // (Your dice has its own marker: data-dice-picker is the dice picker's, _form_bits.html, which the item builder in
+    // Items' window and the roll card both open: Brett's pick IT3, Nov 25)
+    const form = ev.target.querySelector && ev.target.querySelector('[data-your-dice]');
+    if (!form) return;
+    const snd = form.querySelector('[data-dice-sound]'), anim = form.querySelector('[data-dice-anim]');
     snd.checked = soundOn();
     snd.addEventListener('change', () => store.set('askdnd.diceSound', snd.checked ? 'on' : 'off'));
     // Dice animation on this device (it was at the bottom of Table rolls; Table rolls reads the same setting)

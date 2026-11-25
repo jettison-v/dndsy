@@ -2,7 +2,7 @@
    Table rolls' Roll window's Your dice tab (_roll_checks.html; Brett, Nov 10: one door from Table rolls). app.js throws
    a d20 in the preview whenever the set or material changes, and only once its tab is shown; sound and the animation
    are per device (localStorage), the rest is saved to you. Needs d, sets, materials. #}
-<form class="{{ 'dice-picker in-roll' if embedded else 'peek-form dice-picker' }}" hx-post="/dice" hx-swap="none" data-dice-picker>
+<form class="{{ 'dice-picker in-roll' if embedded else 'peek-form dice-picker' }}" hx-post="/dice" hx-swap="none" data-your-dice>
   {% if not embedded %}<div class="peek-body">{% endif %}<div class="dp-grid">
     <div>
       <h3>Dice set</h3>
