@@ -1,21 +1,18 @@
 {# One row of the Sync page, in the window over the list (app/sync_page.py `story`; Roadmap item 44): what it is, when and
-   why it was asked, each try with its exact error, and Retry or Cancel in the window's foot, kept with who pressed it. #}
+   why it was asked, each try with its exact error, and Retry or Cancel in the window's foot, kept with who pressed it.
+   On the one window (_window.html). #}
+{% from "_window.html" import window %}
 {% set TL = {"going": "ready", "working": "ready", "done": "passed", "broken": "failed", "you": "again", "quiet": ""} %}
-<div class="peek-head">
-  <div><div class="note">Sync · {{ {"read": "A read from D&D Beyond", "change": "A change sent to D&D Beyond", "draft": "Claude's recap draft"}[s.kind] }}</div>
-    <h2 id="peek-title">{{ s.title }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body stack" data-sync-story="{{ s.key }}">
+{% set foot %}
+  {% if s.retry %}<form method="post" action="/manage/sync/{{ s.key }}/retry" class="inline"><button class="btn primary" type="submit" data-do="sync-retry">Retry</button></form>{% endif %}
+  {% if s.cancel %}<form method="post" action="/manage/sync/{{ s.key }}/cancel" class="inline"><button class="btn" type="submit" data-do="sync-cancel" data-confirm="Cancel it? askdnd won't {{ 'send this change' if s.kind == 'change' else 'run it' }}.">Cancel it…</button></form>{% endif %}
+  <button class="btn link peek-close" type="button">Close</button>
+  {% if s.link %}<a class="end sync-open" href="{{ s.link }}">The character ↗</a>{% endif %}
+{% endset %}
+{% call window("Sync · " ~ {"read": "A read from D&D Beyond", "change": "A change sent to D&D Beyond", "draft": "Claude's recap draft"}[s.kind], s.title, foot=foot, attrs=' data-sync-story="' ~ s.key ~ '"') %}
   <p>{{ state_tag(s.state) }}</p>
   <dl class="mech">{% for k, v in s.facts if v %}<dt>{{ k }}</dt><dd>{% if v is string %}{{ v }}{% else %}{{ v | clock(True) }}{% endif %}</dd>{% endfor %}</dl>
   <ol class="tl sync-steps">
     {% for st in s.steps %}<li class="tl-{{ TL[st.tone] }}"><span>{{ st.words }}{% if st.error %}<span class="sync-error">{{ st.error }}</span>{% endif %}</span><span class="note tl-when">{{ st.at | clock }}</span></li>{% endfor %}
   </ol>
-</div>
-<div class="peek-foot row">
-  {% if s.retry %}<form method="post" action="/manage/sync/{{ s.key }}/retry" class="inline"><button class="btn primary" type="submit" data-do="sync-retry">Retry</button></form>{% endif %}
-  {% if s.cancel %}<form method="post" action="/manage/sync/{{ s.key }}/cancel" class="inline"><button class="btn" type="submit" data-do="sync-cancel" data-confirm="Cancel it? askdnd won't {{ 'send this change' if s.kind == 'change' else 'run it' }}.">Cancel it…</button></form>{% endif %}
-  <button class="btn link peek-close" type="button">Close</button>
-  {% if s.link %}<a class="sync-open" href="{{ s.link }}">The character ↗</a>{% endif %}
-</div>
+{% endcall %}

@@ -10,7 +10,7 @@
   <div class="title-row"><h1>Accounts</h1><button class="btn title-action" type="button" data-modal-url="/manage/accounts/new" data-item="add-account">+ Add an account</button></div>
   <p class="subtitle">Who can sign in to askdnd at all, who's an admin, and which campaigns each person is in. Roles in a campaign (DM, reviewer, player) are set on that campaign's Table. Only admins can see this page.</p>
 
-  <div class="tbx-stack" data-list="accounts" data-default-sort="default">
+  <div class="tbx-stack" data-list="accounts" data-default-sort="default" data-ls-quiet-first>{# (the table is People: its first group needs no label, Brett's pick T1 A, issue 129) #}
     {% set views %}{{ view_switch([("all", "All"), ("people", "People"), ("test", "Test")], "Which accounts") }}{% endset %}
     {# One line a person (Brett's pick AC1 on docs/mockups/backstage-round-4/, Nov 25): a Test tag, not a symbol in the
        name; Rename…, View as and Remove in the row's ⋯. #}

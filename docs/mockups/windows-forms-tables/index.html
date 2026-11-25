@@ -1,0 +1,470 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Windows, Forms and Tables</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.quote { border-left: 3px solid var(--red-btn); padding: 4px 0 4px 12px; color: var(--text); font-style: italic; max-width: 92ch; }
+section { display: grid; gap: 12px; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; align-content: start; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.term.fix .tag { color: var(--green); }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.col { display: grid; gap: 8px; min-width: 0; }
+.cap { font-size: .84rem; color: var(--muted); }
+.cap b { color: var(--strong); }
+.cap .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 4px; }
+.today { color: var(--red); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+
+/* the drawn page behind a window */
+.stage { position: relative; border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); height: 520px; }
+.stage.short { height: 400px; }
+.stage::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+.stage .ghost { position: absolute; inset: 0; padding: 14px; display: grid; gap: 8px; align-content: start; opacity: .5; }
+.ghost i { display: block; height: 10px; border-radius: 4px; background: var(--surface-3); }
+/* a window, drawn */
+.win { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: calc(100% - 36px); max-height: calc(100% - 36px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--surface-2); border: 1px solid var(--line-strong); border-top: 2px solid var(--red-btn); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.5); overflow: hidden; z-index: 1; }
+.win.fixed { height: calc(100% - 36px); }
+.win.free { grid-template-rows: auto auto; }
+.w-head { display: flex; align-items: start; gap: 8px; padding: 12px 16px 10px; }
+.w-head .k { color: var(--muted); font-size: .72rem; display: block; }
+.w-head b { font-size: .98rem; }
+.w-head .x { margin-left: auto; color: var(--muted); }
+.w-body { padding: 4px 16px 14px; display: grid; gap: 14px; align-content: start; overflow: auto; min-height: 0; font-size: .82rem; }
+.w-body.loose { gap: 22px; }
+.w-foot { display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.w-foot .end { margin-left: auto; }
+.w-inline { display: flex; gap: 10px; align-items: center; }
+.sec { display: grid; gap: 10px; }
+.sec > h4 { margin: 0; font: 600 .86rem/1.2 var(--sans); color: var(--strong); }
+.sec > .sub { color: var(--muted); font-size: .76rem; margin-top: -6px; }
+/* fields */
+.f { display: grid; gap: 4px; min-width: 0; }
+.f > span { color: var(--muted); font-size: .76rem; }
+.f .box { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); padding: 4px 8px; color: var(--text); font-size: .8rem; white-space: nowrap; overflow: hidden; }
+.f .box.tall { height: 58px; }
+.f .box.bad { border-color: var(--red); }
+.f .help { color: var(--faint); font-size: .72rem; }
+.f .err { color: var(--red); font-size: .72rem; }
+.f.side { grid-template-columns: 120px minmax(0, 1fr); column-gap: 12px; align-items: start; }
+.f.side > span { padding-top: 5px; }
+.f.side > :not(span), .f.side > .help, .f.side > .err, .f.side > .box { grid-column: 2; }
+.row4 { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1fr; gap: 10px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-3); color: var(--strong); font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary, .btn.go { background: var(--red-btn); border-color: var(--red-btn); }
+.btn.link { background: none; border-color: transparent; color: var(--muted); padding: 0 4px; }
+.btn.danger { background: none; border-color: transparent; color: var(--red); padding: 0 4px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: .72rem; }
+.chip.on { border-color: var(--blue); color: var(--strong); background: var(--blue-soft); }
+.part { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 10px; background: var(--surface); }
+.part-h { display: flex; gap: 8px; align-items: center; }
+.part-h .end { margin-left: auto; }
+.add { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 6px 10px; color: var(--muted); font-size: .76rem; }
+.empty-gap { height: 120px; }
+.ann { position: absolute; z-index: 2; border: 2px dashed var(--amber); border-radius: 8px; pointer-events: none; }
+.ann span { position: absolute; top: -10px; left: 8px; background: var(--amber); color: #15171a; font: 700 .62rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; }
+
+/* tables, drawn */
+.tbl { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); font-size: .8rem; }
+.tbl .t-title { display: flex; gap: 8px; align-items: center; padding: 8px 12px; font-weight: 600; color: var(--strong); }
+.tbl .t-title .n { font-size: .7rem; padding: 0 7px; border-radius: 999px; background: var(--surface-3); color: var(--muted); }
+.tbl table { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font: 600 .72rem/1.2 var(--sans); color: var(--faint); padding: 7px 12px; background: var(--surface-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tbl td { padding: 7px 12px; border-top: 1px solid var(--line-soft); color: var(--text); }
+.tbl td .note { font-size: .72rem; }
+.tbl tr.grp td { background: var(--surface-2); color: var(--muted); font: 600 .72rem/1.2 var(--sans); padding: 6px 12px; }
+.tbl tr.grp.quiet td { background: transparent; color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 14px 12px 6px; border-top: 0; }
+.tag { display: inline-block; padding: 0 7px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font-size: .68rem; margin-left: 4px; }
+.tog { display: inline-block; width: 26px; height: 14px; border-radius: 999px; background: var(--green); vertical-align: middle; }
+.tog.off { background: var(--surface-3); }
+.stack-tables { display: grid; gap: 22px; }
+
+/* page bits */
+.pg { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--bg); padding: 14px 16px; display: grid; gap: 18px; align-content: start; font-size: .82rem; }
+.pg.tight { gap: 0; }
+.pg h3 { font: 600 1.15rem/1.2 var(--serif); }
+.rec { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.rec .end { margin-left: auto; }
+.rec .note { display: block; font-size: .72rem; }
+.card { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; }
+.mt-odd { margin-top: 34px; }
+.stack-btn { display: grid; gap: 6px; justify-items: start; }
+
+/* checks */
+.checks { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.checks li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: grid; gap: 2px; font-size: .9rem; }
+.checks li b { font-size: .92rem; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .btn { min-height: 34px; font-size: .9rem; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 1100px) { .trio { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .duo { grid-template-columns: minmax(0, 1fr); } .row4 { grid-template-columns: 1fr 1fr; } .stage { height: 560px; } }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 47 · a mockup with picks</span>
+    <h1>Windows, forms and tables, one way everywhere</h1>
+    <p class="quote">“It seemed like we had a lot of UI problems in the most recent round, we should fix these holistically and check other areas for similar problems. I am surprised these were not caught in testing or the review.”</p>
+    <p class="meta">Your round on Backstage found eleven of these (issues 119–126, 129, 131, and 121's “evaluate all of these new modal layouts”). They have one cause: windows, the fields in them and stacked tables are each built several ways, and nothing checks them. Below: why the checks missed them, three choices drawn on your own windows, the fixes that need no choice, and what the checks become.</p>
+  </header>
+
+  <section aria-labelledby="h-why">
+    <h2 id="h-why">Why testing and the review missed them</h2>
+    <div class="terms">
+      <div class="term"><span class="tag">Windows were never opened</span><span>The layout tests and the before-and-after pictures open pages, and only one window (the Spell Book). The windows Backstage's rounds 2–4 made on Nov 24 (the item builder, History's windows, Feature use, the house rule) were never opened by a check.</span></div>
+      <div class="term"><span class="tag">Most were spacing, not breakage</span><span>Of your eleven, only one is something on top of something else (131: damage types spilling under the next row). The rest are uneven gaps, Save in the wrong place, buttons stacked, two header rows. No check reads “is this the same as everywhere else”: only one shared piece can promise that.</span></div>
+      <div class="term"><span class="tag">Three ways to build a window</span><span>45 windows: 21 have a footer, 24 don't, and the large ones grew from pages, so Save sits wherever the page ended. Fields come in three layouts (label above, beside, in a grid), sometimes inside one window.</span></div>
+      <div class="term"><span class="tag">The review reads code</span><span>The code review reads the change's text. The pictures compare before with after, so a brand-new window has no before, and nothing opened it to take one.</span></div>
+      <div class="term"><span class="tag">And my own look</span><span>Four rounds merged in one day, and I looked at the pages, not every window and every state. That's the part the checks below can't replace, so it gets a written list.</span></div>
+    </div>
+    <p class="note">One check is already fixed today: the layout check only looked for overlaps in the menu bar and small badges; it now asks what's drawn over every line of words, on a page and in an open window. Running it over every page and window (52 windows, as admin, DM and player) found no new overlaps, which matches the above: the rest is design.</p>
+  </section>
+
+  <section aria-labelledby="h-w1">
+    <h2 id="h-w1">W1 · Where a window's Save goes</h2>
+    <p class="meta">Every window gets the same three parts: its head (what it is, its name, ✕), its body, and its foot, which holds Save and Cancel, with Remove or Retire at the far end. The choice is whether the foot stays at the window's bottom edge while the body scrolls, or comes right after the last field. Drawn on New item (issues 119, 120).</p>
+    <div class="trio">
+      <div class="col">
+        <div class="stage" aria-label="New item today">
+          <div class="ghost"><i style="width:40%"></i><i></i><i></i><i style="width:70%"></i><i></i></div>
+          <div class="win fixed">
+            <div class="w-head"><div><span class="k">Items</span><b>New item</b></div><span class="x">✕</span></div>
+            <div class="w-body">
+              <div class="sec"><h4>The item</h4><div class="row4"><label class="f"><span>Name</span><span class="box"></span></label><label class="f"><span>Kind</span><span class="box">Wondrous item ▾</span></label><label class="f"><span>Rarity</span><span class="box">Uncommon ▾</span></label><label class="f"><span>Cost</span><span class="box">500 GP</span></label><label class="f"><span>Weight</span><span class="box">1 lb</span></label></div>
+                <label class="f"><span>Its words (what the table reads)</span><span class="box tall"></span></label></div>
+              <div class="sec"><h4>What it does in play</h4><span class="sub">Each piece is something askdnd plays.</span><span class="add">+ Add a roll, a bonus or charges</span></div>
+              <div class="w-inline"><span class="btn primary">Save</span><span class="btn link">Cancel</span></div>
+              <div class="empty-gap"></div>
+            </div>
+          </div>
+          <div class="ann" style="left:24px;right:24px;top:400px;height:100px"><span>Save mid-window, empty below</span></div>
+        </div>
+        <p class="cap"><span class="today">Today</span> The window is a fixed height, so Save floats after the last part and the rest is empty.</p>
+      </div>
+      <div class="col">
+        <div class="stage" aria-label="New item, choice A">
+          <div class="ghost"><i style="width:40%"></i><i></i><i></i><i style="width:70%"></i><i></i></div>
+          <div class="win">
+            <div class="w-head"><div><span class="k">Items</span><b>New item</b></div><span class="x">✕</span></div>
+            <div class="w-body">
+              <div class="sec"><h4>The item</h4><div class="row4"><label class="f"><span>Name</span><span class="box"></span></label><label class="f"><span>Kind</span><span class="box">Wondrous item ▾</span></label><label class="f"><span>Rarity</span><span class="box">Uncommon ▾</span></label><label class="f"><span>Cost</span><span class="box">500 GP</span></label><label class="f"><span>Weight</span><span class="box">1 lb</span></label></div>
+                <label class="f"><span>Its words (what the table reads)</span><span class="box tall"></span></label></div>
+              <div class="sec"><h4>What it does in play</h4><span class="sub">Each piece is something askdnd plays.</span>
+                <div class="part"><div class="part-h"><b>A roll</b><span class="note">2d8 force · Dex save DC 14</span><span class="end btn link">Edit</span></div></div>
+                <div class="part"><div class="part-h"><b>Charges</b><span class="note">3 · back at Dawn</span><span class="end btn link">Edit</span></div></div>
+                <span class="add">+ Add a roll, a bonus or charges</span></div>
+            </div>
+            <div class="w-foot"><span class="btn primary">Save</span><span class="btn link">Cancel</span><span class="end btn danger">Retire…</span></div>
+          </div>
+        </div>
+        <p class="cap"><b>A · The foot stays at the window's bottom</b><span class="mine">my pick</span><br>The window is as tall as what's in it, up to the screen; past that the body scrolls and Save never moves. One place to look for Save in every window, long or short.</p>
+      </div>
+      <div class="col">
+        <div class="stage" aria-label="New item, choice B">
+          <div class="ghost"><i style="width:40%"></i><i></i><i></i><i style="width:70%"></i><i></i></div>
+          <div class="win">
+            <div class="w-head"><div><span class="k">Items</span><b>New item</b></div><span class="x">✕</span></div>
+            <div class="w-body">
+              <div class="sec"><h4>The item</h4><div class="row4"><label class="f"><span>Name</span><span class="box"></span></label><label class="f"><span>Kind</span><span class="box">Wondrous item ▾</span></label><label class="f"><span>Rarity</span><span class="box">Uncommon ▾</span></label><label class="f"><span>Cost</span><span class="box">500 GP</span></label><label class="f"><span>Weight</span><span class="box">1 lb</span></label></div>
+                <label class="f"><span>Its words (what the table reads)</span><span class="box tall"></span></label></div>
+              <div class="sec"><h4>What it does in play</h4><span class="sub">Each piece is something askdnd plays.</span>
+                <div class="part"><div class="part-h"><b>A roll</b><span class="note">2d8 force · Dex save DC 14</span><span class="end btn link">Edit</span></div></div>
+                <div class="part"><div class="part-h"><b>Charges</b><span class="note">3 · back at Dawn</span><span class="end btn link">Edit</span></div></div>
+                <span class="add">+ Add a roll, a bonus or charges</span></div>
+              <div class="w-inline" style="padding-top:10px;border-top:1px solid var(--line)"><span class="btn primary">Save</span><span class="btn link">Cancel</span><span class="btn danger" style="margin-left:auto">Retire…</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>B · The foot comes after the last field</b><br>Also as tall as what's in it, but Save scrolls with the body: in a long window you scroll down to find it. Closer to how pages work.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-f1">
+    <h2 id="h-f1">F1 · A field: its name, its help and its error</h2>
+    <p class="meta">Today the item builder names fields above the box, the roll inside it names them beside, and an error shows beside the box in one place and under it in another (issue 131). One field piece for every form: help and error always under the box, the error in red taking the help's place. The choice is where its name goes. Drawn on a roll's Dice and on Charges (issues 119, 131).</p>
+    <div class="trio">
+      <div class="col">
+        <div class="part" aria-label="Fields today">
+          <div class="part-h"><b>A roll</b><span class="end btn link">Close</span></div>
+          <label class="f side"><span>Called</span><span class="box">Its name</span></label>
+          <label class="f side"><span>Dice</span><span class="chips"><span class="chip">No type</span><span class="chip">Acid</span><span class="chip">Bludgeoning</span><span class="chip">Cold</span><span class="chip">Fire</span><span class="chip">Force</span></span></label>
+          <div class="f side"><span>Or type it</span><span class="w-inline"><span class="box bad" style="flex:1">lot</span><span class="err">Write its dice like 2d6 force, 1d8+2 or 5.</span></span></div>
+          <div class="part-h" style="margin-top:6px"><b>Charges</b></div>
+          <div class="f"><span class="box" style="font-weight:600;color:var(--strong)">How many?</span></div>
+          <label class="f side"><span>How many come back</span><span class="box bad">lots</span></label>
+          <span class="err" style="font-size:.72rem;color:var(--red)">Write it like 1d3, or all.</span>
+        </div>
+        <p class="cap"><span class="today">Today</span> One error beside its box, the next under it and out at the edge; “How many?” is a heading drawn as a box (119).</p>
+      </div>
+      <div class="col">
+        <div class="part" aria-label="Fields, choice A">
+          <div class="part-h"><b>A roll</b><span class="end btn link">Close</span></div>
+          <label class="f"><span>Called</span><span class="box">Its name</span></label>
+          <div class="f"><span>Damage type</span><span class="chips"><span class="chip">No type</span><span class="chip">Acid</span><span class="chip">Bludgeoning</span><span class="chip">Cold</span><span class="chip">Fire</span><span class="chip on">Force</span><span class="chip">Lightning</span><span class="chip">Necrotic</span></span></div>
+          <label class="f"><span>Dice</span><span class="box bad">lot</span><span class="err">Write its dice like 2d6, 1d8+2 or 5.</span></label>
+          <div class="part-h" style="margin-top:6px"><b>Charges</b></div>
+          <label class="f"><span>How many</span><span class="box" style="width:90px">− 3 +</span></label>
+          <label class="f"><span>How many come back</span><span class="box bad">lots</span><span class="err">Write it like 1d3, or all.</span></label>
+        </div>
+        <p class="cap"><b>A · Name above the box</b><span class="mine">my pick</span><br>As every small window already does (Add a house rule, Add to the table). Chips wrap freely under their name, so nothing spills into the next row, and a phone needs no second layout.</p>
+      </div>
+      <div class="col">
+        <div class="part" aria-label="Fields, choice B">
+          <div class="part-h"><b>A roll</b><span class="end btn link">Close</span></div>
+          <label class="f side"><span>Called</span><span class="box">Its name</span></label>
+          <div class="f side"><span>Damage type</span><span class="chips"><span class="chip">No type</span><span class="chip">Acid</span><span class="chip">Bludgeoning</span><span class="chip">Cold</span><span class="chip">Fire</span><span class="chip on">Force</span><span class="chip">Lightning</span><span class="chip">Necrotic</span></span></div>
+          <label class="f side"><span>Dice</span><span class="box bad">lot</span><span class="err">Write its dice like 2d6, 1d8+2 or 5.</span></label>
+          <div class="part-h" style="margin-top:6px"><b>Charges</b></div>
+          <label class="f side"><span>How many</span><span class="box" style="width:90px">− 3 +</span></label>
+          <label class="f side"><span>How many come back</span><span class="box bad">lots</span><span class="err">Write it like 1d3, or all.</span></label>
+        </div>
+        <p class="cap"><b>B · Name beside the box</b><br>A column of names on the left, each box, help and error in the column beside it. Reads like a settings page and keeps long forms shorter; on a phone it falls back to A.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-t1">
+    <h2 id="h-t1">T1 · A table with groups</h2>
+    <p class="meta">Accounts, Documents and For you's Try split their rows into groups. Today the group's name is a second header row under the column names, so the top of the list reads as two headers (issue 129). Drawn on Accounts.</p>
+    <div class="trio">
+      <div class="col">
+        <div class="tbl" aria-label="Accounts today"><div class="t-title">People <span class="n">9</span></div>
+          <table><thead><tr><th>Person</th><th>Campaigns</th><th>Admin</th><th>Feedback</th></tr></thead>
+            <tbody><tr class="grp"><td colspan="4">People</td></tr>
+              <tr><td><b>Brett</b><br><span class="note">owner</span></td><td>The Adventure Begins</td><td><span class="tag">Admin</span></td><td class="note">Always</td></tr>
+              <tr><td><b>Player 1</b></td><td>The Adventure Begins</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr>
+              <tr class="grp"><td colspan="4">Test accounts</td></tr>
+              <tr><td><b>Test seat 1</b> <span class="tag">Test</span></td><td>VTT test</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr></tbody></table></div>
+        <p class="cap"><span class="today">Today</span> The column names, then “People” in the same grey band: two headers before the first person.</p>
+      </div>
+      <div class="col">
+        <div class="tbl" aria-label="Accounts, choice A"><div class="t-title">People <span class="n">9</span></div>
+          <table><thead><tr><th>Person</th><th>Campaigns</th><th>Admin</th><th>Feedback</th></tr></thead>
+            <tbody>
+              <tr><td><b>Brett</b><br><span class="note">owner</span></td><td>The Adventure Begins</td><td><span class="tag">Admin</span></td><td class="note">Always</td></tr>
+              <tr><td><b>Player 1</b></td><td>The Adventure Begins</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr>
+              <tr class="grp quiet"><td colspan="4">Test accounts · 4</td></tr>
+              <tr><td><b>Test seat 1</b> <span class="tag">Test</span></td><td>VTT test</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr></tbody></table></div>
+        <p class="cap"><b>A · A group is a label in the list</b><span class="mine">my pick</span><br>One header. The first group needs no label (the table's title says it); each later group starts with a small label in the list, not a band, and it scrolls with the rows.</p>
+      </div>
+      <div class="col">
+        <div class="stack-tables" aria-label="Accounts, choice B">
+          <div class="tbl"><div class="t-title">People <span class="n">5</span></div>
+            <table><thead><tr><th>Person</th><th>Campaigns</th><th>Admin</th><th>Feedback</th></tr></thead>
+              <tbody><tr><td><b>Brett</b><br><span class="note">owner</span></td><td>The Adventure Begins</td><td><span class="tag">Admin</span></td><td class="note">Always</td></tr>
+                <tr><td><b>Player 1</b></td><td>The Adventure Begins</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr></tbody></table></div>
+          <div class="tbl"><div class="t-title">Test accounts <span class="n">4</span></div>
+            <table><thead><tr><th>Person</th><th>Campaigns</th><th>Admin</th><th>Feedback</th></tr></thead>
+              <tbody><tr><td><b>Test seat 1</b> <span class="tag">Test</span></td><td>VTT test</td><td><span class="tog off"></span></td><td><span class="tog"></span></td></tr></tbody></table></div>
+        </div>
+        <p class="cap"><b>B · A group is its own table</b><br>Each group its own box with its own title and header, a fixed gap between them. Clear, but search and sorting then work per box, and long pages repeat the column names.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-same">
+    <h2 id="h-same">Fixed the same way everywhere, no choice needed</h2>
+    <p class="meta">These follow from one spacing scale and one row of buttons, already in the design system but not used on these pages.</p>
+    <div class="duo">
+      <div class="col">
+        <div class="duo">
+          <div class="pg" aria-label="Bridge Timers today">
+            <span class="today">Today</span>
+            <h3>Timers</h3>
+            <label class="f"><span>Stays awake after anyone was here</span><span class="w-inline"><span class="box" style="width:60px">30</span><span class="note">minutes</span></span></label>
+            <span class="note" style="margin-top:-14px">After someone last opened askdnd or a sheet. askdnd's own: 30.</span>
+            <label class="f"><span>A waiting change gives up after</span><span class="w-inline"><span class="box" style="width:60px">6</span><span class="note">minutes</span></span></label>
+            <span class="note" style="margin-top:-16px">Not heard from its sheet this long, it's listed to make by hand. askdnd's own: 3.</span>
+            <div class="stack-btn"><span class="btn primary">Save</span><span class="btn">Back to askdnd's own</span></div>
+          </div>
+          <div class="pg" aria-label="Bridge Timers fixed">
+            <span class="today" style="color:var(--green)">Fixed</span>
+            <h3>Timers</h3>
+            <label class="f"><span>Stays awake after anyone was here</span><span class="w-inline"><span class="box" style="width:60px">30</span><span class="note">minutes</span></span><span class="help">After someone last opened askdnd or a sheet. askdnd's own: 30.</span></label>
+            <label class="f"><span>A waiting change gives up after</span><span class="w-inline"><span class="box" style="width:60px">6</span><span class="note">minutes</span></span><span class="help">Not heard from its sheet this long, it's listed to make by hand. askdnd's own: 3.</span></label>
+            <div class="w-inline"><span class="btn primary">Save</span><span class="btn link">Back to askdnd's own</span></div>
+          </div>
+        </div>
+        <p class="cap"><b>Bridge › Timers (126)</b>: each help line belongs to its field, one gap between fields, Save and the quiet second choice side by side.</p>
+      </div>
+      <div class="col">
+        <div class="duo">
+          <div class="pg tight" aria-label="Needs you today">
+            <span class="today">Today</span>
+            <h3 style="margin:10px 0">Needs you</h3>
+            <div class="rec"><span><b>Session 20 is ready to review</b><span class="note">Nothing reaches the table until you publish it</span></span><span class="end btn primary">Review it</span></div>
+            <div class="rec"><span><b>9 sessions not drafted yet</b><span class="note">About $0.15 each</span></span><span class="end btn">Draft the next one</span></div>
+            <div class="card mt-odd"><b>The table</b><span class="note">Big C · Cole · No Name · Trah</span></div>
+            <div class="card" style="margin-top:22px"><b>The next game</b><span class="note">Items · 2</span></div>
+          </div>
+          <div class="pg" aria-label="Needs you fixed">
+            <span class="today" style="color:var(--green)">Fixed</span>
+            <h3>Needs you</h3>
+            <div><div class="rec"><span><b>Session 20 is ready to review</b><span class="note">Nothing reaches the table until you publish it</span></span><span class="end btn primary">Review it</span></div>
+            <div class="rec"><span><b>9 sessions not drafted yet</b><span class="note">About $0.15 each</span></span><span class="end btn">Draft the next one</span></div></div>
+            <div class="card"><b>The table</b><span class="note">Big C · Cole · No Name · Trah</span></div>
+            <div class="card"><b>The next game</b><span class="note">Items · 2</span></div>
+          </div>
+        </div>
+        <p class="cap"><b>Needs you (124)</b>: the page's parts one gap apart, from the page itself, not a margin each part sets.</p>
+      </div>
+    </div>
+    <div class="terms">
+      <div class="term fix"><span class="tag">History's change window (121)</span><span>Before and After side by side only as tall as their words, Restore the before in the window's foot.</span></div>
+      <div class="term fix"><span class="tag">History's batch window (123)</span><span>Each of the 23 named: “Session 6 · ‘Big C intimidated Perth…’ published”, one line each, grouped by session, instead of 23 “Key moment, a session” boxes.</span></div>
+      <div class="term fix"><span class="tag">Feature use window (125)</span><span>On the window piece: its parts one gap apart, and By feature and By page on the page behind it one gap apart too.</span></div>
+      <div class="term fix"><span class="tag">Two tables on one page (122)</span><span>Tool corrections' Needs a fix and Built into askdnd: each its own box with the same title row, one gap between.</span></div>
+      <div class="term fix"><span class="tag">New campaign (128)</span><span>Says the D&amp;D Beyond link is optional and is set on the campaign's Table, whether or not an unlinked sheet is seen.</span></div>
+      <div class="term fix"><span class="tag">Rule books (117, 118)</span><span>Stay with their own area (Rules and books): the side panel needs its own drawing, and Upload says it takes askdnd's .json.gz, made on the Mac.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-checks">
+    <h2 id="h-checks">What the checks become (in scope, no choice needed)</h2>
+    <ul class="checks">
+      <li><b>One window piece, one field piece</b><span class="note">Every window is built from the one window (head, body, foot) and every field from the one field (name, box, help, error). A test fails on a window or a form built any other way, the same way tests already fail on a hand-made count pill.</span></li>
+      <li><b>Every window opened by the tests</b><span class="note">The layout tests open every window each page opens, as each person, at laptop and phone widths, and run every layout check on it, the new “covered” check included.</span></li>
+      <li><b>Every window in the before-and-after pictures</b><span class="note">So a new or changed window shows up in the comparison I look at before merging; a brand-new one is listed as new for me to look at.</span></li>
+      <li><b>Buttons that stack</b><span class="note">A new layout check: two buttons of one row sitting one above the other while they'd fit side by side (126).</span></li>
+      <li><b>My look, written down</b><span class="note">Before a change people see merges, I open each window it touches and note in the pull request what I looked at: Save in the foot, one field layout, one gap, errors under the box, nothing under anything.</span></li>
+    </ul>
+    <p class="note">How it's built: first the pieces and the checks, in one change. Then each Product Area's windows move onto them, one pull request per area (Backstage first, as your round found it), each one you try once. A window not moved yet is listed by the test as work left, so nothing is forgotten.</p>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>W1 · Where a window's Save goes</legend><label class="opt"><input type="radio" name="w1" value="foot"><span>A · The foot stays at the window's bottom <span class="mine">my pick</span></span><small>Save in the same place in every window; the body scrolls when it's long.</small></label><label class="opt"><input type="radio" name="w1" value="after"><span>B · The foot comes after the last field</span><small>Save scrolls with the body, as on a page.</small></label></fieldset>
+    <fieldset><legend>F1 · A field's name</legend><label class="opt"><input type="radio" name="f1" value="above"><span>A · Above the box <span class="mine">my pick</span></span><small>As the small windows already do; help and error under the box.</small></label><label class="opt"><input type="radio" name="f1" value="beside"><span>B · Beside the box</span><small>A column of names on the left; help and error under the box. Falls back to A on a phone.</small></label></fieldset>
+    <fieldset><legend>T1 · A table with groups</legend><label class="opt"><input type="radio" name="t1" value="label"><span>A · A group is a label in the list <span class="mine">my pick</span></span><small>One header; later groups start with a small label that scrolls with the rows.</small></label><label class="opt"><input type="radio" name="t1" value="tables"><span>B · A group is its own table</span><small>Each group its own box, title and header.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(another window or table that bothers you)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["w1", "f1", "t1"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+(async () => {
+  // Comments made in askdnd, shown on claude.ai too (item 39, 6 of 6): Claude hands them to this page's own store
+  // (collection "askdnd", doc "comments") when it checks in; each is pinned by the words it was made at.
+  let db = null;
+  try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) return;
+  let d = null;
+  try { d = await db.collection("askdnd").doc("comments").get(); } catch (e) { return; }
+  const list = d && d.exists ? (d.data().comments || []).filter(c => c && c.words) : [];
+  if (!list.length) return;
+  const box = document.createElement("section");
+  box.setAttribute("aria-label", "Comments made in askdnd");
+  box.style.cssText = "display:grid;gap:8px;border:1px solid var(--line,#34383e);border-radius:12px;padding:12px 16px;background:var(--surface,#1f2226)";
+  const h = document.createElement("h2");
+  h.textContent = "Comments made in askdnd";
+  box.append(h);
+  const pin = n => { const b = document.createElement("span"); b.textContent = String(n);
+    b.style.cssText = "display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f08a8a;color:#15171a;font:700 .7rem/1 system-ui;margin-right:6px;vertical-align:1px"; return b; };
+  for (const c of list) {
+    const row = document.createElement("p");
+    row.style.cssText = "margin:0;font-size:.9rem";
+    row.append(pin(c.n), document.createTextNode(c.words));
+    if (c.near) { const w = document.createElement("span"); w.textContent = ` · near “${c.near}”`; w.style.color = "var(--muted,#a29d93)"; row.append(w); }
+    box.append(row);
+    const want = String(c.near || "").trim().slice(0, 60);
+    if (!want) continue;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || box.contains(t) || el.closest("script, style, template, title, noscript")) continue;
+      if (t.nodeValue && t.nodeValue.includes(want) && el.getClientRects().length) { el.prepend(pin(c.n)); break; }
+    }
+  }
+  const form = document.querySelector("form.decide");
+  (form || document.body.lastElementChild).after(box);
+})();
+</script>

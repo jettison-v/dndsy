@@ -5,6 +5,9 @@
 // - "wraps": a one-line control (a button, tab, tag, chip) broke onto two lines
 // - "overlaps": two items in the menu bar sit on top of each other, or something placed on top (a badge, a corner
 //   button) covers text beside it
+// - "stacked buttons": two or more buttons of one row one above the other while they'd fit side by side (Nov 25)
+// - "covered": words with something else drawn over them, on the page or in an open window (a sticky header over a row,
+//   a card over a list, a help line over a box; Nov 25)
 // - "zooms", on a touch screen only: a box you type in with text under 16px, which makes an iPhone zoom the page in
 // - "breaks a word": a heading or a bold name wrapped inside a word rather than between words
 // - "cuts its hint": a box's placeholder longer than the box
@@ -23,9 +26,13 @@
 // Used by tests/browser/test_layout.py on every pull request and by scripts/layout_sweep.py for a sweep of real data.
 ask => {
   const problems = [], seen = new Set();
-  const folded = el => {  // (inside a closed <details>, its summary aside: not drawn, though Chrome still gives it boxes)
-    const d = el.closest('details:not([open])'), s = el.closest('summary');
-    return !!d && !(s && s.parentElement === d);
+  const folded = el => {  // (inside a closed <details>, its summary aside: not drawn, though Chrome still gives it boxes;
+    // every fold around it, so a summary inside a folded one is folded too: the Table page's seats, Nov 25)
+    for (let d = el.closest('details:not([open])'); d; d = d.parentElement && d.parentElement.closest('details:not([open])')) {
+      const s = el.closest('summary');
+      if (!(s && s.parentElement === d && d.contains(s))) return true;
+    }
+    return false;
   };
   const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' && !folded(el); };
   const where = el => {
@@ -309,6 +316,67 @@ ask => {
         }
       }
     });
+  }
+  // Words something else is drawn over (Brett, Nov 25: issues 124, 126, 129 and 131 reached him because only the menu bar
+  // and small badges were checked): a sticky header over a list's first row, a card over the last, a help line over the
+  // box below it, chips wrapping under the next row. The middle of each line of words is asked what's on top there. Only
+  // the top layer counts (an open window, else the page), and only words that can be seen (inside the screen and every
+  // box that clips them).
+  const layer = [...document.querySelectorAll('.peek.open, dialog[open]')].filter(shown).pop() || document.body;
+  const seenAt = el => {
+    let r = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    for (let e = el; e && e !== document.documentElement; e = e.parentElement) {  // (its own box too: words cut at two lines on purpose)
+      const cs = getComputedStyle(e);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const b = e.getBoundingClientRect();
+      r = { left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom) };
+    }
+    return r;
+  };
+  const named = el => el.id ? `#${el.id}` : `${el.tagName.toLowerCase()}${[...el.classList].slice(0, 2).map(c => '.' + c).join('')}`;
+  const words = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
+  for (let n = words.nextNode(); n; n = words.nextNode()) {
+    const el = n.parentElement;
+    if (!n.textContent.trim() || !el || !shown(el) || el.closest('[hidden], .sr, [aria-hidden=true], [role=tooltip], option, script, style, template')) continue;
+    if (parseFloat(getComputedStyle(el).opacity) === 0) continue;
+    if (getComputedStyle(el).pointerEvents === 'none') continue;  // (the screen's own lookup sees through it, so it can't be asked: the dice page's loading line, Nov 25)
+    const range = document.createRange(); range.selectNodeContents(n);
+    const box = seenAt(el);
+    for (const t of range.getClientRects()) {
+      if (t.width < 4 || t.height < 4) continue;
+      const x = t.left + t.width / 2, y = t.top + t.height / 2;
+      if (x < box.left + 1 || x > box.right - 1 || y < box.top + 1 || y > box.bottom - 1) continue;
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || hit === el || el.contains(hit) || hit.contains(el)) continue;
+      if (hit.closest('.menu, [role=menu], .tour-card, .peek-backdrop, #cards, #check-card')) continue;  // (a menu or card opened over the page on purpose)
+      if (hit.tagName === 'IMG' && hit.parentElement && hit.parentElement.contains(el)) continue;  // (a picture over its fallback letters, as meant)
+      const hb = hit.getBoundingClientRect();
+      if (x < hb.left || x > hb.right || y < hb.top || y > hb.bottom) continue;  // (a link's clickable area stretched over its card: drawn by ::after, see-through)
+      const stays = [hit, ...(function* up(e) { for (let a = e.parentElement; a; a = a.parentElement) yield a; })(hit)]
+        .find(a => ['sticky', 'fixed'].includes(getComputedStyle(a).position));
+      if (stays) {  // (something that stays put as you scroll: rows scrolled under a header, or a bar pinned at the bottom, as meant)
+        const cs = getComputedStyle(stays);
+        const sr = stays.getBoundingClientRect();
+        if (sr.top > innerHeight / 2 || (cs.bottom !== 'auto' && cs.top === 'auto')) continue;  // (a bar along the screen's foot: what's under it scrolls clear)
+        if (cs.position === 'fixed' && scrollY > 0) continue;  // (a bar along the top, the page scrolled under it; at the top of the page, words under it are a fault)
+        let sc = el.parentElement;
+        while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+        if ((sc && sc !== document.body ? sc.scrollTop : scrollY) > 0) continue;
+      }
+      add('covered', el, `"${n.textContent.trim()}" under ${named(hit)}${hit.textContent.trim() ? ` ("${hit.textContent.trim().slice(0, 30)}")` : ''}`);
+      break;
+    }
+  }
+  // Buttons of one row stacked one above the other while they'd fit side by side (Roadmap item 47, issue 126: Save and
+  // Back to askdnd's own on the bridge's Timers): a window's foot, a form's actions, any parent of two or more buttons
+  // and nothing else
+  for (const box of document.querySelectorAll('form, .peek-foot, .row, .act-bar, .stack-btn, div, p')) {
+    const btns = [...box.children].map(c => c.matches('form.inline') ? c.firstElementChild : c).filter(c => c && c.matches('.btn') && shown(c));  // (action buttons: Save, Cancel; not a row of pips or chips)
+    if (btns.length < 2 || btns.length !== box.children.length) continue;
+    const rs = btns.map(b => b.getBoundingClientRect());
+    const stacked = rs.every((r, i) => i === 0 || r.top >= rs[i - 1].bottom - 1);
+    const room = box.getBoundingClientRect().width, need = rs.reduce((w, r) => w + r.width, 0) + 8 * (rs.length - 1);
+    if (stacked && need <= room) add('stacked buttons', box, btns.map(b => b.textContent.trim()).join(' / '));
   }
   const ids = new Map();
   document.querySelectorAll('[id]').forEach(el => { if (el.id) ids.set(el.id, (ids.get(el.id) || 0) + 1); });

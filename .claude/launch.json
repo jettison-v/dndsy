@@ -104,6 +104,20 @@
         "8004"
       ],
       "port": 8004
+    },
+    {
+      "name": "web-claude-2",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "--env-file",
+        ".env",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8005"
+      ],
+      "port": 8005
     }
   ]
 }

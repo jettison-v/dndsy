@@ -2,11 +2,11 @@
  {
   "title": "The reviews we should run",
   "kind": "plan",
-  "status": "Your picks (version 3)",
+  "status": "Waiting on you",
   "state": "waiting",
   "date": "Nov 25",
-  "what": "Version 3, built the other way round (Brett: our past reviews help build the list, not be it): six buckets of the work (Experience, Correctness, The code, Trust, Running it, How we work), each with its question, what's already checked automatically, and the reviews that should cover the rest, five of them new; how they'd sit on Development › Scheduled, launch on demand and hand back; a cadence pick for each.",
-  "line": "Six buckets of the work, and the reviews each needs",
+  "what": "Roadmap item 46, version 6: the reviews we should run in six buckets, with new names that say what you get (Dig into a feature, Polish an area, Check every number…), what a finished review hands back drawn, launching on demand, and your picks.",
+  "line": "The reviews we should run, renamed, with what each hands back",
   "source": "docs/mockups/review-catalog/index.html",
   "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
  },
@@ -31,6 +31,17 @@
   "line": "Four names for the tool, in place",
   "source": "docs/mockups/naming-the-tool/index.html",
   "link": "https://claude.ai/artifact/EKE5TdPKJjRPt3H1cTLXUt"
+ },
+ {
+  "title": "Windows, Forms and Tables",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "Roadmap item 47, after your Backstage round: why the checks missed eleven window, form and table problems, one window, one field and one grouped table drawn on askdnd's own windows (New item, a roll's fields, Accounts), what's fixed the same way everywhere, and what the checks become. Three picks.",
+  "line": "One way for windows, fields and grouped tables",
+  "source": "docs/mockups/windows-forms-tables/index.html",
+  "link": "https://claude.ai/artifact/3vaQx2SE8GBbguzQwAFW5L"
  },
  {
   "title": "The Sync queue",
