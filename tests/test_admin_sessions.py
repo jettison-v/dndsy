@@ -348,3 +348,30 @@ def test_a_new_entry_accepted_from_a_draft_is_linked_to_the_moments_that_name_it
     db.expire_all()
     assert {e.name for e in db.get(StoryEvent, fled.id).entities} == {"Horn Devil"}
     assert db.scalar(select(EventEntity).where(EventEntity.entity_id == db.scalar(select(Entity).where(Entity.name == "Lillippi Lemon")).id)) is None
+
+
+def test_the_red_button_follows_the_state_and_draft_all_says_its_cost(client, db):
+    """Brett's pick SS1 (docs/mockups/backstage-round-4/, Nov 25): with sessions not drafted yet, the red button drafts
+    the next; Draft all sits in the ⋯ and asks first with its cost; the backlog is one row; once a draft waits, the red
+    button reviews it."""
+    from app.models import Campaign, NoteSnapshot, NoteSource
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": n} for n in (1, 2, 3)]})
+    src = NoteSource(campaign_id=db.scalar(select(Campaign)).id, google_doc_id="d" * 30, title="Campaign doc")
+    src.snapshots.append(NoteSnapshot(content_hash="h", text="# Session 1\nA.\n# Session 2\nB.\n# Session 3\nC."))
+    db.add(src)
+    db.flush()
+    page = client.get("/c/main/manage/sessions").text
+    assert 'data-item="draft-next"' in page and 'data-item="review-next"' not in page
+    assert 'data-item="draft-all"' in page and "Draft all 3 now? About $0.39 in all" in page  # (asked first, with its cost)
+    assert page.count("data-backlog") == 1 and "3 not drafted yet" in page
+    first = db.scalar(select(GameSession).where(GameSession.number == 1))
+    run = ExtractionRun(session_id=first.id, source="notes", status="done", cost_usd=0.2)
+    db.add(run)
+    db.flush()
+    store_result(db, first, run, RESULT)
+    db.flush()
+    db.expire_all()
+    page = client.get("/c/main/manage/sessions").text
+    assert f'href="/c/main/manage/sessions/{first.id}" data-item="review-next"' in page and 'data-item="draft-next"' not in page
+    assert "Draft all 2 now? About $0.40 in all" in page  # (the cost as drafts have cost so far)

@@ -1,0 +1,14 @@
+{# A Feature use row's window (app/usage.py `feature_window`; Brett's pick FE1, Nov 25): who used it and on which days. #}
+<div class="peek-head">
+  <div><div class="note">Feature use · the last {{ days }} days</div><h2 id="peek-title">{{ d.feature }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body ft-window">
+  <p class="note">{{ d.uses }} use{{ "s" if d.uses != 1 }}{% if d.who %} by {{ d.who | length }} {{ "person" if d.who | length == 1 else "people" }}{% endif %}.</p>
+  {% if d.who %}
+  <h3>Who</h3>
+  <div class="ft-rows">{% for name, n in d.who %}<div class="ft-page"><span class="ft-name">{{ name }}</span><span class="ft-bar"><i style="width: {{ (n / d.who[0][1] * 100) | round(1) }}%"></i></span><span class="num">{{ n }}</span></div>{% endfor %}</div>
+  <h3>Which days</h3>
+  <div class="ft-rows">{% for on, n in d.days %}<div class="ft-page"><span class="ft-name">{{ on }}</span><span class="ft-bar"><i style="width: {{ (n / d.top * 100) | round(1) }}%"></i></span><span class="num">{{ n }}</span></div>{% endfor %}</div>
+  {% else %}<p class="muted">No one at the table used it in these {{ days }} days.</p>{% endif %}
+</div>

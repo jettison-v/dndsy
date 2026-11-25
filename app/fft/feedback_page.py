@@ -555,7 +555,9 @@ def product_areas(request: Request, db: Session = Depends(get_db)):
     if denied:
         return denied
     open_by = dict(db.execute(select(FftIssue.feature, func.count()).where(FftIssue.state != "closed").group_by(FftIssue.feature)).all())
-    cards = [{"a": a, "n": sum(open_by.get(f.key, 0) for f in a.features), "features": [(f, open_by.get(f.key, 0)) for f in a.features]}
-             for a in taxonomy.areas()]
+    plans = dict(db.execute(select(FftArea.key, func.min(FftArea.id)).where(FftArea.key.is_not(None)).group_by(FftArea.key)).all())
+    cards = [{"a": a, "n": sum(open_by.get(f.key, 0) for f in a.features), "features": [(f, open_by.get(f.key, 0)) for f in a.features],
+              "plan": plans.get(a.key)} for a in taxonomy.areas()]
+    cards.sort(key=lambda c: -c["n"])  # (the busiest first, the list's order between equals: Brett's pick PA1, Nov 25)
     return templates.TemplateResponse(request, "manage_product_areas.html", {
         "cards": cards, "features": sum(len(a.features) for a in taxonomy.areas()), "loose": open_by.get("", 0)})

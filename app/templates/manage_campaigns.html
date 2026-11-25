@@ -1,20 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Campaigns · Backstage · askdnd{% endblock %}
 {% block content %}
+{% from "_tables.html" import table_box %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Campaigns</h1><button class="btn title-action" type="button" data-modal-url="/manage/campaigns/new" data-item="new-campaign">+ New campaign</button></div>
   <p class="subtitle">Every campaign in askdnd and who's in each. A character follows its D&amp;D Beyond campaign: when its sheet moves there, a line here offers the move, and its old campaign keeps what it did in the story. Only admins can see this page.</p>
 
-  <section class="section">
-    <ul class="records">
-      {% for x in campaigns %}{% set c = x.c %}
-      <li class="record"><span class="record-main"><b>{{ c.name }}{% if c.is_test %} <span class="tag draft" title="A test campaign: it holds test data">Test</span>{% endif %}{% if here and c.id == here.id %} <span class="tag faint">You're here</span>{% endif %}</b>
-          <span class="note"><a href="/c/{{ c.slug }}/campaign">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}{% if c.is_test %} · every VTT piece shows here{% endif %}</span></span>
-        <span class="record-actions">{% if not (here and c.id == here.id) %}<a class="btn small" href="/c/{{ c.slug }}{{ switch_path }}" title="Make {{ c.name }} your current campaign (like the campaign menu)">Switch</a>{% endif %}<a class="btn small" href="/c/{{ c.slug }}/manage/settings">Settings</a><a class="btn small" href="/c/{{ c.slug }}/manage/table">Table</a></span></li>
-      {% endfor %}
-    </ul>
-  </section>
+  {# A table, as every Backstage list (Brett's pick CA1 on docs/mockups/backstage-round-4/, Nov 25): DM, people and
+     characters as columns; Test a plain tag (amber means something needs you). #}
+  {% call table_box("campaigns", "Campaigns", campaigns | length, cols=[("Campaign", ""), ("DM", ""), ("People", "num"), ("Characters", ""), ("", "end")], empty="No campaigns yet: + New campaign starts one.") %}
+    {% for x in campaigns %}{% set c = x.c %}
+    <tr data-campaign="{{ c.slug }}">
+      <td class="dt-title"><b>{{ c.name }}</b>{% if c.is_test %} <span class="tag" title="A test campaign: it holds test data, and every VTT piece shows here">Test</span>{% endif %}{% if here and c.id == here.id %} <span class="tag faint">You're here</span>{% endif %}
+        <div class="note"><a href="/c/{{ c.slug }}/campaign">/c/{{ c.slug }}</a>{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}</div></td>
+      <td data-label="DM">{{ x.dms | join(", ") if x.dms else "No DM yet" }}</td>
+      <td class="num" data-label="People">{{ x.people }}</td>
+      <td class="note dt-wrap" data-label="Characters">{{ x.characters | map(attribute="name") | join(", ") or "None yet" }}</td>
+      <td class="end"><span class="row tight">{% if not (here and c.id == here.id) %}<a class="btn small" href="/c/{{ c.slug }}{{ switch_path }}" title="Make {{ c.name }} your current campaign (like the campaign menu)">Switch</a>{% endif %}<a class="btn small" href="/c/{{ c.slug }}/manage/settings">Settings</a><a class="btn small" href="/c/{{ c.slug }}/manage/table">Table</a></span></td>
+    </tr>
+    {% endfor %}
+  {% endcall %}
 
   {# A character moves only when D&D Beyond says it's elsewhere (Brett, Nov 13, The Three Menus part 5: moving here alone
      was confusing, since it also has to move on D&D Beyond): one line and one button for each, nothing otherwise. #}

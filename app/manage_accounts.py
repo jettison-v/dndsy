@@ -34,6 +34,9 @@ def accounts(db: Session) -> list[dict]:
             "removed": stored == access.REMOVED, "invited": lvl is not None, "last_seen": u.last_seen_at if u else None,
             "campaigns": [(c, r) for c in campaigns if (r := access.role(email, c.id, rows))],
         })
+        p = out[-1]  # (a test account: in campaigns, every one a test campaign; Brett's pick AC1, Nov 25: a Test tag, not a symbol)
+        p["test"] = bool(p["campaigns"]) and all(c.is_test for c, _ in p["campaigns"]) and p["level"] != access.ADMIN
+        p["shown"] = (p["name"].lstrip("Ω🧪 ").strip() or p["name"]) if p["test"] else p["name"]  # (the symbol that marked one in its name)
     return sorted(out, key=lambda p: (p["name"].lower() or p["email"]))
 
 
@@ -84,6 +87,18 @@ def add(request: Request, email: str = Form(...), name: str = Form(""), admin: s
         db.commit()
         request.session["toast"] = f"Added {email}. Add them as a Google test user too (see below), then to a campaign on its Table."
     return RedirectResponse(BACK, status_code=303)
+
+
+@router.get("/rename")
+def rename_window(request: Request, email: str = "", db: Session = Depends(get_db)):
+    """Rename… from a person's ⋯ on Accounts (Brett's pick AC1, Nov 25: each row one line, not an open Change name)."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    u = db.scalar(select(User).where(User.email == email.strip().lower()))
+    if u is None:
+        return web.not_found(request)
+    return templates.TemplateResponse(request, "_account_rename.html", {"u": u})
 
 
 @router.post("/name")

@@ -7,10 +7,12 @@
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>DM guide</h1></div>
   <p class="subtitle">How askdnd's campaign record works for you as the DM, and a plan for getting through the backlog from Brett's notes. Only the DM, reviewers and admins see this page.</p>
-  <nav class="ds-jump" aria-label="On this page">
-    <a href="#pages">Your pages</a><a href="#idea">The idea</a><a href="#backlog">The backlog</a><a href="#after">After a game night</a><a href="#players">The inbox</a>
-    <a href="#write">Writing it yourself</a><a href="#kept">Your words are kept</a><a href="#tidy">Tidying and undo</a><a href="#privacy">Who sees what</a><a href="#words">Words</a>
-  </nav>
+  {# The tab bar in the order the DM works, a reading column, and only what's on (Brett's pick DG1 on
+     docs/mockups/backstage-round-4/, Nov 25); a link to /…/dm-guide#backlog opens its tab (app.js, as Help does). #}
+  <div class="tabbar" role="tablist" data-tab-param aria-label="DM guide">
+    {% for key, label in tabs %}<button type="button" role="tab" aria-selected="{{ 'true' if key == tab else 'false' }}" data-tab="t-{{ key }}">{{ label }}</button>{% endfor %}
+  </div>
+  <div id="t-pages" role="tabpanel"{% if tab != "pages" %} hidden{% endif %}>
 
   <section class="section" id="pages">
     <h2>Your Backstage pages</h2>
@@ -26,12 +28,15 @@
     </ul>
   </section>
 
+  {% if on.sync %}
   <section class="section" id="dm-backup">
     <h2>At the table: your D&amp;D Beyond as a backup</h2>
     <p>Where the campaign has <b>The DM as a backup</b> (part of <b>Sync with D&amp;D Beyond</b>, which you switch on in <a href="{{ cbase }}/manage/settings?tab=features">Settings</a> › Features), a player who forgets to open their sheet doesn't stop the game. While you have any D&amp;D Beyond page open in Chrome with the askdnd bridge (the VTT counts), your browser makes the changes askdnd sends for a character whose own sheet is closed: damage, healing, slots, conditions and the rest. D&amp;D Beyond lets a campaign's DM change its players' sheets, so it uses your sign-in, and only for characters in that D&amp;D Beyond campaign: put its id in <a href="{{ cbase }}/manage/settings">Settings</a> (D&amp;D Beyond campaign id), or nothing is made through you. A player's sheet you have open yourself counts as one of your pages, not as theirs. Nothing asks you first: they're the changes the player or you made in askdnd, and a player's own open sheet always goes first.</p>
     <p>Your Live pill counts them ("4 of 4 connected · 1 through you", yellow), and the Live window says which sheet is made through you, with a <b>Made through you</b> list. If a sheet can't be reached while the table plays, the pill is red and the window offers to open D&amp;D Beyond. The player's pill stays yellow and asks them to open their sheet, as their rolls reach D&amp;D Beyond's Game Log only from there. D&amp;D Beyond doesn't say who made a change; askdnd's log says "made through the DM".</p>
   </section>
+  {% endif %}
 
+  {% if on.table %}
   <section class="section" id="table">
     <h2>askdnd's table: places, maps and your scene notes</h2>
     <p>Where the campaign has <b>askdnd's VTT</b> on (Labs, in <a href="{{ cbase }}/manage/settings?tab=features#labs">Settings</a>; being built, so the table still plays on D&amp;D Beyond's VTT), <b>Table</b> in the menu bar is yours to set up. A <b>place</b> is one map (or none) with its tokens and its own fog, like a Location in D&amp;D Beyond's Maps. Add one with <b>+ Place</b>, then <b>Map ▾ › Add a map</b>: a picture (then set its grid: how many squares across) or a Dungeon Alchemist file (.dd2vtt: its grid and walls come with it). <b>Place the party</b> puts everyone's token on it; <b>+ Creatures</b> adds creatures from your books and the SRD, several at once, hidden if you like. Players see only the place you <b>Show to players</b>.</p>
@@ -39,7 +44,10 @@
     <p><b>Start a fight</b> takes in every token on the map. Your creatures are rolled for you (one roll for a group of the same creature; type a number on any to split it off), the players roll their own, then <b>Begin Round 1</b> and <b>Next turn</b>. Press a creature for its stat block, its Hit Points (type −7, +5 or a number) and its rolls, which only you see unless you pick otherwise. <b>⋯</b> has Undo, Battle settings (what players see of a creature's Hit Points, how diagonals count) and End the fight.</p>
     <p><b>Fog ▾</b>: turn fog on and players see only what you show; drag over squares to show or hide them, click in a room to show it whole (a Dungeon Alchemist map's walls and doors bound it), or show and hide everything. Each place keeps its own fog, and a creature under fog never reaches a player's screen. <b>Terrain ▾</b>: drag over Difficult Terrain; moves count it double. While anyone drags a token the ruler says its feet; in a fight, leaving a creature's reach puts a card up for you and that player (an Opportunity Attack is possible: your ruling). <b>Area</b> draws a spell's area for everyone, with who's in it; <b>Clear areas</b> takes them all away. Click a token and the arrow keys move it; <b>?</b> lists the keys (N is Next turn).</p>
   </section>
+  {% endif %}
 
+  </div>
+  <div id="t-recaps" role="tabpanel"{% if tab != "recaps" %} hidden{% endif %}>
   <section class="section" id="idea">
     <h2>The idea: you own what the table reads</h2>
     <p>Recaps, key moments, people, places, factions, items, quests and the glossary are the <b>campaign record</b>. Three things feed it, and nothing from Claude or a player reaches the table until you (or a reviewer) say yes:</p>
@@ -57,7 +65,7 @@
     <p>Brett's campaign notes cover many sessions that haven't been turned into recaps yet. <b>{{ b.published }} of {{ b.total }}</b> sessions are published. These numbers update as you work.</p>
     <ol class="guide-steps">
       <li class="{{ 'done' if not b.to_review and not b.to_draft }}"><b>One session at a time, oldest first</b>{% if b.to_review %} <span class="tag draft">{{ b.to_review | length }} ready to review</span>{% endif %}{% if b.to_draft %} <span class="tag faint">{{ b.to_draft | length }} not drafted yet</span>{% endif %}
-        <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="{{ cbase }}/manage/sessions">Sessions</a> (about a minute, about $0.13). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
+        <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="{{ cbase }}/manage/sessions">Sessions</a> or Needs you (about a minute, about $0.13; Draft all, in Sessions' ⋯, drafts every one at once and says what it will cost first). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
         <p class="note">Why one at a time: each draft only knows the people and places you've already accepted. Drafting all at once would suggest the same new NPC again in every session, and ask the same questions twice.</p>
         {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
         <p>Each one takes 10 to 20 minutes. The session's page is a set of numbered tabs, one per step, each saying what's left and ending with <b>Next</b>:</p>
@@ -96,6 +104,8 @@
     </ol>
   </section>
 
+  </div>
+  <div id="t-inbox" role="tabpanel"{% if tab != "inbox" %} hidden{% endif %}>
   <section class="section" id="players">
     <h2>The inbox: suggestions and Claude's drafts</h2>
     <p>Everything waiting for your OK is on <a href="{{ cbase }}/manage/inbox">Backstage › Inbox</a>. <b>An email tells you</b> once a day (at 6 PM) when something new has arrived: how many, and a link, never what was written. Turn it off under your picture › <b>Email digest</b>, or with the link at the bottom of the email. Every suggestion from a player gets the same four choices:</p>
@@ -115,6 +125,8 @@
     <p>The inbox also lists <b>sessions to review</b>; each still has its own page with the recap, key moments, questions and suggested updates.</p>
   </section>
 
+  </div>
+  <div id="t-writing" role="tabpanel"{% if tab != "writing" %} hidden{% endif %}>
   <section class="section" id="write">
     <h2>Writing it yourself</h2>
     <ul class="guide-list">
@@ -175,6 +187,8 @@
     </ul>
   </section>
 
+  </div>
+  <div id="t-privacy" role="tabpanel"{% if tab != "privacy" %} hidden{% endif %}>
   <section class="section" id="privacy">
     <h2>Who sees what</h2>
     <ul class="guide-list">
@@ -200,5 +214,6 @@
       <dt>Update the draft</dt><dd>Claude changes the session's draft where your new answers and the World show it's wrong or missing, and keeps the rest. <b>Start over</b> drafts it again from the beginning. (A session from notes has <b>Redraft</b>.)</dd>
     </dl>
   </section>
+  </div>
 </main>
 {% endblock %}

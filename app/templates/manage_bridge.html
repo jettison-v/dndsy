@@ -4,16 +4,19 @@
 {# Backstage › Global › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>D&amp;D Beyond bridge</h1><button type="button" class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st title-action" title="The bridge's health; click to run the check on the test character">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</button></div>
+  <div class="title-row"><h1>D&amp;D Beyond bridge</h1></div>{# (its health is Right now's first row, with what to do: Brett's pick BR1, Nov 25; the red badge that disagreed with it is gone) #}
   <p class="subtitle">It's awake whenever someone is using askdnd or a D&amp;D Beyond sheet, and asleep otherwise. Asleep, it only stops checking D&amp;D Beyond in the background: anything a person does still goes through. Only admins can see this page.</p>
 
   <section class="section">
     <h2>Right now</h2>
     <dl class="br-now">
+      <dt>Health</dt><dd><span class="br-st {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span>
+        <span class="note" data-bridge-todo>{{ health.todo }}</span>
+        <button type="button" class="btn small" data-br-check data-ask="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button></dd>
       <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>
       <dt>Last used</dt><dd>{{ last | clock if last else "Not yet" }}</dd>
       <dt>Extension</dt><dd>{% if health.extension %}Connected{% if health.sheets %} · sheets open: {{ health.sheets | length }}{% endif %}{% else %}Not connected{% endif %}</dd>
-      <dt>Last check</dt><dd>{% if health.round_trip and health.round_trip.done_at %}{{ health.round_trip.state | capitalize }}{{ " (everything)" if health.round_trip.full }}, {{ health.round_trip.done_at | clock }}{% if health.round_trip.error %}. {{ health.round_trip.error }}{% endif %}{% else %}None yet: press the badge beside the title to check{% endif %}</dd>
+      <dt>Last check</dt><dd>{% if health.round_trip and health.round_trip.done_at %}{{ health.round_trip.state | capitalize }}{{ " (everything)" if health.round_trip.full }}, {{ health.round_trip.done_at | clock }}{% if health.round_trip.error %}. {{ health.round_trip.error }}{% endif %}{% else %}None yet: Run the check above{% endif %}</dd>
     </dl>
   </section>
 
@@ -54,7 +57,7 @@
   <section class="section">
     <h2>Check everything</h2>
     <p class="hint">After D&amp;D Beyond changes its sheet: one of each change the bridge makes (hit points, Death Saving Throws, Heroic Inspiration, a condition, Exhaustion, a Short Rest's Hit Die, a spell slot, a limited use, equipped, attuned, an item's count, charges and container, gold) on the test character, each confirmed, then all put back. Open the test character's D&amp;D Beyond sheet first; the menu bar shows how it went.</p>
-    <button class="btn" type="button" data-br-check-all>Check everything</button>
+    <button class="btn" type="button" data-br-check-all data-ask="Check everything? It makes one of each change on the test character's sheet on D&amp;D Beyond, then puts each back.">Check everything…</button>
   </section>
 
   <section class="section">
@@ -65,8 +68,9 @@
         <span class="row tight"><input type="number" name="{{ key }}" value="{{ now[key] }}" min="{{ lo }}" max="{{ hi }}" step="1" required class="br-num"> {{ unit }}</span>
         <span class="note">{{ about }} askdnd's own: {{ default }} {{ unit }}.</span></label>
       {% endfor %}
-      <div class="row"><button class="btn primary" type="submit">Save</button><button class="btn" type="submit" name="reset" value="1">Back to askdnd's own</button></div>
+      <div class="row"><button class="btn primary" type="submit">Save</button></div>
     </form>
+    <form method="post" action="/manage/bridge" data-reload data-confirm="Put every timer back to askdnd's own?"><input type="hidden" name="reset" value="1"><button class="btn" type="submit">Back to askdnd's own</button></form>
   </section>
 </main>
 {% endblock %}

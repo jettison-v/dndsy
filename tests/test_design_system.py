@@ -117,3 +117,16 @@ def test_every_count_is_the_one_count():
     made = [f"{p.name}:{n}" for p in (Path(__file__).parent.parent / "app" / "templates").rglob("*.html") if p.name not in live
             for n, line in enumerate(p.read_text().splitlines(), 1) if re.search(r'class="count[" ]', line)]
     assert not made, f"Use count_pill(n) from _lists.html: {made}"
+
+
+def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
+    """Brett's pick DS1 (docs/mockups/backstage-round-4/, Nov 25): a Table · Backstage switch, sizes read from the page as
+    drawn, a search, and every section in the jump row."""
+    import re
+
+    page = admin.get("/manage/design").text
+    assert 'data-ds-mode="table"' in page and 'data-ds-mode="backstage"' in page and "data-ds-px" in page
+    assert 'class="ds-find"' in page
+    jump = page.split("data-ds-jump")[1].split("</nav>")[0]
+    sections = set(re.findall(r'<section class="section" id="([a-z-]+)"', page))
+    assert sections <= set(re.findall(r'href="#([a-z-]+)"', jump))

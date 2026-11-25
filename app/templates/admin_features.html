@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{# Which features get used (app/usage.py; Brett chose A and A, Nov 9, docs/mockups/feature-use/): askdnd's own counts of
+{# Feature use, under General (app/usage.py; Brett chose A and A, Nov 9, docs/mockups/feature-use/; a row opens its window
+   and the page moved from Tuning, his picks FE1 and FE2 on docs/mockups/backstage-round-4/, Nov 25): askdnd's own counts of
    what the table does, by feature and by the page it was done on. Charts are drawn here as SVG, each day a hover target. #}
-{% block title %}Features · Backstage · askdnd{% endblock %}
+{% block title %}Feature use · Backstage · askdnd{% endblock %}
 {% block content %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Features</h1></div>
+  <div class="title-row"><h1>Feature use</h1></div>
   <p class="subtitle">What the table does in askdnd: a roll, a cast, an item used, a change made (not pages opened), and on which page. Counted by askdnd itself, never sent anywhere. Admins' uses are left out (yours, even as a player), and so are test campaigns, where the test accounts play. Rolls go back to the first Table roll; everything else from Nov 9. Only admins can see this page.</p>
 
   <div class="ft-filters">
@@ -23,7 +24,7 @@
 
   <section class="section">
     <h2>Every use, by day</h2>
-    <p class="hint">Dashed lines: a deploy reached askdnd.ai. Point at a day for its count.</p>
+    <p class="hint">{% if chart.releases %}Dashed lines: a deploy reached askdnd.ai. {% endif %}Point at a day for its count.</p>{# (the legend says only what's drawn: FE1, Nov 25) #}
     <div class="ft-chart">
       <div class="ft-plot">
         <svg viewBox="0 0 {{ chart.w }} {{ chart.h }}" role="img" aria-label="Uses per day for the last {{ days }} days, {{ s.total }} in all">
@@ -45,7 +46,7 @@
     <div class="ft-rows">
       <div class="ft-row ft-row-head note"><span>Feature</span><span>Uses</span><span class="num">Count</span><span>Who</span><span class="num">On the {{ days }} days before</span></div>
       {% for r in rows %}
-      <div class="ft-row"><span class="ft-name">{{ r.feature }}</span><span class="ft-bar"><i style="width: {{ (r.uses / top * 100) | round(1) }}%"></i></span><span class="num">{{ r.uses }}</span>
+      <div class="ft-row" data-modal-url="/manage/features/detail?feature={{ r.feature | urlencode }}&{{ q }}" tabindex="0" data-feature-row><span class="ft-name">{{ r.feature }}</span><span class="ft-bar"><i style="width: {{ (r.uses / top * 100) | round(1) }}%"></i></span><span class="num">{{ r.uses }}</span>
         <span class="ft-who" aria-label="{{ s.people | selectattr('id', 'in', r.who) | map(attribute='name') | join(', ') or 'no one at the table' }}">{% for p in s.people %}<span class="{{ 'on' if p.id in r.who }}" title="{{ p.name }}"></span>{% endfor %}</span>
         <span class="num">{% if r.trend is none %}<span class="note">new</span>{% elif r.trend > 0 %}<span class="ft-up">▲ {{ r.trend }}%</span>{% elif r.trend < 0 %}<span class="ft-down">▼ {{ -r.trend }}%</span>{% else %}<span class="note">same</span>{% endif %}</span></div>
       {% endfor %}

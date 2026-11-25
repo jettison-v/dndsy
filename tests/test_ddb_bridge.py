@@ -584,7 +584,7 @@ def test_admins_set_the_timers(admin, player, db, sheet):
     assert ddb_bridge.timers(db)["idle"] == 30 * 60  # only admins
 
 
-def test_the_bridge_page_says_what_each_connection_can_change(admin, sheet):
+def test_the_bridge_page_says_what_each_connection_can_change(admin, sheet, db):
     """Brett, 2026-11-04: Manage › askdnd › D&D Beyond bridge has a matrix of what the player's own sheet and the DM can
     each change, and how each comes about. Every kind of change the bridge makes (ddb_fields) is in one row, and every
     run it names is a live test run (each run again --via-dm every night)."""
@@ -601,6 +601,11 @@ def test_the_bridge_page_says_what_each_connection_can_change(admin, sheet):
     page = admin.get("/manage/bridge").text
     assert "What each connection can change" in page and page.count("<tr><td>") >= len(ddb_bridge.CONNECTIONS)
     assert "Rolls into D&amp;D Beyond's Game Log" in page and "Through the DM" in page and "Neither" in page
+    # Health is Right now's first row with what to do, and each check asks first (Brett's pick BR1, Nov 25)
+    now = page.split("<h2>Right now</h2>")[1].split("</dl>")[0]
+    assert "data-bridge-health" in now and "data-bridge-todo" in now and "data-br-check" in now and "title-action" not in page.split("<h2>Right now</h2>")[0].split('class="title-row"')[1]
+    assert 'data-br-check-all data-ask="' in page and 'data-confirm="Put every timer back' in page
+    assert "todo" in ddb_bridge.health(db)
 
 
 def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, sheet, monkeypatch):

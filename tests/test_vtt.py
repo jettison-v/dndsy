@@ -58,7 +58,7 @@ def test_the_switches_on_settings(two, db, monkeypatch):
     db.refresh(two["strahd"])
     assert two["strahd"].is_test and two["strahd"].vtt_pieces == []
     assert 'Curse of Strahd <span class="tag draft campaign-test"' in admin.get("/c/strahd/").text
-    assert 'Curse of Strahd <span class="tag draft" title="A test campaign' in admin.get("/manage/campaigns").text
+    assert '<b>Curse of Strahd</b> <span class="tag" title="A test campaign' in admin.get("/manage/campaigns").text  # (a plain tag: CA1)
     admin.post("/manage/campaigns", data={"name": "VTT test", "is_test": "1"})
     assert db.scalar(select(Campaign).where(Campaign.name == "VTT test")).is_test
 

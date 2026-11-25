@@ -1132,7 +1132,13 @@ def health(db: Session) -> dict:
         state, text = "live", "D&D Beyond · working"  # (and when it was checked: checked_at, in the reader's own time)
     else:
         state, text = "live", "D&D Beyond · connected, not checked yet"
-    return {"state": state, "text": text, "checked_at": rt["done_at"] if text == "D&D Beyond · working" else None, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
+    todo = {"asleep": "It wakes as soon as someone opens askdnd or a sheet.",
+            "off": ("D&D Beyond can't read the test character: check its link on Table and that it's Public, then run the check."
+                    if not rc["ok"] else f"Open {'those sheets' if stuck > 1 else 'that sheet'} in Chrome with the extension, or make the change by hand on D&D Beyond."
+                    if stuck and not (rt and rt["state"] == "failed") else "Open the test character's sheet in Chrome with the extension, then run the check again."),
+            "wait": "Open any D&D Beyond page in Chrome with the extension on." if not extension and not waiting and not (rt and rt["state"] == "running") else "",
+            "live": "" if rt and rt["state"] == "passed" else "Run the check to be sure."}[state]  # (what to do, on Right now: Brett's pick BR1, Nov 25)
+    return {"state": state, "text": text, "todo": todo, "checked_at": rt["done_at"] if text == "D&D Beyond · working" else None, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
             "extension": extension, "sheets": _health["sheets"] if extension else [], "test_ddb_id": TEST_DDB_ID,
             "heard_at": datetime.fromtimestamp(_health["heard_at"], UTC).isoformat() if _health["heard_at"] else None}
 

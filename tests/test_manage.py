@@ -41,8 +41,8 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "Global" in half(page, "askdnd")
-    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "books", "accounts", "campaigns",
-                                    "features", "askdnd-history", "corrections", "dice", "design"]
+    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "features", "books", "accounts", "campaigns",
+                                    "askdnd-history", "corrections", "dice", "design"]
     assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
@@ -80,16 +80,23 @@ def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):
 def test_needs_you_lists_whats_waiting_and_admin_items(monkeypatch, db):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"},
                        "sessions": [{"number": 1, "played_on": "2026-01-10"}, {"number": 2, "played_on": "2026-01-17"}]})
+    from app.models import NoteSnapshot, NoteSource
+
+    src = NoteSource(campaign_id=db.scalar(select(Campaign)).id, google_doc_id="d" * 30, title="Campaign doc")  # (what Draft from notes drafts)
+    src.snapshots.append(NoteSnapshot(content_hash="h", text="# Session 1\nA.\n# Session 2\nB."))
+    db.add(src)
+    db.flush()
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     reviewer = client_for(monkeypatch, db, "dm@example.com")
     page = reviewer.get("/c/main/manage").text
-    assert "Backlog: 2 sessions not drafted yet" in page and "No backup recorded yet" not in page  # admins only
+    assert "2 sessions not drafted yet" in page and 'data-item="draft-next"' in page and "No backup recorded yet" not in page  # admins only (a button that does it: NY1)
     admin = client_for(monkeypatch, db, "brett@example.com")
     page = admin.get("/c/main/manage").text
     assert "No backup recorded yet" in page and 'href="/manage/backups"' in page
     db.add(JobRun(name="backup", status="ok", started_at=datetime.now(UTC)))
     db.flush()
-    db.execute(update(GameSession).values(source="manual"))  # nothing to draft
+    src.snapshots.append(NoteSnapshot(content_hash="h2", text="Nothing per session yet."))  # nothing to draft from notes
+    db.flush()
     assert "✓ All caught up" in admin.get("/c/main/manage").text
 
 
@@ -244,3 +251,35 @@ def test_round_two_settings_in_tabs_and_tables_one_action(monkeypatch, db):
     table = admin.get("/c/main/manage/table").text
     head = table.split('class="title-row"')[1].split("</div>")[0]
     assert head.count('class="btn"') <= 1
+
+
+def test_round_four_pages_dm_guide_accounts_and_product_areas(monkeypatch, db):
+    """Brett's picks DG1, AC1 and PA1 (docs/mockups/backstage-round-4/, Nov 25): the DM guide in the tab bar with only
+    what's on; Accounts a line each, test accounts tagged Test with a filter, Rename… in the ⋯; Product areas busiest
+    first."""
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    guide = admin.get("/c/main/manage/dm-guide?tab=recaps").text
+    assert 'role="tablist" data-tab-param' in guide and 'aria-selected="true" data-tab="t-recaps"' in guide
+    assert 'id="table"' not in guide and 'id="dm-backup"' not in guide  # (askdnd's table and Sync are off here)
+    db.scalar(select(Campaign)).vtt_pieces = ["vtt", "labs"]
+    db.commit()
+    assert 'id="table"' in admin.get("/c/main/manage/dm-guide").text
+    test_camp = Campaign(slug="vtt-test", name="VTT test", is_test=True)
+    db.add(test_camp)
+    db.flush()
+    from app.models import CampaignMember, Role
+    tester = User(email="seat@example.com", name="ΩSeat one", access="member")
+    db.add(tester)
+    db.flush()
+    db.add(CampaignMember(campaign_id=test_camp.id, user_id=tester.id, role=Role.PLAYER))
+    db.commit()
+    from app import access
+    access.invalidate()
+    page = admin.get("/manage/accounts").text
+    row = next(li for li in page.split("<li ") if 'data-name="seat one' in li)
+    assert 'data-views="test all"' in row and 'data-test-account' in row and "Ω" not in row.split("<span")[0]
+    assert 'data-modal-url="/manage/accounts/rename?email=seat%40example.com"' in row and "Change name" not in page
+    assert 'name="name" value="ΩSeat one"' in admin.get("/manage/accounts/rename?email=seat@example.com").text
+    cards = admin.get("/manage/product-areas").text
+    assert 'class="panel pa-card"' in cards

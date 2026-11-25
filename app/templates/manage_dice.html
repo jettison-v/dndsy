@@ -23,7 +23,7 @@
             <div class="tn-ctl">
               {% if how == "toggle" %}
               <input type="hidden" name="{{ key }}.{{ k }}" value="{{ '1' if v }}">
-              <button type="button" class="switch" role="switch" aria-checked="{{ 'true' if v else 'false' }}" aria-label="{{ label }}"></button>
+              <label class="check tn-check"><input type="checkbox" data-tn-check{% if v %} checked{% endif %} aria-label="{{ label }}"> On</label>{# (a checkbox, saved with Save like the sliders: a switch looked as if it saved at once; Brett's pick DT1, Nov 25) #}
               {% else %}
               <span class="tn-range"><input type="range" name="{{ key }}.{{ k }}" min="{{ lo }}" max="{{ hi }}" step="{{ step }}" value="{{ v }}" aria-label="{{ label }}"></span>
               <output>{{ shown(v, how) }}</output>
@@ -69,7 +69,7 @@
         <div class="tn-tray" aria-hidden="true"><div class="dtr-felt"><div class="dtr-box" id="tn-dice-tray"></div></div><div class="dtr-foot"></div></div>
         <div class="tn-loading">Loading the dice…</div>
       </div>
-      <div class="tn-read" data-read><span>Press Throw to time it.</span></div>
+      <div class="tn-read" data-read><span>Press Throw a d20 to time it.</span></div>
     </div>
   </div>
 

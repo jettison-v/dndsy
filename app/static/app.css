@@ -1575,8 +1575,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
    set, never a link's color or size */
 .manage-sec { display: block; margin-top: var(--sp-3); padding: var(--sp-3) 10px var(--sp-1); border-top: 1px solid var(--line); font: 700 var(--fs-xs)/1.2 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 .manage-sec:first-child { margin-top: 0; padding-top: var(--sp-1); border-top: 0; }
-.manage-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: 5px 10px; color: var(--faint); font-size: var(--fs-sm); cursor: default; }  /* a kind of thing the DM will make: listed, not yet a page */
-.manage-planned small { font-size: var(--fs-xs); }
 .manage-jump { margin: 0 0 var(--sp-4); }
 .manage-jump > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); min-height: var(--control-h); padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-sm); }
 .manage-jump > summary::-webkit-details-marker { display: none; }
@@ -1608,7 +1606,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
    width (a paragraph still stops at about 75 characters). The table's own pages keep Table mode. On a laptop and wider
    only: a phone or tablet keeps Table mode's sizes, its 44px touch targets and its 16px boxes. docs/DESIGN.md › Modes */
 @media (min-width: 901px) {
-  main.manage-page, body:has(main.manage-page) :is(.peek, .modal) {
+  main.manage-page:not([data-ds-mode="table"]), body:has(main.manage-page:not([data-ds-mode="table"])) :is(.peek, .modal) {  /* (the Design system's Table switch draws its page in Table mode: DS1) */
     --fs-xs: 11.5px; --fs-sm: 12.5px; --fs-md: 13.5px; --fs-lg: 15px; --fs-xl: 19px; --fs-2xl: 22px;
     --sp-2: 6px; --sp-3: 10px; --sp-4: 12px; --sp-5: 18px; --sp-6: 24px;
     --control-h: 28px; --control-h-sm: 24px; --chip-h: 24px;
@@ -2425,7 +2423,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .tn-label .note { font-size: var(--fs-xs); }
 .tn-ctl { display: flex; align-items: center; gap: var(--sp-2); }
 .tn-range { position: relative; flex: 1; display: flex; }
-.tn-range input { width: 100%; accent-color: var(--red); margin: 0; }
+.tn-range input { width: 100%; accent-color: var(--blue); margin: 0; }  /* (the neutral accent: red is the one Save button's; DT1, Nov 25) */
 /* a small tick under the slider: the saved value */
 .tn-range::after { content: ""; position: absolute; left: calc(8px + (100% - 16px) * var(--now, 0)); bottom: -7px; width: 2px; height: 6px; margin-left: -1px; background: var(--faint); border-radius: var(--r-xs); }
 .tn-ctl output { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-strong); font-size: var(--fs-sm); font-weight: 600; }
@@ -3429,13 +3427,9 @@ a.cx-node:hover { border-color: var(--text); }
 /* Accounts: Person, Campaigns, Admin, Feedback and its buttons; the two switches in their own columns (pick 1) */
 .records.cols-acct { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto auto auto; }
 .acct-set { display: flex; justify-content: center; align-items: center; min-height: 24px; }
-@media (max-width: 1099px) {
-  .records.cols-acct { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; }
-  .records.cols-acct > .records-head > :last-child { display: none; }
-  .records.cols-acct > .record > .record-actions { grid-column: 1 / -1; justify-content: flex-start; }
-}
+/* (a row's actions are its ⋯, Invite at most: they keep their own narrow column at every width; AC1, Nov 25) */
 @media (max-width: 640px) {  /* a phone: Campaigns folds away, the two switches stay labelled beside the name */
-  .records.cols-acct { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .records.cols-acct { grid-template-columns: minmax(0, 1fr) auto auto auto; }
   .records.cols-acct > .records-head { display: grid; }
   .records.cols-acct > .records-head > :nth-child(2), .records.cols-acct > .record > :nth-child(2) { display: none; }
   .records.cols-acct > .record > .record-main { grid-column: auto; }
@@ -4472,7 +4466,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .dm-retire { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 
 /* The DM's Workspace (Brett chose B, Nov 13; manage.html, app/workspace.py): Needs you's workbench, who's at the table
-   and a tile per kind of thing the DM makes, planned ones dashed */
+   and a tile per kind of thing the DM makes (the planned ones one line under them) */
 .ws-who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
 .ws-who li { display: grid; grid-template-columns: auto auto; column-gap: var(--sp-2); align-items: center; }
 .ws-who .char-av { grid-row: span 2; }
@@ -4481,7 +4475,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ws-who [data-tone="via"] small { color: var(--amber); }
 .ws-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
 .ws-tile { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
-.ws-tile.planned { border-style: dashed; background: none; color: var(--muted); }
 .ws-tile .row { margin-top: var(--sp-2); }
 .ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }
 
@@ -4524,8 +4517,8 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .act-menu.end, .title-row .act-menu { left: auto; right: 0; }  /* (a page's own ⋯ sits at its right end: it opens toward the page; issue 59) */
 .act-menu.floats { position: fixed; z-index: 60; right: auto; }
 .table-scroll details.act-more[open] > .act-menu:not(.floats) { visibility: hidden; }  /* (until it's placed: never a frame in the wrong place) */  /* (a menu in a table's row: over the page, placed by app.js "A ⋯ or a lane's menu in a table's row"; issue 47) */  /* (from a button at a row's right end: it opens toward the page, not off it; Deploys, Nov 19) */
-.act-menu button { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; }
-.act-menu button:hover { background: var(--surface-2); }
+.act-menu button, .act-menu > a { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; text-decoration: none; }
+.act-menu button:hover, .act-menu > a:hover { background: var(--surface-2); }  /* (an item that goes somewhere is a link, looking the same: + Add session, SS1) */
 .timeline { flex: 1 1 100%; min-width: 0; }  /* (in a row, it takes the row: its lines never squeeze) */
 .timeline > summary { list-style: none; cursor: pointer; }
 .timeline > summary::-webkit-details-marker { display: none; }
@@ -4823,3 +4816,20 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-filter-feats { display: grid; gap: 6px; margin-top: var(--sp-1); padding-left: var(--sp-3); border-left: 2px solid var(--blue); }
 .fft-filter-row > .ls-pill { text-decoration: none; }
 .fft-path { color: var(--text); font-weight: 600; }
+/* Sessions' not-drafted-yet row (Brett's pick SS1, Nov 25): one row, opened to see each */
+details.backlog > summary { cursor: pointer; }
+details.backlog[open] > ul { margin: var(--sp-2) 0; }
+/* The Design system's search and mode switch (Brett's pick DS1, Nov 25) */
+.ds-find { flex: 0 0 200px; }
+.ds-find .ls-search input { min-height: var(--control-h-sm); }
+/* Feature use's rows open their window (FE1, Nov 25) */
+.ft-row[data-modal-url] { cursor: pointer; border-radius: var(--r-sm); }
+.ft-row[data-modal-url]:hover { background: var(--surface-2); }
+.ft-window { display: grid; gap: var(--sp-3); }
+.ft-window h3 { margin: var(--sp-2) 0 0; }
+/* The DM guide: a reading column (Brett's pick DG1, Nov 25) */
+main.dm-guide [role=tabpanel] > .section { max-width: calc(75ch + 2 * var(--sp-5)); }
+/* Campaigns as a table (CA1, Nov 25): its buttons on one line, the column only as wide as they are */
+.tbx[data-table="campaigns"] :is(th, td).end { width: 230px; }
+.tbx[data-table="campaigns"] th.num { width: 70px; }
+.tbx[data-table="campaigns"] td.end .row { flex-wrap: nowrap; justify-content: flex-end; }

@@ -148,6 +148,24 @@ def _in_background(session_id: int, work_on) -> bool:
 # --- Review list -------------------------------------------------------------
 
 
+def numbers_with_notes(db: Session, campaign_id: int) -> set[int]:
+    """The session numbers the campaign doc has a section for: the ones Draft from notes can draft (Sessions and Needs
+    you count the same ones)."""
+    snap = latest_campaign_notes(db, campaign_id)
+    return set(split_notes(snap.text)[1]) if snap else set()
+
+
+DRAFT_COST = 0.13  # (a draft from notes before any has run: the figure the page gave since Oct)
+
+
+def draft_cost(db: Session) -> float:
+    """What drafting one session from notes costs, on average so far (Sessions' Draft all says it before it starts:
+    Brett's pick SS1, Nov 25)."""
+    avg = db.scalar(select(func.avg(ExtractionRun.cost_usd)).where(ExtractionRun.source == "notes", ExtractionRun.status == "done",
+                                                                    ExtractionRun.cost_usd > 0))
+    return round(float(avg), 2) if avg else DRAFT_COST
+
+
 @router.get("/sessions")
 def sessions_page(request: Request, db: Session = Depends(get_db)):
     user, denied = _guard(request)
@@ -157,7 +175,7 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
     sessions = timeline(db, campaign.id) if campaign else []
     running = _running_ids(db)
     snap = latest_campaign_notes(db, campaign.id) if campaign else None
-    with_notes = set(split_notes(snap.text)[1]) if snap else set()
+    with_notes = numbers_with_notes(db, campaign.id) if campaign else set()
     spent = db.scalar(select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0))) or 0.0
     rows = []
     for s in reversed(sessions):  # newest first
@@ -174,12 +192,15 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
             "last_run": last_run,
         })
     missing = [r["s"].id for r in reversed(rows) if r["has_notes"] and r["status"] == "no draft"]  # oldest first
+    review_next = next((r for r in reversed(rows) if r["status"] in ("draft", "edited")), None)  # (the oldest waiting: SS1)
     return templates.TemplateResponse(
         request,
         "admin_sessions.html",
         {
             "rows": rows,
             "missing": missing,
+            "review_next": review_next,
+            "per": draft_cost(db),
             "spent": spent,
             "running": bool(running),
             "notes_synced": snap is not None,

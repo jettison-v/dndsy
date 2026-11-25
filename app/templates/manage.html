@@ -9,7 +9,8 @@
   <ul class="records">
     {% for x in items %}
     <li class="record"><span class="record-main"><b>{{ x.text }}</b>{% if x.admin %} <span class="tag faint">admins</span>{% endif %}<span class="note">{{ x.sub }}</span></span>
-      <span class="record-actions"><a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a></span></li>
+      <span class="record-actions">{% if x.post %}<form method="post" action="{{ x.post }}">{% for i in x.ids %}<input type="hidden" name="session_ids" value="{{ i }}">{% endfor %}<button type="submit" class="btn small{{ ' primary' if loop.first }}" data-busy="Starting the draft…" data-item="draft-next">{{ x.go }}</button></form>
+        {% else %}<a class="btn small{{ ' primary' if loop.first }}" href="{{ x.href }}">{{ x.go }}</a>{% endif %}</span></li>
     {% endfor %}
   </ul>
   {% else %}
@@ -24,16 +25,17 @@
     <ul class="ws-who">{% for w in who %}<li data-tone="{{ w.tone }}"><span class="char-av" aria-hidden="true">{{ w.name[:1] | upper }}{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span><b>{{ w.name }}</b>{% if w.says %}<small>{{ w.says }}</small>{% endif %}</li>{% endfor %}</ul>
   </section>
   {% endif %}
-  {% if tiles %}
+  {% if tiles or coming %}
   <section class="section" data-workbench="make">
     <h2>The next game · what you make</h2>
     <div class="ws-tiles">
-      {% for t in tiles %}<div class="ws-tile{{ ' planned' if t.planned }}" data-tile="{{ t.key }}">
-        <b>{{ t.name }}{% if t.planned %} <span class="tag faint">planned</span>{% elif t.count %} <span class="ws-count">{{ t.count }}</span>{% endif %}</b>
+      {% for t in tiles %}<div class="ws-tile" data-tile="{{ t.key }}">
+        <b>{{ t.name }}{% if t.count %} <span class="ws-count">{{ t.count }}</span>{% endif %}</b>
         <span class="note">{{ t.says }}</span>
-        {% if not t.planned %}<span class="row">{% if t.new %}<a class="btn small" href="{{ t.new }}">+ New</a>{% endif %}<a class="btn small" href="{{ t.open }}">Open</a></span>{% endif %}
+        <span class="row">{% if t.new %}<a class="btn small" href="{{ t.new }}">+ New</a>{% endif %}<a class="btn small" href="{{ t.open }}">Open</a></span>
       </div>{% endfor %}
     </div>
+    {% if coming %}<p class="note" data-coming>Coming: {{ coming | join(", ") }}.</p>{% endif %}
   </section>
   {% endif %}
 </main>

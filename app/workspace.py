@@ -1,18 +1,18 @@
 """The DM's Workspace (Brett chose B, Nov 13, docs/mockups/dm-workspace/): Manage as one place for the DM, its list down
 the left grouped by the DM's week (app/manage.py PAGES), and its home a workbench: what needs you, who's at the table,
-then a tile per kind of thing the DM makes (the planned kinds as dashed tiles until they're built).
+then a tile per kind of thing the DM makes (the planned kinds one quiet line until they're built: Brett's pick NY1, Nov 25).
 
 Two pages join The next game here: **Scene notes** (every place's pins, the DM's alone: the `scene_notes` rule, never
 an admin as such, never View as; app/scene_notes.py) and **Places and maps** (askdnd's table's places, each opening the
 table there). Both need askdnd's table (`vtt_table`); the list leaves them out where it's off.
 """
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import homebrew, places, vtt, web
-from app.auth import current_user
+from app import access, homebrew, places, vtt, web
+from app.auth import can_edit_settings, current_user
 from app.db import get_db
 from app.models import Place, ScenePin
 from app.templating import templates
@@ -53,8 +53,7 @@ def workbench(db: Session, request: Request, user: dict, campaign) -> dict:
         tiles.append({"key": "places", "name": "Places and maps", "count": len(ps),
                       "says": f"{len(ps)} place{'s' if len(ps) != 1 else ''} · {mapped} with a map" if ps else "None yet",
                       "open": f"{base}/manage/places"})
-    if homebrew.can_make(user, campaign):
-        tiles += [{"key": key, "name": name, "says": what, "planned": True} for key, name, what in homebrew.PLANNED]
+    coming = [name.lower() for _, name, _ in homebrew.PLANNED] if homebrew.can_make(user, campaign) else []  # (one quiet line, never tiles: NY1)
     from app import live
 
     says = {"step": "connected", "via": "through your browser", "closed": "sheet closed"}
@@ -62,7 +61,7 @@ def workbench(db: Session, request: Request, user: dict, campaign) -> dict:
     for r in live.rows_from(db):
         tone = "step" if r["step"] else "via" if r["via"] else "closed" if r["connects"] else ""
         who.append({"name": r["name"], "portrait": r["portrait"], "tone": tone, "says": says.get(tone, "")})
-    return {"tiles": tiles, "who": who}
+    return {"tiles": tiles, "who": who, "coming": coming}
 
 
 @router.get("/manage/scene-notes")  # under the campaign: /c/<campaign>/manage/scene-notes
@@ -100,3 +99,21 @@ def places_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "manage_places.html", {
         "places": _places(db, campaign.id), "pins": pins if places.writes_notes(request, user, campaign) else {},
         "table_on": vtt.on(campaign, "vtt_table"), "campaign": campaign})
+
+
+@router.post("/manage/places/table")  # under the campaign: /c/<campaign>/manage/places/table
+def table_switch(request: Request, on: str = Form(""), db: Session = Depends(get_db)):
+    """askdnd's table on or off from Places and maps itself (Brett's pick PL1, Nov 25: the page was a dead end, its note
+    sending you to Settings). It's a Labs feature, so on switches Labs on too; off leaves Labs as it was."""
+    user, denied = web.require(request, can_edit_settings, "Only the DM or an admin can switch askdnd's table on.")
+    if denied:
+        return denied
+    c = web.campaign(db)
+    toast = ""
+    if c is not None:
+        if on and vtt.LABS not in (c.vtt_pieces or []):
+            vtt.switch(c, vtt.LABS, True)
+        toast = vtt.switch(c, vtt.PIECES["vtt_table"], bool(on))
+        db.commit()
+        access.invalidate()
+    return web.switched(request, toast, f"{web.base(c)}/manage/places", reload=True)  # (on, the page fills in)
