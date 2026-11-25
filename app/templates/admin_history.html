@@ -1,39 +1,46 @@
 {% extends "base.html" %}
-{% block title %}History · Backstage · askdnd{% endblock %}
+{% from "_lists.html" import search_box, count_pill %}
+{% block title %}{{ "History" if in_campaign else "askdnd history" }} · Backstage · askdnd{% endblock %}
 {% block content %}
+{# Backstage › History, the campaign's and askdnd's (app/history_pages.py). Brett's picks on docs/mockups/backstage-round-3/
+   (Nov 25): each row names what it's about, and the same change again and again, or to many things together, or one
+   import, is one row with its count (HI1, AH1); a row opens its window, before and after with Restore (HI2); a search
+   and the newest week, then Show older (HI3); people by name. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>History</h1></div>
-  {% if in_campaign %}<p class="subtitle">Every change in {{ campaign.name if campaign else "this campaign" }}: entries, the glossary, sessions, house rules, its characters, roles and players' notes. What it was, what it became, who and how. <b>Restore</b> puts the earlier version back (and that's recorded too). Kept in askdnd's database on Railway.</p>
+  <div class="title-row"><h1>{{ "History" if in_campaign else "askdnd history" }}</h1></div>
+  {% if in_campaign %}<p class="subtitle">Every change in {{ campaign.name if campaign else "this campaign" }}: entries, the glossary, sessions, house rules, its characters, roles and players' notes. What it was, what it became, who and how. <b>Restore</b> puts the earlier version back (and that's recorded too).</p>
   {% else %}<p class="subtitle">Changes that belong to askdnd as a whole rather than one campaign: accounts, and characters that are in no campaign. Each campaign's own changes are on its History. Only admins can see this page.</p>{% endif %}
   {% if focus %}<p class="flash">Showing the history of <b>{{ focus }}</b>. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
   {% if batch %}<p class="flash">Showing one import. <a href="{{ page_url }}">Show everything</a></p>{% endif %}
-  <div class="filters" role="group" aria-label="Show">
-    {% for k, lab in filters.items() %}<a class="chip{{ ' on' if show == k else '' }}" href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %}>{{ lab }}</a>{% endfor %}
-  </div>
-  {% for day, rows in days %}
-  <h3 class="divider">{{ day }}</h3>
-  {% for x in rows %}{% set r = x.r %}
-  <div class="hist-row">
-    <div class="hist-head">
-      <b>{{ r.label }}</b> <span class="tag">{{ x.field }}</span> <span class="tag {{ 'draft' if r.source in ('import', 'undo-import') else '' }}">{{ x.source }}</span>
-      <span class="note">{{ r.created_at | clock }}{% if r.actor %} · {{ r.actor }}{% endif %}</span>
-      {% if x.restorable %}<form method="post" action="{{ page_url }}/{{ r.id }}/restore" class="inline hist-restore"
-        data-confirm="Put back the earlier version?"><button type="submit" class="btn small">{{ "Bring back" if r.field == "deleted" else "Restore" }}</button></form>{% endif %}
+  <div class="hist-list" data-list="history" data-default-sort="default" data-ls-group-count>
+    <div class="hist-tools">
+      <span class="seg" role="group" aria-label="Show">{% for k, lab in filters.items() %}<a href="{{ page_url }}{{ '?show=' ~ k if k }}"{% if show == k %} aria-current="true"{% endif %} data-filter="{{ k or 'all' }}">{{ lab }}</a>{% endfor %}</span>
+      <div class="hist-search">{{ search_box("Search what changed or who") }}</div>
     </div>
-    {% if r.field == "deleted" %}
-    <div class="import-diff one"><div><small>What was deleted</small><p>{{ x.old }}</p></div></div>
-    {% elif x.long %}
-    <div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div>
-    {% elif x.change %}
-    <p class="note hist-short">{{ x.change }}</p>
-    {% else %}
-    <p class="note hist-short">{{ x.old }} → <b>{{ x.new }}</b></p>
-    {% endif %}
+    <div class="hist-rows" data-ls-rows>
+    {% set n = namespace(i=0) %}
+    {% for day, entries in days %}{% for e in entries %}{% set n.i = n.i + 1 %}{% set x = e["items"][0] %}{% set r = x.r %}
+      <div class="hist-row" data-ls-row data-group-label="{{ day }}" data-sort-default="{{ n.i }}" data-name="{{ (e.title ~ ' ' ~ (e.who or '') ~ ' ' ~ x.field) | lower }}"
+           data-modal-url="{{ page_url }}/window?ids={{ e.ids | join(',') }}" data-modal-size="large" tabindex="0" data-kind="{{ e.kind }}">
+        <div class="hist-head">
+          <b>{{ e.title }}</b>{% if e["items"] | length > 1 %}{{ count_pill(e["items"] | length) }}{% endif %}
+          {% if e.kind == "one" %}<span class="tag">{{ x.field }}</span>{% endif %}
+          {% if r.source in ("import", "undo-import") %}<span class="tag draft">{{ x.source }}</span>{% endif %}
+          <span class="note">{{ r.created_at | clock }}{% if e.who %} · <span title="{{ r.actor }}">{{ e.who }}</span>{% endif %}</span>
+        </div>
+        {% if e.line %}<p class="note hist-short">{{ e.line }}</p>
+        {% elif e.kind != "one" %}<p class="note hist-short">Open it to see each.</p>
+        {% elif r.field == "deleted" %}<p class="note hist-short">Deleted: {{ (x.old or "")[:140] }}{{ "…" if (x.old or "") | length > 140 }}</p>
+        {% elif x.change %}<p class="note hist-short">{{ x.change }}</p>
+        {% elif x.long %}<p class="note hist-short">Changed. Open it to see before and after.</p>
+        {% else %}<p class="note hist-short">{{ x.old }} → <b>{{ x.new }}</b></p>{% endif %}
+      </div>
+    {% endfor %}{% endfor %}
+    </div>
+    <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
+    {% if not days %}<p class="muted">{% if in_campaign or batch %}No changes recorded yet.{% else %}No askdnd-wide changes recorded yet.{% endif %} History began on 19 October 2026; changes made before that weren't recorded.</p>{% endif %}
+    {% if more_days %}<p class="note"><a href="{{ page_url }}?{{ 'show=' ~ show ~ '&' if show }}older=1" data-item="history-older">Show older ({{ more_days }} more day{{ "s" if more_days != 1 }})</a></p>{% endif %}
   </div>
-  {% endfor %}
-  {% else %}
-  <p class="muted">{% if in_campaign or batch %}No changes recorded yet.{% else %}No askdnd-wide changes recorded yet.{% endif %} History began on 19 October 2026; changes made before that weren't recorded.</p>
-  {% endfor %}
 </main>
 {% endblock %}

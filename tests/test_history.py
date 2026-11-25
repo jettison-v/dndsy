@@ -80,9 +80,12 @@ def test_history_filters_and_restore_point_at_history(db, cole, admin):
 
     for url in ("/manage/history", "/c/main/manage/history"):
         page = admin.get(url, follow_redirects=True).text
-        hrefs = re.findall(r'class="chip[^"]*" href="([^"]+)"', page)
+        hrefs = re.findall(r'<a href="([^"]+)"[^>]*data-filter=', page)  # (the views as a two-way switch: Brett's pick HI3, Nov 25)
         assert hrefs and all(h.startswith(("/manage/history", "/c/main/manage/history")) for h in hrefs), hrefs
-    assert 'action="/c/main/manage/history/' in admin.get("/c/main/manage/history").text or "Restore" not in admin.get("/c/main/manage/history").text
+    page = admin.get("/c/main/manage/history").text  # (Restore is in a row's window now: HI2)
+    for ids in re.findall(r'data-modal-url="/c/main/manage/history/window\?ids=([0-9,]+)"', page)[:3]:
+        window = admin.get(f"/c/main/manage/history/window?ids={ids}").text
+        assert 'action="/c/main/manage/history/' in window or "Restore" not in window
 
 
 def test_import_page_lists_imports_with_undo(db, admin):
@@ -129,3 +132,41 @@ def test_key_moments_names_and_relationships_are_kept_when_deleted(db):
     back = db.scalar(select(StoryEvent))
     assert back.text == "Trah's holy water frees Myna from the cult." and {e.name for e in back.entities} == {"Myna", "Trah"}
     assert db.scalar(select(EntityAlias)).alias == "Mina" and db.scalar(select(EntityRelation)) is not None
+
+
+def test_history_groups_runs_and_batches_and_opens_each_in_its_window(db, admin, player):
+    """Brett's picks HI1, HI2 and AH1 on docs/mockups/backstage-round-3/ (Nov 25): the same field of one thing changed
+    again and again is one row (changed N times, now …); the same change to many things together is one row with its
+    count; a row opens its window, before and after, with Restore; a player never opens it."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.history_pages import group_changes
+
+    now = datetime.now(UTC)
+
+    def item(i, table="entities", row=1, field="status", new="published", actor="a@example.com", batch=None, ago=0):
+        r = Revision(id=i, table=table, row_id=row, label="X", field=field, old="draft", new=new, actor=actor, batch=batch,
+                     created_at=now - timedelta(seconds=ago))
+        return {"r": r, "field": history.FIELD_LABELS.get(field, field), "source": "", "subject": f"Thing {row}", "who": "A",
+                "old": "draft", "new": new}
+
+    runs = group_changes([item(5, row=1, ago=0), item(4, row=1, ago=60), item(3, row=1, ago=120)])
+    assert len(runs) == 1 and runs[0]["kind"] == "run" and runs[0]["line"].startswith("Changed 3 times") and runs[0]["ids"] == [5, 4, 3]
+    alike = group_changes([item(i, table="story_events", row=i, ago=i) for i in range(10, 0, -1)])
+    assert len(alike) == 1 and alike[0]["kind"] == "alike" and alike[0]["title"].startswith("10 key moments")
+    apart = group_changes([item(2, row=1), item(1, row=2, ago=600)])  # (ten minutes apart: two rows)
+    assert [e["kind"] for e in apart] == ["one", "one"]
+    imp = group_changes([item(2, row=1, batch="b1"), item(1, row=2, field="name", batch="b1")])
+    assert len(imp) == 1 and imp[0]["kind"] == "batch"
+
+    import_bundle(db, BUNDLE)
+    e = entity(db, "Star Mounts") if db.scalar(select(Entity).where(Entity.name == "Star Mounts")) else db.scalar(select(Entity))
+    e.summary = "Changed once."
+    db.flush()
+    rev = db.scalar(select(Revision).where(Revision.table == "entities").order_by(Revision.id.desc()))
+    page = admin.get("/c/main/manage/history").text
+    assert f"/c/main/manage/history/window?ids={rev.id}" in page
+    window = admin.get(f"/c/main/manage/history/window?ids={rev.id}").text
+    assert "Before" in window and "After" in window and "Changed once." in window
+    assert player.get(f"/c/main/manage/history/window?ids={rev.id}", follow_redirects=False).status_code in (303, 403)
+    assert "Changed once." not in admin.get(f"/manage/history/window?ids={rev.id}").text  # (askdnd's window: no campaign's changes)
