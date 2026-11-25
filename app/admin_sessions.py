@@ -6,7 +6,6 @@ fall back to a redirect.
 """
 
 import json
-import threading
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -22,10 +21,8 @@ from app.db import get_db
 from app.extraction import (
     ExtractionError,
     Source,
-    extract_session,
     latest_campaign_notes,
     notes_source_for,
-    revise_suggestions,
     session_label,
     split_notes,
     timeline,
@@ -38,19 +35,16 @@ from app.templating import templates
 
 router = APIRouter(prefix="/manage")  # under the campaign: /c/<campaign>/manage/sessions/…
 
-_busy = threading.Lock()  # one drafting job at a time keeps costs and order predictable
-
-
-_starting: set[int] = set()  # sessions whose draft was started here but whose run isn't written yet (the page redraws first)
-
-
 def _running_ids(db: Session) -> set[int]:
-    """Sessions with a draft in progress (conversation checks and entity runs don't count)."""
+    """Sessions with a draft in progress or waiting its turn on the queue (conversation checks and entity runs don't
+    count): app/drafts.py."""
+    from app import drafts
+
     return set(
         db.scalars(
             select(ExtractionRun.session_id).where(ExtractionRun.status == "running", ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
         )
-    ) | _starting
+    ) | drafts.waiting_sessions(db)
 
 
 def source_for(db: Session, session: GameSession):
@@ -65,42 +59,32 @@ def source_for(db: Session, session: GameSession):
 
 
 def _draft_in_background(session_ids: list[int]) -> bool:
-    """Draft sessions one after another (notes or written accounts), in a thread."""
-    if not _busy.acquire(blocking=False):
-        return False
+    """Draft sessions (notes or written accounts) one after another: each a job on the drafting queue (app/drafts.py)."""
+    from app import drafts
 
-    def work():
-        try:
-            for sid in session_ids:
-                with dbmod.SessionLocal() as db:
-                    session = db.get(GameSession, sid)
-                    try:
-                        source, background, bg_images = source_for(db, session)
-                    except ExtractionError as e:
-                        db.add(ExtractionRun(session_id=sid, source=session.source, status="error", error=str(e)))
-                        db.commit()
-                        continue
-                    extract_session(db, session, source, background=background, background_images=bg_images)
-        finally:
-            _busy.release()
-
-    threading.Thread(target=work, daemon=True).start()
+    with dbmod.SessionLocal() as db:
+        for sid in session_ids:
+            drafts.start(db, "draft_notes", sid)
     return True
 
 
 def busy() -> bool:
-    return _busy.locked()
+    """Whether Claude is drafting, or has drafting waiting its turn."""
+    from app import drafts
+
+    with dbmod.SessionLocal() as db:
+        return drafts.busy(db)
 
 
-def read_transcript_in_background(session_id: int, text: str) -> bool:
-    """A transcript's first read (Session Story, Brett Nov 7): Claude's questions and suggested World updates. The
-    recap waits for Draft the recap, once they're settled."""
-    return _in_background(session_id, lambda db, s: extract_session(db, s, Source("transcript", text), step="ask"))
+def read_transcript_in_background(session_id: int) -> bool:
+    """A transcript's first read (Session Story, Brett Nov 7): Claude's questions and suggested World updates, from the
+    transcript kept in file storage. The recap waits for Draft the recap, once they're settled."""
+    return _queue("read_transcript", session_id)
 
 
 def revise_in_background(session_id: int) -> bool:
     """Put the answers into the waiting suggestions (Brett, Nov 9): no transcript, cents, under a minute."""
-    return _in_background(session_id, lambda db, s: revise_suggestions(db, s))
+    return _queue("revise", session_id)
 
 
 def revise_when_settled(db: Session, s: GameSession) -> str:
@@ -116,32 +100,15 @@ def revise_when_settled(db: Session, s: GameSession) -> str:
 def draft_recap_in_background(session_id: int, update: bool = False) -> bool:
     """Draft the recap (and the full tale, key moments and awards) from the kept transcript, with the answers and the
     World as they are now; `update`: change the current draft instead of writing a new one."""
-    def tell(db, s):
-        words = session_story.text(s)
-        if words is None:
-            db.add(ExtractionRun(session_id=s.id, source="recap", status="error",
-                                 error="askdnd doesn't have this session's transcript. Send it again from the Processor."))
-            db.commit()
-            return
-        extract_session(db, s, Source("transcript", words), step="tell", update=update)
-
-    return _in_background(session_id, tell)
+    return _queue("draft_recap", session_id, update=update)
 
 
-def _in_background(session_id: int, work_on) -> bool:
-    if not _busy.acquire(blocking=False):
-        return False
-    _starting.add(session_id)
+def _queue(step: str, session_id: int, **extra) -> bool:
+    """One piece of drafting on the queue (app/drafts.py): it waits its turn behind any other, never refused."""
+    from app import drafts
 
-    def work():
-        try:
-            with dbmod.SessionLocal() as db:
-                work_on(db, db.get(GameSession, session_id))
-        finally:
-            _starting.discard(session_id)
-            _busy.release()
-
-    threading.Thread(target=work, daemon=True).start()
+    with dbmod.SessionLocal() as db:
+        drafts.start(db, step, session_id, **extra)
     return True
 
 

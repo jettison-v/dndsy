@@ -1,0 +1,337 @@
+<title>Collaboration Queue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --clay: #d97757; --clay-soft: rgba(217, 119, 87, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.fig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.fig svg { display: block; width: 100%; min-width: 900px; height: auto; }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+/* The queue of our collaboration (Roadmap item 45; Brett, Nov 25: "You can also just mock up the queue too if you feel you have a good understanding of the purpose."); its look is the Sync queue's (item 44; Brett, Nov 25: "visibility into the askdnd sync would be helpful. Something like a
+   processing queue. This queue could help with investigating any issues that arise or anything that is missed.") */
+.ctx { display: grid; gap: 10px; }
+.screen { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; }
+.bar { display: flex; gap: 16px; align-items: center; padding: 8px 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); font-size: .84rem; color: var(--muted); }
+.bar .brand { font: 600 1.05rem/1 var(--serif); color: var(--strong); margin-right: 8px; }
+.bar .door.on { color: var(--strong); font-weight: 600; }
+.bar .live { margin-left: auto; padding: 2px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); font-weight: 600; font-size: .76rem; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr); }
+.split.open { grid-template-columns: minmax(0, 1fr) 380px; }
+.pgx { padding: 16px 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.crumbs { color: var(--faint); font-size: .78rem; }
+.hdrow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .hdrow .sp { margin-left: auto; }
+.hdrow h3 { font: 600 1.4rem/1.2 var(--serif); }
+.needs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--red); background: rgba(240,138,138,.10); font-size: .86rem; }
+.needs .needs-word { font-weight: 700; color: var(--red); }
+.needs .btn { margin-left: auto; }
+.btn.small { min-height: 26px; padding: 0 10px; font-size: .78rem; }
+.counts { display: flex; gap: 8px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.cnt { padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.cnt b { color: var(--strong); } .cnt.bad b { color: var(--red); }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.srch { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--faint); font-size: .82rem; min-width: 260px; background: var(--surface); }
+.chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: .8rem; cursor: pointer; }
+.chip.on { border-color: var(--blue); color: var(--strong); background: var(--blue-soft); }
+table.q { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.q th { text-align: left; font: 600 .76rem/1.2 var(--sans); color: var(--faint); padding: 8px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.q td { padding: 8px 10px; border-top: 1px solid var(--line-soft); vertical-align: top; color: var(--text); }
+.q tbody tr { cursor: pointer; } .q tbody tr:hover td { background: var(--surface-2); } .q tbody tr.sel td { background: var(--blue-soft); }
+.q tr.bad td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.q .w-t { width: 9%; } .q .w-c { width: 12%; } .q .w-s { width: 11%; } .q .w-n { width: 6%; } .q .w-d { width: 11%; }
+.q td:nth-child(1), .q td:nth-child(5), .q td:nth-child(6) { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); }
+.dir { color: var(--faint); margin-right: 4px; }
+.why { display: block; color: var(--faint); font-size: .76rem; }
+.pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font: 600 .74rem/1.6 var(--sans); white-space: nowrap; }
+.pill.new, .pill.working { background: var(--blue-soft); color: var(--blue); }
+.pill.done { background: var(--green-soft); color: var(--green); }
+.pill.draft { background: var(--amber-soft); color: var(--amber); }
+.pill.error { background: rgba(240,138,138,.15); color: var(--red); }
+.pill.faint { background: var(--surface-3); color: var(--muted); }
+.fold { justify-self: start; background: none; border: 0; color: var(--blue); font-size: .84rem; cursor: pointer; padding: 0; display: inline-flex; gap: 6px; align-items: center; }
+.count-pill { padding: 0 7px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font-size: .72rem; }
+.win { border-left: 1px solid var(--line); background: var(--surface); display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+.win-h { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.win-h b { font-size: .95rem; } .win-h .x { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.win-b { padding: 12px 14px; display: grid; gap: 10px; align-content: start; font-size: .84rem; }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; color: var(--muted); }
+.facts b { font-weight: 500; color: var(--text); }
+.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-left: 2px solid var(--line); }
+.steps li { position: relative; padding: 0 0 10px 14px; }
+.steps li::before { content: ""; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--surface); }
+.steps li.ok::before { background: var(--green); } .steps li.bad::before { background: var(--red); } .steps li.wait::before { background: var(--blue); } .steps li.amb::before { background: var(--amber); }
+.steps .at { color: var(--faint); font-size: .74rem; font-variant-numeric: tabular-nums; display: block; }
+.raw { font: .74rem/1.4 ui-monospace, Menlo, monospace; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; }
+.win-f { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.win-f .quiet { color: var(--muted); font-size: .82rem; background: none; border: 0; cursor: pointer; }
+.win-f a { color: var(--blue); font-size: .82rem; text-decoration: none; margin-left: auto; }
+.corner { position: absolute; right: 16px; bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--strong); font-size: .84rem; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.shot { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); min-width: 0; }
+.shot-h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 12px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); font-size: .82rem; color: var(--muted); }
+.mini-pg { padding: 12px; display: grid; gap: 6px; align-content: start; font-size: .8rem; }
+.mcrumb { color: var(--faint); font-size: .74rem; }
+.mitem { color: var(--muted); } .mitem.on { color: var(--strong); font-weight: 600; box-shadow: inset 3px 0 0 var(--red-btn); padding-left: 8px; }
+.mframe { border: 1px dashed var(--line-strong); border-radius: 8px; min-height: 80px; display: grid; place-items: center; color: var(--faint); padding: 8px; text-align: center; }
+.tabsx { display: flex; gap: 14px; border-bottom: 1px solid var(--line); font-size: .78rem; color: var(--muted); padding-bottom: 4px; }
+.tabsx .on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.cap { font-size: .8rem; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--line); }
+@media (max-width: 1000px) { .split.open { grid-template-columns: minmax(0, 1fr); } .win { border-left: 0; border-top: 1px solid var(--line); } .pair { grid-template-columns: minmax(0, 1fr); } .q .why { display: none; } }
+@media (max-width: 700px) { .q th:nth-child(5), .q td:nth-child(5), .q th:nth-child(6), .q td:nth-child(6) { display: none; } .srch { min-width: 0; flex: 1; } }
+.toolname { color: var(--amber); } .q .w-c { width: 9%; }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 45 · a mockup with picks</span>
+    <h1>The queue of our collaboration</h1>
+    <p class="meta">What passes between you, the tool and Claude, and whether each step happened: something you did reaching Claude, Claude's answer reaching you, a fix reaching the live site and then your For you. It's a tab on Development, in Workshop, the tool behind Our Work (your name for it), never mixed with askdnd's own D&amp;D Beyond sync.</p>
+  </header>
+
+  <section class="ctx" aria-labelledby="h-what">
+    <h2 id="h-what">What a row is</h2>
+    <div class="terms">
+      <div class="term"><span class="tag">A handoff</span><span>One thing passed along and the steps it needs: your picks saved on claude.ai → brought in → read by Claude → acted on. Each step has a time, and whose turn it is next.</span></div>
+      <div class="term"><span class="tag">Where things come from</span><span>You (askdnd's pages, claude.ai's comments and picks, chat), the table's notes, Claude, GitHub's reports, a deploy going live.</span></div>
+      <div class="term"><span class="tag">Missed</span><span>A step past its usual time: a pick on claude.ai not brought in within 15 minutes, a note unanswered while Claude listens, a check that never reached For you after its deploy, a chat line never filed.</span></div>
+      <div class="term"><span class="tag">Why it helps</span><span>When something seems dropped, you can see where it stopped and whose turn it is, without asking me. Today's gaps (feedback.py gaps) become rows you can see.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-page" style="display:grid;gap:10px">
+    <h2 id="h-page">The tab, tonight at 10:10 pm <span class="note">(click a row, a filter, a button)</span></h2>
+    <div class="screen">
+      <div class="bar"><span class="brand">askdnd</span><span class="door">Story</span><span class="door">Party</span><span class="door">Battle</span><span class="door on">Backstage</span></div>
+      <div class="split" id="split">
+        <div class="pgx">
+          <div class="crumbs">Backstage › <span class="toolname">Workshop</span></div>
+          <div class="hdrow"><h3>Development</h3></div>
+          <div class="tabsx"><span>Board</span><span>Your order</span><span class="on">Handoffs</span><span>Scheduled</span></div>
+          <div class="needs" data-tone="error"><span class="needs-word">Missed</span><span>A comment you left on claude.ai at 9:58 hasn't been brought in (usually within 15 minutes).</span><button class="btn small" type="button" data-open="h7">Look</button></div>
+          <div class="counts"><span class="cnt"><b>2</b> waiting on you</span><span class="cnt"><b>1</b> waiting on Claude</span><span class="cnt bad"><b>1</b> missed</span><span class="cnt"><b>38</b> done today</span><span class="cnt"><b>4 min</b> you to Claude, typically</span></div>
+          <div class="tools">
+            <span class="srch">Search what was passed along</span>
+            <span class="chips" role="group" aria-label="Show">
+              <button class="chip on" type="button" data-f="fb" aria-pressed="true">Feedback</button>
+              <button class="chip on" type="button" data-f="test" aria-pressed="true">Testing</button>
+              <button class="chip on" type="button" data-f="road" aria-pressed="true">Roadmap</button>
+              <button class="chip on" type="button" data-f="code" aria-pressed="true">Code</button>
+              <button class="chip" type="button" data-f="open" aria-pressed="false">Only open</button>
+            </span>
+          </div>
+          <table class="q" aria-label="Handoffs">
+            <thead><tr><th class="w-t">Started</th><th>What was passed along</th><th class="w-c">Next</th><th class="w-s">State</th><th class="w-d">Took</th></tr></thead>
+            <tbody>
+              <tr data-row="h7" data-kind="road" data-open="1" class="bad"><td>9:58</td><td>Your comment on the naming page <span class="why">claude.ai → askdnd → Claude</span></td><td>askdnd</td><td><span class="pill error">Missed</span></td><td>12 min so far</td></tr>
+              <tr data-row="h6" data-kind="road" data-open="1"><td>10:05</td><td>A question: the tool's name <span class="why">Claude → your For you</span></td><td>You</td><td><span class="pill draft">Yours</span></td><td>5 min so far</td></tr>
+              <tr data-row="h5" data-kind="test" data-open="1"><td>9:22</td><td>Check 101: Refreshing sheets through the queue <span class="why">waited for #517's deploy → your For you</span></td><td>You</td><td><span class="pill draft">Yours</span></td><td>on For you 16 min</td></tr>
+              <tr data-row="h4" data-kind="road" data-open="1"><td>10:06</td><td>Your line on item 45: “You can also just mock up the queue” <span class="why">chat → filed → answered → mockup</span></td><td>Claude</td><td><span class="pill working">Claude's</span></td><td>4 min so far</td></tr>
+              <tr data-row="h3" data-kind="road"><td>9:41</td><td>Your picks on the Sync queue mockup <span class="why">claude.ai → askdnd → Claude → scope version 2</span></td><td>—</td><td><span class="pill done">Done</span></td><td>11 min</td></tr>
+              <tr data-row="h2" data-kind="code"><td>9:16</td><td>#518 Feature use counted one way <span class="why">opened → tests → merged → live</span></td><td>—</td><td><span class="pill done">Done</span></td><td>17 min</td></tr>
+              <tr data-row="h1" data-kind="fb"><td>8:31</td><td>A note from Big C's player: “the potion didn't stick” <span class="why">sent → you approved → Claude sorted → issue 118</span></td><td>—</td><td><span class="pill done">Done</span></td><td>26 min</td></tr>
+            </tbody>
+          </table>
+          <button class="fold" type="button">Show 35 more done today <span class="count-pill">35</span></button>
+        </div>
+        <aside class="win" id="win" hidden aria-label="One handoff">
+          <div class="win-h"><b id="win-title"></b><button class="x" type="button" id="win-close" aria-label="Close">×</button></div>
+          <div class="win-b" id="win-body"></div>
+          <div class="win-f" id="win-foot"></div>
+        </aside>
+      </div>
+      <div class="corner" id="corner" hidden></div>
+    </div>
+    <p class="note">Most rows are tonight's own handoffs; the note from Big C's player and the missed comment are made up, to show those two cases. Words and colours from the one state key: Yours amber (waiting on you), Claude's blue, Done green, Missed red. Feedback, Testing, Roadmap and Code are the tool's own parts; nothing of askdnd's game appears here.</p>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>CQ1 · The tab's name</legend><label class="opt"><input type="radio" name="cq1" value="handoffs"><span>A · Handoffs <span class="mine">my pick</span></span><small>Each row is something handed from one of us to another.</small></label><label class="opt"><input type="radio" name="cq1" value="queue"><span>B · Queue</span><small>As you first called it.</small></label></fieldset>
+    <fieldset><legend>CQ2 · What it opens on</legend><label class="opt"><input type="radio" name="cq2" value="open"><span>A · What's open first <span class="mine">my pick</span></span><small>Missed, then yours, then Claude's, then today's done under a fold.</small></label><label class="opt"><input type="radio" name="cq2" value="time"><span>B · Everything by time</span><small>Newest first, open and done together.</small></label></fieldset>
+    <fieldset><legend>CQ3 · A missed step</legend><label class="opt"><input type="radio" name="cq3" value="act"><span>A · A button that does the step <span class="mine">my pick</span></span><small>“Bring in now” for a claude.ai pick or comment, “Wake Claude” for a note waiting on me; recorded with who pressed it.</small></label><label class="opt"><input type="radio" name="cq3" value="look"><span>B · Look only</span><small>It shows where it stopped; the next check-in picks it up.</small></label></fieldset>
+    <fieldset><legend>CQ4 · Telling you</legend><label class="opt"><input type="radio" name="cq4" value="line"><span>A · The needs-you line here and Development's count <span class="mine">my pick</span></span><small>Missed shows in Development's status bar beside what's in Claude's hands; no email unless nobody is listening (as today).</small></label><label class="opt"><input type="radio" name="cq4" value="also"><span>B · And a push to your phone</span><small>When something of yours was missed.</small></label></fieldset>
+    <fieldset><legend>CQ5 · How long it remembers</legend><label class="opt"><input type="radio" name="cq5" value="always"><span>A · Always <span class="mine">my pick</span></span><small>It's the tool's record of how we worked; its rows are small.</small></label><label class="opt"><input type="radio" name="cq5" value="month"><span>B · 30 days</span><small>Older handoffs leave the list; each item keeps its own history.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(something you'd want to find here)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // The drawn tab's clicks: a row opens its story, the chips filter, a missed step's button answers with a corner card.
+  const STORY = {
+    h7: { title: "Your comment on the naming page", facts: [["From", "You, on claude.ai, 9:58"], ["Next", "askdnd brings it in at Claude's next check-in (every 10 minutes while Claude listens)"], ["State", "Missed: 12 minutes, past its usual 15 at the next look"]],
+          steps: [["ok", "9:58", "You commented on claude.ai: “Shipyard, but…”"], ["bad", "—", "Brought into askdnd: not yet (Claude's last check-in, 9:56, was before it)"], ["wait", "—", "Read by Claude"], ["wait", "—", "Answered on item 45"]], act: "bring" },
+    h6: { title: "A question: the tool's name", facts: [["From", "Claude, 10:05"], ["Next", "You: your pick on the naming page, in For you"], ["State", "Yours, 5 minutes"]],
+          steps: [["ok", "10:05", "Asked, with the naming page"], ["amb", "10:05", "In your For you (question 27)"], ["wait", "—", "Your pick"], ["wait", "—", "Read by Claude"]], act: "none" },
+    h5: { title: "Check 101: Refreshing sheets through the queue", facts: [["From", "Claude, 9:22, tried on the local copy first"], ["Next", "You: Passed, Something's wrong…, or Can't try"], ["State", "Yours, on For you 16 minutes"]],
+          steps: [["ok", "9:22", "Written, waiting for #517's deploy"], ["ok", "9:51", "#517 merged"], ["ok", "9:53", "Live on askdnd.ai"], ["amb", "9:54", "In your For you"], ["wait", "—", "Your mark"]], act: "none" },
+    h4: { title: "Your line on item 45", facts: [["From", "You, in chat, 10:06"], ["Next", "Claude: the mockup"], ["State", "Claude's, 4 minutes"]],
+          steps: [["ok", "10:06", "Saved from chat (chat 35)"], ["ok", "10:07", "Filed on item 45"], ["ok", "10:08", "Answered: drawing it tonight"], ["wait", "—", "The mockup, in your For you"]], act: "none" },
+    h3: { title: "Your picks on the Sync queue mockup", facts: [["From", "You, on claude.ai, 9:41"], ["Took", "11 minutes, from your Save to scope version 2"], ["State", "Done"]],
+          steps: [["ok", "9:41", "Saved on claude.ai (A on all six)"], ["ok", "9:47", "Brought into askdnd"], ["ok", "9:47", "Read by Claude"], ["ok", "9:52", "Item 44's scope version 2 written from them"]], act: "none" },
+    h2: { title: "#518 Feature use counted one way", facts: [["From", "Claude, 9:16"], ["Took", "17 minutes to live"], ["State", "Done"]],
+          steps: [["ok", "9:16", "Opened (Look: merges when green)"], ["ok", "9:29", "Tests passed"], ["ok", "9:30", "Merged"], ["ok", "9:33", "Live on askdnd.ai"]], act: "none" },
+    h1: { title: "A note from Big C's player", facts: [["From", "Big C's player, 8:31"], ["Took", "26 minutes to an issue with a reply"], ["State", "Done: issue 118, waiting on Claude's fix"]],
+          steps: [["ok", "8:31", "Sent from the Sheet"], ["ok", "8:44", "You approved it"], ["ok", "8:52", "Read by Claude"], ["ok", "8:57", "Sorted: issue 118, Using an item; the player told it's being looked at"]], act: "none" },
+  };
+  const split = document.getElementById("split"), win = document.getElementById("win"), body = document.getElementById("win-body"),
+        foot = document.getElementById("win-foot"), title = document.getElementById("win-title"), corner = document.getElementById("corner");
+  let timer = null;
+  const card = text => { corner.textContent = text; corner.hidden = false; clearTimeout(timer); timer = setTimeout(() => { corner.hidden = true; }, 3200); };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const shut = () => { win.hidden = true; split.classList.remove("open"); document.querySelectorAll(".q tbody tr.sel").forEach(r => r.classList.remove("sel")); };
+  const open = id => {
+    const s = STORY[id];
+    if (!s) return;
+    document.querySelectorAll(".q tbody tr").forEach(r => r.classList.toggle("sel", r.dataset.row === id));
+    title.textContent = s.title;
+    body.replaceChildren();
+    const facts = el("div", "facts");
+    s.facts.forEach(([k, v]) => { facts.append(el("span", "", k)); facts.append(el("b", "", v)); });
+    const steps = el("ol", "steps");
+    s.steps.forEach(([tone, at, words]) => { const li = el("li", tone); li.append(el("span", "at", at), document.createTextNode(words)); steps.append(li); });
+    body.append(facts, steps);
+    foot.replaceChildren();
+    if (s.act === "bring") { const b = el("button", "btn go small", "Bring in now"); b.type = "button"; b.addEventListener("click", () => card("Brought in: Claude reads it now")); foot.append(b); }
+    const close = el("button", "quiet", "Close"); close.type = "button"; close.addEventListener("click", shut); foot.append(close);
+    const a = el("a", "", "Its item ↗"); a.href = "#"; a.addEventListener("click", e => e.preventDefault()); foot.append(a);
+    win.hidden = false; split.classList.add("open");
+  };
+  document.getElementById("win-close").addEventListener("click", shut);
+  document.querySelectorAll(".q tbody tr").forEach(r => r.addEventListener("click", () => open(r.dataset.row)));
+  document.querySelectorAll("button[data-open]").forEach(b => b.addEventListener("click", () => open(b.dataset.open)));
+  const on = { fb: true, test: true, road: true, code: true, open: false };
+  const filter = () => document.querySelectorAll(".q tbody tr").forEach(r => { r.hidden = !on[r.dataset.kind] || (on.open && !r.dataset.open); });
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    on[c.dataset.f] = !on[c.dataset.f]; c.classList.toggle("on", on[c.dataset.f]); c.setAttribute("aria-pressed", String(on[c.dataset.f])); filter();
+  }));
+  document.querySelector(".fold").addEventListener("click", () => card("In the tool this opens the rest of today's in place"));
+})();
+</script>
+<script>
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["cq1", "cq2", "cq3", "cq4", "cq5"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+(async () => {
+  // Comments made in askdnd, shown on claude.ai too (item 39, 6 of 6: either place, merged): Claude hands them to this
+  // page's own store (collection "askdnd", doc "comments") when it checks in; each is pinned by the words it was made at.
+  let db = null;
+  try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) return;
+  let d = null;
+  try { d = await db.collection("askdnd").doc("comments").get(); } catch (e) { return; }
+  const list = d && d.exists ? (d.data().comments || []).filter(c => c && c.words) : [];
+  if (!list.length) return;
+  const box = document.createElement("section");
+  box.setAttribute("aria-label", "Comments made in askdnd");
+  box.style.cssText = "display:grid;gap:8px;border:1px solid var(--line,#34383e);border-radius:12px;padding:12px 16px;background:var(--surface,#1f2226)";
+  const h = document.createElement("h2");
+  h.textContent = "Comments made in askdnd";
+  box.append(h);
+  const pin = n => { const b = document.createElement("span"); b.textContent = String(n);
+    b.style.cssText = "display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f08a8a;color:#15171a;font:700 .7rem/1 system-ui;margin-right:6px;vertical-align:1px"; return b; };
+  for (const c of list) {
+    const row = document.createElement("p");
+    row.style.cssText = "margin:0;font-size:.9rem";
+    row.append(pin(c.n), document.createTextNode(c.words));
+    if (c.near) { const w = document.createElement("span"); w.textContent = ` · near “${c.near}”`; w.style.color = "var(--muted,#a29d93)"; row.append(w); }
+    box.append(row);
+    const want = String(c.near || "").trim().slice(0, 60);
+    if (!want) continue;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || box.contains(t) || el.closest("script, style, template, title, noscript")) continue;  // (words a person sees)
+      if (t.nodeValue && t.nodeValue.includes(want) && el.getClientRects().length) { el.prepend(pin(c.n)); break; }
+    }
+  }
+  const form = document.querySelector("form.decide");
+  (form || document.body.lastElementChild).after(box);
+})();
+
+</script>

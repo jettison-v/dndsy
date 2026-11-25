@@ -21,7 +21,7 @@ Say "run the live tests" and Claude does part 1, then gives you what's left in p
 
 ## Part 1: automatic, about 12 minutes
 
-On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everything below.
+On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everything below. Take the seats first, as the nightly and the after-deploy check do: `mkdir logs/.seats-busy` before and `rmdir logs/.seats-busy` after (Nov 25: a run by hand without it shared the seats with the after-deploy check, which closed them mid-run, and both runs' results were void).
 
 | Run | What it proves | How often it must pass |
 |---|---|---|
