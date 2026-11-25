@@ -3324,10 +3324,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const tnTray = tnStage.querySelector('.tn-tray'), read = root.querySelector('[data-read]');
     let tnPlace = 'mine', full = false, dirty = false;
     const rows = () => [...form.querySelectorAll('.tn-row')];
-    const value = row => row.querySelector('.switch') ? row.querySelector('.switch').getAttribute('aria-checked') === 'true' : +row.querySelector('input[type=range]').value;
+    const value = row => row.querySelector('[data-tn-check]') ? row.querySelector('[data-tn-check]').checked : +row.querySelector('input[type=range]').value;
     function set(row, v) {
-      const sw = row.querySelector('.switch');
-      if (sw) { sw.setAttribute('aria-checked', v); row.querySelector('input[type=hidden]').value = v ? '1' : ''; } else row.querySelector('input[type=range]').value = v;
+      const box = row.querySelector('[data-tn-check]');
+      if (box) { box.checked = !!v; row.querySelector('input[type=hidden]').value = v ? '1' : ''; } else row.querySelector('input[type=range]').value = v;
       show(row);
     }
     function show(row) {
@@ -3342,9 +3342,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     }
     const values = p => Object.fromEntries([...form.querySelectorAll('[data-place-panel="' + p + '"] .tn-row')].map(r => [r.dataset.k, value(r)]));
     rows().forEach(row => {
-      const sw = row.querySelector('.switch'), range = row.querySelector('input[type=range]');
+      const box = row.querySelector('[data-tn-check]'), range = row.querySelector('input[type=range]');
       if (range) row.querySelector('.tn-range').style.setProperty('--now', (JSON.parse(row.dataset.saved) - range.min) / (range.max - range.min));  // the tick
-      if (sw) sw.addEventListener('click', () => set(row, !value(row)));
+      if (box) box.addEventListener('change', () => set(row, box.checked));
       else range.addEventListener('input', () => show(row));
       row.querySelector('.tn-reset').addEventListener('click', () => set(row, JSON.parse(row.dataset.saved)));
     });
@@ -4450,13 +4450,13 @@ document.addEventListener('click', e => {
     const list = document.querySelector('[data-tab-param]'); if (!list || !list.contains(document.querySelector('[data-tab="' + e.target.id + '"]'))) return;
     const u = new URL(location.href); u.searchParams.set('tab', e.target.id.replace(/^t-/, ''));
     history.replaceState(null, '', u.pathname + u.search + u.hash);
-    if (document.querySelector('.help')) try { localStorage.setItem('askdnd-help-tab', e.target.id); } catch (err) { /* private window */ }
+    if (document.querySelector('.help')) try { localStorage.setItem('askdnd-help-tab:' + list.getAttribute('aria-label'), e.target.id); } catch (err) { /* private window */ }  // (Help's and the DM guide's each their own)
   });
   // Help: a link to an answer (/help#id) opens the FAQ there; otherwise the tab you used last
   if (document.querySelector('.help [data-tab-param]')) {
     const answer = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
     const inTab = answer && answer.closest('[id^="t-"]');
-    let last = null; try { last = localStorage.getItem('askdnd-help-tab'); } catch (err) { /* private window */ }
+    let last = null; try { last = localStorage.getItem('askdnd-help-tab:' + document.querySelector('.help [data-tab-param]').getAttribute('aria-label')); } catch (err) { /* private window */ }
     const open = inTab ? inTab.id : new URLSearchParams(location.search).has('tab') ? null : last;
     const tab = open && document.querySelector('[role=tab][data-tab="' + open + '"]');
     if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
@@ -4842,8 +4842,10 @@ document.addEventListener('click', e => {
     if (health) {
       pill.className = pill.dataset.base + ' ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
       pill.textContent = health.text + (health.checked_at ? ' (checked ' + new Date(health.checked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ')' : '');
-      pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep') + ' Wakes as soon as someone opens or uses askdnd or a sheet; click to run the check.'
+      pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep')
         : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
+      const todo = document.querySelector('[data-bridge-todo]');
+      if (todo) todo.textContent = health.todo || '';
     }
     clearTimeout(healthTimer);  // (again: another call may have finished while this one waited)
     healthTimer = setTimeout(checkHealth, health && health.state === 'wait' ? 3000 : 30000);
@@ -4862,9 +4864,11 @@ document.addEventListener('click', e => {
     ['click', 'keydown', 'change'].forEach(k => document.addEventListener(k, () => { if (Date.now() - usedAt > 60000) used(); }, { passive: true }));
     used();
   }
-  if (pill) {
-    checkHealth();
-    pill.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › Global › D&D Beyond bridge)
+  const runCheck = document.querySelector('[data-br-check]');
+  if (pill) checkHealth();
+  if (pill && runCheck) {
+    runCheck.addEventListener('click', async () => {  // run the round trip on the test character (Backstage › Global › D&D Beyond bridge), asked first (BR1)
+      if (!confirm(runCheck.dataset.ask)) return;
       pill.textContent = 'D&D Beyond · checking…';
       const r = await fetch('/bridge/check', { method: 'POST', headers: { Accept: 'application/json' } });
       if (r.ok) { window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin); }
@@ -4875,12 +4879,38 @@ document.addEventListener('click', e => {
 
   const all = document.querySelector('[data-br-check-all]');
   if (all) all.addEventListener('click', async () => {  // Backstage › Global › D&D Beyond bridge: every kind of change, out and back
+    if (!confirm(all.dataset.ask)) return;  // (it changes the test sheet: asked first, Nov 25)
     all.disabled = true;
     const r = await fetch('/bridge/check?full=1', { method: 'POST', headers: { Accept: 'application/json' } });
     if (r.ok) window.postMessage({ askdndBridge: 'deliver', ddbId: (await r.json()).test_ddb_id }, location.origin);
     all.textContent = r.ok ? 'Checking: the menu bar shows how it goes' : 'Open the test character\'s sheet first';
-    setTimeout(() => { all.disabled = false; all.textContent = 'Check everything'; }, 8000);
+    setTimeout(() => { all.disabled = false; all.textContent = 'Check everything…'; }, 8000);
   });
+
+  // Backstage › Design system (Brett's pick DS1, Nov 25): its sizes read from the page as drawn, so they're true in
+  // either mode; the Table · Backstage switch draws the page in that mode; the search shows only the sections that say it.
+  const dsPage = document.querySelector('main.ds-page');
+  if (dsPage) {
+    const measure = () => dsPage.querySelectorAll('[data-ds-px]').forEach(n => {
+      const sample = n.closest('div').querySelector(n.dataset.dsPx === 'font-size' ? 'span[style*="font-size"]' : 'span[style*="width"]');
+      if (sample) n.textContent = String(Math.round(parseFloat(getComputedStyle(sample)[n.dataset.dsPx === 'font-size' ? 'fontSize' : 'width']) * 10) / 10);
+    });
+    measure();
+    dsPage.querySelectorAll('[data-ds-mode]').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.dsMode === 'table') dsPage.dataset.dsMode = 'table'; else delete dsPage.dataset.dsMode;
+      dsPage.querySelectorAll('[data-ds-mode]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      measure();
+    }));
+    const find = dsPage.querySelector('.ds-find [data-ls-search]');
+    if (find) find.addEventListener('input', () => {
+      const q = find.value.trim().toLowerCase();
+      dsPage.querySelectorAll(':scope > section.section').forEach(sec => { sec.hidden = !!q && !sec.textContent.toLowerCase().includes(q); });
+      dsPage.querySelectorAll('[data-ds-jump] a[href^="#"]:not([data-ds-top])').forEach(a => {
+        const sec = document.getElementById(a.getAttribute('href').slice(1));
+        a.hidden = !!(sec && sec.hidden);
+      });
+    });
+  }
 
   // Backstage › Design system: its navigation row lights the section you're in and keeps that chip in view; ↑ Top goes back
   // up (Brett, 2026-10-29)

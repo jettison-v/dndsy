@@ -97,3 +97,19 @@ def test_dm_tools_pages_carry_the_manage_list(dm, db):
     page = dm.get("/c/main/dm").text
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Items' in side and 'data-item="needs"' in side
+
+
+def test_places_switches_the_table_on_right_there(dm, player, db):
+    """Brett's pick PL1 (docs/mockups/backstage-round-4/, Nov 25): with askdnd's table off, Places and maps has its switch
+    on the page, not a note sending you to Settings; on switches Labs on too, and the page fills in."""
+    _setup(db)
+    page = dm.get("/c/main/manage/places").text
+    assert 'action="/c/main/manage/places/table"' in page and "manage/settings?tab=features#labs" not in page
+    assert player.post("/c/main/manage/places/table", data={"on": "1"}).status_code in (403, 303)
+    db.expire_all()
+    assert "vtt" not in (db.scalar(select(Campaign).where(Campaign.slug == "main")).vtt_pieces or [])
+    r = dm.post("/c/main/manage/places/table", data={"on": "1"}, headers={"X-Switch": "1"})
+    assert r.status_code == 204 and "switchReload" in r.headers["HX-Trigger"]
+    db.expire_all()
+    assert {"vtt", "labs"} <= set(db.scalar(select(Campaign).where(Campaign.slug == "main")).vtt_pieces)
+    assert 'action="/c/main/manage/places/table"' not in dm.get("/c/main/manage/places").text

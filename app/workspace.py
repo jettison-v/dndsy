@@ -7,12 +7,12 @@ an admin as such, never View as; app/scene_notes.py) and **Places and maps** (as
 table there). Both need askdnd's table (`vtt_table`); the list leaves them out where it's off.
 """
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import homebrew, places, vtt, web
-from app.auth import current_user
+from app import access, homebrew, places, vtt, web
+from app.auth import can_edit_settings, current_user
 from app.db import get_db
 from app.models import Place, ScenePin
 from app.templating import templates
@@ -99,3 +99,21 @@ def places_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "manage_places.html", {
         "places": _places(db, campaign.id), "pins": pins if places.writes_notes(request, user, campaign) else {},
         "table_on": vtt.on(campaign, "vtt_table"), "campaign": campaign})
+
+
+@router.post("/manage/places/table")  # under the campaign: /c/<campaign>/manage/places/table
+def table_switch(request: Request, on: str = Form(""), db: Session = Depends(get_db)):
+    """askdnd's table on or off from Places and maps itself (Brett's pick PL1, Nov 25: the page was a dead end, its note
+    sending you to Settings). It's a Labs feature, so on switches Labs on too; off leaves Labs as it was."""
+    user, denied = web.require(request, can_edit_settings, "Only the DM or an admin can switch askdnd's table on.")
+    if denied:
+        return denied
+    c = web.campaign(db)
+    toast = ""
+    if c is not None:
+        if on and vtt.LABS not in (c.vtt_pieces or []):
+            vtt.switch(c, vtt.LABS, True)
+        toast = vtt.switch(c, vtt.PIECES["vtt_table"], bool(on))
+        db.commit()
+        access.invalidate()
+    return web.switched(request, toast, f"{web.base(c)}/manage/places", reload=True)  # (on, the page fills in)

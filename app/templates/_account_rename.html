@@ -1,0 +1,13 @@
+{# Rename… from a person's ⋯ on Accounts (app/manage_accounts.py `rename_window`; Brett's pick AC1, Nov 25). #}
+<div class="peek-head">
+  <div><div class="note">Accounts</div><h2 id="peek-title">Rename {{ u.name or u.email }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body">
+  <form method="post" action="/manage/accounts/name" class="stack">
+    <input type="hidden" name="email" value="{{ u.email }}">
+    <label class="field">Name<input type="text" name="name" value="{{ u.name if u.name != u.email }}" maxlength="200" required></label>
+    <div class="row"><button class="btn primary" type="submit">Save name</button><button class="btn peek-close" type="button">Cancel</button></div>
+    <p class="note">askdnd keeps this name: Google's only fills an empty one at sign-in.</p>
+  </form>
+</div>

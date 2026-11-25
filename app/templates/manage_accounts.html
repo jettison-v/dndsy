@@ -2,20 +2,22 @@
 {% block title %}Accounts · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_settings.html" import switch %}
+{% from "_admin_bits.html" import more_menu %}
+{% from "_lists.html" import view_switch %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Accounts</h1><button class="btn title-action" type="button" data-modal-url="/manage/accounts/new" data-item="add-account">+ Add an account</button></div>
   <p class="subtitle">Who can sign in to askdnd at all, who's an admin, and which campaigns each person is in. Roles in a campaign (DM, reviewer, player) are set on that campaign's Table. Only admins can see this page.</p>
 
-  <section class="section">
-    {% macro person(p) %}{% set fixed = p.owner or p.email == me %}
-    <li class="record{{ ' faded' if not p.invited }}">
-      <span class="record-main"><b>{{ p.name or p.email }}</b>
-        <span class="note">{% if p.name %}{{ p.email }} · {% endif %}{% if p.owner %}owner (set on Railway) · {% endif %}{% if p.removed %}removed · {% elif not p.invited %}not invited yet · {% elif p.from_railway and not p.owner %}from the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}hasn't signed in yet{% endif %}</span>
-        <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form>
-        {% if p.user %}<details class="fold"><summary>Change name</summary><form method="post" action="/manage/accounts/name" class="seat-name"><input type="hidden" name="email" value="{{ p.email }}">
-          <label class="field"><span>Name</span><input type="text" name="name" value="{{ p.name }}" maxlength="200" required></label>
-          <button class="btn small" type="submit">Save name</button></form></details>{% endif %}</span>
+  <section class="section" data-list="accounts" data-default-sort="default">
+    <div class="section-head"><h2>People</h2>{{ view_switch([("all", "All"), ("people", "People"), ("test", "Test")], "Which accounts") }}</div>
+    {# One line a person (Brett's pick AC1 on docs/mockups/backstage-round-4/, Nov 25): a Test tag, not a symbol in the
+       name; Rename…, View as and Remove in the row's ⋯. #}
+    {% macro person(p, n=0) %}{% set fixed = p.owner or p.email == me %}
+    <li class="record{{ ' faded' if not p.invited }}"{% if n %} data-ls-row data-views="{{ 'test' if p.test else 'people' }} all" data-sort-default="{{ n }}" data-name="{{ ((p.shown or '') ~ ' ' ~ p.email) | lower }}"{% endif %}>
+      <span class="record-main"><b>{{ p.shown or p.email }}</b>{% if p.test %} <span class="tag">Test</span>{% endif %}
+        <span class="note">{% if p.name %}{{ p.email }} · {% endif %}{% if p.owner %}owner (set on Railway) · {% endif %}{% if p.removed %}removed · {% elif not p.invited %}not invited yet · {% elif p.from_railway and not p.owner %}from the Railway lists · {% endif %}{% if p.last_seen %}last signed in {{ p.last_seen | ago }}{% else %}never signed in{% endif %}</span>
+        <form id="acct-{{ p.email }}" method="post" action="/manage/accounts/update"><input type="hidden" name="email" value="{{ p.email }}"></form></span>
       <span>{% for c, r in p.campaigns %}<a href="/c/{{ c.slug }}/manage/table">{{ c.name }}</a> ({{ role_labels[r] | lower if r != "dm" else "DM" }}){{ ", " if not loop.last }}{% else %}<span class="note">No campaign yet</span>{% endfor %}</span>
       {# Admin and Feedback: switches that save themselves (the UI review's pick 1, Nov 16, docs/mockups/one-switch/); an owner or
          yourself is always an admin, an admin always sends feedback, and someone not invited yet gets Invite first #}
@@ -24,13 +26,16 @@
       <span class="acct-set" data-col="feedback">{% if p.invited and p.level == "admin" %}<span class="note">Always</span>
         {% elif p.user and p.invited %}{{ switch("/manage/accounts/feedback", p.user.feedback, "Sends feedback: " ~ (p.name or p.email), extra={"email": p.email}) }}{% endif %}</span>
       <span class="record-actions">{% if not p.invited %}<button class="btn small" type="submit" form="acct-{{ p.email }}">Invite</button>{% endif %}
-        {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button class="btn small" type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
-        {% if p.invited and not fixed %}<form method="post" action="/manage/accounts/update" class="inline" data-confirm="Remove {{ p.name or p.email }}? They can't sign in; their campaign roles stay, for coming back."><input type="hidden" name="email" value="{{ p.email }}"><button class="btn link small danger" type="submit" name="remove" value="1">Remove</button></form>{% endif %}</span>
+        {% if p.user or p.email in can_view or (p.invited and not fixed) %}{% call more_menu("More for " ~ (p.shown or p.email)) %}
+          {% if p.user %}<button type="button" data-modal-url="/manage/accounts/rename?email={{ p.email | urlencode }}" data-item="rename">Rename…</button>{% endif %}
+          {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
+          {% if p.invited and not fixed %}<form method="post" action="/manage/accounts/update" class="inline" data-confirm="Remove {{ p.name or p.email }}? They can't sign in; their campaign roles stay, for coming back."><input type="hidden" name="email" value="{{ p.email }}"><button type="submit" name="remove" value="1" class="danger">Remove</button></form>{% endif %}
+        {% endcall %}{% endif %}</span>
     </li>
     {% endmacro %}
-    <ul class="records cols-acct">
+    <ul class="records cols-acct" data-ls-rows>
       <li class="records-head" aria-hidden="true"><span>Person</span><span>Campaigns</span><span>Admin</span><span title="Can send feedback for Claude with \ (for test accounts; admins always can)">Feedback</span><span></span></li>
-      {% for p in people %}{{ person(p) }}{% endfor %}
+      {% for p in people %}{{ person(p, loop.index) }}{% endfor %}
     </ul>
     {% if away %}<details class="fold"><summary>Removed or not invited yet ({{ away | length }})</summary>
       <ul class="records cols-acct">{% for p in away %}{{ person(p) }}{% endfor %}</ul></details>{% endif %}

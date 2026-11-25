@@ -29,6 +29,7 @@
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
   <section class="section">
+    {% if not rows %}<p class="muted">No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.</p>{% else %}
     <div class="table-scroll"><table class="list stacked">
       <tr><th>Session</th><th>State</th><th class="num">Cost</th><th></th></tr>
       {% set shown = namespace(backlog=False) %}
@@ -57,7 +58,7 @@
       </tr>
       {% endif %}
       {% endfor %}
-    </table></div>
+    </table></div>{% endif %}
   </section>
 </main>
 {% endblock %}

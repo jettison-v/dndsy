@@ -64,11 +64,11 @@ PAGES = (
     ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, GENERAL, "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, GENERAL, "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, GENERAL, "admin", ()),
+    ("features", "Feature use", "/manage/features", "Which features the table uses, and on which page", ASKDND, GENERAL, "admin", ()),  # (in General as Feature use: Brett's pick FE2, Nov 25)
     ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, GENERAL, "admin", ()),
     ("books", "Rule books", "/manage/books", "The rules books askdnd reads, and uploading one", ASKDND, GENERAL, "admin", ()),
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, "admin", ()),
     ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, "admin", ()),
-    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, "admin", ()),
     ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, TUNING, "admin", ()),
     ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, "admin", ()),
     ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, TUNING, "admin", ()),
@@ -230,7 +230,7 @@ def needs(db: Session, user: dict) -> list[dict]:
         if b["attention"]:
             last = b["good"].finished_at.astimezone(config.TABLE_TIME).strftime("%b %-d") if b.get("good") else ""
             out.append({"text": b["text"], "sub": f"The last good copy is from {last}" if last else "askdnd has no good copy yet",
-                        "href": "/manage/backups", "go": "See what failed", "admin": True})
+                        "href": "/manage/backups", "go": "See what failed" if b["last"] is not None and b["last"].status != "ok" else "Check the backups", "admin": True})
         u = usage_summary(db)
         if u["limit_reached"]:
             out.append({"text": f"Monthly limit of ${u['limit']:.2f} reached", "sub": "Drafting is paused until next month or a higher limit",
@@ -491,4 +491,9 @@ def dm_guide(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     if not can_moderate(user):
         return web.forbidden(request, "The DM guide is for the DM, reviewers and admins.")
-    return templates.TemplateResponse(request, "dm_guide.html", {"b": backlog(db)})
+    campaign = web.campaign(db)
+    tabs = (("pages", "Your pages"), ("recaps", "Recaps"), ("inbox", "The inbox"), ("writing", "Writing"), ("privacy", "Who sees what"))
+    tab = request.query_params.get("tab", "pages")
+    return templates.TemplateResponse(request, "dm_guide.html", {
+        "b": backlog(db), "tabs": tabs, "tab": tab if tab in dict(tabs) else "pages",
+        "on": {"sync": vtt.on(campaign, "dm_backup"), "table": vtt.on(campaign, "vtt_table")}})  # (only what's on: DG1)

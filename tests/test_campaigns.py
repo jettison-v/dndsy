@@ -128,7 +128,7 @@ def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     page = admin.get("/manage/campaigns").text
     assert "Curse of Strahd" in page and "/c/strahd" in page and "data-move=" not in page  # (moves only when D&D Beyond moved it)
     # Switch on every campaign but the one you're in (like the campaign menu)
-    assert page.count(">Switch</a>") == 1 and '<a class="btn small" href="/c/strahd/campaign"' in page and "Main <span class=\"tag faint\">You're here" in page
+    assert page.count(">Switch</a>") == 1 and '<a class="btn small" href="/c/strahd/campaign"' in page and "<b>Main</b> <span class=\"tag faint\">You're here" in page
     r = admin.post("/manage/campaigns", data={"name": "Curse of Strahd", "dm_name": "Mary"}, follow_redirects=False)
     assert r.headers["location"] == "/c/curse-of-strahd/manage/table"  # straight to its people and characters
     assert db.scalar(select(Campaign).where(Campaign.slug == "curse-of-strahd")).dm_name == "Mary"

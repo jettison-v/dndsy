@@ -4,7 +4,8 @@
 {% block content %}
 {# Backstage › Global › Product areas (app/fft/feedback_page.py `product_areas`; Brett chose two levels on
    docs/mockups/product-taxonomy/, Nov 18): every part of askdnd, a Product Area per card and its Features under it,
-   each with its open issues. The list is app/data/taxonomy.json; docs/MAP.md follows its order. #}
+   each with its open issues. The list is app/data/taxonomy.json; docs/MAP.md follows its order. The busiest card first, and
+   its name opens its plan, Brett's pick PA1 on docs/mockups/backstage-round-4/ (Nov 25). #}
 <main class="page manage-page" data-page="product-areas">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Product areas</h1></div>
@@ -13,7 +14,7 @@
   <div class="packed pa-cards">
     {% for c in cards %}
     <section class="panel pa-card" data-pa="{{ c.a.key }}" aria-labelledby="pa-{{ c.a.key }}">
-      <header class="pa-head"><h2 id="pa-{{ c.a.key }}">{{ c.a.title }}</h2>{{ count_pill(c.n) }}<span class="note">{{ c.a.what }}</span></header>
+      <header class="pa-head"><h2 id="pa-{{ c.a.key }}">{% if c.plan %}<a href="/manage/work/{{ c.plan }}" data-panel-url="/manage/item/a{{ c.plan }}" data-plan="{{ c.plan }}">{{ c.a.title }}</a>{% else %}{{ c.a.title }}{% endif %}</h2>{{ count_pill(c.n) }}<span class="note">{{ c.a.what }}</span></header>
       <ul class="pa-feats">
         {% for f, n in c.features %}<li data-feature="{{ f.key }}">{% if n %}<a href="/manage/feedback?tab=open&amp;pa={{ c.a.key }}&amp;feature={{ f.key }}">{{ f.title }}</a>{{ count_pill(n) }}{% else %}<span>{{ f.title }}</span>{% endif %}</li>{% endfor %}
       </ul>

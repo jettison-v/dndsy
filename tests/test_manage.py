@@ -41,8 +41,8 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "Global" in half(page, "askdnd")
-    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "books", "accounts", "campaigns",
-                                    "features", "askdnd-history", "corrections", "dice", "design"]
+    assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "features", "books", "accounts", "campaigns",
+                                    "askdnd-history", "corrections", "dice", "design"]
     assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
@@ -244,3 +244,35 @@ def test_round_two_settings_in_tabs_and_tables_one_action(monkeypatch, db):
     table = admin.get("/c/main/manage/table").text
     head = table.split('class="title-row"')[1].split("</div>")[0]
     assert head.count('class="btn"') <= 1
+
+
+def test_round_four_pages_dm_guide_accounts_and_product_areas(monkeypatch, db):
+    """Brett's picks DG1, AC1 and PA1 (docs/mockups/backstage-round-4/, Nov 25): the DM guide in the tab bar with only
+    what's on; Accounts a line each, test accounts tagged Test with a filter, Rename… in the ⋯; Product areas busiest
+    first."""
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    guide = admin.get("/c/main/manage/dm-guide?tab=recaps").text
+    assert 'role="tablist" data-tab-param' in guide and 'aria-selected="true" data-tab="t-recaps"' in guide
+    assert 'id="table"' not in guide and 'id="dm-backup"' not in guide  # (askdnd's table and Sync are off here)
+    db.scalar(select(Campaign)).vtt_pieces = ["vtt", "labs"]
+    db.commit()
+    assert 'id="table"' in admin.get("/c/main/manage/dm-guide").text
+    test_camp = Campaign(slug="vtt-test", name="VTT test", is_test=True)
+    db.add(test_camp)
+    db.flush()
+    from app.models import CampaignMember, Role
+    tester = User(email="seat@example.com", name="ΩSeat one", access="member")
+    db.add(tester)
+    db.flush()
+    db.add(CampaignMember(campaign_id=test_camp.id, user_id=tester.id, role=Role.PLAYER))
+    db.commit()
+    from app import access
+    access.invalidate()
+    page = admin.get("/manage/accounts").text
+    row = next(li for li in page.split("<li ") if 'data-name="seat one' in li)
+    assert 'data-views="test all"' in row and '<span class="tag">Test</span>' in row and "Ω" not in row.split("<span")[0]
+    assert 'data-modal-url="/manage/accounts/rename?email=seat%40example.com"' in row and "Change name" not in page
+    assert 'name="name" value="ΩSeat one"' in admin.get("/manage/accounts/rename?email=seat@example.com").text
+    cards = admin.get("/manage/product-areas").text
+    assert 'class="panel pa-card"' in cards
