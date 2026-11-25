@@ -147,6 +147,7 @@ def test_every_window_is_the_one_window():
     so Save sits in its foot and the window fits what's in it, everywhere. Those still to move are listed above."""
     hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head' in p.read_text() and p.name != "_window.html"}
     assert hand_made - WINDOWS_TO_MOVE <= IMMERSIVE_HEADS | WINDOWS_TO_MOVE, "A window's head of its own: " + str(sorted(hand_made - WINDOWS_TO_MOVE - IMMERSIVE_HEADS))
+    assert hand_made >= IMMERSIVE_HEADS, f"Moved onto the one window: take it off IMMERSIVE_HEADS: {sorted(IMMERSIVE_HEADS - hand_made)}"
     hand_made -= IMMERSIVE_HEADS
     assert not hand_made - WINDOWS_TO_MOVE, f"A window built by hand: build it from _window.html's window(): {sorted(hand_made - WINDOWS_TO_MOVE)}"
     assert not WINDOWS_TO_MOVE - hand_made, f"Moved onto the one window: take it off WINDOWS_TO_MOVE: {sorted(WINDOWS_TO_MOVE - hand_made)}"

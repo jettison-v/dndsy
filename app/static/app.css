@@ -1901,6 +1901,10 @@ a.sheet-ref { text-decoration-style: dotted; }
 .note-form input[type=text], .note-form textarea, .note-form select { width: 100%; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 7px 10px; }
 .note-form h3 { margin: 6px 0 0; }
 .form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* (two fields side by side: each one's name above its box, as on a phone, so neither box is squeezed: the review of #532) */
+.form-2 > .fld { grid-template-columns: minmax(0, 1fr); }
+.form-2 > .fld .fld-name { padding-top: 0; }
+.form-2 > .fld :is(.fld-box, .fld-help, .fld-err) { grid-column: 1; }
 .repeat { display: grid; gap: 10px; }
 .repeat-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; margin: 0; display: grid; gap: 8px; }
 .combo-edit .turn-label { font-weight: 700; flex: 1; }
