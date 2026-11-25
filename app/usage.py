@@ -172,8 +172,8 @@ class Recorder:
 
 # ------------------------------------------------------------------ reading them (Backstage › Features)
 
-def counted(db, campaign_id: int | None):
-    """The uses that count: the table's (not admins', not test accounts', not in a test campaign)."""
+def counted(db, campaign_id: int | None, since=None):
+    """The uses that count: the table's (not admins', not test accounts', not in a test campaign), since `since` if given."""
     from sqlalchemy import select
 
     from app.models import Campaign, UsageEvent, User
@@ -183,7 +183,15 @@ def counted(db, campaign_id: int | None):
     q = select(UsageEvent)
     if campaign_id:
         q = q.where(UsageEvent.campaign_id == campaign_id)
+    if since is not None:
+        q = q.where(UsageEvent.at >= since)
     return [e for e in db.scalars(q) if e.user_id not in left_out and e.campaign_id not in tests]
+
+
+def families_used(events) -> set[str]:
+    """The features (as the map names them) these uses touched, the DM's and admins' own left out: one way to count
+    them, for Backstage's Overview card and the Feature use page (the end-of-day audit, LB4)."""
+    return {_family(e.feature) for e in events} - ADMIN_ONLY
 
 
 ADMIN_ONLY = {"Admin pages", "View as", "Corrections", "Linking a sheet", "Backstage › Table", "Backstage › Settings and house rules",
@@ -243,7 +251,7 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
     for f, n in uses.items():
         p = was.get(f, 0)
         rows.append({"feature": f, "uses": n, "who": who[f], "trend": None if not p else round((n - p) / p * 100)})
-    used_families = {_family(f) for f in uses}
+    used_families = families_used(here)
     never = sorted({f for _, f in FEATURES} - ADMIN_ONLY - {"Rolls"} - used_families)
     unknown = "Not kept (rolls before Nov 9)"
     pages = Counter(SHOWN.get(e.page, e.page) or unknown for e in here)
@@ -262,7 +270,7 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
         "grid_features": grid_features, "grid": grid, "nights": nights, "total": total,
         "change": None if not total_prev else round((total - total_prev) / total_prev * 100),
         "active": len({e.user_id for e in here} & {p["id"] for p in people}), "table": len(people),
-        "families": len(used_families - ADMIN_ONLY), "all_families": len({f for _, f in FEATURES} - ADMIN_ONLY - {"Rolls"}) + 1,
+        "families": len(used_families), "all_families": len({f for _, f in FEATURES} - ADMIN_ONLY - {"Rolls"}) + 1,
     }
 
 
