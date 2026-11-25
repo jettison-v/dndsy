@@ -210,6 +210,10 @@ class Person:
         # Outside sites a page frames (Campaign › Map's atlas) get a stand-in: the tests never depend on another site,
         # which may answer GitHub's machines differently (aidedd.org refused to be framed there, Nov 13)
         self.context.route("https://www.aidedd.org/**", lambda route: route.fulfill(status=200, content_type="text/html", body="<p>atlas</p>"))
+        # A mockup's Google Fonts (docs/mockups/*: the stylesheet comes before its script, so a slow answer held the picks
+        # script back past the wait on GitHub; #510, #511) get an empty stand-in: the fallback fonts draw it
+        self.context.route("https://fonts.googleapis.com/**", lambda route: route.fulfill(status=200, content_type="text/css", body=""))
+        self.context.route("https://fonts.gstatic.com/**", lambda route: route.fulfill(status=200, body=""))
         # Anything the Content Security Policy blocks (app/main.py CSP) is said on the console, and fails the test at its end
         self.context.add_init_script("document.addEventListener('securitypolicyviolation', e => console.error('CSP blocked: ' + e.violatedDirective + ' ' + (e.blockedURI || 'inline')))")
         self.page = self.context.new_page()
