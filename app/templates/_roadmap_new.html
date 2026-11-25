@@ -1,15 +1,10 @@
 {# + New idea (app/fft/roadmap_page.py `new_window`): a title and the idea in your words; it lands as an Idea and Claude
-   scopes it when it's next (The Roadmap in askdnd, Nov 20). #}
-<div class="peek-head">
-  <div><div class="note">Roadmap</div><h2 id="peek-title">A new idea</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body">
-  <form method="post" action="/manage/roadmap" class="composer" data-reload>
-    <label class="field"><span>Title</span><input type="text" name="title" maxlength="120" required></label>
-    <label class="field"><span>Your idea, in your words</span><textarea name="words" rows="5" maxlength="8000"></textarea></label>
-    <label class="field"><span>Section</span><select name="section" class="ls-select">{% for k, said in (("now", "Now"), ("next", "Next"), ("later", "Later")) %}<option value="{{ k }}"{% if k == "next" %} selected{% endif %}>{{ said }}</option>{% endfor %}</select></label>
-    <p class="note">It lands as an Idea. Claude scopes it when it's next in your order (or now, if you say so in chat), and the scope waits for your OK in For you.</p>
-    <div class="row tight"><button class="btn primary" type="submit" data-do="add-idea">Add the idea</button><button class="btn link peek-close" type="button">Cancel</button></div>
-  </form>
-</div>
+   scopes it when it's next (The Roadmap in askdnd, Nov 20). On the one window and field (Roadmap item 47). #}
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set foot %}<button class="btn primary" type="submit" data-do="add-idea">Add the idea</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Roadmap", "A new idea", foot=foot, form='method="post" action="/manage/roadmap" data-reload') %}
+  {% call field("Title", key="idea-title") %}<input type="text" name="title" maxlength="120" required>{% endcall %}
+  {% call field("Your idea", help="In your own words.", key="idea-words") %}<textarea name="words" rows="5" maxlength="8000"></textarea>{% endcall %}
+  {% call field("Section", help="It lands as an Idea. Claude scopes it when it's next in your order (or now, if you say so in chat), and the scope waits for your OK in For you.", key="idea-section") %}<select name="section" class="ls-select" aria-label="Section">{% for k, said in (("now", "Now"), ("next", "Next"), ("later", "Later")) %}<option value="{{ k }}"{% if k == "next" %} selected{% endif %}>{{ said }}</option>{% endfor %}</select>{% endcall %}
+{% endcall %}

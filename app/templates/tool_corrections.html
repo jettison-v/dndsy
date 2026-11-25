@@ -28,10 +28,9 @@
       <p class="note">Files them in Feedback, to be built into askdnd with a test each; then they move down here on their own. A few words on why help.</p>{% endif %}</div>{% endif %}
     {% call table_box("needs-fix", "Needs a fix in askdnd", open | length, cols=[("Correction", ""), ("Why", ""), ("", "end dt-w2")],
          empty=("askdnd gets everything here right on its own." if overrides else "No corrections yet. Open any row on a Character page and use the Admin box at the bottom of the side panel, or click an underlined rule term to underline it or not.")) %}{% for o in open %}{{ row(o) }}{% endfor %}{% endcall %}
+      {% if built %}
+    {% call table_box("built-in", "Built into askdnd", built | length, "askdnd now chooses the same on its own, so these change nothing; remove them to tidy up", cols=[("Correction", ""), ("Why", ""), ("", "end dt-w2")]) %}{% for o in built %}{{ row(o, built=True) }}{% endfor %}{% endcall %}
+    {% endif %}
   </div>
-
-  {% if built %}
-  {% call table_box("built-in", "Built into askdnd", built | length, "askdnd now chooses the same on its own, so these change nothing; remove them to tidy up", cols=[("Correction", ""), ("Why", ""), ("", "end dt-w2")]) %}{% for o in built %}{{ row(o, built=True) }}{% endfor %}{% endcall %}
-  {% endif %}
 </main>
 {% endblock %}

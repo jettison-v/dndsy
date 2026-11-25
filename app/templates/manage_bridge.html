@@ -2,6 +2,7 @@
 {% block title %}D&amp;D Beyond bridge · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_admin_bits.html" import needs_line %}
+{% from "_form_bits.html" import field %}
 {# Backstage › Global › D&D Beyond bridge (app/ddb_bridge.py): whether it's awake and why, and its timers. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
@@ -64,15 +65,13 @@
 
   <section class="section">
     <h2>Timers</h2>
-    <form method="post" action="/manage/bridge" class="form-narrow" data-reload>
+    {# (the one field each, help under its box, and both actions in one row: Roadmap item 47, issue 126) #}
+    <form method="post" action="/manage/bridge" class="stack" data-reload>
       {% for key, label, about, _, unit, default, lo, hi in timers %}
-      <label class="field">{{ label }}
-        <span class="row tight"><input type="number" name="{{ key }}" value="{{ now[key] }}" min="{{ lo }}" max="{{ hi }}" step="1" required class="br-num"> {{ unit }}</span>
-        <span class="note">{{ about }} askdnd's own: {{ default }} {{ unit }}.</span></label>
+      {% call field(label, help=about ~ " askdnd's own: " ~ default ~ " " ~ unit ~ ".", key="timer-" ~ key) %}<input type="number" name="{{ key }}" value="{{ now[key] }}" min="{{ lo }}" max="{{ hi }}" step="1" required class="br-num" aria-label="{{ label }}"> <span class="note">{{ unit }}</span>{% endcall %}
       {% endfor %}
-      <div class="row"><button class="btn primary" type="submit">Save</button></div>
+      <div class="row"><button class="btn primary" type="submit">Save</button><button class="btn link" type="submit" name="reset" value="1" formnovalidate data-confirm="Put every timer back to askdnd's own?">Back to askdnd's own</button></div>
     </form>
-    <form method="post" action="/manage/bridge" data-reload data-confirm="Put every timer back to askdnd's own?"><input type="hidden" name="reset" value="1"><button class="btn" type="submit">Back to askdnd's own</button></form>
   </section>
 </main>
 {% endblock %}
