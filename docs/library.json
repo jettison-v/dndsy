@@ -2,11 +2,11 @@
  {
   "title": "The reviews we should run",
   "kind": "plan",
-  "status": "Your picks (version 5)",
+  "status": "Waiting on you",
   "state": "waiting",
   "date": "Nov 25",
-  "what": "Version 5: one more pass (six changes: reviews as Workshop templates, findings through the work flow, never on game night, asks rather than guesses, a time limit and skip, results that line up) and launching on demand drawn step by step (Run now confirms; Design review two steps; Feature deep-dive four: feature, what prompted it, check against, start; then its row's states); the six buckets and ten reviews; how reviews start; your picks.",
-  "line": "Six buckets of the work, and the reviews each needs",
+  "what": "Roadmap item 46, version 6: the reviews we should run in six buckets, with new names that say what you get (Dig into a feature, Polish an area, Check every number…), what a finished review hands back drawn, launching on demand, and your picks.",
+  "line": "The reviews we should run, renamed, with what each hands back",
   "source": "docs/mockups/review-catalog/index.html",
   "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
  },
