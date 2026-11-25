@@ -16,11 +16,12 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import web
 from app.db import get_db
 from app.fft import host, lanes, rules, taxonomy, testing_page, views
 from app.fft.host import ToolSetting
@@ -31,7 +32,7 @@ router = APIRouter()
 WORK = "/manage/work"
 REPO = "jettison-v/dndsy"  # (where an Upkeep card's pull request opens)
 # ("queue" is Your order: the Queue, kept with one job, Brett's order of importance, lanes and holds; Nov 24)
-TABS = (("board", "Board"), ("queue", "Your order"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))
+TABS = (("board", "Board"), ("queue", "Your order"), ("handoffs", "Handoffs"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))  # (Handoffs: Roadmap item 45, Brett's pick CQ1)
 # (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
 # `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
@@ -481,6 +482,10 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
         ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
     elif tab == "scheduled":
         ctx["jobs"] = jobs(db)
+    elif tab == "handoffs":  # (what passes between you, Workshop and Claude: Roadmap item 45)
+        from app.fft import handoffs
+
+        ctx["handoffs"], ctx["handoff_views"] = handoffs.rows(db), handoffs.AREAS
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
     if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
@@ -610,3 +615,18 @@ def forward(show: str, open: str) -> RedirectResponse:
     if open:
         to += ("&" if "?" in to else "?") + f"open={open}"
     return RedirectResponse(to, status_code=303)
+
+
+@router.post("/manage/work/handoffs/wake")
+def wake(request: Request, what: str = Form(""), key: str = Form(""), db: Session = Depends(get_db)):
+    """A missed handoff's button (Brett's pick CQ3): Wake Claude, or Bring in now for claude.ai; kept with who pressed it."""
+    from app.fft import handoffs
+
+    user, denied = testing_page._admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    handoffs.wake(db, f"user:{me['id']}", "look" if what == "look" else "claude", key)
+    db.commit()
+    request.session["toast"] = web.notice("Claude is told now: it looks at claude.ai at once" if what == "look" else "Claude is told now")
+    return RedirectResponse("/manage/work?tab=handoffs", status_code=303)

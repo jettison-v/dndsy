@@ -330,7 +330,11 @@ def status(db: Session) -> dict:
     area = db.get(FftArea, r.area_id) if r is not None and r.area_id else None
     after = rules.after_state(db)
     hands = views.hands(db)  # (what's in Claude's hands: the bar's quiet line, Development's amber panel for the late ones)
+    from app.fft import handoffs
+
+    missed = handoffs.missed(db)  # (a handoff past its usual time: Brett's pick CQ4, beside what's in Claude's hands)
     return {"available": av, "listening": views.listening(db), "listener": li, "round": r, "hands": hands, "late": [g for g in hands if g["late"]],
+            "missed": missed,
             "gap_words": views.GAP_WORDS,
             "after": after, "flight": rules.in_flight(db),  # (a round waiting for changes to go live; what pausing would hold)
             "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)

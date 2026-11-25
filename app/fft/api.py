@@ -948,7 +948,11 @@ def docs_check(x_fft_key: str | None = Header(default=None), db: Session = Depen
 
 @router.get("/docs/out")
 def docs_out(doc: str = "", x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    from app.fft import handoffs
+
     keys.require(db, x_fft_key, "read")
+    handoffs.looked(db)  # (a look at claude.ai too)
+    db.commit()
     return _ok(rules.doc_out(db, doc[:300]))
 
 
@@ -965,6 +969,9 @@ def docs_in(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db:
         raise HTTPException(400, "That page isn't in Documents.")
     raw = body.get("comments") if isinstance(body.get("comments"), list) else []
     added = rules.comments_in(db, actor.name, doc, [c for c in raw[:200] if isinstance(c, dict)])
+    from app.fft import handoffs
+
+    handoffs.looked(db)  # (Claude looked at claude.ai: Handoffs' claude.ai row, Roadmap item 45)
     p = body.get("picks") if isinstance(body.get("picks"), dict) else {}
     try:
         picks = rules.picks_in(db, actor.name, doc, p.get("picks") if isinstance(p.get("picks"), list) else [], str(p.get("notes") or ""), p.get("at"))

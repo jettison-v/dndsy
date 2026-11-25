@@ -41,7 +41,7 @@ CAMPAIGN, ASKDND = "campaign", "askdnd"
 # the permission structure is robust and flexible", since what an admin may see may need narrowing): changing who sees
 # a page is one line there, and the Table's access chart, the menus and the pages' own checks all follow it.
 AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
-OUR_WORK, GENERAL, PEOPLE, TUNING = "Our work", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20; Our work, Nov 20: For you, Work and Feedback together, the one way between them)
+OUR_WORK, GENERAL, PEOPLE, TUNING = "Workshop", "General", "People", "Tuning"  # (Global's groups; Brett named General, Nov 20; Workshop, his name for the tool, Nov 25 (Our work, Nov 20): For you, Work and Feedback together, the one way between them)
 PAGES = (
     ("needs", "Needs you", "/manage", "What's waiting, and what you're preparing", CAMPAIGN, AFTER, "moderate", ()),
     ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, "moderate", ()),
