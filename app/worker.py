@@ -38,6 +38,14 @@ def runner() -> str:
     return (os.getenv("JOBS_RUNNER") or "inline").strip().lower()
 
 
+_serving: set[str] = set()  # (the queues this copy's lanes serve)
+
+
+def serving(queue: str) -> bool:
+    """Whether a lane of this copy serves the queue now."""
+    return queue in _serving
+
+
 class Lane:
     """One queue, served one job at a time on its own thread."""
 
@@ -45,6 +53,7 @@ class Lane:
         self.queue, self.factory, self.stop, self.who = queue, session_factory, stop, who
         self.wake = threading.Event()
         self.current: dict | None = None
+        self.last: tuple[str, str] | None = None  # (the last job's kind and how it ended: the loop's gap or rest)
 
     def run_once(self) -> bool:
         """Take and run one job; False when there was none."""
@@ -63,11 +72,13 @@ class Lane:
                 db.commit()
             with self.factory() as db:
                 jobs.finish(db, job["id"], job["attempts"], result)
+            self.last = (job["kind"], "done")
             _announce(job, "done")
         except Exception as e:  # (any failure is the job's, recorded on it; the lane goes on)
-            log.exception("Job %s (%s) failed", job["id"], job["kind"])
+            log.warning("Job %s (%s) failed: %s", job["id"], job["kind"], e, exc_info=not isinstance(e, jobs.Expected))
             with self.factory() as db:
-                state = jobs.fail(db, job["id"], job["attempts"], f"{type(e).__name__}: {e}")
+                state = jobs.fail(db, job["id"], job["attempts"], str(e) if isinstance(e, jobs.Expected) else f"{type(e).__name__}: {e}")
+            self.last = (job["kind"], "failed")
             _announce(job, state or "failed")
         finally:
             beating.set()
@@ -84,14 +95,26 @@ class Lane:
                 log.warning("A heartbeat for job %s didn't save", job["id"], exc_info=True)
 
     def loop(self) -> None:
-        while not self.stop.is_set():
-            try:
-                if self.run_once():
-                    continue
-            except Exception:
-                log.exception("The %s lane couldn't take a job", self.queue)
-            self.wake.wait(POLL_SECONDS)
-            self.wake.clear()
+        _serving.add(self.queue)
+        try:
+            while not self.stop.is_set():
+                try:
+                    if self.run_once():
+                        self.stop.wait(self.pause())
+                        continue
+                except Exception:
+                    log.exception("The %s lane couldn't take a job", self.queue)
+                self.wake.wait(POLL_SECONDS)
+                self.wake.clear()
+        finally:
+            _serving.discard(self.queue)
+
+    def pause(self) -> float:
+        """After a job: its kind's rest when it failed, else its gap (D&D Beyond asked at most once a second)."""
+        kind = jobs.KINDS.get(self.last[0]) if self.last else None
+        if kind is None:
+            return 0
+        return kind.rest if self.last[1] == "failed" else kind.gap
 
 
 def _announce(job: dict, state: str) -> None:
@@ -113,6 +136,7 @@ def housekeep(session_factory) -> None:
 
 def start(session_factory, stop: threading.Event, who: str | None = None) -> list[Lane]:
     """Start a lane per queue the registered kinds use, and the housekeeping, on threads. Returns the lanes."""
+    jobs.load_kinds()
     if not jobs.KINDS:
         return []  # (no kind of job yet: nothing to run)
     who = who or jobs.me()

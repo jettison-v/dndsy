@@ -41,14 +41,30 @@ class Kind:
     timeout: timedelta = timedelta(seconds=60)
     backoff: tuple[int, ...] = (10, 60)  # (seconds before each retry)
     keep_done: timedelta = timedelta(hours=24)
+    gap: float = 0  # (seconds its lane waits after each one: D&D Beyond is asked at most once a second)
+    rest: float = 0  # (seconds its lane rests after one fails: D&D Beyond struggling isn't asked again at once)
 
 
 KINDS: dict[str, Kind] = {}
 
 
+class Expected(Exception):
+    """A failure the job expects at times (D&D Beyond not answering): kept on the job as its own words, no stack trace."""
+
+
 def register(kind: Kind) -> Kind:
     KINDS[kind.name] = kind
     return kind
+
+
+KIND_MODULES = ("app.sheet_reads",)  # (each registers its kinds when imported: the web app and the worker load the same)
+
+
+def load_kinds() -> None:
+    import importlib
+
+    for name in KIND_MODULES:
+        importlib.import_module(name)
 
 
 def me() -> str:
@@ -62,12 +78,13 @@ def version() -> str:
 def enqueue(db: Session, kind: str, payload: dict | None = None, dedup_key: str | None = None, *, priority: int = 0,
             campaign_id: int | None = None, label: str = "", by: str = "", run_at: datetime | None = None) -> tuple[int, bool]:
     """Add a job (in the caller's transaction): (its id, whether it was new). One already waiting or running with the
-    same dedup_key is kept, its priority raised to this one's if higher."""
+    same dedup_key is kept, its priority raised to this one's if higher and its time brought forward if sooner."""
     k = KINDS[kind]
     row = db.execute(text(
         "INSERT INTO jobs (kind, queue, payload, dedup_key, campaign_id, label, requested_by, priority, run_at, max_attempts) "
         "VALUES (:kind, :queue, CAST(:payload AS jsonb), :dedup, :campaign, :label, :by, :priority, COALESCE(:run_at, now()), :max) "
-        "ON CONFLICT (dedup_key) WHERE state IN ('queued', 'running') DO UPDATE SET priority = GREATEST(jobs.priority, EXCLUDED.priority) "
+        "ON CONFLICT (dedup_key) WHERE state IN ('queued', 'running') DO UPDATE SET priority = GREATEST(jobs.priority, EXCLUDED.priority), "
+        "run_at = LEAST(jobs.run_at, EXCLUDED.run_at) "
         "RETURNING id, (xmax = 0) AS created"),
         {"kind": kind, "queue": k.queue, "payload": _json(payload or {}), "dedup": dedup_key, "campaign": campaign_id,
          "label": label[:200], "by": by[:200], "priority": priority, "run_at": run_at, "max": k.max_attempts}).one()

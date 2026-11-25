@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app import characters, ddb
 from app.importer import import_bundle
 from app.models import CharacterSnapshot
-from tests.table_setup import BUNDLE, card_on, char, down, fake_fetch
+from tests.table_setup import BUNDLE, card_on, char, down, fake_fetch, run_reads
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -100,6 +100,9 @@ def test_sheet_shows_quiet_note_when_latest_refresh_failed(player, db):
 
 
 def test_the_sync_reads_the_character_on_screen_first_and_is_throttled(player, db, monkeypatch):
+    """A page's tick asks for the party's sheets on the jobs queue and waits for none of them (each new copy reaches
+    the pages through the live connection); the character on screen goes first, and a second viewer moments later
+    asks for nothing."""
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     calls = []
@@ -110,13 +113,19 @@ def test_the_sync_reads_the_character_on_screen_first_and_is_throttled(player, d
 
     monkeypatch.setattr(characters, "FETCH", counting)
     pill = player.post(f"/live/sync?c={cole.id}").text
-    assert 'id="live-pill"' in pill and "<html" not in pill and calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
+    assert 'id="live-pill"' in pill and "<html" not in pill and calls == []  # (asked, not read: the page doesn't wait)
+    run_reads(db)
+    assert calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
     player.post(f"/live/sync?c={cole.id}")
+    run_reads(db)
     assert len(calls) == 2  # a second viewer moments later doesn't fetch again
     from datetime import timedelta
 
+    db.refresh(cole.snapshot)
     cole.snapshot.attempted_at -= timedelta(minutes=3)
+    db.flush()
     player.post(f"/live/sync?c={cole.id}")
+    run_reads(db)
     assert calls.count(cole.ddb_id) == 2
 
 

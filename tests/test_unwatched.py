@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app import characters, config, ddb_bridge, unwatched
 from app.models import Character, ToolSetting
-from tests.table_setup import char
+from tests.table_setup import char, run_reads
 
 
 def _reads(monkeypatch, sheet):
@@ -31,7 +31,9 @@ def test_an_unwatched_sheet_is_read_and_a_watched_one_is_left_to_its_extension(d
     assert unwatched.tick(db) == []  # every sheet open with the extension: nothing to read
     trah.sheet_heard_at = None  # (Trah's player is on the phone app)
     db.flush()
-    assert unwatched.tick(db) == [trah.id] and seen == [trah.ddb_id]
+    assert unwatched.tick(db) == [trah.id] and seen == []  # (asked, last in line on the jobs queue)
+    run_reads(db)
+    assert seen == [trah.ddb_id]
     assert unwatched.tick(db) == []  # (read a moment ago: not again until MIN_AGE)
     cole.sheet_heard_at = datetime.now(UTC) - timedelta(minutes=5)  # Cole's sheet closed
     _old(db)

@@ -838,12 +838,19 @@ def _back(request: Request, default: str) -> str:
 def refresh_all(request: Request, db: Session = Depends(get_db)):
     if not is_reviewer(current_user(request)):
         return _forbidden(request)
+    from app import live, sheet_reads
+
     campaign = web.campaign(db)
-    ok, failed = chars.refresh_all(db, campaign.id) if campaign else (0, [])
-    db.commit()
-    msg = f"Updated {ok} from D&D Beyond"
-    request.session["toast"] = web.notice(msg + f"; couldn't update {', '.join(failed)}", "warn") if failed else msg
+    linked = [ch for ch in chars.campaign_characters(db, campaign.id) if ch.ddb_id] if campaign else []
+    msg, warn = live.said_all({ch.id: ch.name for ch in linked},
+                              sheet_reads.read_now(db, linked, by=_by(request), seconds=sheet_reads.WAIT_SECONDS * 2))
+    request.session["toast"] = web.notice(msg, "warn") if warn else msg
     return RedirectResponse(_back(request, "/party"), status_code=303)
+
+
+def _by(request: Request) -> str:
+    """Who asked for a read, as the Sync queue says it (a first name at most)."""
+    return ((current_user(request) or {}).get("name") or "")[:60]
 
 
 @router.post("/characters/{character_id:int}/refresh")
@@ -851,9 +858,12 @@ def refresh_one(request: Request, character_id: int, db: Session = Depends(get_d
     ch = db.get(Character, character_id)
     if ch is None or not is_reviewer(current_user(request), ch.campaign_id):  # (its own campaign's: tests/test_refusals.py)
         return _forbidden(request)
-    snap = chars.refresh(db, ch)
-    db.commit()
-    request.session["toast"] = "Updated from D&D Beyond" if snap.status == "ok" else web.notice("Couldn't update; showing the last good copy", "warn")
+    from app import sheet_reads
+
+    how = sheet_reads.read_now(db, [ch], by=_by(request))[ch.id]
+    request.session["toast"] = ("Updated from D&D Beyond" if how == "done" else
+                                "Asked D&D Beyond: it updates when it answers" if how == "waiting" else
+                                web.notice("Couldn't update; showing the last good copy", "warn"))
     return RedirectResponse(_back(request, f"/characters/{ch.id}"), status_code=303)
 
 
@@ -871,9 +881,11 @@ def link(request: Request, character_id: int, ddb_link: str = Form(""), db: Sess
     except ddb.DdbError as e:
         request.session["toast"] = web.notice(str(e), "warn")
         return RedirectResponse(_table(), status_code=303)
-    snap = chars.refresh(db, ch)
-    db.commit()
-    request.session["toast"] = (f"{ch.name}: linked and updated from D&D Beyond" if snap.status == "ok"
+    from app import sheet_reads
+
+    db.commit()  # (the link saved before D&D Beyond is asked)
+    how = sheet_reads.read_now(db, [ch], by=_by(request))[ch.id]
+    request.session["toast"] = (f"{ch.name}: linked and updated from D&D Beyond" if how == "done"
                                 else f"{ch.name}: linked, but couldn't fetch it yet")
     return RedirectResponse(_table(), status_code=303)
 

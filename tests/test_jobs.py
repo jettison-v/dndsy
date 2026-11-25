@@ -152,4 +152,5 @@ def test_nothing_starts_without_a_kind_of_job(monkeypatch):
     from app import worker
 
     monkeypatch.setattr(jobs, "KINDS", {})
+    monkeypatch.setattr(jobs, "load_kinds", lambda: None)
     assert worker.start(lambda: None, threading.Event()) == [] and worker.runner() in ("inline", "worker")

@@ -141,3 +141,16 @@ def address(path: str, op: dict, ids: dict) -> str:
         url = f"/c/main{url}"
     query = [f"{p['name']}=1" for p in op.get("parameters", []) if p["in"] == "query" and p.get("required")]
     return url + ("?" + "&".join(query) if query else "")
+
+
+def run_reads(db) -> None:
+    """Run the D&D Beyond reads waiting on the jobs queue, here and now, as the worker's lane would (app/sheet_reads.py:
+    a page's tick and the unwatched look only ask)."""
+    import contextlib
+    import threading
+
+    from app import jobs, sheet_reads, worker
+
+    lane = worker.Lane(sheet_reads.QUEUE, lambda: contextlib.nullcontext(db), threading.Event(), jobs.me())
+    while lane.run_once():
+        pass
