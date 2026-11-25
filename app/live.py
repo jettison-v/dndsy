@@ -170,7 +170,7 @@ def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
         ch = db.get(Character, i)
         if ch is not None:
             sheet_reads.request_read(db, ch, min_age=AUTO_MIN_AGE, priority=sheet_reads.PAGE + (1 if i in first else 0),
-                                     by=(user.get("name") or "")[:60])
+                                     by=sheet_reads.who(user))
     db.commit()
 
 
@@ -277,7 +277,7 @@ def live_refresh_one(request: Request, character_id: int, db: Session = Depends(
     if snap is not None and snap.attempted_at is not None and datetime.now(UTC) - snap.attempted_at < MANUAL_MIN_AGE:
         msg = f"{name} was updated a moment ago"
     else:
-        msg = said_one(name, sheet_reads.read_now(db, [ch], by=(user.get("name") or "")[:60])[ch.id])
+        msg = said_one(name, sheet_reads.read_now(db, [ch], by=sheet_reads.who(user))[ch.id])
     return panel(request, db, user, character_id, msg, [character_id])
 
 
@@ -308,5 +308,5 @@ def live_refresh_all(request: Request, c: int = 0, db: Session = Depends(get_db)
     campaign = web.campaign(db)
     linked = [ch for ch in chars.campaign_characters(db, campaign.id) if ch.ddb_id] if campaign else []
     names = {ch.id: ch.name for ch in linked}
-    msg, _ = said_all(names, sheet_reads.read_now(db, linked, by=(user.get("name") or "")[:60], seconds=sheet_reads.WAIT_SECONDS * 2))
+    msg, _ = said_all(names, sheet_reads.read_now(db, linked, by=sheet_reads.who(user), seconds=sheet_reads.WAIT_SECONDS * 2))
     return panel(request, db, user, c or None, msg, [r["id"] for r in rows_from(db)])

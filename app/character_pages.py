@@ -850,7 +850,9 @@ def refresh_all(request: Request, db: Session = Depends(get_db)):
 
 def _by(request: Request) -> str:
     """Who asked for a read, as the Sync queue says it (a first name at most)."""
-    return ((current_user(request) or {}).get("name") or "")[:60]
+    from app import sheet_reads
+
+    return sheet_reads.who(current_user(request))
 
 
 @router.post("/characters/{character_id:int}/refresh")

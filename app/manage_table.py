@@ -276,7 +276,7 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
                 from app import sheet_reads
 
                 db.commit()  # (saved before D&D Beyond is asked: the read is a job, app/sheet_reads.py)
-                how = sheet_reads.read_now(db, [ch], by=(user.get("name") or "")[:60])[ch.id]
+                how = sheet_reads.read_now(db, [ch], by=sheet_reads.who(user))[ch.id]
                 note = "" if how == "done" else f" ({(ch.snapshot.error if ch.snapshot else '') or 'not read yet'})"
             except ddb.DdbError as e:
                 note = f" ({e})"

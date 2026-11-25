@@ -51,6 +51,13 @@ jobs.register(jobs.Kind(KIND, QUEUE, _run, max_attempts=3, timeout=timedelta(sec
                         keep_done=timedelta(hours=24), gap=1.0, rest=30.0))
 
 
+def who(user: dict | None) -> str:
+    """Who asked, as the Sync queue says it: a first name only (never an email)."""
+    from app.extraction import first_name
+
+    return first_name((user or {}).get("name") or "")[:60]
+
+
 def label(ch) -> str:
     return f"Read {ch.name}'s sheet"[:200]
 
