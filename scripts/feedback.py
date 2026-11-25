@@ -152,14 +152,28 @@ def _peek(base: str, listener: str) -> dict | None:
         return None
 
 
+CHECKED = ROOT / "logs" / ".claude-ai-checked"  # (when Claude last looked at claude.ai: `sync list` touches it)
+
+
+def _checked_at() -> float:
+    try:
+        return CHECKED.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
 def wait(a) -> None:
     """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
     until, misses = time.monotonic() + a.hours * 3600, 0
-    check = time.monotonic() + a.wake * 60 if a.wake else None  # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks)
+    # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks, every --wake minutes counted from its last look, not from
+    # this wait: issue 132, Nov 25, Brett's notes came every few minutes, each ending a wait, and his claude.ai comment
+    # waited an afternoon)
+    check = time.monotonic() + max(0.0, _checked_at() + a.wake * 60 - time.time()) if a.wake else None
+    due = f"claude.ai is due a look ({a.wake} minutes since the last): feedback.py sync list, then listen again."
     while time.monotonic() < until:
         if check is not None and time.monotonic() >= check:
-            print(f"{a.wake} minutes: time to check claude.ai (feedback.py sync list), then listen again.")
+            print(due)
             return
         got = _peek(a.base, a.listener)
         if got is None:
@@ -170,6 +184,8 @@ def wait(a) -> None:
             print(f"{len(got['items'])} new in askdnd (feedback.py inbox reads and marks them):")
             for e in got["items"][:20]:
                 print(_event(e))
+            if check is not None and time.time() >= _checked_at() + a.wake * 60:
+                print(due)
             return
         else:
             misses = 0
@@ -605,6 +621,8 @@ def sync(a) -> None:
     own store on claude.ai (its "askdnd" collection, doc "comments"; and answers/verdict when askdnd's picks are newer)."""
     if a.do == "list":
         docs = call(a.base, "/docs/check")["docs"]
+        CHECKED.parent.mkdir(exist_ok=True)
+        CHECKED.touch()  # (the listener counts its next look at claude.ai from now)
         for d in docs:
             print(f"{d['doc']}  {d['link']}" + (f"  (question {d['open_question']} open)" if d["open_question"] else ""))
         if not docs:

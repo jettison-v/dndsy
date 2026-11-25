@@ -5584,6 +5584,15 @@ document.addEventListener('click', e => {
     const scrolled = all.filter(el => el.scrollTop || el.scrollLeft).map(el => [el, el.scrollTop, el.scrollLeft]);
     const held = [];
     const hold = (el, props) => { held.push([el, el.getAttribute('style')]); Object.assign(el.style, props); };
+    // (what's below the screen is folded away on the page too, not only left out of the drawing: the drawing copies each
+    // part's measured height, so a table whose rows below were left out kept its whole height and stretched the rows it
+    // had over it, Documents' 198 drawn as a few rows a screen tall; issue 132, Nov 25. The page keeps its height, so
+    // nothing on screen moves)
+    const below = [...gone].filter(el => el.getBoundingClientRect().top > innerHeight && !gone.has(el.parentElement));
+    if (below.length) {
+      hold(document.body, { minHeight: (scrollY + innerHeight) + 'px' });
+      below.forEach(el => hold(el, { display: 'none' }));
+    }
     all.filter(el => !gone.has(el) && getComputedStyle(el).position === 'sticky').map(el => {
       const stuck = el.getBoundingClientRect(), was = el.getAttribute('style');
       Object.assign(el.style, { position: 'relative', top: '0px', left: '0px' });
