@@ -2,27 +2,26 @@
    AU8 on docs/mockups/end-of-day-audit/): what kind of rule, then its own fields (`data-shows-for`, the design system's
    fields for a choice), one Add in the window's foot. A correction to an item is made from the item itself. #}
 {% from "_form_bits.html" import pick_chips %}
-<div class="peek-head">
-  <div><div class="note">House rules</div><h2 id="peek-title">Add a house rule</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<form method="post" action="{{ cbase }}/manage/house-rules" class="peek-form" data-house-rule-add>
-  <div class="peek-body stack house-rule-add">
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set w_kind %}House rules{% endset %}{% set w_title %}Add a house rule{% endset %}
+{% set w_foot %}<button class="btn primary" type="submit">Add</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% set w_form %}method="post" action="{{ cbase }}/manage/house-rules" data-house-rule-add{% endset %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
     {% set kinds = [("note", "A ruling on a spell")] + ([("once", "One roll for all darts")] if once_spells else []) %}
-    <div class="field"><span>What kind</span>{{ pick_chips("field", kinds, "note", "What kind of house rule") }}</div>
+    {% call field("What kind", tag="div") %}{{ pick_chips("field", kinds, "note", "What kind of house rule") }}{% endcall %}
     <div class="stack" data-shows-for="field=note">
-      <label class="field"><span>Spell</span><select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select></label>
-      <label class="field"><span>The ruling</span><input type="text" name="value" placeholder="e.g. The DM decides who is in the area on the Zoom map" maxlength="500" required></label>
+      {% call field("Spell") %}<select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>{% endcall %}
+      {% call field("The ruling") %}<input type="text" name="value" placeholder="e.g. The DM decides who is in the area on the Zoom map" maxlength="500" required>{% endcall %}
       <p class="note">The roll card shows it whenever someone rolls the spell. A spell already ruled on gets its ruling replaced.</p>
     </div>
     {% if once_spells %}
     <div class="stack" data-shows-for="field=once" hidden>
-      <label class="field"><span>Spell</span><select name="spell" aria-label="Spell" disabled>{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select></label>
-      <label class="field"><span>Why (optional)</span><input type="text" name="reason" maxlength="500" disabled></label>
+      {% call field("Spell") %}<select name="spell" aria-label="Spell" disabled>{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>{% endcall %}
+      {% call field("Why", help="Optional.") %}<input type="text" name="reason" maxlength="500" disabled>{% endcall %}
       <p class="note">The rules roll each dart on its own; many tables roll once and every dart deals that damage.</p>
     </div>
     {% endif %}
     <p class="note">A correction to an item: open it from a character's page and use Correct this, with This campaign picked.</p>
-  </div>
-  <div class="peek-foot row"><button class="btn primary" type="submit">Add</button><button class="btn link peek-close" type="button">Cancel</button></div>
-</form>
+  
+{% endcall %}

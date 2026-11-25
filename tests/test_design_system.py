@@ -136,12 +136,9 @@ def test_the_design_system_draws_either_mode_and_finds_a_piece(admin):
 # Windows still to move onto the one window (Roadmap item 47, Brett's pick W1 A, Nov 25): the work left, which may only
 # shrink. A window that moves leaves this list; a new window is built from _window.html from its first day.
 WINDOWS_TO_MOVE = {
-    "_account_add.html",
-    "_account_rename.html",
     "_brief.html",
     "_check_numbers.html",
     "_connections_modal.html",
-    "_design_panel.html",
     "_dice_picker.html",
     "_document_window.html",
     "_email_settings.html",
@@ -152,9 +149,7 @@ WINDOWS_TO_MOVE = {
     "_fft_close.html",
     "_fft_same.html",
     "_fft_split.html",
-    "_house_rule_add.html",
     "_hp_window.html",
-    "_import_window.html",
     "_item_browser.html",
     "_note_panel.html",
     "_panel_detail.html",
@@ -166,10 +161,8 @@ WINDOWS_TO_MOVE = {
     "_roll_checks.html",
     "_round_heads_up.html",
     "_scene_panel.html",
-    "_table_add.html",
     "_token_panel.html",
     "_trophy_view.html",
-    "_usage_window.html",
 }
 
 
@@ -179,3 +172,12 @@ def test_every_window_is_the_one_window():
     hand_made = {p.name for p in TEMPLATES.glob("*.html") if 'class="peek-head"' in p.read_text() and p.name != "_window.html"}
     assert not hand_made - WINDOWS_TO_MOVE, f"A window built by hand: build it from _window.html's window(): {sorted(hand_made - WINDOWS_TO_MOVE)}"
     assert not WINDOWS_TO_MOVE - hand_made, f"Moved onto the one window: take it off WINDOWS_TO_MOVE: {sorted(WINDOWS_TO_MOVE - hand_made)}"
+
+
+def test_a_window_on_the_one_window_opens_and_closes_its_own_boxes():
+    """The review of #530: a window moved onto window() kept a stray </div> and an unclosed foot inside its body (the
+    design system's sample panel), which drew the rest of its page inside the window. Each one's boxes balance."""
+    for p in TEMPLATES.glob("*.html"):
+        text = p.read_text()
+        if 'import window %}' in text and "{% call window(" in text:
+            assert text.count("<div") == text.count("</div>"), f"{p.name}: its <div>s don't close"
