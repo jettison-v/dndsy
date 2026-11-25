@@ -2,10 +2,10 @@
  {
   "title": "The reviews we should run",
   "kind": "plan",
-  "status": "Your picks (version 3)",
+  "status": "Your picks (version 5)",
   "state": "waiting",
   "date": "Nov 25",
-  "what": "Version 3, built the other way round (Brett: our past reviews help build the list, not be it): six buckets of the work (Experience, Correctness, The code, Trust, Running it, How we work), each with its question, what's already checked automatically, and the reviews that should cover the rest, five of them new; how they'd sit on Development › Scheduled, launch on demand and hand back; a cadence pick for each.",
+  "what": "Version 5: one more pass (six changes: reviews as Workshop templates, findings through the work flow, never on game night, asks rather than guesses, a time limit and skip, results that line up) and launching on demand drawn step by step (Run now confirms; Design review two steps; Feature deep-dive four: feature, what prompted it, check against, start; then its row's states); the six buckets and ten reviews; how reviews start; your picks.",
   "line": "Six buckets of the work, and the reviews each needs",
   "source": "docs/mockups/review-catalog/index.html",
   "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
