@@ -34,6 +34,8 @@ from app.fft.models import (
     FftNoteIssue,
     FftPull,
     FftQuestion,
+    FftReview,
+    FftReviewRun,
     FftRound,
     FftScope,
     FftSentDoc,
@@ -1964,8 +1966,8 @@ def pick_next(db: Session) -> Pick:
 
 def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str, choices: list[dict] | None = None,
         mine: int | None = None, doc_path: str = "", doc_version: str = "") -> FftQuestion:
-    if about not in ("issue", "check", "area", "document"):
-        raise RuleError("bad", "About an issue, a check, an area, or a document.")
+    if about not in ("issue", "check", "area", "document", "review"):
+        raise RuleError("bad", "About an issue, a check, an area, a document, or a review's run.")
     if not text.strip():
         raise RuleError("bad", "Ask something.")
     choices = choices or []
@@ -2043,6 +2045,10 @@ def _settled(db: Session, actor: str, q: FftQuestion) -> None:
         c = db.get(FftCheck, q.about_id)
         if c is not None:
             c.asks = False
+    if q.about == "review" and q.about_id:  # (a review that waited on him carries on: Roadmap item 46)
+        run = db.get(FftReviewRun, q.about_id)
+        if run is not None and run.state == "waiting" and run.question_id == q.id:
+            _review_state(db, actor, run, "running", question=q.id)
 
 
 # ------------------------------------------------------------------ listeners (T8)
@@ -2693,3 +2699,169 @@ def chat_file(db: Session, actor: str, c: FftChat, as_: str, thing_id: int | Non
     c.filed_as, c.filed_id, c.filed_at = as_, thing_id if as_ != "chat" else None, now()
     _event(db, actor, "chat_filed", "chat", c.id, filed_as=as_, onto=thing_id)
     return c
+
+
+# ------------------------------------------------------------------ reviews (Roadmap item 46)
+# Brett's picks on docs/mockups/review-catalog/ (version 6): one run at a time; none starts while Deploys is Paused
+# (a run asked meanwhile waits and says so); a run that needs him asks in For you and waits; it ends done (with its one
+# page and the same few numbers), stopped or skipped. app/fft/reviews.py reads; only these change a run.
+
+REVIEW_MOVES = {"asked": ("starting", "stopped", "skipped"), "starting": ("running", "stopped", "skipped", "done"),
+                "running": ("waiting", "done", "stopped"), "waiting": ("running", "done", "stopped")}
+
+
+def _review_state(db: Session, actor: str, run: FftReviewRun, to: str, **data) -> None:
+    if to not in REVIEW_MOVES.get(run.state, ()):
+        raise RuleError("stale", f"This run is {run.state}: it can't be {to} from there.")
+    _event(db, actor, "review_" + to, "review", run.id, **{"from": run.state, "to": to, "review": run.review, **data})
+    run.state = to
+    if to == "starting":
+        run.started_at = now()
+    if to in ("done", "stopped", "skipped"):
+        run.ended_at = now()
+
+
+def _review_inputs(key: str, inputs: dict) -> dict:
+    """What Run… asked, checked against what that review asks (Polish an area: two steps; Dig into a feature: four)."""
+    from app.fft import reviews
+
+    r = reviews.review(key)
+    fills = reviews.fills()
+    inputs = {k: v for k, v in (inputs or {}).items() if v not in (None, "", [])}
+    if r["launch"] == "dig":
+        f = taxonomy.feature(inputs.get("feature", ""))
+        if f is None:
+            raise RuleError("bad", "Which feature? Pick one from its area.")
+        against = inputs.get("against") or ["books", "sheet"]
+        if not isinstance(against, list) or not set(against) <= {a["key"] for a in fills["against"]}:
+            raise RuleError("bad", "Check it against the books, the sheet, the house rules or the map.")
+        device = inputs.get("device", "laptop")
+        if device not in {d["key"] for d in fills["devices"]}:
+            raise RuleError("bad", "On a laptop or a phone.")
+        depth = inputs.get("depth", "deep")
+        if depth not in {d["key"] for d in fills["depths"]}:
+            raise RuleError("bad", "A quick look or all the way.")
+        issues, characters = inputs.get("issues") or [], inputs.get("characters") or []
+        if not (isinstance(issues, list) and all(type(i) is int for i in issues)):
+            raise RuleError("bad", "issues: a list of issue numbers")
+        if not (isinstance(characters, list) and all(isinstance(c, str) for c in characters)):
+            raise RuleError("bad", "characters: a list of names")
+        return {"feature": inputs["feature"], "issues": issues[:20], "words": str(inputs.get("words", ""))[:2000],
+                "against": against, "characters": [c[:60] for c in characters[:8]], "device": device, "depth": depth}
+    if r["launch"] == "polish":
+        area = inputs.get("area", "")
+        if area not in {a.key for a in taxonomy.areas()}:
+            raise RuleError("bad", "Which area? Pick one.")
+        devices = inputs.get("devices") or ["laptop"]
+        if not isinstance(devices, list) or not set(devices) <= {d["key"] for d in fills["devices"]}:
+            raise RuleError("bad", "On a laptop, a phone, or both.")
+        return {"area": area, "focus": str(inputs.get("focus", ""))[:500], "devices": devices}
+    return {}
+
+
+def ask_review(db: Session, actor: str, key: str, inputs: dict | None = None, how: str = "asked") -> FftReviewRun:
+    """Run now, Run…, or its slot came (`how` scheduled): a run is asked, and starts when it's its turn."""
+    from app.fft import reviews
+
+    r = reviews.review(key)
+    if r is None:
+        raise RuleError("bad", f"There's no review “{key}”: app/fft/reviews.json lists them.")
+    if how not in ("asked", "scheduled"):
+        raise RuleError("bad", "A run is asked or scheduled.")
+    if how == "scheduled" and reviews.cadence(db, key) in ("on_demand", "off"):
+        raise RuleError("bad", f"{r['title']} has no schedule.")
+    checked = _review_inputs(key, inputs or {})  # (what's wrong with the asking first, then whether it's its turn)
+    waiting = db.scalar(select(FftReviewRun).where(FftReviewRun.review == key, FftReviewRun.state == "asked"))
+    if waiting is not None:
+        raise RuleError("busy", f"{r['title']} is already waiting its turn (run {waiting.id}).")
+    run = FftReviewRun(review=key, how=how, asked_by=actor, inputs=checked)
+    db.add(run)
+    db.flush()
+    _event(db, actor, "review_asked", "review", run.id, review=key, how=how)
+    return run
+
+
+def start_review(db: Session, actor: str) -> FftReviewRun | None:
+    """The next run, if one may start: none while Deploys is Paused or while another runs; else the oldest asked one
+    becomes Starting. Claude calls it when it picks up reviews (`feedback.py review next`)."""
+    from app.fft import reviews
+
+    if frozen(db) or reviews.live_run(db) is not None:
+        return None
+    run = db.scalar(select(FftReviewRun).where(FftReviewRun.state == "asked").order_by(FftReviewRun.id).limit(1))
+    if run is not None:
+        _review_state(db, actor, run, "starting")
+    return run
+
+
+def review_on(db: Session, actor: str, run: FftReviewRun, on: str) -> None:
+    """Running, and what it's on (its row says so)."""
+    if not on.strip():
+        raise RuleError("bad", "Say what it's on.")
+    if run.state != "running":
+        _review_state(db, actor, run, "running")
+    run.on = on.strip()[:200]
+
+
+def review_waits(db: Session, actor: str, run: FftReviewRun, q: FftQuestion) -> None:
+    """It needs him: its question is in For you, and its row says Waiting on you; it carries on with the rest."""
+    if q.about != "review" or q.about_id != run.id or q.answered_at is not None:
+        raise RuleError("bad", "Ask the question about this run (feedback.py ask … about the review) first.")
+    _review_state(db, actor, run, "waiting", question=q.id)
+    run.question_id = q.id
+
+
+def finish_review(db: Session, actor: str, run: FftReviewRun, result: dict) -> None:
+    """Done: its one page and its numbers (found, fixed, picks, open), the same every run."""
+    if not isinstance(result, dict) or not str(result.get("summary", "")).strip():
+        raise RuleError("bad", "A run ends with its summary.")
+    nums = result.get("numbers") or {}
+    if not isinstance(nums, dict) or any(type(nums.get(k, 0)) is not int or nums.get(k, 0) < 0 for k in ("found", "fixed", "picks", "open")):
+        raise RuleError("bad", "numbers: found, fixed, picks and open, each a count.")
+    findings = result.get("findings") or []
+    if not isinstance(findings, list) or not all(isinstance(f, dict) and str(f.get("what", "")).strip() for f in findings):
+        raise RuleError("bad", "findings: each says what it found.")
+    run.result = {"summary": str(result["summary"]).strip()[:2000], "covered": str(result.get("covered", ""))[:2000],
+                  "missed": str(result.get("missed", ""))[:2000],
+                  "findings": [{k: str(f.get(k, ""))[:400] for k in ("what", "became", "ref")} for f in findings[:50]],
+                  "numbers": {k: nums.get(k, 0) for k in ("found", "fixed", "picks", "open")}}
+    run.on = ""
+    _review_state(db, actor, run, "done", **run.result["numbers"])
+
+
+def stop_review(db: Session, actor: str, run: FftReviewRun, why: str = "") -> None:
+    """Stop (on its row while it waits or runs; or Claude, at its time limit)."""
+    run.why = (why or "Stopped").strip()[:300]
+    _review_state(db, actor, run, "stopped", why=run.why)
+
+
+def skip_review(db: Session, actor: str, run: FftReviewRun, why: str) -> None:
+    """Nothing to look at (Go over the week with no merged change since its last run)."""
+    if not why.strip():
+        raise RuleError("bad", "Say why it's skipped.")
+    run.why = why.strip()[:300]
+    _review_state(db, actor, run, "skipped", why=run.why)
+
+
+def set_review(db: Session, actor: str, key: str, cadence: str | None = None, scheduled: bool | None = None) -> FftReview:
+    """How often a review runs, and whether its schedule is on (turned on once it has run once)."""
+    from app.fft import reviews
+
+    if reviews.review(key) is None:
+        raise RuleError("bad", f"There's no review “{key}”.")
+    row = reviews.setting(db, key)
+    if row is None:
+        row = FftReview(key=key)
+        db.add(row)
+    if cadence is not None:
+        if cadence not in reviews.CADENCES:
+            raise RuleError("bad", "Weekly, monthly, each phase, on demand, or not now.")
+        row.cadence = cadence
+    if scheduled is not None:
+        if scheduled and reviews.cadence(db, key) not in ("weekly", "monthly"):
+            raise RuleError("bad", "Only a weekly or monthly review has a schedule to turn on.")
+        row.scheduled = scheduled
+    db.flush()
+    _event(db, actor, "review_set", "review", row.id, review=key, cadence=row.cadence, scheduled=row.scheduled)
+    return row
+

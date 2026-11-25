@@ -532,3 +532,39 @@ class FftChat(_Stamped, Base):
     filed_as: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", item, issue, chat
     filed_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     filed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FftReview(_Stamped, Base):
+    """One of Workshop's reviews (app/fft/reviews.json) as this workspace runs it: how often (Brett's pick, which he can
+    change) and whether its schedule is on (turned on once it has run once; Roadmap item 46, the pass's "not now").
+    A row is made the first time a review is run or set. Changed only in rules.py."""
+
+    __tablename__ = "fft_reviews"
+    __table_args__ = (UniqueConstraint("workspace_id", "key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(40))
+    cadence: Mapped[str] = mapped_column(String(12), default="", server_default="")  # "" = the catalog's; weekly, monthly, phase, on_demand, off
+    scheduled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+
+
+class FftReviewRun(_Stamped, Base):
+    """A review run: asked (waits its turn, or for Deploys to be on again), starting, running (`on`: what it's on),
+    waiting (on Brett: `question_id` in For you), then done (its one-page `result`), stopped or skipped (`why`). One
+    runs at a time and none starts while Deploys is Paused (Roadmap item 46, the pass's six changes). `inputs` are what
+    Run… asked (Dig into a feature: feature, issues, words, against, characters, device, depth; Polish an area: area,
+    focus, devices); `result`: {"summary", "covered", "missed", "findings": [{"what", "became", "ref"}], "numbers":
+    {"found", "fixed", "picks", "open"}}. Changed only in rules.py."""
+
+    __tablename__ = "fft_review_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    review: Mapped[str] = mapped_column(String(40), index=True)
+    how: Mapped[str] = mapped_column(String(10), default="asked", server_default="asked")  # asked (Run now, Run…), scheduled
+    asked_by: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the event's actor
+    state: Mapped[str] = mapped_column(String(10), default="asked", server_default="asked", index=True)
+    inputs: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    on: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    question_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    result: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    why: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

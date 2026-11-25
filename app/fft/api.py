@@ -1018,3 +1018,143 @@ def chat_file(chat_id: int, body=web.JsonBody, x_fft_key: str | None = Header(de
         _rule(e)
     db.commit()
     return _ok({"id": c.id, "filed_as": c.filed_as, "filed_id": c.filed_id})
+
+
+# ------------------------------------------------------------------ reviews (Roadmap item 46)
+
+
+def _run_view(run) -> dict:
+    from app.fft import reviews
+
+    r = reviews.review(run.review) or {}
+    return {"id": run.id, "review": run.review, "title": r.get("title", run.review), "how": run.how, "state": run.state,
+            "inputs": run.inputs, "on": run.on, "question_id": run.question_id, "result": run.result, "why": run.why,
+            "asked_by": run.asked_by, "asked_at": run.created_at.isoformat() if run.created_at else None,
+            "started_at": run.started_at.isoformat() if run.started_at else None,
+            "ended_at": run.ended_at.isoformat() if run.ended_at else None, "limit": r.get("limit", 60),
+            "does": r.get("does", ""), "launch": r.get("launch", "now")}
+
+
+@router.get("/reviews")
+def reviews_list(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The catalog as this workspace runs it: each review's cadence, schedule, next slot and latest run."""
+    from app.fft import reviews
+
+    keys.require(db, x_fft_key, "read")
+    out = []
+    for r in reviews.catalog()["reviews"]:
+        row, how = reviews.setting(db, r["key"]), reviews.cadence(db, r["key"])
+        last = reviews.runs(db, r["key"], 1)
+        nxt = reviews.slot_after(how, rules.now())
+        out.append({"key": r["key"], "title": r["title"], "bucket": r["bucket"], "cadence": how,
+                    "scheduled": bool(row and row.scheduled), "next": nxt.isoformat() if nxt and row and row.scheduled else None,
+                    "last": _run_view(last[0]) if last else None})
+    live = reviews.live_run(db)
+    return _ok({"reviews": out, "live": _run_view(live) if live else None, "paused": rules.frozen(db)})
+
+
+@router.post("/reviews/due")
+def reviews_due(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The hourly task: each scheduled review whose latest slot (within 7 days) has no run since is asked, once."""
+    from app.fft import reviews
+
+    actor = keys.require(db, x_fft_key, "write")
+    asked = []
+    for key in reviews.due(db, rules.now()):
+        try:
+            asked.append(rules.ask_review(db, actor.name, key, how="scheduled").id)
+        except rules.RuleError:
+            continue  # (already waiting its turn)
+    db.commit()
+    return _ok({"asked": asked})
+
+
+@router.post("/reviews/next")
+def reviews_next(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude picks up the next run: it becomes Starting, or nothing (another runs, Deploys is Paused, none asked)."""
+    from app.fft import reviews
+
+    actor = keys.require(db, x_fft_key, "write")
+    run = rules.start_review(db, actor.name)
+    db.commit()
+    if run is None:
+        why = "Deploys is Paused" if rules.frozen(db) else ("another review is running" if reviews.live_run(db) else "none asked")
+        return _ok({"run": None, "why": why})
+    return _ok({"run": _run_view(run)})
+
+
+@router.post("/reviews/{key}/ask")
+def review_ask(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A run asked by Claude ({"inputs": {…}}): as Run now or Run… would."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    inputs = body.get("inputs") or {}
+    if not isinstance(inputs, dict):
+        raise HTTPException(400, "inputs: what Run… asks")
+    try:
+        run = rules.ask_review(db, actor.name, key, inputs)
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"run": _run_view(run)})
+
+
+@router.post("/reviews/{key}/set")
+def review_set(key: str, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """How often it runs ({"cadence"}) and whether its schedule is on ({"scheduled": true|false})."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    sched = body.get("scheduled")
+    if sched is not None and not isinstance(sched, bool):
+        raise HTTPException(400, "scheduled: true or false")
+    try:
+        rules.set_review(db, actor.name, key, _str(body, "cadence", 12) or None, sched)
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"ok": True})
+
+
+@router.get("/reviews/runs/{run_id}")
+def review_run(run_id: int, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    from app.fft.models import FftReviewRun
+
+    keys.require(db, x_fft_key, "read")
+    run = db.get(FftReviewRun, run_id)
+    if run is None:
+        raise HTTPException(404, "No such run.")
+    return _ok({"run": _run_view(run)})
+
+
+@router.post("/reviews/runs/{run_id}")
+def review_move(run_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A run moves on: {"do": "on", "words": what it's on} · {"do": "wait", "question": id} · {"do": "done", "result":
+    {…}} · {"do": "stop", "words": why} · {"do": "skip", "words": why}."""
+    from app.fft.models import FftReviewRun
+
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    run = db.get(FftReviewRun, run_id)
+    if run is None:
+        raise HTTPException(404, "No such run.")
+    do = _str(body, "do", 10, need=True)
+    try:
+        if do == "on":
+            rules.review_on(db, actor.name, run, _str(body, "words", 200, need=True))
+        elif do == "wait":
+            q = db.get(FftQuestion, _int(body.get("question"), "question"))
+            if q is None:
+                raise HTTPException(404, "No such question.")
+            rules.review_waits(db, actor.name, run, q)
+        elif do == "done":
+            rules.finish_review(db, actor.name, run, body.get("result") or {})
+        elif do == "stop":
+            rules.stop_review(db, actor.name, run, _str(body, "words", 300))
+        elif do == "skip":
+            rules.skip_review(db, actor.name, run, _str(body, "words", 300, need=True))
+        else:
+            raise HTTPException(400, "do: on, wait, done, stop or skip")
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok({"run": _run_view(run)})

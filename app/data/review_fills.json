@@ -1,0 +1,18 @@
+{
+  "_about": "What askdnd fills into Workshop's reviews (app/fft/reviews.json; Roadmap item 46, the pass's first change: a review is Workshop's, each product fills in its own). against: what Dig into a feature can check a feature against; devices: where a run looks; depths: how far it goes, with about how long. The characters come from the campaign's own (app/fft/host.py `review_characters`).",
+  "against": [
+    {"key": "books", "label": "The 2024 books"},
+    {"key": "sheet", "label": "D&D Beyond's sheet"},
+    {"key": "house", "label": "The DM's house rules"},
+    {"key": "map", "label": "How it's meant to work (its section of the map)"}
+  ],
+  "devices": [
+    {"key": "laptop", "label": "A laptop"},
+    {"key": "phone", "label": "A phone"}
+  ],
+  "depths": [
+    {"key": "quick", "label": "A quick look", "minutes": 20},
+    {"key": "deep", "label": "All the way", "minutes": 60}
+  ],
+  "test_sheets": "The test sheets"
+}

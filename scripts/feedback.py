@@ -477,6 +477,71 @@ def job(a) -> None:
     print(call(a.base, f"/jobs/{a.key}", {"result": a.result, "words": " ".join(a.words)}))
 
 
+def review(a) -> None:
+    """Workshop's reviews (Roadmap item 46; app/fft/reviews.json). `review list`: each one's cadence, schedule and last run.
+    `review next`: pick up the next asked run (it becomes Starting; none while another runs or Deploys is Paused).
+    `review due`: the hourly task asks each scheduled review whose slot came. `review ask <key> [--input k=v …]`.
+    `review <run> on "what it's on"` · `wait <question>` · `done --file result.json` · `stop ["why"]` · `skip "why"`.
+    `review set <key> --cadence monthly --schedule on|off`. `review <run>`: one run as askdnd has it."""
+    w = a.words
+    if not w or w[0] == "list":
+        got = call(a.base, "/reviews")
+        print(("Deploys is Paused: no review starts until you choose another.\n" if got["paused"] else "")
+              + (f"Running: {got['live']['title']} (run {got['live']['id']}, {got['live']['state']})\n" if got["live"] else ""), end="")
+        for r in got["reviews"]:
+            last = r["last"]
+            print(f"  {r['key']:<14} {r['title']:<26} {r['cadence']:<10} {'on ' + r['next'][:16] if r['next'] else ('scheduled' if r['scheduled'] else '-'):<20}"
+                  + (f" last: run {last['id']} {last['state']}" if last else ""))
+        return
+    if w[0] == "next":
+        got = call(a.base, "/reviews/next", {})
+        run = got["run"]
+        if run is None:
+            print(f"Nothing to start: {got['why']}.")
+            return
+        print(f"Run {run['id']}: {run['title']} is Starting ({run['how']}, limit {run['limit']} minutes).")
+        print(f"  What it does: {run['does']}")
+        if run["inputs"]:
+            print(f"  Asked: {json.dumps(run['inputs'])}")
+        print(f"  Then: review {run['id']} on \"…\" as it goes; done --file result.json at the end.")
+        return
+    if w[0] == "due":
+        got = call(a.base, "/reviews/due", {})
+        print(f"Asked: runs {', '.join(map(str, got['asked']))}." if got["asked"] else "Nothing due.")
+        return
+    if w[0] == "ask":
+        inputs = {}
+        for kv in a.input:
+            k, _, v = kv.partition("=")
+            inputs[k] = [int(x) if x.isdigit() else x for x in v.split(",")] if k in ("issues", "against", "characters", "devices") else v
+        got = call(a.base, f"/reviews/{w[1]}/ask", {"inputs": inputs})
+        print(f"Asked: run {got['run']['id']} ({got['run']['title']}).")
+        return
+    if w[0] == "set":
+        body = {}
+        if a.cadence:
+            body["cadence"] = a.cadence
+        if a.schedule:
+            body["scheduled"] = a.schedule == "on"
+        call(a.base, f"/reviews/{w[1]}/set", body)
+        print(f"{w[1]}: set.")
+        return
+    run_id = int(w[0])
+    if len(w) == 1:
+        print(json.dumps(call(a.base, f"/reviews/runs/{run_id}")["run"], indent=1))
+        return
+    do, rest = w[1], " ".join(w[2:])
+    body = {"do": do}
+    if do == "wait":
+        body["question"] = int(rest)
+    elif do == "done":
+        body["result"] = json.loads(Path(a.file).read_text())
+    else:
+        body["words"] = rest
+    run = call(a.base, f"/reviews/runs/{run_id}", body)["run"]
+    print(f"Run {run['id']}: {run['state']}" + (f", on {run['on']}" if run["on"] else ""))
+
+
 def freeze(a) -> None:
     """Whether Brett paused deploys (Deploys: Paused, in the bar on For you and Work)."""
     req = urllib.request.Request(a.base.rstrip("/") + "/api/fft/freeze", headers={"User-Agent": "askdnd-feedback-script"})
@@ -857,12 +922,18 @@ def main() -> None:
     s.add_argument("--tried", action="store_true", help="new: Claude tried it itself and it passed (preflight pass, R18)")
     s.add_argument("--pr", default="", help="new: the pull request its change is in: it reaches Brett once a deploy carrying it is live")
     s = sub.add_parser("ask")
-    s.add_argument("about", choices=["issue", "check", "area", "document"])
+    s.add_argument("about", choices=["issue", "check", "area", "document", "review"])
     s.add_argument("about_id", help="its id (a document: its path)")
     s.add_argument("text")
     s.add_argument("--choice", action="append", default=[])
     s.add_argument("--mine", type=int, help="your pick: the choice's number, counting from 1")
     s.add_argument("--doc", help="the mockup it asks about (its docs/ path, listed in docs/library.json): For you opens it")
+    s = sub.add_parser("review", help="Workshop's reviews: list, next, due, ask <key>, set <key>, <run> on|wait|done|stop|skip")
+    s.add_argument("words", nargs="*")
+    s.add_argument("--input", action="append", default=[], help="ask: what Run… asks, k=v (lists comma-separated)")
+    s.add_argument("--file", help="done: the result's JSON file")
+    s.add_argument("--cadence", choices=["weekly", "monthly", "phase", "on_demand", "off"])
+    s.add_argument("--schedule", choices=["on", "off"])
     s = sub.add_parser("question", help="withdraw a question of yours that a later pick replaced")
     s.add_argument("id", type=int)
     s.add_argument("do", choices=["withdraw"])
@@ -956,7 +1027,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync, "chat": chat}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync, "chat": chat, "review": review}[a.cmd](a)
 
 
 if __name__ == "__main__":
