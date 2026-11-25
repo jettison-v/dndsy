@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app import config
 from app.fft import rules
-from app.models import ToolSetting
+from app.fft.host import ToolSetting
 
 log = logging.getLogger(__name__)
 KEY = "fft_sentry_in"  # (a ToolSetting: {"ran_at", "seen": [Sentry issue ids already filed]})

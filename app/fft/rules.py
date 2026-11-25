@@ -485,7 +485,7 @@ def incident(db: Session, actor: str, area: FftArea, why: str = "") -> None:
 
 def freeze_state(db: Session) -> dict:
     """The game-night freeze: {"on": bool, "by": who, "since": iso}."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, FREEZE)
     try:
@@ -518,7 +518,7 @@ def freeze_lets(db: Session, merged: str) -> bool:
 def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch (Nov 19): on before a game, off after. While it's on, nothing merges and GitHub's tests stop a
     deploy (the Server tests' first step asks /api/fft/freeze); a fix for something broken at the table may go."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     if frozen(db) == on:
         return
@@ -532,7 +532,7 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -
 
 def _set_freeze_why(db: Session, actor: str, why: str) -> None:
     """A new reason for a pause already on (Brett's pick, Nov 19): the bar says it; when it began stays."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, FREEZE)
     data = json.loads(row.value)
@@ -550,7 +550,7 @@ QUIET_MINUTES = 30  # (his pick of three signals: quiet in askdnd, a try unanswe
 
 def available_state(db: Session) -> dict:
     """{"on", "by", "since", "until", "off_at", "why"}: whether Brett is around to try Look work on his Mac."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AVAILABLE)
     try:
@@ -564,7 +564,7 @@ def available_state(db: Session) -> dict:
 def set_available(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch. On: Look work waits for his try on his Mac (a local try in For you) until it's off. Off, by
     hand or by itself (`why`): every local try still waiting is left, and merges as Look work does."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     st = available_state(db)
     if st["on"] == on:
@@ -616,9 +616,9 @@ def check_available(db: Session, last_seen: datetime | None = None) -> dict:
     since = datetime.fromisoformat(st["since"])
     acted = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.actor == st["actor"])) if st["actor"] else None  # (his own presses)
     if last_seen is None and st["actor"].startswith("user:") and st["actor"][5:].isdigit():  # (his pages: the gear's count marks them)
-        from app.models import User
+        from app.fft import host
 
-        u = db.get(User, int(st["actor"][5:]))
+        u = host.account_by_id(db, int(st["actor"][5:]))
         last_seen = u.last_seen_at if u is not None else None
     seen = max([x for x in (last_seen, acted, since) if x is not None])
     waiting = db.scalar(select(func.min(FftLocalTry.created_at)).where(FftLocalTry.answer == ""))
@@ -1162,18 +1162,13 @@ def test_campaign_of(db: Session, path: str) -> str:
     """The test campaign a check's page is in (its name), or "": `/c/<slug>/…`, or a character in one."""
     import re
 
-    from app.models import Campaign, CampaignCharacter
+    from app.fft import host
 
     m = re.match(r"^/c/([^/?#]+)", path or "")
     if m:
-        camp = db.scalar(select(Campaign).where(Campaign.slug == m.group(1)))
-        return camp.name if camp is not None and camp.is_test else ""
+        return host.test_campaign_name(db, slug=m.group(1))
     m = re.match(r"^/characters/(\d+)", path or "")
-    if m:
-        camp = db.scalar(select(Campaign).join(CampaignCharacter, CampaignCharacter.campaign_id == Campaign.id)
-                         .where(CampaignCharacter.character_id == int(m.group(1)), CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
-        return camp.name if camp is not None else ""
-    return ""
+    return host.test_campaign_name(db, character_id=int(m.group(1))) if m else ""
 
 
 def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect: str, path: str = "", why: str = "",
@@ -1801,7 +1796,7 @@ def in_flight(db: Session, area_ids: set[int] | None = None, whole: bool = False
 
 def after_state(db: Session) -> dict:
     """Whether Brett's round waits for changes to go live first, and which ({"on", "user_id", "area_id", "prs", "since"})."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AFTER)
     try:
@@ -1813,7 +1808,7 @@ def after_state(db: Session) -> dict:
 
 def wait_for_live(db: Session, actor: str, user_id: int | None, area_id: int | None) -> list[dict]:
     """Let it go live first: Brett's round opens by itself once the changes it would hold are live (`fix_live`)."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     flight = in_flight(db, round_areas(db, area_id), whole=not area_id)
     if not flight:
@@ -1826,7 +1821,7 @@ def wait_for_live(db: Session, actor: str, user_id: int | None, area_id: int | N
 
 
 def cancel_wait(db: Session, actor: str) -> None:
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AFTER)
     if row is not None and row.value:
@@ -1836,7 +1831,7 @@ def cancel_wait(db: Session, actor: str) -> None:
 
 def _after_live(db: Session, actor: str) -> FftRound | None:
     """A change Brett's round waited for is live: once none of them is still on its way, his round opens (it holds)."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     st = after_state(db)
     if not st["on"]:
@@ -1963,7 +1958,7 @@ def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str,
     if about == "document" and not doc_path:
         raise RuleError("bad", "A decision names its document.")
     if doc_path:  # (whatever it's about, the mockup it asks on: one Backstage › Documents lists, so For you can open it)
-        from app.documents import doc_id, find
+        from app.fft.host import doc_id, find
 
         sent = db.scalar(select(FftSentDoc.id).where(FftSentDoc.source == doc_path))  # (sent this moment: before the list's cache sees it)
         if find(doc_id(doc_path)) is None and sent is None:
@@ -2406,7 +2401,7 @@ def send_page(db: Session, actor: str, entry: dict, files: dict[str, bytes]) -> 
     """A page Claude sends before its repo copy lands (Brett, Nov 24: "pushing transactional, data-only items without a
     PR and a merge"): its Documents entry and its files, kept until the repo's copy is newer. Only ever opened in
     Documents' sealed frame (app/documents.py), never run by askdnd; sending again replaces what was sent."""
-    from app import documents
+    from app.fft.host import documents
 
     source = str(entry.get("source") or "")
     rel = source.removeprefix("docs/")
@@ -2457,7 +2452,7 @@ def prune_landed_pages(db: Session, actor: str = "askdnd") -> list[str]:
     """After a deploy: a sent file the repo now has the same is removed, and a sent entry the repo lists the same, with
     none of its files still waiting, too, so the repo's copy (and any later change to it) is the one shown. Returns the
     sources that landed. Run in a deploy's first minute (app/main.py `release_now`)."""
-    from app import documents
+    from app.fft.host import documents
 
     left = []
     for f in db.scalars(select(FftSentFile)):
@@ -2607,7 +2602,7 @@ def doc_out(db: Session, doc: str) -> dict:
 def docs_to_check(db: Session, days: int = 7) -> list[dict]:
     """The mockups Claude checks on claude.ai when it checks in: those with a claude.ai link and an open question, or
     asked about, answered or sent in the last `days` days (so a late change on either side still merges)."""
-    from app import documents
+    from app.fft.host import documents
 
     since = now() - timedelta(days=days)
     recent = set(db.scalars(select(FftQuestion.doc_path).where(FftQuestion.doc_path != "",

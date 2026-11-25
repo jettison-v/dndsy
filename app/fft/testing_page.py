@@ -22,10 +22,10 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, campaign_paths, config, view_as, web
-from app.auth import is_admin
+from app import config, web
 from app.db import get_db
-from app.fft import rules, sending, steps, views
+from app.fft import host, rules, sending, steps, views
+from app.fft.host import is_admin
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -571,24 +571,21 @@ def _home(request: Request, db: Session, r: dict | None) -> None:
     """Back in the campaign the round started in (a check that makes something runs in a test campaign)."""
     was = (r or {}).get("home")
     email = ((request.session.get("user") or {}).get("email") or "").lower()
-    here = access.current_campaign(email)
+    here = host.current_campaign(email)
     if was and email and (here is None or here["id"] != was):
-        campaign_paths.remember_in(db, email, was)
+        host.remember_campaign(db, email, was)
 
 
 def enter(request: Request, db: Session, c: FftCheck, path: str) -> str:
     """A check's page, through its character's eyes when it names one (View as for its player, View as's own rule:
     never yourself, never a player you're the DM of; refused, it opens as you, with why)."""
-    from app.models import Character, User
-
     target = None
     if c.as_character:
-        ch = db.get(Character, c.as_character)
-        owner = db.get(User, ch.owner_id) if ch is not None and ch.owner_id else None
+        owner = host.character_player(db, c.as_character)
         real = ((request.session.get("user") or {}).get("email") or "").lower()
         if owner is None:
             request.session["toast"] = web.notice("Its character has no player in askdnd, so it opens as you.", "warn")
-        elif why := view_as.refusal(real, owner.email):
+        elif why := host.view_refusal(real, owner.email):
             request.session["toast"] = web.notice(f"{why} It opens as you.", "warn")
         else:
             target = {"email": owner.email.lower(), "name": (owner.name if owner.name and owner.name != owner.email else None) or owner.email}
@@ -630,7 +627,7 @@ def round_start(request: Request, area: int = Form(0), need: str = Form(""), db:
         r = rules.open_round(db, f"user:{me['id']}", me["id"], area or None)
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
-    here = access.current_campaign(me["email"])
+    here = host.current_campaign(me["email"])
     request.session[ROUND] = {"id": r.id, "checks": ids, "i": 0, "device": device, "need": need, "home": here["id"] if here else None}
     to = _next_page(db, request)
     db.commit()
@@ -688,7 +685,7 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
         r = rules.open_round(db, f"user:{me['id']}", me["id"], c.area_id, holds=False)
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
-    here = access.current_campaign(me["email"])
+    here = host.current_campaign(me["email"])
     device = device_of(request)
     mine = check_view(db, c, device)["mine"]  # (a check for another device counts for it: issue 104, Nov 23)
     device = device if device in mine or not mine else mine[0]

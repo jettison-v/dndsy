@@ -22,9 +22,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.fft import lanes, rules, taxonomy, testing_page, views
+from app.fft import host, lanes, rules, taxonomy, testing_page, views
+from app.fft.host import ToolSetting
 from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftPull, FftQuestion
-from app.models import JobRun, ToolSetting
 from app.templating import templates
 
 router = APIRouter()
@@ -388,9 +388,9 @@ def jobs(db: Session) -> list[dict]:
         except ValueError:
             last = {}
         if not last and j.get("reads") == "job_runs":  # (the backup reports to its own table: Manage's Overview reads it too)
-            run = db.scalar(select(JobRun).where(JobRun.name == j["key"]).order_by(JobRun.id.desc()))
-            if run is not None:
-                last = {"at": run.finished_at.isoformat(), "result": "ok" if run.status == "ok" else "failed", "words": run.detail[:200] if run.status != "ok" else ""}
+            runs = host.backup_runs(db, j["key"])
+            if runs:
+                last = runs[0] | {"at": runs[0]["at"].isoformat()}
         at = datetime.fromisoformat(last["at"]) if last.get("at") else None
         late = at is not None and j.get("reads") != "elsewhere" and (rules.now() - at).total_seconds() > j["every_hours"] * 3600 * 1.5
         out.append({**j, "at": at, "result": last.get("result", ""), "words": last.get("words", ""), "late": late})
@@ -400,8 +400,7 @@ def jobs(db: Session) -> list[dict]:
 def job_runs(db: Session, j: dict, limit: int = 10) -> list[dict]:
     """A job's latest runs, newest first: {at, result, words} (its reports here, or its own table's)."""
     if j.get("reads") == "job_runs":
-        return [{"at": r.finished_at, "result": "ok" if r.status == "ok" else "failed", "words": r.detail[:200] if r.status != "ok" else ""}
-                for r in db.scalars(select(JobRun).where(JobRun.name == j["key"]).order_by(JobRun.id.desc()).limit(limit))]
+        return host.backup_runs(db, j["key"], limit)
     events = db.scalars(select(FftEvent).where(FftEvent.kind == "job_ran", FftEvent.data["job"].astext == j["key"])
                         .order_by(FftEvent.id.desc()).limit(limit))
     return [{"at": e.at, "result": e.data.get("result", ""), "words": e.data.get("words", "")} for e in events]

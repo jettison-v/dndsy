@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 from app import config
 from app import mail as mail_out
 from app.fft import rules, views
+from app.fft.host import ToolSetting
 from app.fft.models import FftEvent, FftListener
-from app.models import ToolSetting
 
 log = logging.getLogger(__name__)
 WAIT = timedelta(minutes=30)  # (his pick: "Email me once after 30 minutes")
