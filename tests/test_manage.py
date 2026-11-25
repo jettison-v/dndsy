@@ -43,7 +43,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "Global" in half(page, "askdnd")
     assert half_items(page, "askdnd") == ["for-you", "feedback", "roadmap", "work", "overview", "product-areas", "documents", "usage", "backups", "features", "books", "accounts", "campaigns",
                                     "askdnd-history", "corrections", "dice", "design"]
-    assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Our work", "General", "People", "Tuning"]
+    assert [g.split("<")[0] for g in half(page, "askdnd").split('class="menu-group">')[1:]] == ["Workshop", "General", "People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' camp"') and "The Lost Mine" in band and "manage-cross" not in band  # (the way across is Backstage in the bar: issue 23)
@@ -207,7 +207,7 @@ def test_round_one_overview_backups_usage_and_rule_books(monkeypatch, db):
     db.flush()
     ov = admin.get("/manage/askdnd").text
     heads = [h.split("</h2>")[0] for h in ov.split('class="ov-section-h"')[1:]]
-    assert [h.split(">", 1)[1] for h in heads] == ["Our work", "General", "People", "Tuning"]
+    assert [h.split(">", 1)[1] for h in heads] == ["Workshop", "General", "People", "Tuning"]
     assert 'data-card="backups" data-tone="bad"' in ov and "No backup for 3 nights" in ov
     assert 'data-card="usage" data-tone="warn"' in ov and "No monthly limit set" in ov
     for key in ("feedback", "roadmap", "work", "books", "features", "askdnd-history", "dice"):  # (every card a state: OV2 B)

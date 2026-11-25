@@ -88,6 +88,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **The tour and Help › What askdnd adds**: app/tour.py
 - **D&D Beyond bridge**: app/ddb_bridge.py, scripts/build_extension.py, _char.html
 - **Found, Fixed, Tried** (For you, Feedback, Development, Notes you sent, Claude's side): app/fft/ (rules.py, the only place states change; api.py; sending.py; feedback_page.py; testing_page.py (For you, checks and rounds); work_page.py (Development, `/manage/work`: its first tab the Board, `_board.html`; Your order, `?tab=queue`, Brett's order, lanes and holds; and a plan's page); item_page.py (the one item window); views.py; carry.py; taxonomy.py, with app/data/taxonomy.json: the Product Taxonomy); host.py, the one door to askdnd itself (tests/test_fft_boundary.py), fft_feedback.html, fft_testing.html, fft_work.html, fft_plan.html, _fft_item.html, _fft_card.html, _feedback_window.html, app/your_notes.py, scripts/feedback.py, docs/testing-guide.md (how every check is written)
+- **Handoffs**: app/fft/handoffs.py, fft_work.html (Development's Handoffs tab)
 - **The Inbox digest**: app/digest.py, digest.html, _email_settings.html
 - **Which features get used**: app/usage.py, admin_features.html
 - **Trophy Case**: app/trophies.py, _trophies.html, _trophy_view.html
