@@ -311,6 +311,9 @@ def _static(name: str) -> str:
 
 
 templates.env.globals["static"] = _static
+from app.states import state_tag  # (one colour key for every state: Brett's pick AU2, Nov 25)
+
+templates.env.globals["state_tag"] = state_tag
 
 
 _DICE = None

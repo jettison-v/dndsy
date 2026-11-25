@@ -2,6 +2,7 @@
 {% block title %}Backups · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_lists.html" import count_pill, empty_state %}
+{% from "_admin_bits.html" import needs_line %}
 {# Backstage › General › Backups (app/admin.py). Brett's picks on docs/mockups/backstage-round-1/ (Nov 25): one panel on
    top saying what happened, green when last night worked and red with the missed nights and what to check when not (BK1);
    the runs as a table marking only failures, the newest week then Show older (BK2); Import from the title row (S4); rule
@@ -12,15 +13,16 @@
   <p class="subtitle">askdnd's nightly backups, then importing campaign data. Only admins can see this page.</p>
   {% if backup is defined %}
   <section class="section" id="backups">
+    {# How the backups stand, once on top: red with what to do when one's missing or failed, green when last night worked
+       (Brett's picks BK1 and AU3, Nov 25: the shared needs-you line, not a panel of its own) #}
     {% if backup.attention %}
-    <div class="flash bad backup-panel" data-backup="attention">
-      {% if backup.last and backup.last.status != "ok" %}<b>Last night's backup failed</b><span>{{ backup.last.detail or "It didn't say why." }}</span>
-      {% elif backup.last %}<b>{{ backup.text }}</b><span>The last one that worked was {{ backup.good.finished_at | clock(date=True) if backup.good else "never" }}: the nightly job on Railway (askdnd-backup) hasn't run, or hasn't finished, since.</span>
-      {% else %}<b>{{ backup.text }}</b><span>The first one runs tonight at 2:00 AM Pacific.</span>{% endif %}
-      {% if backup.last %}<span class="note">What to check: its last run on Railway › askdnd-backup › Deployments. Or tell Claude "check the backups".</span>{% endif %}
-    </div>
+    {% if backup.last and backup.last.status != "ok" %}{% set says = "Last night's backup failed: " ~ (backup.last.detail or "it didn't say why.") %}
+    {% elif backup.last %}{% set says = backup.text ~ ". The last one that worked was " ~ (backup.good.finished_at | clock(date=True) if backup.good else "never") ~ ": the nightly job on Railway (askdnd-backup) hasn't run, or hasn't finished, since." %}
+    {% else %}{% set says = backup.text ~ ". The first one runs tonight at 2:00 AM Pacific." %}{% endif %}
+    {% call needs_line("Broken", "broken", says, "backup-attention") %}{% if backup.last %}<a class="btn small" href="https://railway.com/" target="_blank" rel="noopener">Railway ↗</a>{% endif %}{% endcall %}
+    {% if backup.last %}<p class="note">What to check: its last run on Railway › askdnd-backup › Deployments. Or tell Claude "check the backups".</p>{% endif %}
     {% else %}
-    <div class="flash backup-panel" data-backup="ok"><b>{{ backup.text }}</b><span class="note">Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days.</span></div>
+    {% call needs_line("Worked", "done", backup.text ~ ". Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days.", "backup-ok") %}{% endcall %}
     {% endif %}
     {% if backups %}
     <div class="table-scroll"><table class="list backup-runs">

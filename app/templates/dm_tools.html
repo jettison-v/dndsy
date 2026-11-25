@@ -22,7 +22,7 @@
           <div class="record-main"><b>{{ i.name }}</b>
             <span class="note">{{ i.data.category or "Wondrous Item" }} · {{ (i.data.rarity or "") | lower }}{% if i.data.attunement %} · attunement{% endif %}{% if i.who %} · {{ i.who | join(", ") }} {{ "has" if i.who | length == 1 else "have" }} it{% else %} · no one has it yet{% endif %}</span>
             {% if i.says %}<span class="note dm-says">{% for x in i.says %}<span data-say="{{ x.kind }}">{% if x.name %}{{ x.name }}: {% endif %}<span data-said>{{ x.said }}</span></span>{{ " · " if not loop.last }}{% endfor %}</span>{% else %}<span class="note">Nothing set for play yet: its words only.</span>{% endif %}</div>
-          <div class="record-actions"><span class="tag {{ 'done' if i.who else 'faint' }}">{{ "In play" if i.who else "Not carried yet" }}</span></div>
+          <div class="record-actions">{{ state_tag("in play" if i.who else "unused") }}</div>
         </li>
         {% endfor %}
       </ul>

@@ -103,6 +103,13 @@
    wordings): what goes here, and, from a call block, how to add the first one (a quiet add). #}
 {# A count (Brett chose "hide 0, count everything else", the UI review's pick 4, Nov 16): how many there are, beside a
    tab's or heading's name; nothing at all when there are none, since a count means there's something there. #}
+{# Show more, in place (Brett's pick AU5, Nov 25): inside a [data-list] whose rows are capped (data-ls-cap="20" on the
+   list) or held back (data-ls-later on a row), one button opens them where they are and folds them again; its count is
+   how many it holds. #}
+{% macro show_more(closed, opened="Fold them again") -%}
+<button type="button" class="ls-unfold" data-ls-unfold aria-expanded="false" hidden><span class="when-closed">▸ {{ closed }}</span><span class="when-open">▾ {{ opened }}</span> <span class="count" data-ls-unfold-n></span></button>
+{%- endmacro %}
+
 {% macro count_pill(n, words="") -%}
 {% if n %} <span class="count" data-count="{{ n }}">{{ n }}{{ " " ~ words if words }}</span>{% endif %}
 {%- endmacro %}

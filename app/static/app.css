@@ -851,8 +851,6 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .seat-sheet:hover { color: var(--text); text-decoration: underline; }
 /* Backups' panel (Brett's pick BK1, Nov 25): the message box (.flash), green when last night worked, red with the missed
    nights and what to check when not; its lines one under another */
-.backup-panel { display: grid; gap: var(--sp-1); }
-.backup-panel b { color: var(--green); } .flash.bad.backup-panel b { color: var(--link); }
 .backup-runs tr.backup-missed td, .backup-runs tr.backup-failed td:first-child b { color: var(--link); }
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
@@ -1868,8 +1866,6 @@ button.rm-box { cursor: pointer; }
    amber, one that's broken red, where it sits (the page and the menu one map) */
 .ov-section { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-4); }
 .ov-section-h { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
-.ov-card[data-tone="warn"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 8%, var(--surface)); }
-.ov-card[data-tone="bad"] { border-color: var(--link); background: color-mix(in srgb, var(--link) 9%, var(--surface)); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); overflow-x: auto; scrollbar-width: none; }  /* (narrower than its tabs, it scrolls as the tab bar does) */
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; white-space: nowrap; }  /* (one line always: the UI review, Nov 16) */
@@ -3585,7 +3581,6 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-st { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .br-st.br-live { background: var(--green-soft); color: var(--green); }
-.br-now .br-st { white-space: normal; }  /* (a long health line wraps in Right now: the sweep at 375px) */
 .br-st.br-wait { background: var(--amber-soft); color: var(--amber); }
 .br-st.title-action { white-space: normal; max-width: 100%; text-align: left; }  /* (a long status wraps on a phone instead of pushing the page wider: sweep, Nov 5) */
 .br-st.br-off { background: var(--red-soft); color: var(--link); }
@@ -4818,3 +4813,18 @@ details.backlog[open] > ul { margin: var(--sp-2) 0; }
 /* The DM guide: a reading column (Brett's pick DG1, Nov 25) */
 main.dm-guide [role=tabpanel] > .section { max-width: calc(75ch + 2 * var(--sp-5)); }
 
+/* Show more, in place (_lists.html show_more; AU5): a quiet fold under a list, its count beside it */
+.ls-unfold { display: inline-flex; align-items: center; gap: var(--sp-1); margin-top: var(--sp-2); background: none; border: 0; padding: var(--sp-1) 0; color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.ls-unfold:hover { color: var(--text); }
+.ls-unfold[aria-expanded="true"] .when-closed, .ls-unfold[aria-expanded="false"] .when-open { display: none; }
+.ls-unfold[aria-expanded="true"] .count { display: none; }
+/* Needs you, said once at the top of a page (_admin_bits.html needs_line; Brett's pick AU3, Nov 25) */
+.needs-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); }
+.needs-line[data-tone="broken"] { border-left-color: var(--link); }
+.needs-line[data-tone="done"] { border-left-color: var(--green); }
+.needs-word { font-size: var(--fs-sm); font-weight: 700; color: var(--amber); white-space: nowrap; }
+.needs-line[data-tone="broken"] .needs-word { color: var(--link); }
+.needs-line[data-tone="done"] .needs-word { color: var(--green); }
+.needs-says { color: var(--text); min-width: 0; }
+.needs-act { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; }
+@media (max-width: 640px) { .needs-line { grid-template-columns: minmax(0, 1fr); } .needs-act { justify-content: flex-start; } }

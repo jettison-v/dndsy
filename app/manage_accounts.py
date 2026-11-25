@@ -37,7 +37,7 @@ def accounts(db: Session) -> list[dict]:
         p = out[-1]  # (a test account: in campaigns, every one a test campaign; Brett's pick AC1, Nov 25: a Test tag, not a symbol)
         p["test"] = bool(p["campaigns"]) and all(c.is_test for c, _ in p["campaigns"]) and p["level"] != access.ADMIN
         p["shown"] = (p["name"].lstrip("Ω🧪 ").strip() or p["name"]) if p["test"] else p["name"]  # (the symbol that marked one in its name)
-    return sorted(out, key=lambda p: (p["name"].lower() or p["email"]))
+    return sorted(out, key=lambda p: (p["test"], (p["shown"] or p["name"]).lower() or p["email"]))  # (test accounts last, in their own group: AU9)
 
 
 @router.get("")

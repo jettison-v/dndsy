@@ -23,15 +23,12 @@ class Feature:
     about: str  # what it does, in plain words
     roadmap: str  # where it sits on the roadmap
     labs: bool = False
-    state: str = "ready"  # in Labs: "building" (still changing) or "ready" (ready to try): a key; its word and colour are STATES
+    state: str = "ready"  # in Labs: "building" (still changing) or "ready" (ready to try): a key; its word and colour are app/states.py's (AU2)
 
     line: str = ""  # what it does in one line, on Settings (Brett's pick SE2, Nov 25); `about` is the longer story
     warn: str = ""  # what to know before switching it on, amber beside its switch
 
 
-# A Labs feature's state: its word and colour, from the one key (S2: blue while it's being built, as Documents' Building;
-# green once ready; never amber, which means something waits on you). The end-of-day review, Nov 25.
-STATES = {"building": ("Being built", "new"), "ready": ("Ready to try", "done")}
 
 FEATURES: list[Feature] = [
     Feature("sync", "Sync with D&D Beyond",

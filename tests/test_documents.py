@@ -123,7 +123,7 @@ def test_the_list_starts_on_what_waits_on_you_newest_first_and_moves_what_was_re
     got = documents.rows_for(rows)
     assert [r["e"]["title"] for r in got] == ["New plan", "Older plan", "Picks", "Old guide"]
     assert got[-1]["group"] == "Earlier and superseded" and got[0]["views"] == "current all" and got[1]["views"] == "all"
-    assert got[2]["views"] == "waiting all" and got[2]["tone"] == "draft" and got[2]["word"] == "Waiting on you"
+    assert got[2]["views"] == "waiting all" and got[2]["tone"] == "draft" and got[2]["word"] == "Yours"  # (one word in a pill: AU7)
     monkeypatch.setattr(documents, "library", lambda: tuple(rows))
     page = admin.get("/manage/documents").text
     assert 'data-ls-start="waiting"' in page and 'data-ls-view="waiting"' in page

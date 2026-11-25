@@ -4101,6 +4101,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const inView = (r, v = st.view) => !v || (r.dataset.views || '').split(' ').includes(v);
     // A search looks through every row, whatever the view and filters
     rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !(inView(r) && passes(fOf(r))); });
+    // A list that shows its newest few (data-ls-cap="20") or keeps its older rows back (data-ls-later on a row), with one
+    // fold to open them in place and fold them again (_lists.html show_more; Brett's pick AU5, Nov 25). A search looks
+    // through every row; the cap counts in the view that's on (Usage: the newest 20 of each kind).
+    const unfold = root.querySelector('[data-ls-unfold]');
+    if (unfold) {
+      const cap = +root.dataset.lsCap || 0;
+      let held = 0, shown = 0;
+      if (!q) rows.forEach(r => { if (r.hidden) return; if (r.hasAttribute('data-ls-later') || (cap && ++shown > cap)) { held++; if (!st.open) r.hidden = true; } });
+      unfold.hidden = !held;
+      unfold.setAttribute('aria-expanded', st.open ? 'true' : 'false');
+      const n = unfold.querySelector('[data-ls-unfold-n]'); if (n) { n.textContent = held; n.dataset.count = held; }
+    }
     root.querySelectorAll('[data-ls-view]').forEach(b => {
       b.setAttribute('aria-pressed', !q && b.dataset.lsView === st.view ? 'true' : 'false');
       const n = b.querySelector('[data-ls-view-n]');
@@ -4212,6 +4224,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (e.target.closest('[data-ls-clear]')) { e.preventDefault(); st.sel = {}; clearSearch(); apply(root); return; }  // (in a folded summary: clears, never opens it)
     if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
     if (e.target.closest('[data-ls-above-toggle]')) { st.above = !st.above; apply(root); return; }  // (apply saves it)
+    if (e.target.closest('[data-ls-unfold]')) { st.open = !st.open; apply(root); return; }  // (the rows held back, in place: AU5)
     const rm = e.target.closest('[data-ls-remove]');
     if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
     const view = e.target.closest('[data-ls-view]');
@@ -4840,8 +4853,12 @@ document.addEventListener('click', e => {
     clearTimeout(healthTimer);
     try { const r = await fetch('/bridge/health', { headers: { Accept: 'application/json' } }); if (r.ok) health = await r.json(); } catch (e) { /* offline */ }
     if (health) {
-      pill.className = pill.dataset.base + ' ' + ({ live: 'br-live', wait: 'br-wait', off: 'br-off', asleep: 'br-asleep' }[health.state] || 'br-wait');
-      pill.textContent = health.text + (health.checked_at ? ' (checked ' + new Date(health.checked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ')' : '');
+      const line = pill.closest('.needs-line');  // (Backstage › D&D Beyond bridge: its health as the needs-you line, AU3)
+      if (line) {
+        line.dataset.tone = { live: 'done', wait: 'you', off: 'broken', asleep: 'done' }[health.state] || 'you';
+        line.querySelector('.needs-word').textContent = { live: 'Working', wait: 'Waiting', off: 'Problem', asleep: 'Asleep' }[health.state] || 'Waiting';
+      }
+      pill.textContent = health.text.replace(/^D&D Beyond( bridge)? · /, '') + (health.checked_at ? ' (checked ' + new Date(health.checked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ')' : '');
       pill.title = health.state === 'asleep' ? (health.awake.why || 'Asleep')
         : 'D&D Beyond read ' + (health.read_check.ok ? 'OK' : 'failed: ' + health.read_check.error) + (health.round_trip && health.round_trip.error ? ' · check: ' + health.round_trip.error : '');
       const todo = document.querySelector('[data-bridge-todo]');
@@ -6794,6 +6811,23 @@ document.addEventListener('askdnd:mention', e => {
   // A change in Found, Fixed, Tried (app/fft/live.py): the badge and its card come at once, not on the next page
   let newsTick = null;
   document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(newsTick); newsTick = setTimeout(news, 400); } });
+})();
+
+// ---------------------------------------------------------------- fields for a choice
+// data-shows-for="name=value" on a group of fields: shown only while the form's choice `name` is `value`, and its inputs
+// off while hidden (so a hidden required field never blocks the form, and only the shown fields are sent). The House rule
+// window's kinds (Brett's pick AU8, Nov 25); drawn on the Design system page.
+(function () {
+  const sync = form => form.querySelectorAll('[data-shows-for]').forEach(g => {
+    const [name, value] = g.dataset.showsFor.split('='), picked = form.querySelector(`[name="${name}"]:checked`) || form.querySelector(`select[name="${name}"]`);
+    const on = !!picked && picked.value === value;
+    g.hidden = !on;
+    g.querySelectorAll('input, select, textarea').forEach(i => { i.disabled = !on; });
+  });
+  document.addEventListener('change', e => { const f = e.target.form; if (f && f.querySelector('[data-shows-for]')) sync(f); });
+  const all = root => root.querySelectorAll('form').forEach(f => { if (f.querySelector('[data-shows-for]')) sync(f); });
+  all(document);
+  document.addEventListener('panel:loaded', e => all(e.target));
 })();
 
 // ---------------------------------------------------------------- markers instead of inline handlers
