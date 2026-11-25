@@ -54,6 +54,10 @@ DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").stri
 # The D&D Beyond bridge (app/ddb_bridge.py, extension/askdnd-bridge) may run where DDB_BRIDGE=1 (beta since 2026-10-28,
 # roadmap step 4); each campaign still has it only once switched on (the VTT piece "ddb_bridge", app/vtt.py)
 DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
+# The bridge's test character on D&D Beyond (docs/testing-setup.md: Vi): the hourly health read and the pre-game check use
+# it. A setting, so a new test sheet needs no code change (Nov 25, issue 127: an old id made every read fail).
+BRIDGE_TEST_DDB_ID = (os.getenv("BRIDGE_TEST_DDB_ID") or "172992073").strip()
+BRIDGE_TEST_NAME = (os.getenv("BRIDGE_TEST_NAME") or "Vi").strip()
 # Claude's key to Found, Fixed, Tried (app/fft/api.py `/api/fft`, scripts/feedback.py): set with scripts/set-secret.sh;
 # unset, the API answers nothing
 FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()

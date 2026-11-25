@@ -89,7 +89,7 @@ router = APIRouter()
 
 HEALING = {"Potion of Healing": "2d4+2", "Potion of Greater Healing": "4d4+4", "Potion of Superior Healing": "8d4+8",
            "Potion of Supreme Healing": "10d4+20"}  # SRD 5.2.1
-TEST_DDB_ID = "172836541"  # Vi, Brett's test character on D&D Beyond (not in the table's campaign)
+TEST_DDB_ID = config.BRIDGE_TEST_DDB_ID  # the test character on D&D Beyond (not in the table's campaign): docs/testing-setup.md
 TEST_ITEM = "Candle"  # the round trip takes one and puts it back
 MAX_ATTEMPTS = 3
 RETRY_SECONDS = (0, 5, 20)  # how long a batch that didn't land waits before it's sent again
@@ -1096,8 +1096,8 @@ def read_check() -> dict:
         if "inventory" in d and not all({"id", "quantity"} <= set(i) for i in d["inventory"]):
             missing.append("each item's id and quantity")
         result = {"ok": not missing, "error": ("missing " + ", ".join(missing)) if missing else "", "at": _now(), "t": time.time()}
-    except ddb.DdbError as e:
-        result = {"ok": False, "error": str(e), "at": _now(), "t": time.time()}
+    except ddb.DdbError as e:  # (which sheet it tried, so it's clear what to fix: issue 127)
+        result = {"ok": False, "error": f"{config.BRIDGE_TEST_NAME}'s sheet ({TEST_DDB_ID}) can't be read: {e}", "at": _now(), "t": time.time()}
     _health["read_check"] = result
     return result
 
@@ -1117,7 +1117,7 @@ def health(db: Session) -> dict:
     if not a["awake"]:
         state, text = "asleep", "D&D Beyond bridge · asleep"
     elif not rc["ok"]:
-        state, text = "off", "D&D Beyond · problem: " + rc["error"]
+        state, text = "off", "D&D Beyond · " + rc["error"]
     elif rt and rt["state"] == "failed":
         state, text = "off", "D&D Beyond · check failed"
     elif stuck:
@@ -1133,7 +1133,7 @@ def health(db: Session) -> dict:
     else:
         state, text = "live", "D&D Beyond · connected, not checked yet"
     todo = {"asleep": "It wakes as soon as someone opens askdnd or a sheet.",
-            "off": ("D&D Beyond can't read the test character: check its link on Table and that it's Public, then run the check."
+            "off": ("Open that sheet on D&D Beyond: if it's gone or moved, set BRIDGE_TEST_DDB_ID on Railway to the test character's sheet; if it's there, make it Public. Then run the check."
                     if not rc["ok"] else f"Open {'those sheets' if stuck > 1 else 'that sheet'} in Chrome with the extension, or make the change by hand on D&D Beyond."
                     if stuck and not (rt and rt["state"] == "failed") else "Open the test character's sheet in Chrome with the extension, then run the check again."),
             "wait": "Open any D&D Beyond page in Chrome with the extension on." if not extension and not waiting and not (rt and rt["state"] == "running") else "",
