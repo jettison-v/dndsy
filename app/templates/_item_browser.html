@@ -14,15 +14,10 @@
 </span>
 {%- endmacro %}
 {% set loot = mode == "loot" %}
-<div class="peek-head">
-  <div class="fm-title">
-    <div class="note">{{ c.name }} · D&amp;D Beyond's items from the 2024 books</div>
-    <h2 id="peek-title">{{ "Give loot to " ~ c.name if loot else "Add item" }}</h2>
-  </div>
-  <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
-</div>
-<div class="peek-body ib" data-list="item-browser" data-noun="item" data-default-sort="name" data-ib data-mode="{{ mode }}"
-  data-detail-url="/characters/{{ c.id }}/items/browse/" data-url="/characters/{{ c.id }}/items/add" data-who="{{ c.name }}">
+{% from "_window.html" import window %}
+{% set w_kind %}{{ c.name }} · D&amp;D Beyond's items from the 2024 books{% endset %}
+{% set w_body %} data-list="item-browser" data-noun="item" data-default-sort="name" data-ib data-mode="{{ mode }}" data-detail-url="/characters/{{ c.id }}/items/browse/" data-url="/characters/{{ c.id }}/items/add" data-who="{{ c.name }}"{% endset %}
+{% call window(w_kind, "Give loot to " ~ c.name if loot else "Add item", tall=True, body_class="ib", body_attrs=w_body) %}
   {% if not reachable %}<p class="unreached">{{ unreached_says(c, "give loot" if loot else "add items") }} You can still look.</p>{% endif %}
   {% if not loaded %}
   <p class="note">D&amp;D Beyond's item list didn't load just now. Try again in a moment{% if loot %}, or add the item on D&amp;D Beyond{% endif %}.</p>
@@ -77,4 +72,4 @@
     {% if not loot %}<p class="note ib-price-note" data-ib-price-note hidden></p>{% endif %}
     <p class="use-said" role="alert" data-ib-said hidden></p>
   </div>
-</div>
+{% endcall %}

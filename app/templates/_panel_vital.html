@@ -8,11 +8,9 @@
 </table></div>
 {%- endmacro %}
 {% macro explain(text) %}<p class="detail-what">{{ text | terms(underline, []) }}</p>{% endmacro %}
-<div class="peek-head">
-  <div><div class="note">{{ c.name }}</div><h2 id="peek-title">{{ title }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body detail">
+{% from "_window.html" import window %}
+{% set w_kind %}{{ c.name }}{% endset %}{% set w_title %}{{ title }}{% endset %}
+{% call window(w_kind, w_title, body_class="detail") %}
   {% if kind == "hp" %}{% set hp = s.hit_points %}
     {% if hp_change or can_play %}<div class="hp-acts">{% endif %}
     {% if hp_change %}<div class="row tight hp-open">{% for m, label in (("damage", "Damage"), ("heal", "Heal"), ("temp", "Temporary HP")) %}<button type="button" class="btn small{{ ' primary' if loop.first }}" data-modal-url="/characters/{{ c.id }}/hp?mode={{ m }}">{{ label }}</button>{% endfor %}</div>{% endif %}
@@ -81,4 +79,4 @@
     <h3>What it means</h3>
     {{ explain("What you notice without trying: the DM compares it to a creature's Stealth or a hidden thing's DC, without you rolling.") }}
   {% endif %}
-</div>
+{% endcall %}

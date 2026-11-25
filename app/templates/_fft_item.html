@@ -1,15 +1,13 @@
 {# The one item window (app/fft/item_page.py; Brett, Nov 20: issue 44 and The Work Pages): any single item, in the side
    panel at the page's right. ↑ ↓ walk the list it came from; after a press it moves on to the next (or stays, for a
    conversation: a form marked data-stay), the page underneath redrawn in place. #}
-<div class="peek-head fft-item-head" data-item-panel="{{ key }}">
-  <div><div class="note">{{ mark(key) }}{% if at %} · {{ at }} of {{ of }}{% endif %}</div><h2 id="peek-title" class="sr">{{ kind_label }} {{ number }}</h2></div>
-  <div class="row tight">
-    {% if prev %}<button class="btn link small" type="button" data-panel-url="/manage/item/{{ prev }}?from={{ frm | urlencode }}" data-item-prev aria-label="Previous" title="Previous (↑)">↑</button>{% endif %}
-    {% if next %}<button class="btn link small" type="button" data-panel-url="/manage/item/{{ next }}?from={{ frm | urlencode }}" data-item-next aria-label="Next" title="Next (↓)">↓</button>{% endif %}
-    <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-  </div>
-</div>
-<div class="peek-body fft-item-body"{% if next %} data-next-url="/manage/item/{{ next }}?from={{ frm | urlencode }}"{% endif %}>
+{% from "_window.html" import window %}
+{% set w_kind %}{{ mark(key) }}{% if at %} · {{ at }} of {{ of }}{% endif %}{% endset %}
+{% set w_tools %}{% if prev %}<button class="btn link small" type="button" data-panel-url="/manage/item/{{ prev }}?from={{ frm | urlencode }}" data-item-prev aria-label="Previous" title="Previous (↑)">↑</button>{% endif %}
+    {% if next %}<button class="btn link small" type="button" data-panel-url="/manage/item/{{ next }}?from={{ frm | urlencode }}" data-item-next aria-label="Next" title="Next (↓)">↓</button>{% endif %}{% endset %}
+{% set w_body %}{% if next %} data-next-url="/manage/item/{{ next }}?from={{ frm | urlencode }}"{% endif %}{% endset %}
+{% set w_foot %}{% if page_href %}<a class="btn link small" href="{{ page_href }}" data-no-peek data-do="open-page">{{ "Open as a page" if page_name == "its page" else "Open in " ~ page_name }} ↗</a>{% endif %}{% endset %}
+{% set w_head %} data-item-panel="{{ key }}"{% endset %}
+{% call window(w_kind, kind_label ~ " " ~ number, foot=w_foot, attrs=w_head, title_attrs=' class="sr"', tools=w_tools | trim or " ", body_class="fft-item-body", body_attrs=w_body) %}
   {% include "_fft_item_body.html" %}
-</div>
-{% if page_href %}<div class="peek-foot row"><a class="btn link small" href="{{ page_href }}" data-no-peek data-do="open-page">{{ "Open as a page" if page_name == "its page" else "Open in " ~ page_name }} ↗</a></div>{% endif %}
+{% endcall %}

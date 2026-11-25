@@ -2,12 +2,9 @@
    read-aloud boxed like a scroll, then each section that has words; @ names of other scenes open them. Edit: a box per
    section with its prompts as faint hints. #}
 {% macro runs(rs) %}{% for r in rs %}{% if r.scene %}<button type="button" class="link-plain at" data-panel-url="{{ cbase }}/table/scenes/{{ r.scene }}">@{{ r.text }}</button>{% else %}{{ r.text }}{% endif %}{% endfor %}{% endmacro %}
-<div class="peek-head">
-  <div class="grow"><h2 id="peek-title">{{ s.name }}</h2>
-    <div class="note">{% if place %}{{ place.name }}{% if s.x is not none %} · pinned on its map{% endif %}{% else %}Not on a map{% endif %} · <span class="secret-tag">Only you</span></div></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body scene-panel">
+{% from "_window.html" import window %}
+{% set w_sub %}{% if place %}{{ place.name }}{% if s.x is not none %} · pinned on its map{% endif %}{% else %}Not on a map{% endif %} · <span class="secret-tag">Only you</span>{% endset %}
+{% call window("", s.name, body_class="scene-panel", sub=w_sub) %}
 {% if editing %}
   <form class="scene-form" hx-post="{{ cbase }}/table/scenes/{{ s.id }}" hx-swap="none">
     <label class="field"><span>Name</span><input name="name" value="{{ s.name }}" maxlength="200" required></label>
@@ -36,4 +33,4 @@
   {% if all | length > 1 %}<h3 class="divider">Your other scenes</h3>
   <ul class="scene-list">{% for o in all if o.id != s.id %}<li><button type="button" class="link-plain" data-panel-url="{{ cbase }}/table/scenes/{{ o.id }}">{{ o.name }}</button></li>{% endfor %}</ul>{% endif %}
 {% endif %}
-</div>
+{% endcall %}

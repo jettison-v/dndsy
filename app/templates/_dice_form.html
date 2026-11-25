@@ -2,8 +2,8 @@
    Table rolls' Roll window's Your dice tab (_roll_checks.html; Brett, Nov 10: one door from Table rolls). app.js throws
    a d20 in the preview whenever the set or material changes, and only once its tab is shown; sound and the animation
    are per device (localStorage), the rest is saved to you. Needs d, sets, materials. #}
-<form class="{{ 'dice-picker in-roll' if embedded else 'peek-form dice-picker' }}" hx-post="/dice" hx-swap="none" data-your-dice>
-  {% if not embedded %}<div class="peek-body">{% endif %}<div class="dp-grid">
+{% from "_window.html" import window %}
+{% set grid %}<div class="dp-grid">
     <div>
       <h3>Dice set</h3>
       <div class="dp-sets" role="radiogroup" aria-label="Dice set">
@@ -23,6 +23,13 @@
       <p class="note dp-about">Everyone sees your rolls in your dice. Turning the animation off on a device shows the numbers without throwing dice.</p>
     </div>
     <div class="dp-preview" data-dice-preview><span class="note dp-loading">Loading the dice…</span></div>
-  </div>{% if not embedded %}</div>{% endif %}
-  <div class="{{ 'dp-save row' if embedded else 'peek-foot row' }}"><button class="btn primary" type="submit">Save</button>{% if not embedded %}<button class="btn link peek-close" type="button">Cancel</button>{% endif %}</div>
+  </div>{% endset %}
+{% if embedded %}
+<form class="dice-picker in-roll" hx-post="/dice" hx-swap="none" data-your-dice>
+  {{ grid }}
+  <div class="dp-save row"><button class="btn primary" type="submit">Save</button></div>
 </form>
+{% else %}{# Its own window (_dice_picker.html), on the one window (Roadmap item 47) #}
+{% set w_foot %}<button class="btn primary" type="submit">Save</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% call window("Table rolls", "Your dice", foot=w_foot, form='hx-post="/dice" hx-swap="none" data-your-dice', form_class="dice-picker", body_class="") %}{{ grid }}{% endcall %}
+{% endif %}

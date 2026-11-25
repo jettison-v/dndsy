@@ -5,11 +5,9 @@
    an ordinary roll button, so it opens the roll window as anywhere else (app.js "Table rolls' Roll"). The DM, with no
    character, gets Any dice. #}
 {% from "_char.html" import roll_attrs %}
-<div class="peek-head">
-  <div><div class="note">Table rolls</div><h2 id="peek-title">{% if s %}Roll for {{ c.name }}{% else %}Roll dice{% endif %}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body roll-window">
+{% from "_window.html" import window %}
+{% set w_kind %}Table rolls{% endset %}{% set w_title %}{% if s %}Roll for {{ c.name }}{% else %}Roll dice{% endif %}{% endset %}
+{% call window(w_kind, w_title, body_class="roll-window") %}
 <div class="tabbar" role="tablist" aria-label="Roll or your dice">
   <button type="button" role="tab" aria-selected="true" data-tab="rb-roll">Roll</button>
   <button type="button" role="tab" aria-selected="false" data-tab="rb-dice">Your dice</button>
@@ -43,4 +41,4 @@
   {% endif %}
 </div>
 <div id="rb-dice" hidden>{% with embedded=True %}{% include "_dice_form.html" %}{% endwith %}</div>
-</div>
+{% endcall %}

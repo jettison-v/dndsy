@@ -1,15 +1,7 @@
 {# Your picture › Email digest (app/digest.py): the Inbox digest, one switch per campaign you could get it for. A switch
    posts and this list is drawn again (`only_rows`). #}
-{% if not only_rows %}
-<div class="peek-head">
-  <div><div class="note">Your picture</div><h2 id="peek-title">Email digest</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body">
-<p class="note">The <b>Inbox digest</b>: one email a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox. Counts and a link, never what was written.</p>
-{% if not sending %}<p class="note">askdnd isn't sending email here (no Resend key: your own computer, or staging).</p>{% endif %}
-{% endif %}
-<div class="email-settings">
+{% from "_window.html" import window %}
+{% set w_rows %}<div class="email-settings">
   {% for c, role, on in rows %}
   <div class="email-row">
     <span><b>{{ c.name }}</b> <small class="note">{{ "you're its DM: on unless you turn it off" if role == "dm" else "yours to turn on" }}</small></span>
@@ -27,4 +19,13 @@
   </div>
   {% endif %}
 </div>
-{% if not only_rows %}</div>{% endif %}
+{% endset %}
+{% if only_rows %}{{ w_rows }}{% else %}
+{% set w_intro %}<p class="note">The <b>Inbox digest</b>: one email a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox. Counts and a link, never what was written.</p>
+{% if not sending %}<p class="note">askdnd isn't sending email here (no Resend key: your own computer, or staging).</p>{% endif %}
+{% endset %}
+{% call window("Your picture", "Email digest", body_class="") %}
+{{ w_intro }}
+{{ w_rows }}
+{% endcall %}
+{% endif %}

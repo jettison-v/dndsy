@@ -1,11 +1,8 @@
 {# The hit points window (app/hit_points.py, docs/mockups/hp-window.html): a modal from Table rolls' Apply to … (filled
    in from the roll) or from Hit points' Damage / Heal / Temporary HP (a number to enter). Any change in the form
    works it out again (_hp_working.html); the button makes it on D&D Beyond through the bridge. #}
-<div class="peek-head">
-  <div><div class="note">{{ c.name }} · {{ hp.current }} of {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temp{% endif %}{% if w.form %} · {{ w.form.beast.name }}{% endif %}</div>
-    <h2 id="peek-title">{{ c.name }}'s hit points</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body hp-win">
+{% from "_window.html" import window %}
+{% set w_kind %}{{ c.name }} · {{ hp.current }} of {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temp{% endif %}{% if w.form %} · {{ w.form.beast.name }}{% endif %}{% endset %}{% set w_title %}{{ c.name }}'s hit points{% endset %}
+{% call window(w_kind, w_title, body_class="hp-win") %}
   {% include "_hp_form.html" %}
-</div>
+{% endcall %}

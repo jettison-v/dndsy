@@ -2,13 +2,11 @@
    Creatures). The DM: its Hit Points to change, what players see, its stat block with each action's roll (rolled as the
    creature: `data-token`), Hide or Show, Rename, Take off the map. Players: its name and what the settings let them see. #}
 {% from "_char.html" import hit %}
-<div class="peek-head">
-  <span class="tk-pic{{ ' foe' if t.kind == 'monster' }}" aria-hidden="true">{% if t.monster and t.monster.image %}<img src="{{ t.monster.image }}" alt="" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ t.name[:2] }}</span>
-  <div class="grow"><h2 id="peek-title">{{ t.name }}</h2>
-    <div class="note">{% if entry %}{{ entry.size }} {{ entry.type }}{% if dm and entry.source %} · {{ entry.source }}{% endif %}{% endif %}{% if t.hidden %} · <span class="tag draft">Hidden from the players</span>{% endif %}{% if its_turn %} · <b>its turn</b>{% endif %}</div></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body tk-panel" data-token="{{ t.id }}" data-name="{{ t.name }}">
+{% from "_window.html" import window %}
+{% set w_pic %}<span class="tk-pic{{ ' foe' if t.kind == 'monster' }}" aria-hidden="true">{% if t.monster and t.monster.image %}<img src="{{ t.monster.image }}" alt="" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ t.name[:2] }}</span>{% endset %}
+{% set w_sub %}{% if entry %}{{ entry.size }} {{ entry.type }}{% if dm and entry.source %} · {{ entry.source }}{% endif %}{% endif %}{% if t.hidden %} · <span class="tag draft">Hidden from the players</span>{% endif %}{% if its_turn %} · <b>its turn</b>{% endif %}{% endset %}
+{% set w_body %} data-token="{{ t.id }}" data-name="{{ t.name }}"{% endset %}
+{% call window("", t.name, body_class="tk-panel", body_attrs=w_body, pic=w_pic, sub=w_sub | trim) %}
 {% if not dm %}
   {% if seen and seen.current is defined %}<p class="tk-hp"><b>{{ seen.current }}</b> / {{ seen.max }} Hit Points</p>
   {% elif seen %}<p class="tk-status {{ seen | lower }}">{{ seen }}</p>{% endif %}
@@ -51,4 +49,4 @@
     <button type="submit" class="btn small">Rename</button>
   </form>
 {% endif %}
-</div>
+{% endcall %}
