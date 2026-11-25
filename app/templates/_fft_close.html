@@ -1,19 +1,18 @@
 {# Close it: why? (screen 14; app/fft/feedback_page.py `close_window`): a reason its senders read on Notes you sent.
    Works now is a person's to say (R16): it's here for you, never for Claude. Same as another opens Same as…. #}
-<div class="peek-head">
-  <div><div class="note">Feedback</div><h2 id="peek-title">Close it: why?</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<form method="post" class="peek-form" action="/manage/feedback/issues/{{ i.id }}?tab=open">
-  <div class="peek-body stack">
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set w_kind %}Feedback{% endset %}{% set w_title %}Close it: why?{% endset %}
+{% set w_foot %}<button class="btn primary" type="submit" data-do="close">Close it</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% set w_form %}method="post" action="/manage/feedback/issues/{{ i.id }}?tab=open"{% endset %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
     <input type="hidden" name="do" value="close"><input type="hidden" name="seen" value="{{ i.state }}">
     <div class="fft-options" role="radiogroup" aria-label="Why">
       {% for key, said in reasons.items() if key != "same" %}<label class="fft-opt" data-reason="{{ key }}"><input type="radio" name="reason" value="{{ key }}" required>
         <span><b>{{ said }}</b></span><small class="note">{{ {"works": "fixed, and you've seen it work", "wont": "as designed, or not worth it", "cant_repro": "it doesn't happen when tried", "withdrawn": "it wasn't a problem after all"}[key] }}</small></label>{% endfor %}
       <button type="button" class="fft-opt btn-plain" data-modal-url="/manage/feedback/same?issue={{ i.id }}" data-reason="same"><span><b>Same as another issue…</b></span></button>
     </div>
-    <label class="field"><span>{% if senders %}What {{ senders | join(", ") }} read{{ "s" if senders | length == 1 }} (each on their own Notes you sent){% else %}Why, for the record{% endif %}</span><textarea name="words" rows="2" maxlength="1000"></textarea></label>
+    {% call field("What they read" if senders else "Why", help=("What " ~ senders | join(", ") ~ " read" ~ ("s" if senders | length == 1 else "") ~ ", each on their own Notes you sent.") if senders else "For the record.") %}<textarea name="words" rows="2" maxlength="1000"></textarea>{% endcall %}
     <p class="note">Reopen is always there on a closed issue; it says it came back.</p>
-  </div>
-  <div class="peek-foot row"><button class="btn primary" type="submit" data-do="close">Close it</button><button class="btn link peek-close" type="button">Cancel</button></div>
-</form>
+  
+{% endcall %}

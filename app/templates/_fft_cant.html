@@ -1,19 +1,18 @@
 {# Can't try it? (screen 6; app/fft/testing_page.py `cant_window`): later (it stays yours), blocked by an issue (back
    when that's fixed), or the check is wrong (to Claude, rewritten as a new version). #}
-<div class="peek-head">
-  <div><div class="note">Testing · {{ c.title }}</div><h2 id="peek-title">Can't try it?</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<form method="post" class="peek-form" action="/manage/testing/checks/{{ c.id }}/try">
-  <div class="peek-body stack">
+{% from "_window.html" import window %}
+{% from "_form_bits.html" import field %}
+{% set w_kind %}Testing · {{ c.title }}{% endset %}{% set w_title %}Can't try it?{% endset %}
+{% set w_foot %}<button class="btn primary" type="submit" data-do="cant-try">Can't try it</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
+{% set w_form %}method="post" action="/manage/testing/checks/{{ c.id }}/try"{% endset %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
     <input type="hidden" name="result" value="cant">
     <div class="fft-options" role="radiogroup" aria-label="Why">
       <label class="fft-opt" data-cant="later"><input type="radio" name="cant" value="later" required><span><b>Later</b> · not now: it needs my phone or a second person</span><small class="note">stays yours</small></label>
       <label class="fft-opt" data-cant="blocked"><input type="radio" name="cant" value="blocked"><span><b>Blocked by an issue</b> · something else is broken first</span><small class="note">back when it's fixed</small></label>
       <label class="fft-opt" data-cant="wrong"><input type="radio" name="cant" value="wrong"><span><b>The check is wrong</b> · the data isn't there, or the steps don't match</span><small class="note">to Claude, rewritten</small></label>
     </div>
-    <label class="field"><span>Blocked by which issue? (for Blocked)</span><select name="blocked_by" class="ls-select"><option value="0">Pick one</option>{% for i in issues %}<option value="{{ i.id }}">{{ i.title }}</option>{% endfor %}</select></label>
-    <label class="field"><span>What's wrong (for The check is wrong; anything to add)</span><input type="text" name="why" maxlength="500" autocomplete="off"></label>
-  </div>
-  <div class="peek-foot row"><button class="btn primary" type="submit" data-do="cant-try">Can't try it</button><button class="btn link peek-close" type="button">Cancel</button></div>
-</form>
+    {% call field("Blocked by", help="For Blocked by an issue: which issue.") %}<select name="blocked_by" class="ls-select"><option value="0">Pick one</option>{% for i in issues %}<option value="{{ i.id }}">{{ i.title }}</option>{% endfor %}</select>{% endcall %}
+    {% call field("What's wrong", help="For The check is wrong, or anything to add.") %}<input type="text" name="why" maxlength="500" autocomplete="off">{% endcall %}
+  
+{% endcall %}

@@ -42,7 +42,7 @@ def test_a_document_in_for_yous_window_is_itself_and_scrolls(admin):
     lighter-round plan "does not scroll")."""
     plan = next(e for e in documents.library() if e["source"].endswith(".md"))
     window = admin.get(f"/manage/documents/{plan['id']}?part=1").text
-    assert 'class="peek-body"' in window and 'class="doc-text"' in window and "doc-back" not in window and "<html" not in window
+    assert 'class="peek-body' in window and 'class="doc-text"' in window and "doc-back" not in window and "<html" not in window
     mockup = next(e for e in documents.library() if e["source"].endswith(".html") and e["source"].startswith("docs/mockups/"))
     window = admin.get(f"/manage/documents/{mockup['id']}?part=1").text
     assert 'class="doc-frame"' in window and "doc-text" not in window
