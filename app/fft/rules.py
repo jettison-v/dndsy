@@ -2517,6 +2517,21 @@ def held_comments(db: Session, doc: str, user_id: int | None) -> list[FftDocComm
                            .order_by(FftDocComment.n)))
 
 
+def comments_sent(db: Session, actor: str, doc: str, user_id: int | None) -> int:
+    """Send now (issue 116, Brett, Nov 25: "I do not want to Save my picks when my comments could change my decision"):
+    his held comments go to Claude at once, with the mockup's open question, which stays open for his picks. Returns
+    how many went (0 when none were waiting)."""
+    q = doc_question(db, doc, open_only=True)
+    if q is None:
+        raise RuleError("stale", "This mockup has no open question: its picks are in, and its comments went with them.")
+    held = [c for c in held_comments(db, doc, user_id) if c.user_id == user_id]  # (his own: those from claude.ai Claude has read already)
+    for c in held:
+        c.question_id, c.sent_at = q.id, now()
+    if held:
+        _event(db, actor, "doc_comments_sent", "question", q.id, doc=doc, n=len(held))
+    return len(held)
+
+
 def comments_in(db: Session, actor: str, doc: str, comments: list[dict]) -> int:
     """Comments made on claude.ai, brought in: each once (claude.ai's mark), placed by the words it was pinned to. While
     the mockup's question is open they wait to go with the picks, as askdnd's own do; after, they're sent at once."""

@@ -1826,8 +1826,11 @@ button.rm-box { cursor: pointer; }
 /* Comments pinned to a mockup (issue 24, Brett's picks Nov 21): the mockup and a column of its comments beside it */
 .doc-with-comments { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-3); align-items: stretch; min-height: 0; }
 .doc-window.doc-with-comments { display: grid; flex: 1; }
-.doc-with-comments > [data-comments-slot] { min-width: 0; min-height: 0; overflow: auto; }
-@media (max-width: 900px) { .doc-with-comments { grid-template-columns: minmax(0, 1fr); } }
+.doc-with-comments > .doc-frame { grid-column: 1; grid-row: 1; }
+.doc-with-comments > [data-comments-slot] { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; overflow: auto; }
+/* (each held to its column: a page's picture can't copy the sealed mockup, and with it gone the comments slid into its
+   place, under the mockup's own picture: issue 116, Nov 25) */
+@media (max-width: 900px) { .doc-with-comments { grid-template-columns: minmax(0, 1fr); } .doc-with-comments > [data-comments-slot] { grid-column: 1; grid-row: 2; } }
 .doc-comments { display: grid; gap: var(--sp-2); align-content: start; }
 .doc-comments-h { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text-strong); }
 .doc-comments-h .note { font-weight: 400; }

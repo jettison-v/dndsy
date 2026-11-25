@@ -3,7 +3,7 @@
    plan written as text, its words, scrolling in the window (Nov 19: a plan showed the whole page there, unscrollable). #}
 <div class="peek-head">
   <div><div class="note">{{ {"guide": "Guide", "plan": "Plan", "design": "Design", "earlier": "Earlier"}.get(e.kind, "Document") }}</div><h2 id="peek-title">{{ e.title }}</h2></div>
-  <div class="row tight"><a class="btn link small" href="/manage/documents/{{ e.id }}" data-no-peek>Open as a page</a>{# (its address, to keep or send: Brett's pick D2, Nov 24) #}{% if not body %}<button class="btn small" type="button" data-comment-mode aria-pressed="false" hidden>Comment</button>{% endif %}{% if e.link %}<a class="btn link small" href="{{ e.link }}" target="_blank" rel="noopener noreferrer">On claude.ai ↗</a>{% endif %}
+  <div class="row tight"><a class="btn link small" href="/manage/documents/{{ e.id }}" data-no-peek>Open as a page</a>{# (its address, to keep or send: Brett's pick D2, Nov 24) #}{% if not body %}<button class="btn small" type="button" data-comment-mode aria-pressed="false" hidden>Comment</button><button class="btn primary small" type="button" data-comments-send hidden>Send now</button>{# (your unsent comments to Claude before your picks: issue 116) #}{% endif %}{% if e.link %}<a class="btn link small" href="{{ e.link }}" target="_blank" rel="noopener noreferrer">On claude.ai ↗</a>{% endif %}
     <button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
 {% if body %}<div class="peek-body"><article class="doc-text" data-doc="{{ e.source }}">{{ body }}</article></div>{# (a plan: its words, scrolling in the window) #}

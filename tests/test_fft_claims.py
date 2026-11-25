@@ -151,6 +151,19 @@ def test_a_green_pull_request_that_isnt_merging_is_a_gap(db):
     assert not [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]  # (After my local try: it waits for his)
 
 
+def test_a_builds_pull_request_waits_while_its_plan_is_careful(db):
+    """Nov 25, #519: a pull request named for a Roadmap build (`r43-…`) has no plan of its own; while a plan of its build
+    is Careful (Brett tries it first), it waits, and isn't a gap."""
+    it = rules.new_item(db, "claude", "A build", section="now")
+    db.flush()
+    plan = rules.new_area(db, "claude", it, "A build: the build")
+    db.flush()
+    _pull(db, 320, f"r{it.id}-drafts", tests="passed", merge_state="clean", auto_merge=False)
+    assert [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]
+    rules.set_lane(db, "claude", plan, "careful", "spending")
+    assert not [g for g in views.gaps(db) if g["kind"] == "pull_waiting"]
+
+
 def test_one_set_to_merge_that_falls_behind_main_is_claudes_to_bring_up_to_date(db):
     """Nov 24, #485: GitHub's robot brought it up to date and its tests waited for a person's approval, so it never
     merged. Behind main and set to merge is Claude's to update (under a person's sign-in), unless it's meant to wait."""

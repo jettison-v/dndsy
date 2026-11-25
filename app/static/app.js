@@ -5309,6 +5309,7 @@ document.addEventListener('click', e => {
   const frameOf = src => [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(f => f.contentWindow === src);
   const boxOf = f => (f.closest('.doc-with-comments') || document).querySelector('[data-comments-slot]');
   const buttonOf = f => (f.closest('.peek, main') || document).querySelector('[data-comment-mode]');
+  const sendOf = f => (f.closest('.peek, main') || document).querySelector('[data-comments-send]');
   const pageOf = f => { try { return new URL(f.src, location.href).pathname.split('/').slice(5).join('/'); } catch (err) { return ''; } };  // (/manage/documents/f/<key>/<page>)
   const pending = new WeakMap();  // (a frame's click waiting for its words)
   const send = (f, msg) => { try { f.contentWindow.postMessage(msg, '*'); } catch (err) { /* frame gone */ } };
@@ -5331,6 +5332,8 @@ document.addEventListener('click', e => {
     const open = slot.querySelector('[data-doc-comments]') && slot.querySelector('[data-doc-comments]').dataset.open === 'yes';
     const b = buttonOf(f);
     if (b) b.hidden = !open;
+    const go = sendOf(f), rail = slot.querySelector('[data-doc-comments]');
+    if (go) go.hidden = !(open && rail && Number(rail.dataset.held) > 0);  // (only while yours wait to be sent: issue 116)
     sendPins(f);
   }
   async function post(f, url, body) {
@@ -5348,6 +5351,17 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-comment-mode]');
     const f = b && [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(x => buttonOf(x) === b);
     if (f) { mode(f, b.getAttribute('aria-pressed') !== 'true'); return; }
+    const go = e.target.closest('[data-comments-send]');
+    const gf = go && [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(x => sendOf(x) === go);
+    if (gf) {  // Send now (issue 116): your comments to Claude before your picks; the question stays open for them
+      if (go.dataset.sending) return;
+      go.dataset.sending = '1';
+      post(gf, '/manage/testing/comments/send', { doc: gf.dataset.doc }).then(ok => {
+        delete go.dataset.sending;
+        if (ok) window.askdndCard('Sent to Claude. Your picks are still to come.');
+      });
+      return;
+    }
     const drop = e.target.closest('[data-comment-drop]');
     const row = e.target.closest('[data-comment]');
     const rail = e.target.closest('[data-comments-slot]');
