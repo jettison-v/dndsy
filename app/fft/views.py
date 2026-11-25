@@ -353,6 +353,15 @@ def event_words(ev) -> str:
         if ch.get("tests") in ("passed", "failed"):
             return f"Pull request #{n}'s tests {ch['tests']}"
         return f"Pull request #{n} changed"
+    if ev.thing in ("review", "reviewset"):  # (Roadmap item 46: a review asked from Development › Scheduled, set, or moved on)
+        from app.fft import reviews
+
+        title = (reviews.review(d.get("review", "")) or {}).get("title", d.get("review", "a review"))
+        if ev.kind == "review_asked":
+            return f"{title} asked ({'its slot came' if d.get('how') == 'scheduled' else 'Run'}): run {ev.thing_id} waits for `feedback.py review next`"
+        if ev.kind == "review_set":
+            return f"{title}: {reviews.CADENCE_WORDS.get(d.get('cadence') or '', 'its catalog cadence')}, schedule {'on' if d.get('scheduled') else 'off'}"
+        return f"{title} (run {ev.thing_id}): {reviews.STATE_WORDS.get(d.get('to', ''), d.get('to', ''))}"
     if ev.kind == "note_sent":
         return "A note from a player waits for Brett's approval" if d.get("role") != "admin" or d.get("staging") else f"Brett sent a note ({d.get('note_kind')})"
     if ev.kind == "line_added" and not d.get("approved", True):

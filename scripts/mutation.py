@@ -16,7 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-CORE = ("access", "roll_plan", "hit_points", "rules_book", "measure", "areas", "fog", "coins", "initiative", "conditions", "death_saves")
+CORE = ("access", "roll_plan", "hit_points", "rules_book", "measure", "areas", "fog", "coins", "initiative", "conditions", "death_saves",
+        "fft.reviews")  # (a Workshop module by its dotted name: app/fft/reviews.py, Roadmap item 46)
 
 
 def main() -> int:
@@ -33,7 +34,7 @@ def main() -> int:
     subprocess.run(["uv", "run", "mutmut", "run", "--max-children", "4", f"app.{module}.*"], env=env, check=False)
     out = subprocess.run(["uv", "run", "mutmut", "results"], env=env, capture_output=True, text=True).stdout
     survived = [line.split(":")[0].strip() for line in out.splitlines() if line.strip().endswith("survived") and f"app.{module}." in line]
-    print(f"\n{len(survived)} survived in app/{module}.py")
+    print(f"\n{len(survived)} survived in app/{module.replace('.', '/')}.py")
     for name in survived:
         diff = subprocess.run(["uv", "run", "mutmut", "show", name], env=env, capture_output=True, text=True).stdout
         changed = [d for d in diff.splitlines() if d.startswith(("+ ", "- "))]
