@@ -20,9 +20,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import files, web
-from app.auth import is_admin
 from app.db import get_db
 from app.fft import rules, taxonomy, testing_page, views
+from app.fft.host import is_admin
 from app.fft.models import (
     FftArea,
     FftCheck,

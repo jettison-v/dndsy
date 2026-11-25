@@ -8,8 +8,8 @@ from markupsafe import Markup
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, picks
-from app.fft import rules, taxonomy
+from app import config
+from app.fft import host, rules, taxonomy
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -25,7 +25,6 @@ from app.fft.models import (
     FftPull,
     FftQuestion,
 )
-from app.models import User
 
 KIND_SAID = {"problem": "A problem", "idea": "An idea", "question": "A question"}  # (in the window, nothing picked first)
 KIND_ASK = {"problem": "What's wrong?", "idea": "What would be better?", "question": "What would you like to know?"}
@@ -70,7 +69,7 @@ def doc_of(path: str) -> dict | None:
     """The mockup a question asks on, as Backstage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
     if not path:
         return None
-    from app.documents import doc_id, find
+    from app.fft.host import doc_id, find
 
     e = find(doc_id(path))
     if e is None:
@@ -91,7 +90,7 @@ def talk(lines: list, asked: list[dict]) -> list[tuple]:
 
 
 def first_name_of(db: Session, user_id: int | None) -> str:
-    u = db.get(User, user_id) if user_id else None
+    u = host.account_by_id(db, user_id)
     return ((u.name or "").split(" ")[0] if u else "") or "A player"
 
 
@@ -282,12 +281,12 @@ def person(db: Session, user: dict | None) -> dict | None:
     """The person a note is from: their row, first name and role here (T2: no email leaves this)."""
     if not user:
         return None
-    from app.extraction import first_name
+    from app.fft.host import first_name
 
     email = (user.get("email") or "").lower()
-    row = picks.user_row(db, user)
-    admin = access.level(email) == access.ADMIN
-    role = "admin" if admin else (access.role(email) or "member")
+    row = host.account(db, user)
+    admin = host.level(email) == host.ADMIN
+    role = "admin" if admin else (host.role(email) or "member")
     name = first_name(user.get("name") or (row.name if row else "") or "")  # (T2: never an email, never a full name)
     return {"row": row, "id": row.id if row else None, "email": email, "first_name": name or "Someone", "role": role, "admin": admin}
 

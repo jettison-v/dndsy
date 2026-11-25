@@ -1,5 +1,5 @@
 """Sending a note (screen 9 of docs/mockups/found-fixed-tried/; the window is `_feedback_window.html`, app.js "send a
-note"): `\\` on any page, for admins and the accounts switched on for it (`access.sends_feedback`).
+note"): `\\` on any page, for admins and the accounts switched on for it (`host.sends_feedback`).
 
 What it carries: what it is (a problem, an idea or a question: picked each time, never for you), the words, the page's
 picture and any added, each marked with Box, Arrow, Draw and Text, and the page as drawn. The page's picture comes as
@@ -22,10 +22,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import access, config, files, view_as, web
-from app.auth import current_user
+from app import config, files, web
 from app.db import get_db
-from app.fft import rules, views
+from app.fft import host, rules, views
 from app.fft.models import FftPicture, FftTry
 from app.templating import templates
 
@@ -38,12 +37,12 @@ IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
 def real(request: Request) -> dict | None:
     """The person really signed in: an admin viewing as someone is still themself here."""
     who = request.session.get("real_user")
-    return who if who and access.level(who.get("email")) else current_user(request)
+    return who if who and host.level(who.get("email")) else host.signed_in(request)
 
 
 def can_send(request: Request) -> bool:
     user = real(request)
-    return bool(user and access.sends_feedback(user.get("email")))
+    return bool(user and host.sends_feedback(user.get("email")))
 
 
 def image(value) -> tuple[bytes, str] | None:
@@ -157,7 +156,7 @@ def attach_pictures(db: Session, stored: list[tuple[str, str, str]], *, note_id:
 @router.post("/feedback")
 def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     user = real(request)
-    if not user or not access.sends_feedback(user.get("email")):
+    if not user or not host.sends_feedback(user.get("email")):
         raise HTTPException(404)
     body = body if isinstance(body, dict) else {}
     text = str(body.get("text") or "").strip()[:MAX_TEXT]
@@ -169,7 +168,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     context = body.get("context") if isinstance(body.get("context"), dict) else {}
     if len(json.dumps(context)) > MAX_CONTEXT:
         context = {"left_out": "The page's details were too long to keep."}
-    viewing = view_as.viewing(request.session)
+    viewing = host.viewing(request.session)
     if viewing:
         context |= {"viewing_as": (viewing.get("name") or "").split(" ")[0] or "someone"}  # (a first name: no email, T2)
     pics = _pictures(body)
@@ -227,18 +226,18 @@ def relay(me: dict, fields: dict, pics: list[dict]) -> dict:
 def line(request: Request, db: Session = Depends(get_db)):
     """The line beside Send, asked as the window opens: true now (is a Claude session listening?)."""
     user = real(request)
-    if not user or not access.sends_feedback(user.get("email")):
+    if not user or not host.sends_feedback(user.get("email")):
         raise HTTPException(404)
-    admin = access.level(user.get("email")) == access.ADMIN
+    admin = host.level(user.get("email")) == host.ADMIN
     return JSONResponse({"line": views.send_line(db, admin), "listening": admin and views.listening(db)}, headers={"Cache-Control": "no-store"})
 
 
 def shows_menu(request: Request) -> bool:
     """The account menu's item, and More's on a phone: admins only, as the page is seen (viewing as a player, a player's
     menus)."""
-    from app.auth import is_admin
+    from app.fft.host import is_admin
 
-    return is_admin(current_user(request))
+    return is_admin(host.signed_in(request))
 
 
 templates.env.globals["feedback_send"] = can_send

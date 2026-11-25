@@ -15,10 +15,8 @@ email can be forwarded or kept by the mail service; the Inbox itself stays behin
   app at a time (a Postgres advisory lock), as app/unwatched.py.
 """
 
-import asyncio
 import json
 import logging
-import urllib.request
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -28,6 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import access, config, web
+from app import mail as mail_out
 from app.auth import current_user, is_admin
 from app.config import TABLE_TIME
 from app.db import get_db
@@ -39,7 +38,6 @@ log = logging.getLogger(__name__)
 
 LOCK = 72_042_011  # (app/unwatched.py has its own)
 TICK = 600  # seconds between looks (the hour is what matters, not the minute)
-RESEND = "https://api.resend.com/emails"
 
 
 def enabled() -> bool:
@@ -181,16 +179,7 @@ def _fixes_day(db: Session, now: datetime, today: str) -> list[tuple[str, str]]:
 PLAYER_LOOK_BACK = 7  # (days: a first email covers the last week's fixes)
 
 
-def _resend(to: str, mail: dict) -> bool:
-    body = json.dumps({"from": config.EMAIL_FROM, "to": [to], "subject": mail["subject"], "html": mail["html"], "text": mail["text"],
-                       "headers": {"List-Unsubscribe": f"<{mail['stop']}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}}).encode()
-    req = urllib.request.Request(RESEND, data=body, method="POST", headers={"Authorization": f"Bearer {config.RESEND_API_KEY}",
-                                                                           "Content-Type": "application/json", "User-Agent": "askdnd"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return 200 <= r.status < 300
-
-
-SEND = _resend  # (tests replace it)
+SEND = mail_out.send  # (tests replace it; app/mail.py, the one way to send)
 
 
 # ------------------------------------------------------------------ once a day
@@ -240,29 +229,16 @@ def run_day(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
 
 
 def run_once() -> list[tuple[str, str]]:
-    from app.db import SessionLocal, engine
+    from app import single
 
-    with engine.connect() as hold:
-        got = hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar()
-        hold.commit()
-        if not got:
-            return []
-        try:
-            with SessionLocal() as db:
-                return run_day(db)
-        finally:
-            hold.execute(select(func.pg_advisory_unlock(LOCK)))
-            hold.commit()
+    return single.alone(LOCK, run_day, [])
 
 
 async def loop() -> None:
     """Started with the app (app/main.py) where email is set up: a look every TICK seconds, never stopping on an error."""
-    while True:
-        await asyncio.sleep(TICK)
-        try:
-            await asyncio.to_thread(run_once)
-        except Exception:
-            log.warning("The Inbox digest's look failed this time", exc_info=True)
+    from app import single
+
+    await single.every(TICK, run_once, "The Inbox digest's look")
 
 
 # ------------------------------------------------------------------ Your account › Email, and the stop link

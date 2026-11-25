@@ -12,12 +12,11 @@ the sheet's own anyway (Nov 8: these reads put spent uses back). Test copies sha
 here (the real one is).
 """
 
-import asyncio
 import logging
 import os
 from datetime import timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import config
@@ -62,26 +61,13 @@ def tick(db: Session) -> list[int]:
 
 def run_once() -> list[int]:
     """A tick on its own connection, only when this copy of the app holds the lock (another copy may be reading)."""
-    from app.db import SessionLocal, engine
+    from app import single
 
-    with engine.connect() as hold:
-        got = hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar()
-        hold.commit()  # (the lock outlives the transaction: nothing stays open while D&D Beyond answers)
-        if not got:
-            return []
-        try:
-            with SessionLocal() as db:
-                return tick(db)
-        finally:
-            hold.execute(select(func.pg_advisory_unlock(LOCK)))
-            hold.commit()
+    return single.alone(LOCK, tick, [])
 
 
 async def loop() -> None:
     """Started with the app (app/main.py) where the bridge runs: a tick every TICK seconds, never stopping on an error."""
-    while True:
-        await asyncio.sleep(TICK)
-        try:
-            await asyncio.to_thread(run_once)
-        except Exception:
-            log.warning("Reading unwatched sheets failed this time", exc_info=True)
+    from app import single
+
+    await single.every(TICK, run_once, "Reading unwatched sheets")

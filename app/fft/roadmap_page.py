@@ -262,7 +262,7 @@ def change(request: Request, item_id: int, do: str = Form(...), words: str = For
 def pages(db: Session, it: FftItem) -> list[dict]:
     """The pages a Roadmap item points to, each opening inside askdnd (its why, next step, steps, additions and latest scope:
     issue 105, Brett's note Nov 23)."""
-    from app import documents
+    from app.fft.host import documents
 
     sc = rules.latest_scope(db, it)
     words = [it.why or "", it.why_from or "", it.next_step or "", *(s.text for s in db.scalars(select(FftStep).where(FftStep.item_id == it.id))),
@@ -276,7 +276,7 @@ def page_answers(db: Session, it: FftItem) -> list[dict]:
     """Your answers on the pages an item points to: each page's latest answered question, with its picks, your words and
     where you saved them (Brett, Nov 24: "I cannot even see my answers during the final approval"). Shown beside the
     scope you're asked to OK, in its window and on its page."""
-    from app import documents
+    from app.fft.host import documents
     from app.fft.models import FftQuestion
 
     out = []
