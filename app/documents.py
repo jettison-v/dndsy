@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, Response
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from markupsafe import Markup
 
-from app import config, web
+from app import config, states, web
 from app.auth import is_admin
 from app.db import get_db
 from app.render import markdown_to_html
@@ -44,8 +44,7 @@ KINDS = (
 # Each document's state, a fixed key in docs/library.json (Brett's picks S2 and D1 on docs/mockups/backstage-design-review/,
 # Nov 24): its word and colour come from the key, never from the status's words (which said the same thing ten ways,
 # coloured by their first word). Waiting on you amber, in hand blue, current or done green, earlier grey.
-STATES = {"waiting": ("Waiting on you", "draft"), "building": ("Building", "new"), "current": ("Current", "done"),
-          "done": ("Done", "done"), "earlier": ("Earlier", "faint")}
+STATES = ("waiting", "building", "current", "done", "earlier")  # (each one's word and colour: app/states.py, the one key, AU2)
 VIEWS = (("waiting", "Waiting on you"), ("current", "Current"), ("all", "All"))
 _MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
 
@@ -77,7 +76,7 @@ def rows_for(entries) -> list[dict]:
         st = state_of(e)
         group = "earlier" if st == "earlier" else (e.get("kind") if e.get("kind") in order else "earlier")
         views = {"waiting": "waiting all", "building": "current all", "current": "current all"}.get(st, "all")
-        out.append({"e": e, "state": st, "word": STATES[st][0], "tone": STATES[st][1], "group": names[group], "views": views,
+        out.append({"e": e, "state": st, "word": states.word(st), "tone": states.tone_class(st), "group": names[group], "views": views,
                     "line": e.get("line") or e.get("what") or "", "rank": order[group] * 10000 + (9999 - date_rank(e.get("date", "")))})
     return sorted(out, key=lambda r: r["rank"])
 

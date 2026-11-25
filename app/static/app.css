@@ -839,8 +839,8 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
 /* A row that opens its window (Items, History, Feature use…): one look, the design system's row hover (the end-of-day
    review, Nov 25: it was styled four times in two colours) */
-:is(.records > .record, .hist-rows > .hist-row, .ft-row)[data-modal-url] { cursor: pointer; border-radius: var(--r-sm); }
-:is(.records > .record, .hist-rows > .hist-row, .ft-row)[data-modal-url]:is(:hover, :focus-visible) { background: var(--row-hover); }
+:is(.records > .record, .dtable tbody tr)[data-modal-url] { cursor: pointer; }
+:is(.records > .record, .dtable tbody tr)[data-modal-url]:is(:hover, :focus-visible) { background: var(--row-hover); }
 /* History (Brett's picks HI1–HI3, Nov 25): rows that open their window; the switch and search on one row */
 .ls-toolbar > .filters { margin: 0; }
 .ls-toolbar a.chip { text-decoration: none; }
@@ -851,9 +851,7 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .seat-sheet:hover { color: var(--text); text-decoration: underline; }
 /* Backups' panel (Brett's pick BK1, Nov 25): the message box (.flash), green when last night worked, red with the missed
    nights and what to check when not; its lines one under another */
-.backup-panel { display: grid; gap: var(--sp-1); }
-.backup-panel b { color: var(--green); } .flash.bad.backup-panel b { color: var(--link); }
-.backup-runs tr.backup-missed td, .backup-runs tr.backup-failed td:first-child b { color: var(--link); }
+[data-table="runs"] tr.backup-missed td, [data-table="runs"] tr.backup-failed td:first-child b { color: var(--link); }  /* (missed nights and failures red: BK2, on the one table) */
 .stat.attention small { color: var(--red); }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
 .table-scroll { overflow-x: auto; }  /* every wide table sits in one: it scrolls inside its own frame, never the page (DESIGN.md › Narrow screens) */
@@ -1803,7 +1801,8 @@ button.rm-box { cursor: pointer; }
 .dtable tbody tr:is([data-open], [data-href]) { cursor: pointer; }
 .dtable tbody tr:is([data-open], [data-href]):hover td { background: var(--row-hover); }
 .dtable tbody tr[aria-current] td { background: var(--selected-bg); }
-.dtable tr.dt-group td { height: 26px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.dtable :is(tr.dt-group, tr.ls-grouphead) td { height: 26px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }  /* (a list's headings drawn by the list engine look the same: AU1) */
+.dtable tr.ls-grouphead { display: table-row; padding: 0; letter-spacing: 0; text-transform: none; }
 .dtable tr.dt-cut td { height: 24px; background: transparent; color: var(--muted); font-size: var(--fs-xs); text-align: center; border-top: 2px dashed var(--line-strong); border-bottom: 2px dashed var(--line-strong); }
 @media (max-width: 900px) { .table-scroll > .dtable { min-width: 760px; } }  /* (in its .table-scroll, as every table: a phone scrolls a wide one inside its frame, never the page) */
 /* Backstage › Global › Overview: a card per admin page */
@@ -1815,25 +1814,6 @@ button.rm-box { cursor: pointer; }
 /* Documents: one list, its rows lined up as columns under their headings (Title, State, Date, What it is: Brett's pick
    D3, Nov 24), on the list's grid; a row is one line: its state a short word that never wraps (S6), what it is one line,
    the whole of it on hover and on the document's page */
-.doc-rows { display: grid; grid-template-columns: minmax(0, 17rem) 8.5rem 4rem minmax(0, 1fr); column-gap: var(--sp-3); }
-.doc-head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: var(--sp-1) 0; border-bottom: 1px solid var(--line); color: var(--faint); font-size: var(--fs-xs); font-weight: 600; }
-.doc-rows > .ls-grouphead { grid-column: 1 / -1; }
-.doc-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: baseline; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line-soft); color: var(--text); text-decoration: none; }
-.doc-row:hover .doc-title { text-decoration: underline; }
-.doc-status .tag { white-space: nowrap; }
-.doc-title { font-weight: 600; color: var(--text-strong); min-width: 0; }
-.doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* (the list's own width, not the screen's: under 800px its four columns squeeze, so the state and what it is go under
-   the title and date; the weekly phone sweep, Nov 23) */
-.doc-list { container: doclist / inline-size; }
-@container doclist (max-width: 800px) {
-  .doc-rows { grid-template-columns: minmax(0, 1fr) auto; }
-  .doc-head { display: none; }
-  .doc-date { grid-column: 2; grid-row: 1; justify-self: end; }
-  .doc-status { grid-column: 1 / -1; grid-row: 2; }
-  .doc-what { grid-column: 1 / -1; white-space: normal; }
-}
 .doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
 .doc-meta { margin: var(--sp-1) 0 var(--sp-3); overflow-wrap: anywhere; }
 .doc-boards { margin-bottom: var(--sp-3); overflow-x: auto; }
@@ -1868,8 +1848,6 @@ button.rm-box { cursor: pointer; }
    amber, one that's broken red, where it sits (the page and the menu one map) */
 .ov-section { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-4); }
 .ov-section-h { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
-.ov-card[data-tone="warn"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 8%, var(--surface)); }
-.ov-card[data-tone="bad"] { border-color: var(--link); background: color-mix(in srgb, var(--link) 9%, var(--surface)); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); overflow-x: auto; scrollbar-width: none; }  /* (narrower than its tabs, it scrolls as the tab bar does) */
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; white-space: nowrap; }  /* (one line always: the UI review, Nov 16) */
@@ -1928,9 +1906,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 @media (max-width: 640px) { .import-diff { grid-template-columns: 1fr; } }
 
 /* Backstage › History */
-.hist-row { border-top: 1px solid var(--line); padding: var(--sp-3) 0; display: grid; gap: var(--sp-2); }
 .hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
-.hist-short { margin: 0; }
 .import-diff.one { grid-template-columns: 1fr; }
 .keep-box { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 4px; }
 .keep-opt { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--line); }
@@ -3422,16 +3398,8 @@ a.cx-node:hover { border-color: var(--text); }
   .records.cols-4 > .records-head > :last-child { display: none; }
   .records.cols-4 > .record > .record-actions { grid-column: 1 / -1; justify-content: flex-start; }
 }
-/* Accounts: Person, Campaigns, Admin, Feedback and its buttons; the two switches in their own columns (pick 1) */
-.records.cols-acct { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto auto auto; }
-.acct-set { display: flex; justify-content: center; align-items: center; min-height: 24px; }
-/* (a row's actions are its ⋯, Invite at most: they keep their own narrow column at every width; AC1, Nov 25) */
-@media (max-width: 640px) {  /* a phone: Campaigns folds away, the two switches stay labelled beside the name */
-  .records.cols-acct { grid-template-columns: minmax(0, 1fr) auto auto auto; }
-  .records.cols-acct > .records-head { display: grid; }
-  .records.cols-acct > .records-head > :nth-child(2), .records.cols-acct > .record > :nth-child(2) { display: none; }
-  .records.cols-acct > .record > .record-main { grid-column: auto; }
-}
+/* Accounts: the switches centred in their table cells (the one table, AU1) */
+.dtable td.acct-set { text-align: center; }
 /* Form row: fields side by side, bottom-aligned with their button */
 .form-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }
 .form-row .field { flex: 0 1 180px; min-width: 0; }
@@ -3585,7 +3553,6 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-st { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .br-st.br-live { background: var(--green-soft); color: var(--green); }
-.br-now .br-st { white-space: normal; }  /* (a long health line wraps in Right now: the sweep at 375px) */
 .br-st.br-wait { background: var(--amber-soft); color: var(--amber); }
 .br-st.title-action { white-space: normal; max-width: 100%; text-align: left; }  /* (a long status wraps on a phone instead of pushing the page wider: sweep, Nov 5) */
 .br-st.br-off { background: var(--red-soft); color: var(--link); }
@@ -4324,15 +4291,11 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .ft-day rect { fill: transparent; }
 .ft-day circle { fill: var(--blue); stroke: var(--surface); stroke-width: 2; opacity: 0; }
 .ft-day:hover circle { opacity: 1; }
-.ft-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
 .ft-rows { display: grid; gap: 2px; margin-top: var(--sp-2); }
-.ft-row, .ft-page { display: grid; grid-template-columns: minmax(140px, 1.3fr) minmax(80px, 2fr) 56px 110px 120px; gap: var(--sp-3); align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); }
-.ft-page { grid-template-columns: minmax(110px, 1fr) minmax(60px, 1.4fr) 48px; row-gap: 0; }
+.ft-page { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(60px, 1.4fr) 48px; gap: 0 var(--sp-3); align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); }  /* (a bar row in Feature use's window) */
 .ft-page .ft-top { grid-column: 1 / -1; font-size: var(--fs-xs); padding-bottom: var(--sp-2); }
-.ft-row:not(.ft-row-head):hover { background: var(--surface-2); }
-.ft-row-head { font-size: var(--fs-xs); }
 .ft-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ft-bar { height: 10px; background: var(--surface-2); border-radius: 0 var(--r-xs) var(--r-xs) 0; position: relative; }
+.ft-bar { display: block; height: 10px; background: var(--surface-2); border-radius: 0 var(--r-xs) var(--r-xs) 0; position: relative; }
 .ft-bar i { position: absolute; inset: 0 auto 0 0; background: var(--blue); border-radius: 0 var(--r-xs) var(--r-xs) 0; }
 .ft-who { display: flex; gap: 3px; }
 .ft-who span { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line); }
@@ -4346,8 +4309,6 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .ft-s3 { background: var(--blue); color: var(--bg); }
 @media (max-width: 900px) {
   .ft-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ft-row { grid-template-columns: minmax(0, 1fr) 48px 80px; }
-  .ft-row .ft-bar, .ft-row .ft-who { display: none; }
 }
 
 /* Full Tale & Stats beside ▶ Listen at a recap's top (feedback 55, 56: the awards and numbers were hidden at its end) */
@@ -4414,7 +4375,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* DM Tools (app/homebrew.py, dm_tools.html, dm_item.html): its list down the left, then the page; one column on a phone */
 .dm-main { min-width: 0; }
 .dm-says { color: var(--text); }
-.dm-items .record { align-items: center; }
 .dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-3); }
 .dm-grid .field { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
 .dm-grid .field input[type=text], .dm-grid select, .dm-form textarea { width: 100%; min-width: 0; }
@@ -4818,3 +4778,18 @@ details.backlog[open] > ul { margin: var(--sp-2) 0; }
 /* The DM guide: a reading column (Brett's pick DG1, Nov 25) */
 main.dm-guide [role=tabpanel] > .section { max-width: calc(75ch + 2 * var(--sp-5)); }
 
+/* Show more, in place (_lists.html show_more; AU5): a quiet fold under a list, its count beside it */
+.ls-unfold { display: inline-flex; align-items: center; gap: var(--sp-1); margin-top: var(--sp-2); background: none; border: 0; padding: var(--sp-1) 0; color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.ls-unfold:hover { color: var(--text); }
+.ls-unfold[aria-expanded="true"] .when-closed, .ls-unfold[aria-expanded="false"] .when-open { display: none; }
+.ls-unfold[aria-expanded="true"] .count { display: none; }
+/* Needs you, said once at the top of a page (_admin_bits.html needs_line; Brett's pick AU3, Nov 25) */
+.needs-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); margin: 0 0 var(--sp-3); border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); }
+.needs-line[data-tone="broken"] { border-left-color: var(--link); }
+.needs-line[data-tone="done"] { border-left-color: var(--green); }
+.needs-word { font-size: var(--fs-sm); font-weight: 700; color: var(--amber); white-space: nowrap; }
+.needs-line[data-tone="broken"] .needs-word { color: var(--link); }
+.needs-line[data-tone="done"] .needs-word { color: var(--green); }
+.needs-says { color: var(--text); min-width: 0; }
+.needs-act { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; }
+@media (max-width: 640px) { .needs-line { grid-template-columns: minmax(0, 1fr); } .needs-act { justify-content: flex-start; } }

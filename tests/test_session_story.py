@@ -77,7 +77,7 @@ def test_the_first_read_asks_and_suggests_and_writes_no_recap(db, story, dm):
     s = db.get(GameSession, story.id)
     assert s.recaps == [] and review.review_status(s, False) == "read" and review.statuses(db, s.campaign_id)[s.id] == "read"
     page = dm.get(f"/c/main/manage/sessions/{s.id}").text
-    assert "Who is the captain?" in page and "Draft the recap" in page and "Recap to draft" in page
+    assert "Who is the captain?" in page and "Draft the recap" in page and 'data-state="read"' in page  # (its state by key: AU2)
     assert page.index('data-tab="t-questions"') < page.index('data-tab="t-suggestions"') < page.index('data-tab="t-recap"')  # (in order)
     assert "has Claude&#39;s questions and suggestions" in dm.get("/c/main/manage").text  # Needs you
 

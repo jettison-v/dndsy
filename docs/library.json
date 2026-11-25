@@ -22,6 +22,17 @@
   "link": "https://claude.ai/artifact/PwaBbRYMPKC6HcUonmWmfW"
  },
  {
+  "title": "Jobs and a worker: the plan",
+  "kind": "plan",
+  "status": "Building",
+  "state": "building",
+  "date": "Nov 25",
+  "what": "How askdnd's background work moves onto a jobs table and a separate worker (Roadmap item 43, the backend look-back's LB1 and LB2): the table, how a job is claimed and retried, what stays in the web app, the Railway service, and the order to build it in. A second opinion Brett asked for, agreeing with the look-back.",
+  "line": "The jobs table and worker, from table to Railway",
+  "source": "docs/plans/2026-11-25-jobs-and-worker.md",
+  "link": ""
+ },
+ {
   "title": "Backstage, round 4: the DM's pages, the Tuning pages, and the rest",
   "kind": "design",
   "status": "Picked, built",

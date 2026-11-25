@@ -1,4 +1,4 @@
 {# One backup run as Backups' table row (app/admin.py `backup_row`): only a failure is marked (Brett's pick BK2, Nov 25) #}
-<tr class="{{ '' if b.ok else 'backup-failed' }}"><td><b>{{ b.run.finished_at | clock(date=True) }}</b></td>
-  <td>{% if b.ok %}<span class="note">Worked</span>{% else %}<span class="tag error">Failed</span> <span class="note">{{ b.why }}</span>{% endif %}</td>
+<tr class="{{ '' if b.ok else 'backup-failed' }}"{% if n is defined %} data-ls-row data-sort-default="{{ n }}"{% if later %} data-ls-later{% endif %}{% endif %}><td><b>{{ b.run.finished_at | clock(date=True) }}</b></td>
+  <td>{% if b.ok %}<span class="note">Worked</span>{% else %}{{ state_tag("failed") }} <span class="note">{{ b.why }}</span>{% endif %}</td>
   <td class="num">{{ b.size }}</td><td class="num">{{ b.rows }}</td><td class="num">{{ b.files }}</td></tr>

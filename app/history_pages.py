@@ -128,7 +128,8 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         return denied
     campaign = web.campaign(db) if in_campaign else None
     allowed = visible_tables(user)
-    tables = FILTERS.get(show, FILTERS[""])[1] or allowed
+    picked = [k for k in show.split(",") if k and k in FILTERS]  # (several at once, each a chip that turns on and off: AU4)
+    tables = sorted({t for k in picked for t in FILTERS[k][1]}) if picked else allowed
     q = select(Revision).where(Revision.table.in_([t for t in tables if t in allowed]))
     if table and row is not None:
         q = q.where(Revision.table == table, Revision.row_id == row)
@@ -148,11 +149,15 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
     for e in entries:
         days[e["at"].astimezone(config.TABLE_TIME).strftime("%b %-d, %Y")].append(e)  # (dates one way, "Nov 5, 2026": the UI review; the table's day, never UTC's: the end-of-day review)
     every = list(days.items())
-    shown = every if older else every[:DAYS_SHOWN]
-    shown_filters = ({k: v[0] for k, v in FILTERS.items() if not v[1] or set(v[1]) & set(allowed)} if in_campaign
-                     else {k: FILTERS[k][0] for k in ("", "people", "characters")})
+    for i, (_, entries) in enumerate(every):  # (the newest week shows; older days wait behind the list's fold, in place: AU5)
+        for e in entries:
+            e["later"] = i >= DAYS_SHOWN
+    shown = every
+    keys = ([k for k, v in FILTERS.items() if k and set(v[1]) & set(allowed)] if in_campaign else ["people", "characters"])
+    toggled = lambda k: ",".join(x for x in keys if (x in picked) != (x == k))  # (this chip's press: the set with it turned over)
+    shown_filters = [{"key": k, "label": FILTERS[k][0], "on": k in picked, "show": toggled(k)} for k in keys]  # (no Everything chip: none on is everything)
     return templates.TemplateResponse(request, "admin_history.html", {
-        "days": shown, "more_days": len(every) - len(shown), "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
+        "days": shown, "show": show, "filters": shown_filters, "in_campaign": in_campaign, "campaign": campaign,
         "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history",  # not "here": every page already has that (the campaign)
         "focus": revs[0].label if (table and row is not None and revs) else "", "batch": batch,
         "toast": request.session.pop("toast", None)})
