@@ -1,0 +1,37 @@
+{# A finished review's one page (app/fft/work_page.py `review_result`; Roadmap item 46, Brett's pick "What a review hands
+   back: as drawn" on docs/mockups/review-catalog/): what was asked and what it covered, its numbers, each finding and
+   where it went (an issue under its feature, a fix made in the run, a pick in For you), what it didn't cover, and its
+   numbers run by run. Words here are Claude's report, never anyone's writing. On the one window. #}
+{% from "_window.html" import window %}
+{% from "_admin_bits.html" import state_word %}
+{% set n = run.result.numbers or {} %}
+{% set i = run.inputs %}
+{% set w_foot %}<button class="btn link peek-close" type="button">Close</button>{% endset %}
+{% set w_kind %}Review · {{ "on its schedule" if run.how == "scheduled" else "on demand" }} · {{ run.state }}{% if run.ended_at %} {{ when(run.ended_at) }}{% endif %}{% endset %}
+{% set w_head %} data-review-result="{{ run.id }}"{% endset %}
+{% call window(w_kind, title, foot=w_foot, attrs=w_head) %}
+  <dl class="mech" data-result-facts>
+    <dt>Asked by</dt><dd>{{ "Its schedule" if run.how == "scheduled" else asker }}</dd>
+    {% if i.issues or i.words %}<dt>Starting from</dt><dd>{% if i.issues %}{% for x in i.issues %}<a class="link-plain" href="/manage/item/i{{ x }}" data-panel-url="/manage/item/i{{ x }}">I{{ x }}</a>{{ ", " if not loop.last }}{% endfor %}{% endif %}{% if i.issues and i.words %} and {% endif %}{% if i.words %}what you wrote{% endif %}</dd>{% endif %}
+    {% if i.against %}<dt>Checked against</dt><dd>{% for a in i.against %}{{ said.against.get(a, a) }}{{ ", " if not loop.last }}{% endfor %}</dd>{% endif %}
+    {% if i.characters or i.device %}<dt>With</dt><dd>{{ i.characters | join(", ") or "No character" }}{% if i.device %}, on {{ said.devices.get(i.device, i.device) | lower }}{% endif %}</dd>{% endif %}
+    {% if i.devices %}<dt>On</dt><dd>{% for d in i.devices %}{{ said.devices.get(d, d) }}{{ ", " if not loop.last }}{% endfor %}</dd>{% endif %}
+    {% if i.focus %}<dt>Focus</dt><dd>{{ i.focus }}</dd>{% endif %}
+    {% if took is not none %}<dt>Took</dt><dd>{{ took }} minute{{ "s" if took != 1 }} (limit {{ r.limit }})</dd>{% endif %}
+    {% if run.why %}<dt>Why it ended</dt><dd>{{ run.why }}</dd>{% endif %}
+  </dl>
+  {% if run.state == "done" %}
+  <p data-result-numbers data-found="{{ n.found }}"><b>{{ n.found }} found</b> · {{ n.fixed }} fixed in the run · {{ n.picks }} pick{{ "s" if n.picks != 1 }} for you · {{ n.open }} still open</p>
+  <p>{{ run.result.summary }}</p>
+  {% if run.result.findings %}<div class="table-scroll"><table class="dtable fft-table" data-result-findings>
+    <thead><tr><th>Finding</th><th class="dt-w4">Became</th></tr></thead>
+    <tbody>{% for f in run.result.findings %}<tr><td class="dt-wrap">{{ f.what }}</td>
+      <td>{% if f.ref and f.ref[:1] in ("i", "q", "c") and f.ref[1:].isdigit() %}<a class="link-plain" href="/manage/item/{{ f.ref }}" data-panel-url="/manage/item/{{ f.ref }}">{{ f.became or f.ref | upper }}</a>{% else %}{{ f.became }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  {% if run.result.covered %}<p class="note"><b>Covered:</b> {{ run.result.covered }}</p>{% endif %}
+  {% if run.result.missed %}<p class="note"><b>What it didn't cover:</b> {{ run.result.missed }}</p>{% endif %}
+  {% if over_time | length > 1 %}<div class="table-scroll"><table class="dtable fft-table" data-result-over-time>
+    <thead><tr><th>Run</th><th class="num dt-w1">Found</th><th class="num dt-w1">Fixed</th><th class="num dt-w1">Still open</th></tr></thead>
+    <tbody>{% for o in over_time %}<tr{% if o.id == run.id %} class="sel"{% endif %}><td>{{ when(o.at) }}</td><td class="num">{{ o.found }}</td><td class="num">{{ o.fixed }}</td><td class="num">{{ o.open }}</td></tr>{% endfor %}</tbody></table></div>
+  <p class="note">Finding fewer each run is the point. Three runs in a row with nothing found brings it up in Look back at how we work, to run less often.</p>{% endif %}
+  {% else %}<p>{{ state_word(run.state | capitalize, "quiet") }} {{ run.why or "It didn't finish." }}</p>{% endif %}
+{% endcall %}

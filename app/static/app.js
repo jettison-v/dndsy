@@ -964,6 +964,66 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     }
   });
 
+  // Steps in a window (form[data-steps]; Roadmap item 46's Run…, the design system's "Steps in a window"): its tab bar
+  // numbers the steps; the foot's Back and Next move between them (Next first asks the step's own boxes to be filled),
+  // and Start shows on the last, which says what will happen ([data-sum]: the chosen words of the fields it names).
+  const stepTabs = form => [...form.querySelectorAll('[role=tablist] [role=tab]')];
+  function stepFoot(form) {
+    const tabs = stepTabs(form), at = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true'), last = at === tabs.length - 1;
+    const foot = form.querySelector('[data-window-foot]') || form;
+    foot.querySelector('[data-step-back]').hidden = at <= 0;
+    foot.querySelector('[data-step-next]').hidden = last;
+    foot.querySelector('[data-step-start]').hidden = !last;
+    if (last) form.querySelectorAll('[data-sum]').forEach(dd => {
+      const said = dd.dataset.sum.split(' ').flatMap(name => [...form.elements].filter(el => el.name === name).flatMap(el => {
+        if (el.tagName === 'SELECT') {
+          const o = el.selectedOptions[0], g = o && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label + ' › ' : '';
+          return el.value ? [g + o.textContent.trim()] : [];
+        }
+        if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? [el.closest('label').textContent.trim()] : [];
+        return el.value.trim() ? [el.value.trim()] : [];
+      }));
+      dd.textContent = said.join(', ') || '—';
+    });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('form[data-steps] [data-step-back], form[data-steps] [data-step-next]');
+    if (!b) return;
+    const form = b.closest('form'), tabs = stepTabs(form), at = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+    if (b.hasAttribute('data-step-next')) {
+      const here = document.getElementById(tabs[at].dataset.tab), bad = here && [...here.querySelectorAll('input, select, textarea')].find(el => !el.checkValidity());
+      if (bad) { bad.reportValidity(); return; }
+    }
+    const to = tabs[at + (b.hasAttribute('data-step-next') ? 1 : -1)];
+    if (to) { selectTab(to); stepFoot(form); }
+  });
+  document.addEventListener('tab:shown', e => { const form = e.target.closest('form[data-steps]'); if (form) stepFoot(form); });
+  // Enter in a box sends the form only from its last step; before that it moves on, as Next does (the review of #535)
+  document.addEventListener('submit', e => {
+    const form = e.target.closest && e.target.closest('form[data-steps]');
+    if (!form) return;
+    const tabs = stepTabs(form);
+    if (tabs.length && tabs[tabs.length - 1].getAttribute('aria-selected') !== 'true') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      form.querySelector('[data-step-next]').click();
+    }
+  }, true);
+  // Run…'s Dig into a feature: the feature's own open issues to start from ([data-for-feature]); the others hidden and unticked
+  document.addEventListener('change', e => {
+    const sel = e.target.closest('select[data-review-feature]');
+    if (!sel) return;
+    const form = sel.closest('form');
+    let any = false;
+    form.querySelectorAll('[data-for-feature]').forEach(l => {
+      const mine = l.dataset.forFeature === sel.value;
+      l.hidden = !mine; any = any || mine;
+      if (!mine) l.querySelector('input').checked = false;
+    });
+    const none = form.querySelector('[data-no-issues]');
+    if (none) none.hidden = any;
+  });
+
   document.addEventListener('click', e => {
     const a = e.target.closest('a');
     if (!a || a.hasAttribute('data-no-peek') || a.closest('.peek-foot') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;

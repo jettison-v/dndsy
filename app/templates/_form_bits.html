@@ -6,9 +6,17 @@
    `dice_picker`: the dice box, with pickers that write it: how many, which die, and (`types`) the damage type;
    typing in the box sets the pickers (app.js "dice pickers"). The box keeps the form's field `name`. #}
 
-{% macro pick_chips(name, options, current, label, extra="") -%}
+{% macro pick_chips(name, options, current, label, extra="", required=False) -%}
 <div class="pick-chips" role="radiogroup" aria-label="{{ label }}"{{ extra | safe }}>
-  {%- for value, words in options %}<label class="chip" data-pick="{{ value }}"><input type="radio" name="{{ name }}" value="{{ value }}"{% if value == current %} checked{% endif %}> {{ words }}</label>{% endfor %}
+  {%- for value, words in options %}<label class="chip" data-pick="{{ value }}"><input type="radio" name="{{ name }}" value="{{ value }}"{% if value == current %} checked{% endif %}{% if required %} required{% endif %}> {{ words }}</label>{% endfor %}
+</div>
+{%- endmacro %}
+
+{# `pick_any`: any of a few, as chips (a checkbox each; Run…'s Check it against, With which characters: Roadmap item 46).
+   `current`: the values ticked. #}
+{% macro pick_any(name, options, current, label, extra="") -%}
+<div class="pick-chips" role="group" aria-label="{{ label }}"{{ extra | safe }}>
+  {%- for value, words in options %}<label class="chip" data-pick="{{ value }}"><input type="checkbox" name="{{ name }}" value="{{ value }}"{% if value in current %} checked{% endif %}> {{ words }}</label>{% endfor %}
 </div>
 {%- endmacro %}
 

@@ -1635,7 +1635,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
   .page.manage-page { max-width: 2200px; }  /* the whole window (Backstage mode): lists and tables use the width; centred past 2200px */
 }
 /* The item window (app/fft/item_page.py, _fft_item.html; Nov 20): the side panel, wider for an item's whole reader */
-.peek:has(> :is([data-item-panel], [data-job-panel])) { width: min(640px, 100%); }
+.peek:has(> :is([data-item-panel], [data-job-panel], [data-review-panel])) { width: min(640px, 100%); }
 .fft-item-body .reader-article { display: grid; gap: var(--sp-3); }
 .dtable form.inline, .dt-group form.inline { display: inline; margin: 0; }
 .dt-group .btn.link { margin-left: var(--sp-3); }
@@ -3295,7 +3295,7 @@ details.add-fold > summary::-webkit-details-marker { display: none; }
 details.add-fold[open] > summary { display: none; }
 details.add-fold > form { min-width: 0; }
 .pick-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
-.pick-chips label.chip > input[type="radio"] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }  /* (the chip is the control: its radio stays focusable, in a corner off the words) */
+.pick-chips label.chip > input:is([type="radio"], [type="checkbox"]) { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }  /* (the chip is the control: its radio stays focusable, in a corner off the words) */
 .pick-chips label.chip { position: relative; }
 .pick-chips label.chip:has(input:checked) { background: var(--selected-bg); border-color: var(--blue); }
 .pick-chips label.chip:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }

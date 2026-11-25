@@ -1,12 +1,12 @@
 {
   "_about": "Workshop's reviews (Roadmap item 46, Brett's picks on docs/mockups/review-catalog/, version 6, Nov 25): written once as templates, each product filling in its own (app/data/review_fills.json for askdnd). bucket: one of BUCKETS; cadence: Brett's pick (weekly, monthly, phase, on_demand, off); launch: what Run asks first (now: one confirm; polish: the area, then a focus and devices; dig: the feature, what prompted it, what to check against and with whom, then Start); limit: minutes before a run stops and reports what it covered; skip_unchanged: a scheduled run with no merged change since the last run is skipped and says so.",
   "buckets": [
-    {"key": "experience", "title": "Experience", "question": "Is it easy and pleasant to use at the table?", "automatic": "Layout tests at every width, iPhone Safari nightly, the Monday phone sweep, the visual compare before a merge."},
-    {"key": "correctness", "title": "Correctness", "question": "Is what the product says right?", "automatic": "The nightly live test on the real D&D Beyond, the daily D&D Beyond drift check, the rules and parser tests."},
+    {"key": "experience", "title": "Experience", "question": "Is {product} easy and pleasant to use {where}?", "automatic": "Layout tests at every width, iPhone Safari nightly, the Monday phone sweep, the visual compare before a merge."},
+    {"key": "correctness", "title": "Correctness", "question": "Is what {product} says right?", "automatic": "The nightly live test on the real D&D Beyond, the daily D&D Beyond drift check, the rules and parser tests."},
     {"key": "code", "title": "The code", "question": "Is it well built, and still easy to change?", "automatic": "Tests on every push, the code review on every pull request, the fire drill, Dependabot."},
-    {"key": "trust", "title": "Trust", "question": "Is what people give it safe?", "automatic": "The refusal and reading tests on every route, the public-repo check, the monthly restore drill."},
+    {"key": "trust", "title": "Trust", "question": "Is what people give {product} safe?", "automatic": "The refusal and reading tests on every route, the public-repo check, the monthly restore drill."},
     {"key": "running", "title": "Running it", "question": "Is it up, quick and affordable?", "automatic": "Sentry errors filed daily, the slowest pages weekly, backups nightly, the after-deploy check, the spending limit."},
-    {"key": "how", "title": "How we work", "question": "Is the way we build it working?", "automatic": "The daily feedback check, the gaps check at the end of every turn."}
+    {"key": "how", "title": "How we work", "question": "Is the way we build {product} working?", "automatic": "The daily feedback check, the gaps check at the end of every turn."}
   ],
   "reviews": [
     {"key": "game_night", "title": "Play a game night", "bucket": "experience", "cadence": "monthly", "launch": "now", "limit": 60,

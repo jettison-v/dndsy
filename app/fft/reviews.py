@@ -49,7 +49,10 @@ def keys() -> list[str]:
 
 
 def buckets() -> list[dict]:
-    return catalog()["buckets"]
+    """The six buckets, their questions in this product's words ({product}: app/data/review_fills.json)."""
+    f = fills()
+    return [{**b, "question": b["question"].replace("{product}", f["product"]).replace("{where}", f.get("where", "")).replace(" ?", "?")}
+            for b in catalog()["buckets"]]
 
 
 def setting(db: Session, key: str) -> FftReview | None:

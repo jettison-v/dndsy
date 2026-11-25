@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import config
 from app.db import get_db
@@ -20,7 +20,7 @@ RESULT = {"summary": "Wild Shape checked against the books and Cole's sheet.", "
           "findings": [{"what": "Temporary Hit Points not shown", "became": "Issue 94", "ref": "i94"}],
           "numbers": {"found": 6, "fixed": 2, "picks": 1, "open": 4}}
 DIG = {"feature": "hp", "issues": [92], "words": "Cole can't pick Elemental forms", "against": ["books", "sheet"],
-       "characters": ["Cole"], "device": "laptop", "depth": "deep"}
+       "characters": ["Cole"], "device": "phone", "depth": "deep"}
 
 
 @pytest.fixture
@@ -202,3 +202,201 @@ def test_a_cadence_with_no_slots_turns_its_schedule_off(db):
     row = rules.set_review(db, "claude", "the_week", cadence="on_demand")
     assert row.scheduled is False
     assert rules.set_review(db, "claude", "the_week", cadence="weekly").scheduled is False  # (back to weekly: off until turned on)
+
+
+# ------------------------------------------------------------------ Development › Scheduled (step 2)
+
+
+def test_scheduled_lists_each_review_by_bucket_with_how_often_and_next(admin, db):
+    sched = admin.get("/manage/work?tab=scheduled").text
+    assert sched.count("data-review=") == 10 and sched.count('data-bucket="') == 6
+    assert "data-jobs" in sched  # (the jobs stay, under the reviews)
+    assert 'data-review="dig_feature"' in sched
+    rules.set_review(db, "claude", "the_week", scheduled=True)
+    rules.ask_review(db, "user:1", "every_number")
+    db.flush()
+    sched = admin.get("/manage/work?tab=scheduled").text
+    row = sched[sched.index('data-review="every_number"'):][:1500]
+    assert 'data-run-state="asked"' in row and 'data-do="review-stop"' in row
+
+
+def test_run_now_asks_it_and_says_when_it_starts(admin, db):
+    win = admin.get("/manage/work/reviews/every_number/run").text
+    assert 'data-review-run="every_number"' in win and "data-steps" not in win and 'data-covers="all"' in win
+    r = admin.post("/manage/work/reviews/every_number/run", data={}, follow_redirects=False)
+    assert r.status_code == 303
+    run = db.scalar(select(FftReviewRun).where(FftReviewRun.review == "every_number"))
+    assert run.state == "asked" and run.asked_by.startswith("user:")
+    again = admin.post("/manage/work/reviews/every_number/run", data={}, follow_redirects=False)  # (already waiting its turn)
+    assert again.status_code == 303 and db.scalar(select(func.count()).select_from(FftReviewRun)) == 1
+
+
+def test_run_dig_into_a_feature_asks_four_steps_and_keeps_what_was_picked(admin, db):
+    win = admin.get("/manage/work/reviews/dig_feature/run").text
+    assert "data-steps" in win and win.count('role="tab"') == 4 and 'name="feature"' in win and 'name="characters"' in win
+    admin.post("/manage/work/reviews/dig_feature/run", data={"feature": ""})
+    assert db.scalar(select(FftReviewRun)) is None  # (refused: said in a corner card)
+    r = admin.post("/manage/work/reviews/dig_feature/run", data={"feature": "hp", "against": ["books", "house"], "characters": ["Cole"],
+                                                                 "device": "phone", "depth": "quick", "words": "It's off by one"},
+                   follow_redirects=False)
+    assert r.status_code == 303
+    run = db.scalar(select(FftReviewRun).where(FftReviewRun.review == "dig_feature"))
+    assert run.inputs["against"] == ["books", "house"] and run.inputs["device"] == "phone" and run.inputs["characters"] == ["Cole"]
+
+
+def test_run_polish_an_area_asks_two_steps(admin, db):
+    win = admin.get("/manage/work/reviews/polish_area/run").text
+    assert win.count('role="tab"') == 2 and 'name="area"' in win and 'name="devices"' in win
+    admin.post("/manage/work/reviews/polish_area/run", data={"area": "battle", "devices": ["laptop", "phone"]})
+    assert db.scalar(select(FftReviewRun).where(FftReviewRun.review == "polish_area")).inputs["devices"] == ["laptop", "phone"]
+
+
+def test_stop_and_the_one_page_result_and_the_panel(admin, db):
+    run = rules.ask_review(db, "user:1", "dig_feature", DIG)
+    rules.start_review(db, "claude")
+    db.flush()
+    assert admin.post(f"/manage/work/reviews/runs/{run.id}/stop", follow_redirects=False).status_code == 303
+    assert run.state == "stopped"
+    done = rules.ask_review(db, "claude", "dig_feature", DIG)
+    rules.start_review(db, "claude")
+    rules.finish_review(db, "claude", done, RESULT)
+    db.flush()
+    page = admin.get(f"/manage/work/reviews/runs/{done.id}").text
+    assert f'data-review-result="{done.id}"' in page and 'data-found="6"' in page and page.count("<tr>") >= 1
+    assert 'href="/manage/item/i94"' in page
+    panel = admin.get("/manage/work/reviews/dig_feature").text
+    assert 'data-review-panel="dig_feature"' in panel and 'data-found="6"' in panel and 'data-run-state="stopped"' in panel
+    assert "Is what askdnd says right?" in panel  # (the words are the point: the product's name, filled in)
+
+
+def test_reviews_are_admins_only(player, db):
+    """A standing rule (Workshop is admins only: Brett, Nov 17): a player can't see, run or stop a review."""
+    run = rules.ask_review(db, "claude", "every_number")
+    db.flush()
+    for url in ("/manage/work/reviews/every_number", "/manage/work/reviews/every_number/run", f"/manage/work/reviews/runs/{run.id}"):
+        assert "data-review" not in player.get(url).text
+    player.post("/manage/work/reviews/the_week/run", data={})
+    player.post(f"/manage/work/reviews/runs/{run.id}/stop")
+    assert db.scalar(select(FftReviewRun).where(FftReviewRun.review == "the_week")) is None and run.state == "asked"
+
+
+# ------------------------------------------------------------------ mutation testing's survivors (the review of #534)
+
+
+def _pt(*a):
+    from app.config import TABLE_TIME
+
+    return datetime(*a, tzinfo=TABLE_TIME)
+
+
+def test_slots_to_the_minute_on_each_side_of_their_hour():
+    assert reviews.slot_before("weekly", _pt(2026, 11, 25, 12, 34, 56, 789)) == _pt(2026, 11, 23, 6, 0)
+    assert reviews.slot_before("weekly", _pt(2026, 11, 23, 6, 0)) == _pt(2026, 11, 23, 6, 0)  # (at its slot: that one)
+    assert reviews.slot_before("weekly", _pt(2026, 11, 23, 5, 59)) == _pt(2026, 11, 16, 6, 0)  # (Monday before 6: last week's)
+    assert reviews.slot_after("weekly", _pt(2026, 11, 23, 5, 59)) == _pt(2026, 11, 23, 6, 0)
+    assert reviews.slot_after("weekly", _pt(2026, 11, 23, 6, 0)) == _pt(2026, 11, 30, 6, 0)  # (at its slot: the next one)
+    assert reviews.slot_after("weekly", _pt(2026, 11, 25, 9, 30, 15)) == _pt(2026, 11, 30, 6, 0)
+    assert reviews.slot_before("monthly", _pt(2026, 11, 25, 9, 30, 15, 1)) == _pt(2026, 11, 1, 4, 0)
+    assert reviews.slot_before("monthly", _pt(2026, 12, 1, 4, 0)) == _pt(2026, 12, 1, 4, 0)
+    assert reviews.slot_before("monthly", _pt(2026, 12, 1, 3, 59)) == _pt(2026, 11, 1, 4, 0)
+    assert reviews.slot_after("monthly", _pt(2026, 12, 1, 3, 59)) == _pt(2026, 12, 1, 4, 0)
+    assert reviews.slot_after("monthly", _pt(2026, 12, 1, 4, 0)) == _pt(2027, 1, 1, 4, 0)
+    assert reviews.slot_after("monthly", _pt(2026, 1, 31, 23, 0)) == _pt(2026, 2, 1, 4, 0)
+    for how in ("phase", "on_demand", "off"):
+        assert reviews.slot_before(how, _pt(2026, 11, 25, 12, 0)) is None and reviews.slot_after(how, _pt(2026, 11, 25, 12, 0)) is None
+
+
+def test_due_needs_a_schedule_and_no_run_since_its_latest_slot(db):
+    now = _pt(2026, 12, 3, 12, 0)  # (two days after the 1st's slot)
+    slot = _pt(2026, 12, 1, 4, 0)
+    assert reviews.due(db, now) == []  # (none scheduled)
+    rules.set_review(db, "claude", "every_number", scheduled=True)
+    rules.set_review(db, "claude", "test_tests", scheduled=False)
+    assert reviews.due(db, now) == ["every_number"]
+    early = rules.ask_review(db, "claude", "every_number", how="scheduled")
+    early.created_at = slot - timedelta(minutes=1)  # (a run from before the slot doesn't count for it)
+    rules.skip_review(db, "claude", early, "Nothing changed")
+    db.flush()
+    assert reviews.due(db, now) == ["every_number"]
+    since = rules.ask_review(db, "claude", "every_number", how="scheduled")
+    since.created_at = slot  # (asked at its slot: done for that slot)
+    db.flush()
+    assert reviews.due(db, now) == []
+    rules.set_review(db, "claude", "test_tests", scheduled=True)
+    assert "test_tests" in reviews.due(db, slot + reviews.CATCH_UP)  # (a week late to the second: still caught up)
+    assert "test_tests" not in reviews.due(db, slot + reviews.CATCH_UP + timedelta(seconds=1))  # (later: skipped till the next)
+
+
+def test_a_workspace_cadence_overrides_the_catalog(db):
+    assert reviews.cadence(db, "every_number") == "monthly"
+    rules.set_review(db, "claude", "every_number", cadence="weekly")
+    assert reviews.cadence(db, "every_number") == "weekly"
+    assert reviews.cadence(db, "test_tests") == "monthly"  # (another review keeps its own)
+    rules.set_review(db, "claude", "test_tests", scheduled=False)
+    assert reviews.cadence(db, "test_tests") == "monthly"  # (a row with no cadence of its own: the catalog's)
+    assert reviews.review("every_number")["title"] == "Check every number" and reviews.review("nope") is None
+
+
+def _done(db, key, found, **more):
+    run = rules.ask_review(db, "claude", key)
+    rules.start_review(db, "claude")
+    rules.finish_review(db, "claude", run, {"summary": "Checked.", "numbers": {"found": found, "fixed": more.get("fixed", 0),
+                                                                              "picks": more.get("picks", 0), "open": more.get("open", 0)}})
+    db.flush()
+    return run
+
+
+def test_numbers_over_time_newest_first_with_every_number(db):
+    a = _done(db, "every_number", 3, fixed=1, picks=2, open=2)
+    b = _done(db, "every_number", 0)
+    _done(db, "test_tests", 9)
+    rows = reviews.numbers_over_time(db, "every_number")
+    assert [r["id"] for r in rows] == [b.id, a.id]
+    assert rows[1] == {"id": a.id, "at": a.ended_at, "found": 3, "fixed": 1, "picks": 2, "open": 2}
+    assert len(reviews.numbers_over_time(db, "every_number", 1)) == 1
+    stopped = rules.ask_review(db, "claude", "every_number")
+    rules.stop_review(db, "claude", stopped)
+    assert len(reviews.numbers_over_time(db, "every_number")) == 2  # (only finished runs count)
+    assert [r.id for r in reviews.runs(db, "every_number")][:1] == [stopped.id]
+    assert len(reviews.runs(db, None, 2)) == 2 and len(reviews.runs(db, "test_tests")) == 1
+
+
+def test_three_quiet_runs_in_a_row_count_from_the_newest(db):
+    _done(db, "every_number", 2)
+    for _ in range(3):
+        _done(db, "every_number", 0)
+    assert reviews.quiet_streak(db, "every_number") == 3
+    _done(db, "every_number", 1)
+    assert reviews.quiet_streak(db, "every_number") == 0
+    for _ in range(11):
+        _done(db, "test_tests", 0)
+    assert reviews.quiet_streak(db, "test_tests") == 10  # (it reads the latest ten)
+    assert reviews.quiet_streak(db, "runs_well") == 0
+
+
+def test_the_live_run_is_the_oldest_that_holds_the_others(db):
+    assert reviews.live_run(db) is None
+    a = rules.ask_review(db, "claude", "every_number")
+    assert reviews.live_run(db) is None  # (asked isn't live)
+    rules.start_review(db, "claude")
+    assert reviews.live_run(db) is a
+
+
+def test_a_refused_run_is_a_corner_card_and_polish_needs_its_area(admin, db):
+    """The review of #535: a Run or Stop that's refused comes back to Scheduled with its words in a corner card, never
+    a bare page; Polish an area's area is required before Next."""
+    assert 'name="area" value="battle" required' in admin.get("/manage/work/reviews/polish_area/run").text
+    r = admin.post("/manage/work/reviews/polish_area/run", data={"area": ""}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("tab=scheduled")
+    assert db.scalar(select(FftReviewRun).where(FftReviewRun.review == "polish_area")) is None
+
+
+def test_a_run_waiting_behind_its_own_live_one_can_be_stopped(admin, db):
+    live = rules.ask_review(db, "user:1", "the_week")
+    rules.start_review(db, "claude")
+    behind = rules.ask_review(db, "claude", "the_week", how="scheduled")
+    db.flush()
+    panel = admin.get("/manage/work/reviews/the_week").text
+    assert f'data-run="{behind.id}"' in panel and live.state == "starting"
+    admin.post(f"/manage/work/reviews/runs/{behind.id}/stop")
+    assert behind.state == "stopped" and live.state == "starting"
