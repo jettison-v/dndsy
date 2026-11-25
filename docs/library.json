@@ -1,5 +1,16 @@
 [
  {
+  "title": "Backstage, round 3: what changed, and fixes to askdnd",
+  "kind": "design",
+  "status": "Your picks",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "Roadmap item 5, round 3 of 4: the campaign's History, askdnd history and Tool corrections drawn today and as recommended: rows that name what changed, a batch as one row, before and after in the item window, a search and Show older, tool corrections in plain words with a button to send them to Claude. Six picks.",
+  "line": "History, askdnd history and Tool corrections: six picks",
+  "source": "docs/mockups/backstage-round-3/index.html",
+  "link": "https://claude.ai/artifact/Gs8wP4YxRt5DVsx4Rv3zk6"
+ },
+ {
   "title": "Backstage, round 2: the DM's table pages",
   "kind": "design",
   "status": "Your picks",
