@@ -108,7 +108,7 @@ def test_one_at_a_time_and_never_while_deploys_is_paused(db):
     assert rules.start_review(db, "claude") is a and a.state == "starting"
     assert rules.start_review(db, "claude") is None  # (b waits its turn)
     rules.review_on(db, "claude", a, "Battle's attacks for Cole")
-    assert a.state == "running" and a.on == "Battle's attacks for Cole"
+    assert a.state == "running" and a.doing == "Battle's attacks for Cole"
     rules.finish_review(db, "claude", a, RESULT)
     assert rules.start_review(db, "claude") is b
 
@@ -177,3 +177,28 @@ def test_the_api_runs_a_review_end_to_end(api, db):
     assert api.post("/api/fft/reviews/the_week/set", headers=H, json={"scheduled": True}).status_code == 200
     assert api.post("/api/fft/reviews/due", headers=H).json()["asked"]
     assert db.scalar(select(FftReviewRun).where(FftReviewRun.review == "the_week")).how == "scheduled"
+
+
+def test_a_word_where_a_word_is_asked(api):
+    """The review of #534: a list where Run… expects a word is refused, never a 500."""
+    for bad in ({**DIG, "feature": ["hp"]}, {**DIG, "device": {}}, {**DIG, "depth": 3}):
+        assert api.post("/api/fft/reviews/dig_feature/ask", headers=H, json={"inputs": bad}).status_code == 400
+    assert api.post("/api/fft/reviews/polish_area/ask", headers=H, json={"inputs": {"area": ["battle"]}}).status_code == 400
+
+
+def test_a_run_that_ends_while_it_waits_withdraws_its_question(db):
+    """Nothing superseded waits on Brett: Stop (or done) on a run waiting on him takes its question out of For you."""
+    run = rules.ask_review(db, "claude", "dig_feature", DIG)
+    rules.start_review(db, "claude")
+    rules.review_on(db, "claude", run, "Elemental forms")
+    q = rules.ask(db, "claude", about="review", about_id=run.id, text="Which should askdnd follow?")
+    rules.review_waits(db, "claude", run, q)
+    rules.stop_review(db, "user:1", run, "Not now")
+    assert run.state == "stopped" and q.answered_at is not None and q.answer_text.startswith("Withdrawn")
+
+
+def test_a_cadence_with_no_slots_turns_its_schedule_off(db):
+    rules.set_review(db, "claude", "the_week", scheduled=True)
+    row = rules.set_review(db, "claude", "the_week", cadence="on_demand")
+    assert row.scheduled is False
+    assert rules.set_review(db, "claude", "the_week", cadence="weekly").scheduled is False  # (back to weekly: off until turned on)

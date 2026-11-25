@@ -86,7 +86,7 @@ extension = "html"
 # `uv run python scripts/mutation.py <module>` (it runs one module and lists what survived); never in CI (slow).
 source_paths = ["app"]
 only_mutate = ["app/access.py", "app/roll_plan.py", "app/hit_points.py", "app/rules_book.py", "app/measure.py", "app/areas.py", "app/fog.py",
-               "app/coins.py", "app/initiative.py", "app/conditions.py", "app/death_saves.py"]
+               "app/coins.py", "app/initiative.py", "app/conditions.py", "app/death_saves.py", "app/fft/reviews.py"]
 also_copy = ["scripts", "migrations", "alembic.ini", "docs", "extension", "transcript_filter", "CLAUDE.md", ".env", ".github", "Procfile", "README.md", ".gitignore", ".gitattributes"]
 pytest_add_cli_args = ["-n", "0", "-p", "no:randomly", "-p", "no:cacheprovider"]
 # (the repository's own checks, which read git and its files, test no app logic: left out)

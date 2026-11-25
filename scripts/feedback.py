@@ -509,6 +509,8 @@ def review(a) -> None:
         got = call(a.base, "/reviews/due", {})
         print(f"Asked: runs {', '.join(map(str, got['asked']))}." if got["asked"] else "Nothing due.")
         return
+    if w[0] in ("ask", "set") and len(w) < 2:
+        sys.exit(f"review {w[0]} <key>: feedback.py review list names them.")
     if w[0] == "ask":
         inputs = {}
         for kv in a.input:
@@ -535,11 +537,13 @@ def review(a) -> None:
     if do == "wait":
         body["question"] = int(rest)
     elif do == "done":
+        if not a.file:
+            sys.exit("review <run> done --file result.json: its summary, covered, missed, findings and numbers.")
         body["result"] = json.loads(Path(a.file).read_text())
     else:
         body["words"] = rest
     run = call(a.base, f"/reviews/runs/{run_id}", body)["run"]
-    print(f"Run {run['id']}: {run['state']}" + (f", on {run['on']}" if run["on"] else ""))
+    print(f"Run {run['id']}: {run['state']}" + (f", on {run['doing']}" if run["doing"] else ""))
 
 
 def freeze(a) -> None:

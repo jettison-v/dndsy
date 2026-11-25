@@ -1028,7 +1028,7 @@ def _run_view(run) -> dict:
 
     r = reviews.review(run.review) or {}
     return {"id": run.id, "review": run.review, "title": r.get("title", run.review), "how": run.how, "state": run.state,
-            "inputs": run.inputs, "on": run.on, "question_id": run.question_id, "result": run.result, "why": run.why,
+            "inputs": run.inputs, "doing": run.doing, "question_id": run.question_id, "result": run.result, "why": run.why,
             "asked_by": run.asked_by, "asked_at": run.created_at.isoformat() if run.created_at else None,
             "started_at": run.started_at.isoformat() if run.started_at else None,
             "ended_at": run.ended_at.isoformat() if run.ended_at else None, "limit": r.get("limit", 60),

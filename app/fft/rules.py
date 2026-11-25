@@ -2706,6 +2706,7 @@ def chat_file(db: Session, actor: str, c: FftChat, as_: str, thing_id: int | Non
 # (a run asked meanwhile waits and says so); a run that needs him asks in For you and waits; it ends done (with its one
 # page and the same few numbers), stopped or skipped. app/fft/reviews.py reads; only these change a run.
 
+REVIEW_LOCK = 4646  # (Postgres advisory lock: picking up the next run)
 REVIEW_MOVES = {"asked": ("starting", "stopped", "skipped"), "starting": ("running", "stopped", "skipped", "done"),
                 "running": ("waiting", "done", "stopped"), "waiting": ("running", "done", "stopped")}
 
@@ -2714,7 +2715,11 @@ def _review_state(db: Session, actor: str, run: FftReviewRun, to: str, **data) -
     if to not in REVIEW_MOVES.get(run.state, ()):
         raise RuleError("stale", f"This run is {run.state}: it can't be {to} from there.")
     _event(db, actor, "review_" + to, "review", run.id, **{"from": run.state, "to": to, "review": run.review, **data})
-    run.state = to
+    was, run.state = run.state, to
+    if was == "waiting" and to in ("done", "stopped") and run.question_id:  # (nothing superseded waits on Brett)
+        q = db.get(FftQuestion, run.question_id)
+        if q is not None and q.answered_at is None:
+            withdraw(db, actor, q, f"The review ended ({to}) before you answered.")
     if to == "starting":
         run.started_at = now()
     if to in ("done", "stopped", "skipped"):
@@ -2728,6 +2733,9 @@ def _review_inputs(key: str, inputs: dict) -> dict:
     r = reviews.review(key)
     fills = reviews.fills()
     inputs = {k: v for k, v in (inputs or {}).items() if v not in (None, "", [])}
+    for k in ("feature", "area", "device", "depth", "words", "focus"):
+        if k in inputs and not isinstance(inputs[k], str):
+            raise RuleError("bad", f"{k}: words")
     if r["launch"] == "dig":
         f = taxonomy.feature(inputs.get("feature", ""))
         if f is None:
@@ -2786,6 +2794,7 @@ def start_review(db: Session, actor: str) -> FftReviewRun | None:
     becomes Starting. Claude calls it when it picks up reviews (`feedback.py review next`)."""
     from app.fft import reviews
 
+    db.execute(func.pg_advisory_xact_lock(REVIEW_LOCK))  # (one pick-up at a time: the hourly task and a listening session may ask together)
     if frozen(db) or reviews.live_run(db) is not None:
         return None
     run = db.scalar(select(FftReviewRun).where(FftReviewRun.state == "asked").order_by(FftReviewRun.id).limit(1))
@@ -2800,7 +2809,7 @@ def review_on(db: Session, actor: str, run: FftReviewRun, on: str) -> None:
         raise RuleError("bad", "Say what it's on.")
     if run.state != "running":
         _review_state(db, actor, run, "running")
-    run.on = on.strip()[:200]
+    run.doing = on.strip()[:200]
 
 
 def review_waits(db: Session, actor: str, run: FftReviewRun, q: FftQuestion) -> None:
@@ -2825,7 +2834,7 @@ def finish_review(db: Session, actor: str, run: FftReviewRun, result: dict) -> N
                   "missed": str(result.get("missed", ""))[:2000],
                   "findings": [{k: str(f.get(k, ""))[:400] for k in ("what", "became", "ref")} for f in findings[:50]],
                   "numbers": {k: nums.get(k, 0) for k in ("found", "fixed", "picks", "open")}}
-    run.on = ""
+    run.doing = ""
     _review_state(db, actor, run, "done", **run.result["numbers"])
 
 
@@ -2857,11 +2866,13 @@ def set_review(db: Session, actor: str, key: str, cadence: str | None = None, sc
         if cadence not in reviews.CADENCES:
             raise RuleError("bad", "Weekly, monthly, each phase, on demand, or not now.")
         row.cadence = cadence
+        if cadence not in ("weekly", "monthly"):
+            row.scheduled = False  # (no slots, no schedule: switching back doesn't turn it on by itself)
     if scheduled is not None:
         if scheduled and reviews.cadence(db, key) not in ("weekly", "monthly"):
             raise RuleError("bad", "Only a weekly or monthly review has a schedule to turn on.")
         row.scheduled = scheduled
     db.flush()
-    _event(db, actor, "review_set", "review", row.id, review=key, cadence=row.cadence, scheduled=row.scheduled)
+    _event(db, actor, "review_set", "reviewset", row.id, review=key, cadence=row.cadence, scheduled=row.scheduled)
     return row
 

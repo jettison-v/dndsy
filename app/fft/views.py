@@ -353,7 +353,7 @@ def event_words(ev) -> str:
         if ch.get("tests") in ("passed", "failed"):
             return f"Pull request #{n}'s tests {ch['tests']}"
         return f"Pull request #{n} changed"
-    if ev.thing == "review":  # (Roadmap item 46: a review asked from Development › Scheduled, set, or moved on)
+    if ev.thing in ("review", "reviewset"):  # (Roadmap item 46: a review asked from Development › Scheduled, set, or moved on)
         from app.fft import reviews
 
         title = (reviews.review(d.get("review", "")) or {}).get("title", d.get("review", "a review"))

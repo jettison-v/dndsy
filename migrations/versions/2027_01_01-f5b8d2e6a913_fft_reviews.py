@@ -36,7 +36,7 @@ def upgrade() -> None:
         sa.Column("asked_by", sa.String(40), nullable=False, server_default=""),
         sa.Column("state", sa.String(10), nullable=False, server_default="asked", index=True),
         sa.Column("inputs", JSONB(), nullable=False, server_default="{}"),
-        sa.Column("on", sa.String(200), nullable=False, server_default=""),
+        sa.Column("doing", sa.String(200), nullable=False, server_default=""),
         sa.Column("question_id", sa.Integer(), nullable=True),
         sa.Column("result", JSONB(), nullable=False, server_default="{}"),
         sa.Column("why", sa.String(300), nullable=False, server_default=""),

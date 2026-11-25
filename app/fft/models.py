@@ -548,7 +548,7 @@ class FftReview(_Stamped, Base):
 
 
 class FftReviewRun(_Stamped, Base):
-    """A review run: asked (waits its turn, or for Deploys to be on again), starting, running (`on`: what it's on),
+    """A review run: asked (waits its turn, or for Deploys to be on again), starting, running (`doing`: what it's on),
     waiting (on Brett: `question_id` in For you), then done (its one-page `result`), stopped or skipped (`why`). One
     runs at a time and none starts while Deploys is Paused (Roadmap item 46, the pass's six changes). `inputs` are what
     Run… asked (Dig into a feature: feature, issues, words, against, characters, device, depth; Polish an area: area,
@@ -562,7 +562,7 @@ class FftReviewRun(_Stamped, Base):
     asked_by: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the event's actor
     state: Mapped[str] = mapped_column(String(10), default="asked", server_default="asked", index=True)
     inputs: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
-    on: Mapped[str] = mapped_column(String(200), default="", server_default="")
+    doing: Mapped[str] = mapped_column(String(200), default="", server_default="")
     question_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     result: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     why: Mapped[str] = mapped_column(String(300), default="", server_default="")
