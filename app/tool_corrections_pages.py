@@ -210,6 +210,9 @@ def send_to_claude(request: Request, db: Session = Depends(get_db)):
     if not waiting:
         request.session["toast"] = "Nothing waits: askdnd gets them all right"
         return RedirectResponse(SENT_FROM, status_code=303)
+    if _sent(db, waiting):  # (a second press, or a second tab: already in Feedback, nothing changed since)
+        request.session["toast"] = "Already sent to Claude"
+        return RedirectResponse(SENT_FROM, status_code=303)
     names = _names(waiting, pairs)
     lines = [f"- {names[o.ref]['name']}{', ' + names[o.ref]['what'] if names[o.ref]['what'] else ''}: {says(o)}"
              f"{'. Why: ' + o.reason if o.reason else ''} ({o.ref}, {o.field} = {o.value})" for o in waiting]

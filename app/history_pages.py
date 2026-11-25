@@ -216,7 +216,7 @@ def group_changes(items: list[dict]) -> list[dict]:
             e["title"] = f"An import: {n} changes" if newest["r"].source in ("import", "undo-import") else f"{n} changes together"
         elif e["kind"] == "run":
             e["title"] = f"{newest['subject']}: {newest['field'].lower()}"
-            e["line"] = f"Changed {n} times, {first['r'].created_at:%-I:%M}–{newest['r'].created_at:%-I:%M %p} · now {newest.get('new') or newest.get('change') or '—'}"
+            e["run"] = {"n": n, "since": first["r"].created_at, "now": newest.get("new") or newest.get("change") or "—"}  # (times through `clock`: the viewer's own)
         else:
             noun = NOUNS.get(newest["r"].table, ("thing", "things"))[1]
             field, value = newest["field"], str(newest.get("new") or "")

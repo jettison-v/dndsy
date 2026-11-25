@@ -2,7 +2,7 @@
 shows; Manage › Tool corrections lists them as a fix list."""
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import characters
 from app.importer import import_bundle
@@ -117,3 +117,5 @@ def test_send_these_to_claude_files_one_issue(admin, player, db):
     assert "@" not in note.first_name
     page = admin.get("/manage/tool-corrections").text
     assert "data-sent" in page and 'data-item="send-corrections"' not in page
+    admin.post("/manage/tool-corrections/send")  # (a second press files nothing more)
+    assert db.scalar(select(func.count()).select_from(FftNote).where(FftNote.url == "/manage/tool-corrections")) == 1

@@ -151,7 +151,7 @@ def test_history_groups_runs_and_batches_and_opens_each_in_its_window(db, admin,
                 "old": "draft", "new": new}
 
     runs = group_changes([item(5, row=1, ago=0), item(4, row=1, ago=60), item(3, row=1, ago=120)])
-    assert len(runs) == 1 and runs[0]["kind"] == "run" and runs[0]["line"].startswith("Changed 3 times") and runs[0]["ids"] == [5, 4, 3]
+    assert len(runs) == 1 and runs[0]["kind"] == "run" and runs[0]["run"]["n"] == 3 and runs[0]["ids"] == [5, 4, 3]
     alike = group_changes([item(i, table="story_events", row=i, ago=i) for i in range(10, 0, -1)])
     assert len(alike) == 1 and alike[0]["kind"] == "alike" and alike[0]["title"].startswith("10 key moments")
     apart = group_changes([item(2, row=1), item(1, row=2, ago=600)])  # (ten minutes apart: two rows)

@@ -29,7 +29,7 @@
           {% if r.source in ("import", "undo-import") %}<span class="tag draft">{{ x.source }}</span>{% endif %}
           <span class="note">{{ r.created_at | clock }}{% if e.who %} · <span title="{{ r.actor }}">{{ e.who }}</span>{% endif %}</span>
         </div>
-        {% if e.line %}<p class="note hist-short">{{ e.line }}</p>
+        {% if e.run %}<p class="note hist-short">Changed {{ e.run.n }} times since {{ e.run.since | clock }} · now {{ e.run.now }}</p>
         {% elif e.kind != "one" %}<p class="note hist-short">Open it to see each.</p>
         {% elif r.field == "deleted" %}<p class="note hist-short">Deleted: {{ (x.old or "")[:140] }}{{ "…" if (x.old or "") | length > 140 }}</p>
         {% elif x.change %}<p class="note hist-short">{{ x.change }}</p>
