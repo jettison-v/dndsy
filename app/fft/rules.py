@@ -485,7 +485,7 @@ def incident(db: Session, actor: str, area: FftArea, why: str = "") -> None:
 
 def freeze_state(db: Session) -> dict:
     """The game-night freeze: {"on": bool, "by": who, "since": iso}."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, FREEZE)
     try:
@@ -518,7 +518,7 @@ def freeze_lets(db: Session, merged: str) -> bool:
 def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch (Nov 19): on before a game, off after. While it's on, nothing merges and GitHub's tests stop a
     deploy (the Server tests' first step asks /api/fft/freeze); a fix for something broken at the table may go."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     if frozen(db) == on:
         return
@@ -532,7 +532,7 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "", why: str = "") -
 
 def _set_freeze_why(db: Session, actor: str, why: str) -> None:
     """A new reason for a pause already on (Brett's pick, Nov 19): the bar says it; when it began stays."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, FREEZE)
     data = json.loads(row.value)
@@ -550,7 +550,7 @@ QUIET_MINUTES = 30  # (his pick of three signals: quiet in askdnd, a try unanswe
 
 def available_state(db: Session) -> dict:
     """{"on", "by", "since", "until", "off_at", "why"}: whether Brett is around to try Look work on his Mac."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AVAILABLE)
     try:
@@ -564,7 +564,7 @@ def available_state(db: Session) -> dict:
 def set_available(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
     """Brett's switch. On: Look work waits for his try on his Mac (a local try in For you) until it's off. Off, by
     hand or by itself (`why`): every local try still waiting is left, and merges as Look work does."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     st = available_state(db)
     if st["on"] == on:
@@ -616,9 +616,9 @@ def check_available(db: Session, last_seen: datetime | None = None) -> dict:
     since = datetime.fromisoformat(st["since"])
     acted = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.actor == st["actor"])) if st["actor"] else None  # (his own presses)
     if last_seen is None and st["actor"].startswith("user:") and st["actor"][5:].isdigit():  # (his pages: the gear's count marks them)
-        from app.models import User
+        from app.fft import host
 
-        u = db.get(User, int(st["actor"][5:]))
+        u = host.account_by_id(db, int(st["actor"][5:]))
         last_seen = u.last_seen_at if u is not None else None
     seen = max([x for x in (last_seen, acted, since) if x is not None])
     waiting = db.scalar(select(func.min(FftLocalTry.created_at)).where(FftLocalTry.answer == ""))
@@ -1162,18 +1162,13 @@ def test_campaign_of(db: Session, path: str) -> str:
     """The test campaign a check's page is in (its name), or "": `/c/<slug>/…`, or a character in one."""
     import re
 
-    from app.models import Campaign, CampaignCharacter
+    from app.fft import host
 
     m = re.match(r"^/c/([^/?#]+)", path or "")
     if m:
-        camp = db.scalar(select(Campaign).where(Campaign.slug == m.group(1)))
-        return camp.name if camp is not None and camp.is_test else ""
+        return host.test_campaign_name(db, slug=m.group(1))
     m = re.match(r"^/characters/(\d+)", path or "")
-    if m:
-        camp = db.scalar(select(Campaign).join(CampaignCharacter, CampaignCharacter.campaign_id == Campaign.id)
-                         .where(CampaignCharacter.character_id == int(m.group(1)), CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
-        return camp.name if camp is not None else ""
-    return ""
+    return host.test_campaign_name(db, character_id=int(m.group(1))) if m else ""
 
 
 def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect: str, path: str = "", why: str = "",
@@ -1801,7 +1796,7 @@ def in_flight(db: Session, area_ids: set[int] | None = None, whole: bool = False
 
 def after_state(db: Session) -> dict:
     """Whether Brett's round waits for changes to go live first, and which ({"on", "user_id", "area_id", "prs", "since"})."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AFTER)
     try:
@@ -1813,7 +1808,7 @@ def after_state(db: Session) -> dict:
 
 def wait_for_live(db: Session, actor: str, user_id: int | None, area_id: int | None) -> list[dict]:
     """Let it go live first: Brett's round opens by itself once the changes it would hold are live (`fix_live`)."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     flight = in_flight(db, round_areas(db, area_id), whole=not area_id)
     if not flight:
@@ -1826,7 +1821,7 @@ def wait_for_live(db: Session, actor: str, user_id: int | None, area_id: int | N
 
 
 def cancel_wait(db: Session, actor: str) -> None:
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     row = db.get(ToolSetting, AFTER)
     if row is not None and row.value:
@@ -1836,7 +1831,7 @@ def cancel_wait(db: Session, actor: str) -> None:
 
 def _after_live(db: Session, actor: str) -> FftRound | None:
     """A change Brett's round waited for is live: once none of them is still on its way, his round opens (it holds)."""
-    from app.models import ToolSetting
+    from app.fft.host import ToolSetting
 
     st = after_state(db)
     if not st["on"]:
@@ -1929,8 +1924,8 @@ def _areas_ready(db: Session, q, turn=None) -> list[FftArea]:
 def pick_next(db: Session) -> Pick:
     """R15: a blocker first (an issue that stops Brett's round); then an item Brett pressed Scope it on; otherwise Development's one queue from the top (issue 62:
     the Product Area batches and the Roadmap builds in his order), skipping a held row, a build whose next step is his and a
-    plan in his open round; the first that's Claude's. A build with plans of its own is taken by its plan; one without, as
-    itself (its next step)."""
+    plan in his open round or claimed by a session now; the first that's Claude's (`_ready`, the order the Board's Ready
+    column shows too). A build with plans of its own is taken by its plan; one without, as itself (its next step)."""
     r = round_open(db)
     if r is not None:
         stop = db.scalar(select(FftIssue).join(FftTryIssue, FftTryIssue.issue_id == FftIssue.id)
@@ -1940,42 +1935,9 @@ def pick_next(db: Session) -> Pick:
     for it in scope_asked(db):  # (Scope it: Brett asked, so first after a blocker, Nov 21)
         return Pick(None, f"{it.title}: write its scope (Brett pressed Scope it)", item=it, reason="scope")
     skipped: list[tuple[str, str]] = []
-    # (item 39, 3 of 4: next, a fix to what just shipped, then a claim that went quiet, each ahead of new work)
-    for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
-                          .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing")))):
-        return Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", skipped, reason="shipped_fix")
-    for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now())):
-        return Pick(a, f"Back from a claim that went quiet: {a.title}", skipped, reason="quiet_claim")
-
-    def plan_ok(area: FftArea, name: str) -> bool:
-        if area_turn(db, area) != "claude":
-            return False
-        if area.held:  # (below Development's line: Brett holds it)
-            skipped.append((name, "held below the line"))
-            return False
-        if in_open_round(db, area):
-            skipped.append((name, "in Brett's open round"))
-            return False
-        return True
-
-    for kind, x in queue_entries(db):
-        if kind == "a":
-            if plan_ok(x, x.title):
-                return Pick(x, x.title, skipped)
-            continue
-        if x.held:
-            skipped.append((x.title, "held below the line"))
-            continue
-        if x.next_whose == "brett":
-            skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
-            continue
-        plans = list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))
-        for a in plans:
-            if plan_ok(a, f"{x.title} › {a.title}"):
-                return Pick(a, f"{x.title} › {a.title}", skipped, item=x)
-        sc = latest_scope(db, x)
-        if sc is not None and sc.agreed_at is not None:
-            return Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", skipped, item=x)
+    for p in _ready(db, skipped=skipped):
+        p.skipped = skipped
+        return p
     return Pick(None, "Nothing is Claude's turn.", skipped)
 
 
@@ -1996,7 +1958,7 @@ def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str,
     if about == "document" and not doc_path:
         raise RuleError("bad", "A decision names its document.")
     if doc_path:  # (whatever it's about, the mockup it asks on: one Backstage › Documents lists, so For you can open it)
-        from app.documents import doc_id, find
+        from app.fft.host import doc_id, find
 
         sent = db.scalar(select(FftSentDoc.id).where(FftSentDoc.source == doc_path))  # (sent this moment: before the list's cache sees it)
         if find(doc_id(doc_path)) is None and sent is None:
@@ -2340,28 +2302,77 @@ def heartbeat(db: Session, owner: str) -> int:
 
 def ready_areas(db: Session, turn=None) -> list[tuple[FftArea, str, str]]:
     """Ready, in the order Claude takes it (item 39, the Board's Ready column): each area Claude may take now, with the
-    rule that put it there (Pick.reason) and its one line of why. Its first is `pick_next`'s pick, after a blocker and
-    Scope it, which hand over first and aren't plans in the queue."""
+    rule that put it there (Pick.reason) and its one line of why. The same order `pick_next` takes (`_ready`, one place;
+    the backend look-back's LB4), after a blocker and Scope it, which hand over first and aren't plans in the queue."""
     out: list[tuple[FftArea, str, str]] = []
+    for p in _ready(db, turn):
+        if p.area is not None:
+            why = {"shipped_fix": "A fix to what just shipped: your try found it",
+                   "quiet_claim": "Back from a claim that went quiet: first in line"}.get(p.reason)
+            out.append((p.area, p.reason, why or f"Your order: {len(out) + 1}" + (f" ({p.item.title})" if p.item else "")))
+    return out
+
+
+def _ready(db: Session, turn=None, skipped: list[tuple[str, str]] | None = None):
+    """Ready work in the one order Claude takes it, as Picks: a fix to what just shipped, then a claim that went quiet,
+    then Development's queue from the top (Brett's order): a batch, or a build's plans, each Claude's turn, not held, not
+    in his open round and not claimed by a session right now; a build with no plan Claude may take is itself, once its
+    scope is agreed (its next step). `skipped` collects what was passed over and why (R15)."""
+    skipped = skipped if skipped is not None else []
+    turn_of = turn or area_turn
     seen: set[int] = set()
 
-    def add(a: FftArea, reason: str, why: str) -> None:
-        if a.id not in seen and not (a.lock_owner and a.lock_until and a.lock_until > now()):
-            seen.add(a.id)
-            out.append((a, reason, why))
+    def claimed(a: FftArea) -> bool:
+        return bool(a.lock_owner and a.lock_until and a.lock_until > now())
 
     for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
                           .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing"))), turn):
-        add(a, "shipped_fix", "A fix to what just shipped: your try found it")
+        if a.id not in seen and not claimed(a):
+            seen.add(a.id)
+            yield Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", reason="shipped_fix")
     for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now()), turn):
-        add(a, "quiet_claim", "Back from a claim that went quiet: first in line")
+        if a.id not in seen:
+            seen.add(a.id)
+            yield Pick(a, f"Back from a claim that went quiet: {a.title}", reason="quiet_claim")
+
+    def plan_ok(area: FftArea, name: str) -> bool:
+        if area.id in seen or turn_of(db, area) != "claude":
+            return False
+        if area.held:  # (below Development's line: Brett holds it)
+            skipped.append((name, "held below the line"))
+            return False
+        if in_open_round(db, area):
+            skipped.append((name, "in Brett's open round"))
+            return False
+        if claimed(area):
+            skipped.append((name, "claimed by a session now"))
+            return False
+        return True
+
     for kind, x in queue_entries(db):
-        plans = [x] if kind == "a" else ([] if x.held or x.next_whose == "brett" else
-                                         list(db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))))
-        for a in plans:
-            if (turn or area_turn)(db, a) == "claude" and not a.held and not in_open_round(db, a):
-                add(a, "queue", f"Your order: {len(out) + 1}" + (f" ({x.title})" if kind == "i" else ""))  # (its place in Ready)
-    return out
+        if kind == "a":
+            if plan_ok(x, x.title):
+                seen.add(x.id)
+                yield Pick(x, x.title)
+            continue
+        if x.held:
+            skipped.append((x.title, "held below the line"))
+            continue
+        if x.next_whose == "brett":
+            skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
+            continue
+        took = taken = False
+        for a in db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
+            taken = taken or claimed(a)
+            if plan_ok(a, f"{x.title} › {a.title}"):
+                seen.add(a.id)
+                took = True
+                yield Pick(a, f"{x.title} › {a.title}", item=x)
+        if took or taken:
+            continue  # (its plans are Ready, or one is being built now: not a second plan for the same build)
+        sc = latest_scope(db, x)
+        if sc is not None and sc.agreed_at is not None:
+            yield Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", item=x)
 
 
 # ------------------------------------------------------------------ pages sent without a merge (item 39, scope v7)
@@ -2390,7 +2401,7 @@ def send_page(db: Session, actor: str, entry: dict, files: dict[str, bytes]) -> 
     """A page Claude sends before its repo copy lands (Brett, Nov 24: "pushing transactional, data-only items without a
     PR and a merge"): its Documents entry and its files, kept until the repo's copy is newer. Only ever opened in
     Documents' sealed frame (app/documents.py), never run by askdnd; sending again replaces what was sent."""
-    from app import documents
+    from app.fft.host import documents
 
     source = str(entry.get("source") or "")
     rel = source.removeprefix("docs/")
@@ -2441,7 +2452,7 @@ def prune_landed_pages(db: Session, actor: str = "askdnd") -> list[str]:
     """After a deploy: a sent file the repo now has the same is removed, and a sent entry the repo lists the same, with
     none of its files still waiting, too, so the repo's copy (and any later change to it) is the one shown. Returns the
     sources that landed. Run in a deploy's first minute (app/main.py `release_now`)."""
-    from app import documents
+    from app.fft.host import documents
 
     left = []
     for f in db.scalars(select(FftSentFile)):
@@ -2591,7 +2602,7 @@ def doc_out(db: Session, doc: str) -> dict:
 def docs_to_check(db: Session, days: int = 7) -> list[dict]:
     """The mockups Claude checks on claude.ai when it checks in: those with a claude.ai link and an open question, or
     asked about, answered or sent in the last `days` days (so a late change on either side still merges)."""
-    from app import documents
+    from app.fft.host import documents
 
     since = now() - timedelta(days=days)
     recent = set(db.scalars(select(FftQuestion.doc_path).where(FftQuestion.doc_path != "",

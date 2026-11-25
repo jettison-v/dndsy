@@ -232,3 +232,15 @@ def test_the_listener_hears_news_not_its_own_sessions_or_routine_jobs(db):
             FftEvent(actor="github", kind="job_ran", thing="tool", thing_id=0, data={"job": "drift", "result": "failed"}),
             FftEvent(actor="user:1", kind="question_answered", thing="question", thing_id=3, data={})]
     assert [rules.heard(e, "claude") for e in said] == [False, False, True, True]
+
+
+def test_the_board_and_the_claim_read_one_order(db):
+    """The Board's Ready column and the claim hand-over are one order (`rules._ready`; the backend look-back's LB4):
+    Ready's first is what a claim takes, and a plan another session is building now is passed over, said why."""
+    first, second = _issue(db, "First in the queue"), _issue(db, "Second in the queue", feature="hp")
+    ready = rules.ready_areas(db)
+    assert [a.id for a, _, _ in ready][:2] == [first.area_id, second.area_id] and rules.pick_next(db).area.id == ready[0][0].id
+    rules.lock_area(db, "claude:other", db.get(FftArea, first.area_id))
+    pick = rules.pick_next(db)
+    assert pick.area.id == second.area_id == rules.ready_areas(db)[0][0].id
+    assert ("claimed by a session now" in [why for _, why in pick.skipped])

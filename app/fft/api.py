@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app import config, web
 from app.db import get_db
-from app.fft import keys, rules, sending, steps, taxonomy, views
+from app.fft import host, keys, rules, sending, steps, taxonomy, views
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -26,7 +26,6 @@ from app.fft.models import (
     FftQuestion,
     FftTry,
 )
-from app.models import Character
 
 router = APIRouter(prefix="/api/fft")
 NO_STORE = {"Cache-Control": "no-store"}
@@ -201,10 +200,10 @@ def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depend
 @router.get("/speed")
 def speed_week(days: int = 7, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """Each route's time on askdnd.ai over the last `days` days, slowest tenth first (app/speed.py)."""
-    from app import speed
+    from app.fft import host
 
     keys.require(db, x_fft_key, "read")
-    return _ok({"routes": speed.week(db, max(1, min(days, 60))), "slow_p90_ms": speed.SLOW_P90_MS})
+    return _ok(host.route_speeds(db, max(1, min(days, 60))))
 
 
 @router.get("/notes")
@@ -402,7 +401,7 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     if any(db.get(FftIssue, i) is None for i in issue_ids):
         raise HTTPException(400, "issues: one of them isn't an issue")
     who = body.get("as_character")
-    if who is not None and (type(who) is not int or db.get(Character, who) is None):
+    if who is not None and (type(who) is not int or not host.character_exists(db, who)):
         raise HTTPException(400, "as_character: a character's id")
     try:
         c = rules.write_check(db, actor.name, title=_str(body, "title", 160, need=True), steps=_steps(body), expect=_str(body, "expect", need=True),
@@ -915,7 +914,7 @@ def page_send(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     import base64
     import binascii
 
-    from app import documents
+    from app.fft.host import documents
 
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
@@ -957,7 +956,7 @@ def docs_out(doc: str = "", x_fft_key: str | None = Header(default=None), db: Se
 def docs_in(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """{"doc", "comments": [{ext_id, near, words, at, page}], "picks": {"picks": [...], "notes", "at"} | null}: what Brett
     made on claude.ai, brought in. Comments come in once each; picks answer the open question, or replace older ones."""
-    from app import documents
+    from app.fft.host import documents
 
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
