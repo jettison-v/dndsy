@@ -143,7 +143,8 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
         revs = _matching(db, q, lambda r, c: c is None)
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     known = history.targets(db, revs)
-    items = [_item(db, user, r, people, known) for r in revs]
+    named = moments(db, revs, known)
+    items = [_item(db, user, r, people, known, named) for r in revs]
     entries = group_changes(items)
     days: dict[str, list] = defaultdict(list)
     for e in entries:
@@ -173,21 +174,42 @@ NOUNS = {"story_events": ("key moment", "key moments"), "entities": ("entry", "e
          "player_notes": ("note", "notes"), "character_picks": ("mark", "marks"), "campaigns": ("campaign", "campaigns")}
 
 
-def _subject(r: Revision, known: dict) -> str:
-    """What a change is about, named (Brett's pick HI1): a key moment by its own words, else the row's label."""
-    t = known.get((r.table, r.row_id))
-    if r.table == "story_events":
-        text = getattr(t, "text", None) or (r.old.get("text") if isinstance(r.old, dict) else "")
-        if text:
-            words = " ".join(str(text).split())
-            return f"“{words[:60]}{'…' if len(words) > 60 else ''}”"
+def moments(db: Session, revs: list[Revision], known: dict) -> dict[int, tuple[str, int | None]]:
+    """Each key moment a page of changes is about, as {row id: (its words, its session's number)}, one read for all:
+    from the moment itself, or, once it's deleted, from the change that deleted it (issue 123: a batch of published
+    moments since deleted showed as 23 of "Key moment, a session")."""
+    from app.models import GameSession
+
+    ids = {r.row_id for r in revs if r.table == "story_events"}
+    if not ids:
+        return {}
+    found = {i: (known.get(("story_events", i)).text, known.get(("story_events", i)).session_id) for i in ids if known.get(("story_events", i)) is not None}
+    for r in revs:  # (a deletion on this page carries the words)
+        if r.table == "story_events" and r.row_id not in found and isinstance(r.old, dict) and r.old.get("text"):
+            found[r.row_id] = (r.old["text"], r.old.get("session_id"))
+    gone = ids - found.keys()
+    if gone:
+        for d in db.scalars(select(Revision).where(Revision.table == "story_events", Revision.row_id.in_(gone), Revision.field == "deleted")):
+            if isinstance(d.old, dict) and d.old.get("text"):
+                found[d.row_id] = (d.old["text"], d.old.get("session_id"))
+    numbers = dict(db.execute(select(GameSession.id, GameSession.number).where(GameSession.id.in_({sid for _, sid in found.values() if sid} or {0}))).all())
+    return {i: (words, numbers.get(sid)) for i, (words, sid) in found.items()}
+
+
+def _subject(r: Revision, known: dict, named: dict | None = None) -> str:
+    """What a change is about, named (Brett's pick HI1): a key moment by its own words and its session (issue 123), else
+    the row's label."""
+    if r.table == "story_events" and named and r.row_id in named:
+        text, number = named[r.row_id]
+        words = " ".join(str(text).split())
+        return (f"Session {number} · " if number else "") + f"“{words[:60]}{'…' if len(words) > 60 else ''}”"
     return r.label or NOUNS.get(r.table, (r.table, r.table))[0].capitalize()
 
 
-def _item(db: Session, user: dict, r: Revision, people: dict, known: dict) -> dict:
+def _item(db: Session, user: dict, r: Revision, people: dict, known: dict, named: dict | None = None) -> dict:
     by_email = {e: n for n, e in people.values()}
     return {"r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
-            "subject": _subject(r, known), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
+            "subject": _subject(r, known, named), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
             **_present(db, r, people),
             "long": r.field in ("summary", "description", "data", "note", "deleted") or len(str(r.old or "")) + len(str(r.new or "")) > LONG,  # (a rule's data is for the window, not the row)
             "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)}
@@ -250,7 +272,8 @@ def history_window(request: Request, ids: str = "", db: Session = Depends(get_db
     revs = [r for r in revs if (where[r.id] == campaign.id if campaign is not None else (not in_campaign and (where[r.id] is None or r.batch)))]
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     known = history.targets(db, revs)
-    items = [_item(db, user, r, people, known) for r in revs]
+    named = moments(db, revs, known)
+    items = [_item(db, user, r, people, known, named) for r in revs]
     entry = (group_changes(items) or [{"title": "Nothing to show", "items": [], "kind": "one", "who": ""}])[0]
     return templates.TemplateResponse(request, "_history_window.html", {
         "e": entry, "all": items, "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history"})

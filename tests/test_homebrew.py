@@ -114,7 +114,7 @@ def test_items_opens_its_builder_in_a_large_window_and_refuses_what_it_cant_read
     window = dm.get(f"/c/main/dm/items/{key}?part=1").text
     assert 'class="peek-head"' in window and "<html" not in window and "data-item-builder" in window and "Open as a page" in window
     form = dm.get("/c/main/dm/items/new").text
-    assert "(a weapon)" not in form and form.count('class="help-tip"') >= 3
+    assert "(a weapon)" not in form and form.count('class="fld-help"') >= 3  # (help under its box, the one field: Roadmap item 47, Brett's pick F1 B; was a ? tip, issue 4)
     r = dm.post("/c/main/dm/items", data={**FORM, "name": "Another compass", "charges_regain": "lots"})
     assert r.status_code == 422 and "how many come back, like 1d3 or all" in r.text
     assert dm.post("/c/main/dm/items", data={**FORM, "name": "A third compass", "charges_regain": "all"}, follow_redirects=False).status_code == 303

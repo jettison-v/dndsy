@@ -406,11 +406,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!piece || !box.matches('[data-dp="box"], [name="charges_regain"]')) return;
     const v = box.value.trim(), regain = box.name === 'charges_regain';
     const ok = !v || (regain ? (v.toLowerCase() === 'all' || HB_DICE.test(v)) : HB_DICE.test(v.replace(/^\+/, '')));
-    let say = box.closest('.hb-row, .dp-box').querySelector('[data-hb-bad]');
-    if (!say) { say = document.createElement('span'); say.className = 'note hb-bad'; say.dataset.hbBad = ''; say.setAttribute('role', 'alert'); box.closest('.hb-row, .dp-box').append(say); }
-    say.hidden = ok;
-    say.textContent = ok ? '' : regain ? 'Write it like 1d3, or all.' : piece.dataset.hbPiece === 'add' ? 'Write it like +1, 1d4 or 2d6 fire.' : 'Write its dice like 2d6 force, 1d8+2 or 5.';
-    box.setAttribute('aria-invalid', String(!ok));
+    // (under its box, in the field's one place: Roadmap item 47, issue 131 had one beside the box and the next under it)
+    fieldError(box, ok ? '' : regain ? 'Write it like 1d3, or all.' : piece.dataset.hbPiece === 'add' ? 'Write it like +1, 1d4 or 2d6 fire.' : 'Write its dice like 2d6 force, 1d8+2 or 5.');
   };
   document.addEventListener('click', e => {
     const form = e.target.closest('[data-item-builder]');

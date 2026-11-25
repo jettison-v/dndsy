@@ -702,12 +702,7 @@ def test_show_more_opens_the_held_rows_in_place_and_folds_them(people, server):
 # problems no check had seen, because only the Spell Book's window was ever opened). Each kind of window once (ids
 # collapsed), at a laptop's width and a phone's, every check run on it. WINDOWS_LEFT is the work left: the problems of
 # windows not on the one window and field yet; it may only shrink (a fixed one leaves it, a new one fails the run).
-WINDOWS_LEFT = {
-    "window /c/main/dm/items/new · it is taller than what is in it",  # (issues 119, 120: Backstage's windows, next)
-    "window /c/main/dm/items/new · its main button is not in its foot: Save",
-    "window /c/main/manage/history/window · its main button is not in its foot: Restore the before",  # (issue 121)
-    "window /manage/roadmap/new · its main button is not in its foot: Add the idea",
-}
+WINDOWS_LEFT: set[str] = set()  # (none left: New item, History's window and Roadmap's new idea moved, step 2)
 
 
 # A window's Save, Add or other main button sits in its foot, at the window's bottom edge (Brett's pick W1 A; issue 120:

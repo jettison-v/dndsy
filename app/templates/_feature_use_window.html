@@ -1,10 +1,9 @@
 {% from "_lists.html" import empty_state %}
-{# A Feature use row's window (app/usage.py `feature_window`; Brett's pick FE1, Nov 25): who used it and on which days. #}
-<div class="peek-head">
-  <div><div class="note">Feature use · the last {{ days }} days</div><h2 id="peek-title">{{ d.feature }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body ft-window">
+{# A Feature use row's window (app/usage.py `feature_window`; Brett's pick FE1, Nov 25): who used it and on which days.
+   On the one window (Roadmap item 47, issue 125: big uneven gaps between its parts). #}
+{% from "_window.html" import window %}
+{% call window("Feature use · the last " ~ days ~ " days", d.feature, attrs=' data-feature-window') %}
+<div class="ft-window">
   <p class="note">{{ d.uses }} use{{ "s" if d.uses != 1 }}{% if d.who %} by {{ d.who | length }} {{ "person" if d.who | length == 1 else "people" }}{% endif %}.</p>
   {% if d.who %}
   <h3>Who</h3>
@@ -13,3 +12,4 @@
   <div class="ft-rows">{% for on, n in d.days %}<div class="ft-page"><span class="ft-name">{{ on }}</span><span class="ft-bar"><i style="width: {{ (n / d.top * 100) | round(1) }}%"></i></span><span class="num">{{ n }}</span></div>{% endfor %}</div>
   {% else %}{{ empty_state("No one at the table used it in these " ~ days ~ " days.") }}{% endif %}
 </div>
+{% endcall %}

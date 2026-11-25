@@ -1,20 +1,33 @@
 {% from "_lists.html" import empty_state %}
-{# A History row's window (app/history_pages.py `history_window`; Brett's pick HI2, Nov 25): each change it holds, before
-   and after side by side, each with its own Restore saying what it brings back. #}
-<div class="peek-head">
-  <div><div class="note">History</div><h2 id="peek-title">{{ e.title }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body hist-window">
-  {% for x in all %}{% set r = x.r %}
+{% from "_window.html" import window %}
+{# A History row's window (app/history_pages.py `history_window`; Brett's pick HI2, Nov 25), on the one window
+   (_window.html; Roadmap item 47): one change shows its before and after side by side, as tall as their words, with
+   Restore in the window's foot (issue 121); a row of many (a session's moments published) is one line each, named by
+   its session and its own words, with its own Restore (issue 123), a value change's before and after a fold away
+   (Brett's pick HI2; the review of #529). #}
+{% set one = all | length == 1 %}
+{% macro restore_form(x, cls) -%}
+<form method="post" action="{{ page_url }}/{{ x.r.id }}/restore" class="inline" data-confirm="{{ 'Bring this back?' if x.r.field == 'deleted' else 'Put back ' ~ (x.old | string)[:60] ~ '?' }}">
+  <button type="submit" class="{{ cls }}" data-do="history-restore">{{ "Bring it back" if x.r.field == "deleted" else "Restore the before" }}</button></form>
+{%- endmacro %}
+{% set foot %}{% if one and all[0].restorable %}{{ restore_form(all[0], "btn primary") }}{% endif %}<button class="btn link peek-close" type="button">Close</button>{% endset %}
+{% call window("History", e.title, foot=foot) %}
+  {% if one %}{% set x = all[0] %}{% set r = x.r %}
   <section class="hist-change" data-rev="{{ r.id }}">
     <div class="hist-head"><b>{{ x.subject }}</b> <span class="tag">{{ x.field }}</span>
       <span class="note">{{ r.created_at | clock(date=True) }}{% if x.who %} · <span title="{{ r.actor }}">{{ x.who }}</span>{% endif %}{% if r.source in ("import", "undo-import") %} · {{ x.source }}{% endif %}</span></div>
     {% if r.field == "deleted" %}<div class="import-diff one"><div><small>What was deleted</small><p>{{ x.old }}</p></div></div>
     {% elif x.change %}<p class="note">{{ x.change }}</p>
-    {% else %}<div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div>{% endif %}
-    {% if x.restorable %}<form method="post" action="{{ page_url }}/{{ r.id }}/restore" class="inline" data-confirm="{{ 'Bring this back?' if r.field == 'deleted' else 'Put back ' ~ (x.old | string)[:60] ~ '?' }}">
-      <button type="submit" class="btn small">{{ "Bring it back" if r.field == "deleted" else "Restore the before" }}</button></form>{% endif %}
+    {% else %}<div class="import-diff hist-fit"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div>{% endif %}
   </section>
-  {% else %}{{ empty_state("Nothing to show here.") }}{% endfor %}
-</div>
+  {% elif all %}
+  <ul class="records hist-lines">
+    {% for x in all %}{% set r = x.r %}
+    <li class="record" data-rev="{{ r.id }}"><span class="record-main"><b>{{ x.subject }}</b>
+        <span class="note">{{ "Deleted" if r.field == "deleted" else x.change or x.field }} · {{ r.created_at | clock(date=True) }}{% if x.who %} · {{ x.who }}{% endif %}</span>
+        {% if r.field != "deleted" and not x.change %}<details class="fold"><summary class="note">Before and after</summary><div class="import-diff"><div><small>Before</small><p>{{ x.old }}</p></div><div><small>After</small><p>{{ x.new }}</p></div></div></details>{% endif %}</span>
+      {% if x.restorable %}<span class="record-actions">{{ restore_form(x, "btn small") }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}{{ empty_state("Nothing to show here.") }}{% endif %}
+{% endcall %}

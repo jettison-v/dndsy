@@ -533,7 +533,8 @@ input[type=file]::file-selector-button { min-height: var(--control-h); margin-ri
 .fld-name { color: var(--muted); padding-top: 6px; overflow-wrap: anywhere; }
 .fld-box, .fld-help, .fld-err { grid-column: 2; min-width: 0; }
 .fld-box { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
-.fld-box > :is(input, select, textarea):not([type=checkbox]):not([type=radio]) { flex: 1 1 200px; min-width: 0; }
+.fld-box > :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=number]) { flex: 1 1 200px; min-width: 0; }
+.fld-box > input[type=number] { flex: 0 0 auto; width: 7ch; min-width: 5rem; }  /* (a number is short: its box too) */
 .fld-help { color: var(--faint); font-size: var(--fs-xs); }
 .fld-err { color: var(--red); font-size: var(--fs-xs); }
 .fld.has-error .fld-help { display: none; }
@@ -851,7 +852,6 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .help-tip { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 4px; border: 1px solid var(--line-strong); border-radius: 50%; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); cursor: help; vertical-align: 1px; }
 .help-tip:hover, .help-tip:focus-visible { color: var(--text); border-color: var(--text); }
 .help-tip:hover::after, .help-tip:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 30; width: max-content; max-width: 260px; padding: var(--sp-2) var(--sp-3); background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--text); font-size: var(--fs-xs); font-weight: 400; line-height: 1.4; white-space: normal; text-align: left; box-shadow: var(--lift); }
-.hb-bad { color: var(--link); display: block; margin-top: 2px; }
 .hb-row > .stepper { justify-self: start; width: max-content; }  /* (as wide as its buttons, never the whole row: issue 1) */
 /* A row that opens its window (Items, History, Feature use…): one look, the design system's row hover (the end-of-day
    review, Nov 25: it was styled four times in two colours) */
@@ -1794,6 +1794,8 @@ button.rm-box { cursor: pointer; }
 .tbx.is-empty .tbx-head { border-bottom: 0; }
 .tbx-empty { padding: 0 var(--sp-3); }  /* (the shared empty line inside a table's box) */
 .tbx-stack { display: grid; gap: var(--sp-4); }
+.tbx ~ .tbx { margin-top: var(--sp-4); }  /* (two tables on one page, one gap apart, the same as a stack's, each with its own title row: issues 122, 125) */
+.tbx-stack > .tbx ~ .tbx { margin-top: 0; }  /* (a stack keeps its own gap) */
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
    which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px · dt-q a quarter of the table), the title taking the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
@@ -3391,6 +3393,7 @@ a.cx-node:hover { border-color: var(--text); }
 /* Records: a list of things, one row each: what it is, optional fields, then its buttons. The list sets the columns
    and every row shares them (subgrid), so columns line up however long a row's buttons are. */
 .records { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-4); }
+main > .records:not(:last-child) { margin-bottom: 24px; }  /* (a page's list, then its next part: the same gap as between sections, issue 124) */
 .records.cols-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; }
 .records.cols-3-even { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
 .records.cols-4 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; }
@@ -4429,7 +4432,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .hb-row > .hb-k { color: var(--muted); font-size: var(--fs-sm); }
 .hb-row input[type=text] { width: 100%; max-width: 26rem; min-width: 0; }
 .hb-row[hidden] { display: none; }
-.hb-says { font-weight: 600; color: var(--strong, var(--text)); background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.hb-says { margin: 0; font-weight: 600; color: var(--text-strong); }  /* (what the piece does, as a sentence: never drawn as a box, issue 119) */
 .hb-add > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: var(--sp-2); border: 1px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); width: 100%; }
 .hb-add > summary::-webkit-details-marker { display: none; }
 .hb-add > summary b { color: var(--text); white-space: nowrap; }
