@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
+
 :root {
   --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
   --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
@@ -75,59 +76,179 @@ table.cat { width: 100%; border-collapse: collapse; font-size: .88rem; min-width
 .how { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
 @media (max-width: 700px) { .decide fieldset.row { grid-template-columns: minmax(0, 1fr); } }
 
+
+/* version 2 (Brett's comments, Nov 25: better names, particularly for the on-demand ones; a mockup of how it looks, how
+   on-demand reviews launch, and what they hand back) */
+.cat .was { display: block; color: var(--faint); font-size: .74rem; font-style: italic; margin-top: 2px; }
+.v2 { color: var(--amber); font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.screen { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; }
+.bar { display: flex; gap: 16px; align-items: center; padding: 8px 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.bar .brand { font: 600 1.05rem/1 var(--serif); color: var(--strong); margin-right: 8px; } .bar .on { color: var(--strong); font-weight: 600; }
+.pgx { padding: 16px 18px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.crumbs { color: var(--faint); font-size: .78rem; } .pgx h3 { font: 600 1.4rem/1.2 var(--serif); }
+.tabsx { display: flex; gap: 14px; border-bottom: 1px solid var(--line); font-size: .82rem; color: var(--muted); padding-bottom: 4px; }
+.tabsx .on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+table.q { width: 100%; border-collapse: collapse; font-size: .86rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.q th { text-align: left; font: 600 .76rem/1.2 var(--sans); color: var(--faint); padding: 8px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.q td { padding: 8px 10px; border-top: 1px solid var(--line-soft); vertical-align: middle; color: var(--text); }
+.q tr.grp td { background: var(--surface-2); color: var(--muted); font-weight: 600; font-size: .78rem; }
+.q .sub { display: block; color: var(--faint); font-size: .76rem; }
+.pill.done { background: var(--green-soft); color: var(--green); } .pill.new { background: var(--blue-soft); color: var(--blue); } .pill.draft { background: var(--amber-soft); color: var(--amber); } .pill.faint { background: var(--surface-3); color: var(--muted); }
+.btn.small { min-height: 26px; padding: 0 10px; font-size: .78rem; }
+.overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; }
+.win { width: min(520px, 100%); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; display: grid; }
+.win-h { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); } .win-h b { font-size: 1rem; } .win-h .x { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 1.3rem; cursor: pointer; }
+.win-b { padding: 12px 14px; display: grid; gap: 10px; font-size: .86rem; }
+.win-b label { display: grid; gap: 4px; color: var(--muted); font-size: .8rem; }
+.win-b select, .win-b textarea { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: 16px/1.4 var(--sans); }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; color: var(--muted); font-size: .82rem; } .facts b { font-weight: 500; color: var(--text); }
+.win-f { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.win-f .quiet { color: var(--muted); font-size: .82rem; background: none; border: 0; cursor: pointer; }
+.corner { position: absolute; right: 16px; bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--strong); font-size: .84rem; }
+.outs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.out { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--bg); overflow: hidden; display: grid; align-content: start; min-width: 0; }
+.out-h { padding: 8px 12px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); font-size: .8rem; color: var(--muted); } .out-h b { color: var(--strong); }
+.out-b { padding: 10px 12px; display: grid; gap: 6px; font-size: .8rem; color: var(--muted); } .out-b b { color: var(--strong); }
+.mini-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); align-items: center; }
+@media (max-width: 900px) { .outs { grid-template-columns: minmax(0, 1fr); } }
+
 </style>
 <div class="wrap">
   <header style="display:grid;gap:10px">
-    <span class="lbl">Workshop · a catalog with picks</span>
+    <span class="lbl">Workshop · a catalog with picks · <span class="v2">version 2</span></span>
     <h1>The reviews we run</h1>
-    <p class="meta">Nine kinds of review have shaped askdnd since October: a fresh reviewer reading everything, a day's work checked as one, an area page by page, a feature against the real thing. Each found things the everyday tests can't. Here they are in one place, with what each last changed, so you can choose which run on a schedule, which we call for when needed, and which we retire. The automatic checks (the nightly live test, the phone sweep, backups, Sentry) already have theirs, on Development › Scheduled.</p>
+    <p class="meta">Your two comments on version 1, answered here: better names, above all for the on-demand reviews, and the screens: where the reviews live, how you launch one on demand, and what it hands back. Your cadence picks are at the bottom, now under the new names.</p>
   </header>
 
   <section aria-labelledby="h-cat" style="display:grid;gap:10px">
-    <h2 id="h-cat">The catalog</h2>
+    <h2 id="h-cat">The catalog, renamed</h2>
+    <p class="note">Each name says what the review looks at. The two on-demand ones are aimed at something when you run them, so they read with it: “Design review: Battle”, “Feature deep-dive: the bridge”. Each has a second name to choose from.</p>
     <div class="tblwrap"><table class="cat" aria-label="Reviews">
       <thead><tr><th>Review</th><th>What it looks at</th><th>What it changed last time</th><th>Last run</th><th>My pick</th></tr></thead>
       <tbody>
-<tr><td><b>The day as one</b><span class="why">End-of-day audit</span></td><td>A day&#x27;s pull requests checked together by two fresh reviewers (design system, code) and a sweep of every page as admin, DM and player.</td><td>Found ten lists drawn ten ways, five state vocabularies, a table check that didn&#x27;t exist; nine picks, all built (#514).</td><td class="nw"><a href="https://claude.ai/artifact/L6GAdw7Vqj5ykhSYWuKdEY" target="_blank" rel="noopener">Nov 25 ↗</a></td><td class="nw"><span class="pill mine-p">Weekly</span></td></tr>
-<tr><td><b>Would I build it differently?</b><span class="why">Backend look-back</span></td><td>A reviewer new to askdnd reads the brief, the decisions and all the code, knowing every requirement now.</td><td>The jobs queue and worker, D&amp;D Beyond reads and drafts on it, Workshop&#x27;s one door (#513 to #520).</td><td class="nw"><a href="https://claude.ai/artifact/PwaBbRYMPKC6HcUonmWmfW" target="_blank" rel="noopener">Nov 25 ↗</a></td><td class="nw"><span class="pill mine-p">Each phase</span></td></tr>
-<tr><td><b>Outside review</b><span class="why">Security, privacy, robustness</span></td><td>A reviewer with no history reads it as an attacker and an auditor would: who sees what, what a request can change, what breaks.</td><td>Hidden stays hidden everywhere, first names only to Claude, Undo sealed, nothing from a CDN, reading checked like writing.</td><td class="nw"><a href="https://claude.ai/artifact/BNPQtprWhtZRD4Q5p78wUy" target="_blank" rel="noopener">Nov 10 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
-<tr><td><b>An area, page by page</b><span class="why">Design review</span></td><td>Every page of one area against the design system and its purpose, then rounds of picks until it&#x27;s one piece.</td><td>Backstage&#x27;s four rounds: needs-you first, one table, one state key, Overview by your menu&#x27;s sections.</td><td class="nw"><a href="https://claude.ai/artifact/USAzbBuZYCBkuLc76r5sSi" target="_blank" rel="noopener">Nov 24 ↗</a></td><td class="nw"><span class="pill mine-p">On demand</span></td></tr>
-<tr><td><b>At the table</b><span class="why">UI and UX, usability</span></td><td>Battle, Sheet, Party and rolls used as a player and the DM would on game night, laptop first, then a phone.</td><td>The usability round (Oct 30), the Live UI audit (Nov 19), the Use window and Show the Math.</td><td class="nw"><a href="https://claude.ai/artifact/W319KTiC4aM3K8qQddWT5W" target="_blank" rel="noopener">Nov 16 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
-<tr><td><b>One feature, deeply</b><span class="why">Feature review</span></td><td>One feature against the real thing: the bridge against D&amp;D Beyond, Wild Shape and rolls against the rules.</td><td>Bridge review, Wild Shape review, Roll audit and Roll data review: the roll plan and the bridge&#x27;s read-back.</td><td class="nw"><a href="https://claude.ai/artifact/WwWZvF1s4EDsqcpJ3EjPcH" target="_blank" rel="noopener">Nov 3 ↗</a></td><td class="nw"><span class="pill mine-p">On demand</span></td></tr>
-<tr><td><b>Against the rules text</b><span class="why">Rules audit</span></td><td>Every button on Battle against the 2024 books&#x27; own words (scripts/battle_audit.py, roll_coverage.py).</td><td>Rolls that were missing or wrong, and riders on a hit.</td><td class="nw"><a href="https://claude.ai/artifact/S16McZJH6mbUGRvoZRTJMY" target="_blank" rel="noopener">Nov 10 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
-<tr><td><b>Our own way of working</b><span class="why">Workshop audit</span></td><td>How we work: where time went, what fell through, what waits on whom (Workshop&#x27;s audit, the scheduled jobs audit, open feedback reviewed).</td><td>Found, Fixed, Tried itself; lanes and Deploys; the jobs on Scheduled; gaps the end-of-turn check catches.</td><td class="nw"><a href="https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6" target="_blank" rel="noopener">Nov 17 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
-<tr><td><b>Words code depends on</b><span class="why">String audit</span></td><td>Everything code or tests find by the words people see, so the app could be translated without breaking.</td><td>Markers on every piece; a test now counts what&#x27;s left and only lets it go down.</td><td class="nw"><a href="https://claude.ai/artifact/86vWsRCqsfUPyZFRSAwjSq" target="_blank" rel="noopener">Nov 19 ↗</a></td><td class="nw"><span class="pill mine-p">Retire</span></td></tr>
+<tr><td><b>Week in review</b><span class="was">was “the day as one”</span></td><td>The week&#x27;s pull requests checked together by fresh reviewers (design system, code) and a sweep of every page as admin, DM and player.</td><td>Ten lists drawn ten ways, five state vocabularies, a table check that didn&#x27;t exist; nine picks, all built.</td><td class="nw"><a href="https://claude.ai/artifact/L6GAdw7Vqj5ykhSYWuKdEY" target="_blank" rel="noopener">Nov 25 ↗</a></td><td class="nw"><span class="pill mine-p">Weekly</span></td></tr>
+<tr><td><b>Architecture review</b><span class="was">was “would I build it differently?”</span></td><td>A reviewer new to askdnd reads the brief, the decisions and all the code, knowing every requirement now.</td><td>The jobs queue and worker, D&amp;D Beyond reads and drafts on it, Workshop&#x27;s one door.</td><td class="nw"><a href="https://claude.ai/artifact/PwaBbRYMPKC6HcUonmWmfW" target="_blank" rel="noopener">Nov 25 ↗</a></td><td class="nw"><span class="pill mine-p">Each phase</span></td></tr>
+<tr><td><b>Security and privacy audit</b><span class="was">was “the outside review”</span></td><td>A reviewer with no history reads it as an attacker and an auditor would: who sees what, what a request can change.</td><td>Hidden stays hidden everywhere, first names only to Claude, Undo sealed, nothing from a CDN.</td><td class="nw"><a href="https://claude.ai/artifact/BNPQtprWhtZRD4Q5p78wUy" target="_blank" rel="noopener">Nov 10 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
+<tr><td><b>Design review</b><span class="why">or “Area walkthrough” · on demand, aimed at one area</span><span class="was">was “an area, page by page”</span></td><td>Every page of one area against the design system and its purpose, then rounds of picks until it&#x27;s one piece.</td><td>Backstage&#x27;s four rounds: needs-you first, one table, one state key.</td><td class="nw"><a href="https://claude.ai/artifact/USAzbBuZYCBkuLc76r5sSi" target="_blank" rel="noopener">Nov 24 ↗</a></td><td class="nw"><span class="pill mine-p">On demand</span></td></tr>
+<tr><td><b>Game-night walkthrough</b><span class="was">was “at the table”</span></td><td>Battle, Sheet, Party and rolls used as a player and the DM would on game night, laptop first, then a phone.</td><td>The usability round, the Live UI audit, the Use window and Show the Math.</td><td class="nw"><a href="https://claude.ai/artifact/W319KTiC4aM3K8qQddWT5W" target="_blank" rel="noopener">Nov 16 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
+<tr><td><b>Feature deep-dive</b><span class="why">or “Reality check” · on demand, aimed at one feature</span><span class="was">was “one feature, deeply”</span></td><td>One feature against the real thing: the bridge against D&amp;D Beyond, Wild Shape and rolls against the rules.</td><td>The roll plan and the bridge&#x27;s read-back.</td><td class="nw"><a href="https://claude.ai/artifact/WwWZvF1s4EDsqcpJ3EjPcH" target="_blank" rel="noopener">Nov 3 ↗</a></td><td class="nw"><span class="pill mine-p">On demand</span></td></tr>
+<tr><td><b>Rules accuracy audit</b><span class="was">was “against the rules text”</span></td><td>Every button on Battle against the 2024 books&#x27; own words.</td><td>Rolls that were missing or wrong, and riders on a hit.</td><td class="nw"><a href="https://claude.ai/artifact/S16McZJH6mbUGRvoZRTJMY" target="_blank" rel="noopener">Nov 10 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
+<tr><td><b>Workshop retro</b><span class="was">was “our own way of working”</span></td><td>How we work: where time went, what fell through, what waits on whom.</td><td>Found, Fixed, Tried itself; lanes and Deploys; the scheduled jobs.</td><td class="nw"><a href="https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6" target="_blank" rel="noopener">Nov 17 ↗</a></td><td class="nw"><span class="pill mine-p">Monthly</span></td></tr>
+<tr><td><b>String audit</b><span class="was">was “words code depends on”</span></td><td>Everything code or tests find by the words people see.</td><td>Markers on every piece; a test now counts what&#x27;s left.</td><td class="nw"><a href="https://claude.ai/artifact/86vWsRCqsfUPyZFRSAwjSq" target="_blank" rel="noopener">Nov 19 ↗</a></td><td class="nw"><span class="pill mine-p">Retire</span></td></tr>
       </tbody>
     </table></div>
   </section>
 
-  <section class="ctx" aria-labelledby="h-how">
-    <h2 id="h-how">How a scheduled one would run</h2>
-    <div class="how">
-      <div class="term"><span class="tag">On its day</span><span>A Claude session starts by itself (as the Monday phone sweep does), runs the review with reviewers who didn't build the work, and fixes what's plainly wrong in one pull request.</span></div>
-      <div class="term"><span class="tag">What reaches you</span><span>One page with picks for anything that's your call, in For you, and a line on Development › Scheduled saying it ran and what it found.</span></div>
-      <div class="term"><span class="tag">On demand</span><span>You say “run the outside review” (or press its button on Scheduled, later), and it runs the same way.</span></div>
-      <div class="term"><span class="tag">Retired</span><span>Its page stays in Documents as a record; it isn't run again.</span></div>
+  <section aria-labelledby="h-screen" style="display:grid;gap:10px">
+    <h2 id="h-screen">Where they live: Development › Scheduled <span class="note">(press Run… on an on-demand one)</span></h2>
+    <div class="screen" id="screen">
+      <div class="bar"><span class="brand">askdnd</span><span>Campaign</span><span>Party</span><span class="on">Backstage</span></div>
+      <div class="pgx">
+        <div class="crumbs">Backstage › Workshop</div>
+        <h3>Development</h3>
+        <div class="tabsx"><span>Board</span><span>Your order</span><span>Handoffs</span><span class="on">Scheduled</span></div>
+        <table class="q" aria-label="Scheduled">
+          <thead><tr><th>What</th><th>How often</th><th>Last run</th><th>Next</th><th></th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="5">Reviews</td></tr>
+            <tr><td>Week in review<span class="sub">Fresh reviewers check the week's changes as one</span></td><td>Weekly, Fridays</td><td><span class="pill done">Done</span> Nov 25 · 9 picks</td><td>Fri Nov 28</td><td><button class="btn small" type="button" data-run="Week in review">Run now</button></td></tr>
+            <tr><td>Game-night walkthrough<span class="sub">Battle, Sheet, Party and rolls, as a player and the DM</span></td><td>Monthly, the 1st</td><td><span class="pill done">Done</span> Nov 16</td><td>Dec 1</td><td><button class="btn small" type="button" data-run="Game-night walkthrough">Run now</button></td></tr>
+            <tr><td>Design review<span class="sub">One area, every page, against the design system</span></td><td>On demand</td><td><span class="pill done">Done</span> Nov 24 · Backstage</td><td>—</td><td><button class="btn small" type="button" data-run-pick="area">Run…</button></td></tr>
+            <tr id="asked-row" hidden><td>Design review: <span id="asked-what">Battle</span><span class="sub">Asked by you just now</span></td><td>On demand</td><td><span class="pill new">Starting</span> Claude takes it at its next check-in</td><td>—</td><td></td></tr>
+            <tr><td>Feature deep-dive<span class="sub">One feature against the real thing</span></td><td>On demand</td><td><span class="pill done">Done</span> Nov 3 · the bridge</td><td>—</td><td><button class="btn small" type="button" data-run-pick="feature">Run…</button></td></tr>
+            <tr><td>Architecture review<span class="sub">Would we build it differently, knowing what we know now</span></td><td>Each phase</td><td><span class="pill done">Done</span> Nov 25</td><td>End of the VTT phase</td><td><button class="btn small" type="button" data-run="Architecture review">Run now</button></td></tr>
+            <tr class="grp"><td colspan="5">Automatic jobs (as today)</td></tr>
+            <tr><td>The live test<span class="sub">The real D&amp;D Beyond, from the Mac Mini</span></td><td>Nightly, 4:00</td><td><span class="pill done">Done</span> today 4:12</td><td>Tonight</td><td></td></tr>
+            <tr><td>The phone sweep<span class="sub">Every page at phone and tablet widths</span></td><td>Weekly, Mondays</td><td><span class="pill done">Done</span> Nov 23</td><td>Mon Nov 30</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="overlay" id="overlay" hidden>
+        <div class="win" role="dialog" aria-labelledby="win-title">
+          <div class="win-h"><b id="win-title">Run a design review</b><button class="x" type="button" data-close aria-label="Close">×</button></div>
+          <div class="win-b">
+            <label><span id="pick-label">Which area</span><select id="pick-what"></select></label>
+            <label>Anything to look at in particular <span class="note">(optional)</span><textarea rows="2" placeholder="For example: the roll card on a phone"></textarea></label>
+            <div class="facts"><span>Who reviews</span><b>Two fresh reviewers who didn't build it, then Claude</b><span>Takes</span><b>About an hour; it starts at Claude's next check-in</b><span>Hands back</span><b>A page with picks in For you, and one pull request of the plain fixes</b></div>
+          </div>
+          <div class="win-f"><button class="btn go small" type="button" data-start>Start the review</button><button class="quiet" type="button" data-close>Cancel</button></div>
+        </div>
+      </div>
+      <div class="corner" id="corner" hidden></div>
+    </div>
+    <p class="note">How it starts: askdnd keeps your request and tells Claude's listener, which starts the review in a Claude session on this Mac within about 10 minutes (as the Monday phone sweep starts itself). While it runs, its row says Running; when it's done, Done with what it found.</p>
+  </section>
+
+  <section aria-labelledby="h-out" style="display:grid;gap:10px">
+    <h2 id="h-out">What a review hands back</h2>
+    <div class="outs">
+      <div class="out"><div class="out-h"><b>1 · In For you</b></div><div class="out-b">
+        <div class="mini-row"><span><b>Design review: Battle</b><br>A decision: 6 picks</span><span class="pill draft">Yours</span></div>
+        <span>One page, like the end-of-day audit: what it found, what's already fixed, and only the real choices as picks with mine marked. You can comment and Send now, then pick.</span></div></div>
+      <div class="out"><div class="out-h"><b>2 · One pull request</b></div><div class="out-b">
+        <div class="mini-row"><span><b>Design review fixes: Battle</b><br>11 plain fixes · Look lane</span><span class="pill new">Tests running</span></div>
+        <span>What was plainly wrong (off the design system, a bug), fixed together and merged when green, as today's lanes say. Its check reaches your For you once it's live.</span></div></div>
+      <div class="out"><div class="out-h"><b>3 · Its row on Scheduled</b></div><div class="out-b">
+        <div class="mini-row"><span><b>Design review</b><br>Nov 25 · Battle · 11 fixed, 6 picks</span><span class="pill done">Done</span></div>
+        <span>Each run kept with what it found and fixed, so the catalog shows when each review last ran and what it changed, and the page stays in Documents.</span></div></div>
     </div>
   </section>
 
   <form class="decide" aria-label="Your picks">
     <h2>Your picks</h2>
-<fieldset class="row"><legend>The day as one · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_day" value="weekly"><span>Weekly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_day" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_day" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_day" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_day" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>Would I build it differently? · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_backend" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_backend" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_backend" value="phase"><span>Each phase <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_backend" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_backend" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>Outside review · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_outside" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_outside" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_outside" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_outside" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_outside" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>An area, page by page · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_area" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_area" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_area" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_area" value="demand"><span>On demand <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_area" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>At the table · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_table" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_table" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_table" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_table" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_table" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>One feature, deeply · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_feature" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_feature" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_feature" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_feature" value="demand"><span>On demand <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_feature" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>Against the rules text · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_rules" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_rules" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_rules" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_rules" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_rules" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>Our own way of working · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_workshop" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_workshop" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="retire"><span>Retire</span></label></div></fieldset>
-<fieldset class="row"><legend>Words code depends on · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_words" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_words" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_words" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_words" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_words" value="retire"><span>Retire <em>mine</em></span></label></div></fieldset>
-    <fieldset><legend>Where the catalog lives</legend><label class="opt"><input type="radio" name="rv_where" value="scheduled"><span>A · On Development › Scheduled <span class="mine">my pick</span></span><small>Reviews beside the automatic jobs, each with its cadence, last run and a Run now.</small></label><label class="opt"><input type="radio" name="rv_where" value="own"><span>B · Its own page in Workshop</span><small>A Reviews page next to Development.</small></label></fieldset>
-    <fieldset><legend>What a review hands you</legend><label class="opt"><input type="radio" name="rv_out" value="page"><span>A · One page with picks, and the plain fixes already made <span class="mine">my pick</span></span><small>As tonight's end-of-day review: what was clearly wrong fixed in one pull request, only the real choices left for you.</small></label><label class="opt"><input type="radio" name="rv_out" value="ask"><span>B · Everything as picks</span><small>Nothing changed until you've seen it.</small></label></fieldset>
-    <label for="notes"><b>Anything else</b> <span class="note">(a review we haven't run that you'd want)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <fieldset><legend>The names</legend><label class="opt"><input type="radio" name="rv_names" value="new"><span>A · The new names <span class="mine">my pick</span></span><small>Week in review, Architecture review, Security and privacy audit, Game-night walkthrough, Rules accuracy audit, Workshop retro.</small></label><label class="opt"><input type="radio" name="rv_names" value="mine"><span>B · I'll suggest others</span><small>Write them under Anything else.</small></label></fieldset>
+    <fieldset><legend>The area review's name</legend><label class="opt"><input type="radio" name="rv_area_name" value="design"><span>A · Design review: Battle <span class="mine">my pick</span></span><small>Says what it checks: the design system and each page's purpose.</small></label><label class="opt"><input type="radio" name="rv_area_name" value="walk"><span>B · Area walkthrough: Battle</span><small>Says how: every page, one by one.</small></label></fieldset>
+    <fieldset><legend>The feature review's name</legend><label class="opt"><input type="radio" name="rv_feature_name" value="deep"><span>A · Feature deep-dive: the bridge <span class="mine">my pick</span></span><small>One feature, all the way down.</small></label><label class="opt"><input type="radio" name="rv_feature_name" value="reality"><span>B · Reality check: the bridge</span><small>Against the real thing: D&amp;D Beyond, the books.</small></label></fieldset>
+<fieldset class="row"><legend>Week in review · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_day" value="weekly"><span>Weekly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_day" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_day" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_day" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_day" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Architecture review · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_backend" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_backend" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_backend" value="phase"><span>Each phase <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_backend" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_backend" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Security and privacy audit · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_outside" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_outside" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_outside" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_outside" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_outside" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Design review · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_area" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_area" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_area" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_area" value="demand"><span>On demand <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_area" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Game-night walkthrough · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_table" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_table" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_table" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_table" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_table" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Feature deep-dive · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_feature" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_feature" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_feature" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_feature" value="demand"><span>On demand <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_feature" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Rules accuracy audit · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_rules" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_rules" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_rules" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_rules" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_rules" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>Workshop retro · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_workshop" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="monthly"><span>Monthly <em>mine</em></span></label><label class="chipr"><input type="radio" name="rv_workshop" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_workshop" value="retire"><span>Retire</span></label></div></fieldset>
+<fieldset class="row"><legend>String audit · how often</legend><div class="chipset"><label class="chipr"><input type="radio" name="rv_words" value="weekly"><span>Weekly</span></label><label class="chipr"><input type="radio" name="rv_words" value="monthly"><span>Monthly</span></label><label class="chipr"><input type="radio" name="rv_words" value="phase"><span>Each phase</span></label><label class="chipr"><input type="radio" name="rv_words" value="demand"><span>On demand</span></label><label class="chipr"><input type="radio" name="rv_words" value="retire"><span>Retire <em>mine</em></span></label></div></fieldset>
+    <fieldset><legend>Where the catalog lives</legend><label class="opt"><input type="radio" name="rv_where" value="scheduled"><span>A · On Development › Scheduled <span class="mine">my pick</span></span><small>As drawn above: reviews beside the automatic jobs. (Your pick on version 1.)</small></label><label class="opt"><input type="radio" name="rv_where" value="own"><span>B · Its own page in Workshop</span><small>A Reviews page next to Development.</small></label></fieldset>
+    <fieldset><legend>Launching one on demand</legend><label class="opt"><input type="radio" name="rv_launch" value="window"><span>A · Run… opens a window: what to aim it at, then Start <span class="mine">my pick</span></span><small>As drawn: the area or feature from the Product Taxonomy, an optional focus, what it takes and hands back.</small></label><label class="opt"><input type="radio" name="rv_launch" value="chat"><span>B · Ask in chat</span><small>“Run a design review of Battle”; the row is only a record.</small></label></fieldset>
+    <fieldset><legend>What a review hands you</legend><label class="opt"><input type="radio" name="rv_out" value="page"><span>A · A page with picks, and the plain fixes already made <span class="mine">my pick</span></span><small>The three drawn above.</small></label><label class="opt"><input type="radio" name="rv_out" value="ask"><span>B · Everything as picks</span><small>Nothing changed until you've seen it.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(names you'd rather, or a review we haven't run)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>
 </div>
+
+<script>
+(() => {
+  // The drawn Scheduled tab: Run now says it's asked; Run… opens the window to aim it, Start adds its row.
+  const screen = document.getElementById('screen'), ov = document.getElementById('overlay'), corner = document.getElementById('corner');
+  const sel = document.getElementById('pick-what'), lab = document.getElementById('pick-label'), title = document.getElementById('win-title');
+  const AREAS = ['Battle', 'Rolls and dice', 'The table', 'D&D Beyond', 'Campaign and story', 'Rules and books', 'Manage', 'Getting around', 'Workshop'];
+  const FEATURES = ['The extension', 'Sheets from D&D Beyond', 'The roll card', 'Hit points', 'Casting and spell slots', 'Wild Shape', 'Search', 'Session Story'];
+  let kind = 'area', timer = null;
+  const card = t => { corner.textContent = t; corner.hidden = false; clearTimeout(timer); timer = setTimeout(() => { corner.hidden = true; }, 3200); };
+  screen.addEventListener('click', e => {
+    const now = e.target.closest('[data-run]');
+    if (now) { card(`Asked: ${now.dataset.run} starts at Claude's next check-in`); return; }
+    const pick = e.target.closest('[data-run-pick]');
+    if (pick) {
+      kind = pick.dataset.runPick;
+      title.textContent = kind === 'area' ? 'Run a design review' : 'Run a feature deep-dive';
+      lab.textContent = kind === 'area' ? 'Which area' : 'Which feature';
+      sel.replaceChildren(...(kind === 'area' ? AREAS : FEATURES).map(x => Object.assign(document.createElement('option'), { textContent: x })));
+      ov.hidden = false; sel.focus(); return;
+    }
+    if (e.target.closest('[data-close]')) { ov.hidden = true; return; }
+    if (e.target.closest('[data-start]')) {
+      ov.hidden = true;
+      const row = document.getElementById('asked-row');
+      document.getElementById('asked-what').textContent = (kind === 'area' ? '' : '') + sel.value;
+      row.firstElementChild.firstChild.textContent = (kind === 'area' ? 'Design review: ' : 'Feature deep-dive: ');
+      row.hidden = false;
+      card('Asked: it starts at Claude\'s next check-in');
+    }
+  });
+  addEventListener('keydown', e => { if (e.key === 'Escape') ov.hidden = true; });
+})();
+</script>
 
 <script>
 (() => {
@@ -135,7 +256,7 @@ table.cat { width: 100%; border-collapse: collapse; font-size: .88rem; min-width
   // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
-  const NAMES = ["rv_day", "rv_backend", "rv_outside", "rv_area", "rv_table", "rv_feature", "rv_rules", "rv_workshop", "rv_words", "rv_where", "rv_out"];
+  const NAMES = ["rv_day", "rv_backend", "rv_outside", "rv_area", "rv_table", "rv_feature", "rv_rules", "rv_workshop", "rv_words", "rv_names", "rv_area_name", "rv_feature_name", "rv_where", "rv_launch", "rv_out"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };

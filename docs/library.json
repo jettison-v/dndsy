@@ -2,10 +2,10 @@
  {
   "title": "The reviews we run",
   "kind": "plan",
-  "status": "Your picks",
+  "status": "Your picks (version 2)",
   "state": "waiting",
   "date": "Nov 25",
-  "what": "A catalog of the nine kinds of review that have shaped askdnd (a day as one, a backend look-back, the outside review, an area page by page, at the table, one feature deeply, against the rules text, our own way of working, words code depends on): what each looks at, what it changed last, and a pick for each: weekly, monthly, each phase, on demand or retire.",
+  "what": "Version 2, from Brett's comments: the reviews we run renamed (Week in review, Design review, Feature deep-dive…), drawn on Development › Scheduled, how an on-demand one is launched (Run…, aimed at an area or feature), and the three things a review hands back; a cadence pick for each, and picks on the names.",
   "line": "Which reviews run when, and which we retire",
   "source": "docs/mockups/review-catalog/index.html",
   "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
