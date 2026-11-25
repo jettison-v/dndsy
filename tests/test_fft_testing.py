@@ -166,6 +166,8 @@ def test_a_round_goes_page_to_page_and_passed_moves_on_with_undo(admin, db):
     r = admin.post("/manage/testing/round", follow_redirects=False)
     assert r.headers["location"] == "/party" and rules.round_open(db) is not None
     assert f'data-check-card="{first.id}"' in admin.get("/manage/testing/card?at=/party").text
+    for back in ("/manage/for-you", "/manage/feedback"):  # (issue 130: For you and Backstage keep it too, whatever the check is about)
+        assert f'data-check-card="{first.id}"' in admin.get(f"/manage/testing/card?at={back}").text
     assert 'id="check-card"' in admin.get("/party").text  # (the card's slot on every page while the round is open)
     r = admin.post(f"/manage/testing/checks/{first.id}/try", data={"result": "passed", "seen": "to_try"}, follow_redirects=False)
     assert r.headers["location"] == "/help"

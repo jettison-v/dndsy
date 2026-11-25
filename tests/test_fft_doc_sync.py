@@ -107,20 +107,62 @@ def test_a_standing_rule_only_claudes_key_brings_things_in(api, db):
     assert db.scalar(select(FftDocComment)) is None
 
 
-def test_the_listener_wakes_claude_to_check_claude_ai(monkeypatch, capsys):
-    """claude.ai can't wake Claude for a plain comment, so the listener ends after --wake minutes (10 by default)."""
+def _script(monkeypatch, tmp_path, looked_ago: float | None):
     import importlib.util
+    import os
+    import time
     from pathlib import Path
 
     spec = importlib.util.spec_from_file_location("feedback", Path(__file__).resolve().parent.parent / "scripts" / "feedback.py")
     fb = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fb)
+    monkeypatch.setattr(fb, "CHECKED", tmp_path / ".claude-ai-checked")
+    if looked_ago is not None:
+        fb.CHECKED.touch()
+        os.utime(fb.CHECKED, (time.time() - looked_ago,) * 2)
+    monkeypatch.setattr(fb.time, "sleep", lambda s: None)
+    return fb
+
+
+def _args(**kw):
+    return type("A", (), {"hours": 8, "wake": 10, "base": "", "listener": "", "every": 30, **kw})()
+
+
+def test_the_listener_wakes_claude_to_check_claude_ai(monkeypatch, capsys, tmp_path):
+    """claude.ai can't wake Claude for a plain comment, so the listener ends once --wake minutes (10 by default) have
+    passed since Claude last looked there (`sync list`)."""
+    fb = _script(monkeypatch, tmp_path, looked_ago=0)
     clock = iter([0.0, 0.0, 601.0, 601.0])
     monkeypatch.setattr(fb.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(fb, "_peek", lambda base, listener: {"items": []})
-    monkeypatch.setattr(fb.time, "sleep", lambda s: None)
-    fb.wait(type("A", (), {"hours": 8, "wake": 10, "base": "", "listener": "", "every": 30})())
-    assert "time to check claude.ai" in capsys.readouterr().out
+    fb.wait(_args())
+    assert "claude.ai is due a look" in capsys.readouterr().out
+
+
+def test_busy_askdnd_never_puts_off_the_look_at_claude_ai(monkeypatch, capsys, tmp_path):
+    """Issue 132 (Nov 25): Brett's notes came every few minutes, each ending a wait before its 10 minutes, so his
+    claude.ai comment waited an afternoon. The look is counted from the last one: overdue, a wait says so at once, and a
+    wait that ends with news says it's due too."""
+    fb = _script(monkeypatch, tmp_path, looked_ago=3600)
+    monkeypatch.setattr(fb, "_peek", lambda base, listener: {"items": []})
+    fb.wait(_args())
+    assert "claude.ai is due a look" in capsys.readouterr().out
+    monkeypatch.setattr(fb, "_event", lambda e: "  a note")
+    now = [1_000_000.0]
+
+    def news(base, listener):  # (a note arrives two minutes into the wait)
+        now[0] += 120
+        return {"items": [{"at": "2026-11-25T17:38:00Z"}]}
+
+    monkeypatch.setattr(fb, "_peek", news)
+    monkeypatch.setattr(fb.time, "time", lambda: now[0])
+    monkeypatch.setattr(fb, "_checked_at", lambda: 1_000_000.0 - 9 * 60)  # (looked 9 minutes before the wait began)
+    fb.wait(_args())
+    out = capsys.readouterr().out
+    assert "new in askdnd" in out and "claude.ai is due a look" in out
+    monkeypatch.setattr(fb, "_checked_at", lambda: 1_000_000.0)  # (looked as the wait began: news alone)
+    fb.wait(_args())
+    assert "due a look" not in capsys.readouterr().out
 
 
 def test_your_picks_show_beside_the_scope_you_ok(api, admin, db):

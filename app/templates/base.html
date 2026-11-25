@@ -161,7 +161,7 @@
 </div>
 {% include "_table_rolls.html" %}
 {% if feedback_send(request) %}{% include "_feedback_window.html" %}{% endif %}
-{% if fft_round(request) %}<div class="check-card-slot" id="check-card" hx-get="/manage/testing/card?at={{ request.url.path | urlencode }}" hx-trigger="load" hx-swap="innerHTML"></div>{% endif %}{# (a round of checks is open: its card, app/fft/testing_page.py; on Testing itself only for a check about it) #}
+{% if fft_round(request) %}<div class="check-card-slot" id="check-card" hx-get="/manage/testing/card?at={{ request.url.path | urlencode }}" hx-trigger="load" hx-swap="innerHTML"></div>{% endif %}{# (a round of checks is open: its card, app/fft/testing_page.py, on every page; issue 130) #}
 {% endif %}
 {% block content %}{% endblock %}
 {% endblock %}

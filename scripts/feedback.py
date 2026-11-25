@@ -152,14 +152,35 @@ def _peek(base: str, listener: str) -> dict | None:
         return None
 
 
+CHECKED = ROOT / "logs" / ".claude-ai-checked"  # (when Claude last looked at claude.ai: `sync list` touches it)
+
+
+def _looked() -> None:
+    """Claude has looked at claude.ai (a page brought in or sent out, or nothing to look at): the listener's next look
+    is counted from now. (`sync list` alone isn't a look: the review of #525)"""
+    CHECKED.parent.mkdir(exist_ok=True)
+    CHECKED.touch()
+
+
+def _checked_at() -> float:
+    try:
+        return CHECKED.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
 def wait(a) -> None:
     """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
     until, misses = time.monotonic() + a.hours * 3600, 0
-    check = time.monotonic() + a.wake * 60 if a.wake else None  # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks)
+    # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks, every --wake minutes counted from its last look, not from
+    # this wait: issue 132, Nov 25, Brett's notes came every few minutes, each ending a wait, and his claude.ai comment
+    # waited an afternoon)
+    check = time.monotonic() + max(0.0, _checked_at() + a.wake * 60 - time.time()) if a.wake else None
+    due = f"claude.ai is due a look ({a.wake} minutes since the last): feedback.py sync list, then listen again."
     while time.monotonic() < until:
         if check is not None and time.monotonic() >= check:
-            print(f"{a.wake} minutes: time to check claude.ai (feedback.py sync list), then listen again.")
+            print(due)
             return
         got = _peek(a.base, a.listener)
         if got is None:
@@ -170,6 +191,8 @@ def wait(a) -> None:
             print(f"{len(got['items'])} new in askdnd (feedback.py inbox reads and marks them):")
             for e in got["items"][:20]:
                 print(_event(e))
+            if check is not None and time.time() >= _checked_at() + a.wake * 60:
+                print(due)
             return
         else:
             misses = 0
@@ -609,11 +632,13 @@ def sync(a) -> None:
             print(f"{d['doc']}  {d['link']}" + (f"  (question {d['open_question']} open)" if d["open_question"] else ""))
         if not docs:
             print("Nothing to check on claude.ai.")
+            _looked()
         return
     if not a.doc:
         sys.exit("sync in|out <doc>")
     from urllib.parse import quote
 
+    _looked()
     if a.do == "out":
         got = call(a.base, "/docs/out?doc=" + quote(a.doc))
         text = json.dumps(got, indent=1, ensure_ascii=False)

@@ -48,7 +48,6 @@ router = APIRouter()
 BACK = "/manage/testing"
 WORK = "/manage/work"  # (Testing's Where it stands, Claude's and Done, since The Work Pages, Nov 20: app/fft/work_page.py)
 FOR_YOU = "/manage/for-you"  # (Brett, Nov 19: For you left Testing for a page of its own; the work flow's slice 2)
-MINE = (BACK, FOR_YOU)
 LOCAL = "http://localhost:8004"  # (Claude's local server on Brett's Mac: preview "web-claude"; a local try opens there)
 ROUND = "fft_round"  # the session's open round: {"id", "checks", "i", "device", "home"}
 PEOPLES = ("laptop", "iphone", "ipad")  # (Brett's devices; the Mac Mini's runs are Claude's)
@@ -1087,6 +1086,9 @@ def comment_drop(request: Request, comment_id: int, db: Session = Depends(get_db
 
 @router.get("/manage/testing/card")
 def card(request: Request, at: str = "", db: Session = Depends(get_db)):
+    """The round's card, on every page while a round is open, Backstage and For you too (issue 130, Brett, Nov 25: kept
+    off them unless the check was about them, it vanished each time he came back to For you mid-try). `at` is unused
+    now; the page still sends it."""
     _, denied = _admin(request)
     if denied:
         return denied
@@ -1101,8 +1103,6 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     c = db.get(FftCheck, r["checks"][r["i"]])
     if c is None:
         return templates.TemplateResponse(request, "_fft_card_empty.html", {})
-    if at.startswith(MINE) and not (version_of(db, c) and version_of(db, c).path.startswith(MINE)):
-        return templates.TemplateResponse(request, "_fft_card_empty.html", {})  # (on Testing or For you, only a check about them)
     cv = check_view(db, c, r["device"])
     last = _last_failed(db, c, r["device"])
     sent = len(list(db.scalars(select(FftTryIssue.issue_id).where(FftTryIssue.try_id == last.id)))) if last else 0
