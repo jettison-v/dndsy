@@ -193,7 +193,9 @@ def heartbeat(session_factory, waiting: str | None = None, now: datetime | None 
     with session_factory() as db:
         if waiting:
             seen = worker_seen(db) or {}
-            said = json.dumps({**{k: seen[k] for k in ("at", "version", "who") if k in seen}, "waiting": waiting, "waiting_at": at})
+            since = seen.get("waiting_since") if seen.get("waiting") == waiting else None
+            said = json.dumps({**{k: seen[k] for k in ("at", "version", "who") if k in seen}, "waiting": waiting,
+                               "waiting_at": at, "waiting_since": since or at})
         else:
             said = json.dumps({"at": at, "version": jobs.version(), "who": jobs.me()})
         row = db.get(ToolSetting, "jobs_worker")
@@ -220,6 +222,7 @@ def worker_seen(db: Session) -> dict | None:
 FALLBACK_QUEUES = ("ddb",)  # (what the web app runs itself while the worker is away: sheets can't wait; drafts can)
 QUIET_SECONDS = 90  # (a worker not heard from for this long is away)
 TELL_AFTER = 300  # (away this long: an error for Sentry, once)
+WAIT_BELIEVED = 900  # (a worker waiting for a migration this long is away after all: the web app's deploy didn't migrate)
 
 
 def quiet_for(seen: dict | None, now: datetime | None = None) -> float:
@@ -248,7 +251,8 @@ class Watch:
         with self.factory() as db:
             seen = worker_seen(db)
         quiet = quiet_for(seen, now)
-        waiting = bool(seen and seen.get("waiting")) and quiet_for({"at": seen.get("waiting_at")}, now) <= QUIET_SECONDS
+        waiting = (bool(seen and seen.get("waiting")) and quiet_for({"at": seen.get("waiting_at")}, now) <= QUIET_SECONDS
+                   and quiet_for({"at": seen.get("waiting_since")}, now) <= WAIT_BELIEVED)
         if quiet > QUIET_SECONDS and self.covering is None:
             self.covering = threading.Event()
             for q in FALLBACK_QUEUES:

@@ -254,6 +254,31 @@ def test_a_worker_waiting_for_its_deploys_migration_is_covered_for_but_not_repor
     assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
 
 
+def test_a_worker_waiting_too_long_for_a_migration_is_away_after_all(db, monkeypatch, caplog):
+    """Issue 133's review: a web deploy that never migrates leaves the worker waiting through every restart; past
+    WAIT_BELIEVED since it began waiting, Sentry hears it's away even while it keeps saying so."""
+    import contextlib
+    from datetime import timedelta
+
+    from app import worker
+
+    monkeypatch.setattr(worker.threading, "Thread", lambda target, name, daemon: type("T", (), {"start": lambda self: None})())
+    own = lambda: contextlib.nullcontext(db)
+    t0 = datetime.now(UTC)
+    worker.heartbeat(own, now=t0)
+    watch = worker.Watch(own, "web")
+    with caplog.at_level("ERROR", logger="askdnd.worker"):
+        for minutes in range(1, 15):
+            worker.heartbeat(own, waiting="migration", now=t0 + timedelta(minutes=minutes))
+            watch.look(t0 + timedelta(minutes=minutes, seconds=5))
+        assert not [r for r in caplog.records if r.levelname == "ERROR"]
+        assert worker.worker_seen(db)["waiting_since"] == (t0 + timedelta(minutes=1)).isoformat()
+        for minutes in range(15, 18):
+            worker.heartbeat(own, waiting="migration", now=t0 + timedelta(minutes=minutes))
+            watch.look(t0 + timedelta(minutes=minutes, seconds=5))
+    assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
+
+
 def test_waiting_for_the_migration_says_so_until_it_lands(monkeypatch):
     """Issue 133: the worker's wait for the web app's migration beats as waiting, then returns once the head is its own."""
     from app import worker
