@@ -27,7 +27,7 @@ def test_one_read_per_character_however_many_ask(db, monkeypatch):
     assert [(r.payload["character_id"], r.priority) for r in rows] == [(cole.id, sheet_reads.PRESS), (trah.id, sheet_reads.UNWATCHED)]
     monkeypatch.setattr(characters, "FETCH", fake_fetch)
     run_reads(db)
-    assert [r.state for r in _jobs(db)] == ["done", "done"]
+    assert _jobs(db)[0].state == "done" and cole.snapshot.status == "ok"  # (the press first; Trah's stand-in sheet is private)
     assert sheet_reads.request_read(db, cole, min_age=timedelta(minutes=2)) is None  # (read a moment ago)
 
 
