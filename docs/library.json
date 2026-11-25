@@ -1,5 +1,16 @@
 [
  {
+  "title": "The reviews we run",
+  "kind": "plan",
+  "status": "Your picks",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "A catalog of the nine kinds of review that have shaped askdnd (a day as one, a backend look-back, the outside review, an area page by page, at the table, one feature deeply, against the rules text, our own way of working, words code depends on): what each looks at, what it changed last, and a pick for each: weekly, monthly, each phase, on demand or retire.",
+  "line": "Which reviews run when, and which we retire",
+  "source": "docs/mockups/review-catalog/index.html",
+  "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
+ },
+ {
   "title": "The queue of our collaboration",
   "kind": "design",
   "status": "Your picks",
