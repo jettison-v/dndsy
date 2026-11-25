@@ -57,7 +57,7 @@ def register(kind: Kind) -> Kind:
     return kind
 
 
-KIND_MODULES = ("app.sheet_reads",)  # (each registers its kinds when imported: the web app and the worker load the same)
+KIND_MODULES = ("app.sheet_reads", "app.drafts")  # (each registers its kinds when imported: the web app and the worker load the same)
 
 
 def load_kinds() -> None:

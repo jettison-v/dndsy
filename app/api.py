@@ -58,15 +58,13 @@ def upload_transcript(
         session = GameSession(campaign_id=campaign.id, played_on=body.played_on, source="transcript")
         db.add(session)
         db.commit()
-    if admin_sessions.busy():
-        return JSONResponse({"error": "Claude is busy drafting another session. Try again in a minute."}, status_code=409)
     try:
         session_story.keep(db, session, body.text, session_story.clean_talk(body.talk))
         db.commit()
     except (files.FileError, files.StorageNotReady) as e:
         db.rollback()
         return JSONResponse({"error": f"askdnd couldn't keep the transcript: {e}"}, status_code=503)
-    if not admin_sessions.read_transcript_in_background(session.id, body.text):
+    if not admin_sessions.read_transcript_in_background(session.id):  # (a job: it reads the kept transcript itself)
         return JSONResponse({"error": "Claude is busy drafting another session. Try again in a minute."}, status_code=409)
     review_url = str(request.base_url).rstrip("/") + f"/c/{campaign.slug}/manage/sessions/{session.id}"
     return JSONResponse(

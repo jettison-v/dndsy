@@ -139,9 +139,10 @@ def db_engine():
 def _no_background_drafts(monkeypatch):
     """Publishing a session starts drafting the next one (a real Claude call in a thread): never in tests.
     Tests that care replace it with their own recorder."""
-    from app import admin_sessions
+    from app import admin_sessions, drafts
 
     monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: True)
+    monkeypatch.setattr(drafts, "_run_here_if_nobody_will", lambda: None)  # (a drafting job waits for the test to run it: `run_queue`)
 
 
 @pytest.fixture(autouse=True)

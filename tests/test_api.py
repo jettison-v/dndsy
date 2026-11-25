@@ -38,17 +38,17 @@ def test_disabled_without_server_token(client, monkeypatch):
 def test_upload_matches_session_by_date_and_starts_draft(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"played_on": "2026-08-29", "source": "transcript"}]})
     calls = []
-    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: calls.append((sid, text)) or True)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid: calls.append(sid) or True)
     r = post(client)
     assert r.status_code == 202
     sid = db.scalar(select(GameSession)).id
     assert r.json()["session_id"] == sid and r.json()["review_url"].endswith(f"/manage/sessions/{sid}")
-    assert calls == [(sid, "[0:42:00] Mary: You wake in the brig.")]
+    assert calls == [sid]  # (the job reads the kept transcript itself: app/drafts.py)
 
 
 def test_upload_creates_session_for_new_date(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: True)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid: True)
     assert post(client, played_on="2026-11-07").status_code == 202
     s = db.scalar(select(GameSession))
     assert (str(s.played_on), s.source) == ("2026-11-07", "transcript")
@@ -56,7 +56,7 @@ def test_upload_creates_session_for_new_date(client, db, monkeypatch):
 
 def test_busy_returns_conflict(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: False)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid: False)
     assert post(client).status_code == 409
 
 
@@ -64,7 +64,7 @@ def test_transcript_text_is_not_stored(client, db, monkeypatch):
     """A standing rule (CLAUDE.md privacy rules; DECISIONS Oct 14, revised Nov 7): a transcript never lands in any
     database table. The cleaned one the Processor sends is kept in file storage, for drafting, with who talked."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: True)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid: True)
     post(client, text="SECRET-TRANSCRIPT-MARKER", talk={"speakers": {"Jordan Vale": 4530.2, "": 3, "Alex Moore": "x"}, "length": 12300})
     from app import files, session_story
 

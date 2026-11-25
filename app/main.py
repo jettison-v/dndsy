@@ -190,14 +190,18 @@ def reparse_old_summaries() -> None:
 
 
 def mark_interrupted_runs() -> None:
-    """A deploy restarts the server; drafts that were mid-flight won't finish."""
+    """A deploy restarts the server; runs that were mid-flight won't finish. A draft whose job is still on the queue is
+    left to it: the job is taken again and marks its half-done run itself (app/drafts.py)."""
     if db_engine is None:
         return
     try:
+        from app import drafts
+
         with SessionLocal() as db:
+            again = drafts.waiting_sessions(db)
             db.execute(
                 update(ExtractionRun)
-                .where(ExtractionRun.status == "running")
+                .where(ExtractionRun.status == "running", ExtractionRun.session_id.notin_(again or {-1}))
                 .values(status="error", error="Interrupted (the server restarted). Draft it again.")
             )
             db.commit()

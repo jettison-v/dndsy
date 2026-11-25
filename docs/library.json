@@ -1,9 +1,42 @@
 [
  {
-  "title": "The Sync queue",
+  "title": "The reviews we should run",
+  "kind": "plan",
+  "status": "Your picks (version 3)",
+  "state": "waiting",
+  "date": "Nov 25",
+  "what": "Version 3, built the other way round (Brett: our past reviews help build the list, not be it): six buckets of the work (Experience, Correctness, The code, Trust, Running it, How we work), each with its question, what's already checked automatically, and the reviews that should cover the rest, five of them new; how they'd sit on Development › Scheduled, launch on demand and hand back; a cadence pick for each.",
+  "line": "Six buckets of the work, and the reviews each needs",
+  "source": "docs/mockups/review-catalog/index.html",
+  "link": "https://claude.ai/artifact/Dax5HwkdDwqtvHVRjBztJv"
+ },
+ {
+  "title": "The queue of our collaboration",
   "kind": "design",
   "status": "Your picks",
   "state": "waiting",
+  "date": "Nov 25",
+  "what": "Roadmap item 45: a Handoffs tab on Development showing what passes between you, the tool and Claude (picks and comments from claude.ai, notes, questions, checks reaching For you, pull requests going live), whose turn each is, and any step that was missed. Drawn with tonight's handoffs, clickable; five picks.",
+  "line": "Every handoff between us, and where one stopped",
+  "source": "docs/mockups/collaboration-queue/index.html",
+  "link": "https://claude.ai/artifact/3hxjzkZKfBaTHsE5KijTRG"
+ },
+ {
+  "title": "Naming the tool behind Our Work",
+  "kind": "design",
+  "status": "Picked: Workshop",
+  "state": "done",
+  "date": "Nov 25",
+  "what": "Roadmap item 45, your ask to name the tool that builds tools like askdnd (For you, Feedback, Roadmap, Development): four names, each shown in Backstage's menu and a page's address, with one pick or a name of yours.",
+  "line": "Four names for the tool, in place",
+  "source": "docs/mockups/naming-the-tool/index.html",
+  "link": "https://claude.ai/artifact/EKE5TdPKJjRPt3H1cTLXUt"
+ },
+ {
+  "title": "The Sync queue",
+  "kind": "design",
+  "status": "Picked",
+  "state": "done",
   "date": "Nov 25",
   "what": "Roadmap item 44, your ask for a processing queue: one Backstage page listing every read from D&D Beyond and every change sent to it, waiting, running, done or failed, each opening to its story (when it was asked, each try, the exact error). Drawn on a game night, clickable; six picks.",
   "line": "Every piece of sync work, and what happened to it",

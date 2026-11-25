@@ -7,12 +7,12 @@ from datetime import date, datetime
 import pytest
 from sqlalchemy import select
 
-from app import admin_sessions, extraction, files, narration, review, session_story
+from app import admin_sessions, drafts, extraction, files, narration, review, session_story
 from app.extraction import Source, extract_session
 from app.importer import import_bundle
 from app.models import Campaign, Correction, ExtractionRun, GameSession, Proposal, Recap, Status, StoryEvent, TableRoll
 from tests.roles import set_role
-from tests.table_setup import BUNDLE, char, owned_by
+from tests.table_setup import BUNDLE, char, owned_by, run_queue
 from tests.test_extraction import fake_client
 
 HX = {"HX-Request": "true"}
@@ -121,10 +121,9 @@ def test_draft_the_recap_without_a_kept_transcript_says_to_send_it_again(db, sto
     db.flush()
     r = dm.post(f"/c/main/manage/sessions/{story.id}/redraft", headers=HX)
     assert "Send it again from the Processor" in r.headers["HX-Trigger"]
-    monkeypatch.setattr(admin_sessions, "_busy", type("Free", (), {"acquire": lambda *a, **k: True, "release": lambda *a: None, "locked": lambda *a: False})())
-    monkeypatch.setattr(admin_sessions.threading, "Thread", lambda target, daemon: type("Now", (), {"start": lambda self: target()})())
     monkeypatch.setattr(admin_sessions.dbmod, "SessionLocal", lambda: _Same(db))
     assert admin_sessions.draft_recap_in_background(story.id)
+    run_queue(db, drafts.QUEUE)  # (the drafting job, as the worker runs it: app/drafts.py)
     run = db.scalar(select(ExtractionRun).where(ExtractionRun.source == "recap"))
     assert run.status == "error" and "Send it again" in run.error
 
@@ -778,3 +777,37 @@ def test_a_persons_race_and_class_come_with_the_suggestion_and_start_their_pictu
     dm.post(f"/campaign/{devin.id}/details", data={"kind": "npc", "published": "1", "race": "Human", "class": "Librarian"}, headers=HX)
     db.expire_all()
     assert db.get(Entity, devin.id).traits == {"race": "Human", "class": "Librarian"}
+
+
+def test_a_drafting_job_never_holds_transcript_words(db, story):
+    """A standing rule (CLAUDE.md › Privacy: the cleaned transcript is kept in file storage only, never the database):
+    a transcript's first read is a job carrying the session's id; the job reads the words from storage itself."""
+    from sqlalchemy import text as sql
+
+    session_story.keep(db, story, "[0:01:00] DM: SECRET-JOB-MARKER", None)
+    db.flush()
+    drafts.start(db, "read_transcript", story.id)
+    rows = db.execute(sql("SELECT payload::text AS p, label, requested_by, coalesce(result::text, '') AS r, error FROM jobs")).all()
+    assert rows and all("SECRET-JOB-MARKER" not in " ".join(map(str, r)) for r in rows)
+    assert db.execute(sql("SELECT payload FROM jobs WHERE kind = 'read_transcript'")).scalar() == {"session_id": story.id}
+
+
+def test_a_draft_cut_off_by_a_deploy_is_taken_again_and_its_half_done_run_closed(db, story, monkeypatch):
+    """A deploy stops the worker mid-draft: the job is taken again once, the run it left is marked interrupted (never two
+    running at once), and startup leaves a run whose job is still waiting to that job."""
+    from app import main
+
+    drafts.start(db, "draft_recap", story.id)
+    assert drafts.busy(db) and story.id in drafts.waiting_sessions(db)
+    assert drafts.start(db, "draft_recap", story.id) == drafts.start(db, "draft_recap", story.id)  # (asked again: the same job)
+    half = ExtractionRun(session_id=story.id, source="recap", status="running")
+    db.add(half)
+    db.commit()
+    monkeypatch.setattr(main, "SessionLocal", lambda: _Same(db))
+    main.mark_interrupted_runs()
+    assert half.status == "running"  # (its job is still on the queue: left to it)
+    session_story.forget(story)
+    db.flush()
+    run_queue(db, drafts.QUEUE)
+    db.refresh(half)
+    assert half.status == "error" and half.error == drafts.STALE and not drafts.busy(db)

@@ -1,0 +1,208 @@
+<title>Naming the Tool</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --clay: #d97757; --clay-soft: rgba(217, 119, 87, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.fig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.fig svg { display: block; width: 100%; min-width: 900px; height: auto; }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 100ch; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+/* Naming the tool behind Our Work (Roadmap item 45; Brett, Nov 25: "The name was meant to encompass everything in the Our
+   Work section. It is the tool that will be used to build new tools like askdnd from the ground up.") */
+.ctx { display: grid; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.nm { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.nm.mine-card { border-color: var(--amber); }
+.nm-h { display: flex; gap: 10px; align-items: baseline; } .nm-h b { font: 600 1.35rem/1.2 var(--serif); }
+.mine-tag { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.nm p { color: var(--muted); font-size: .9rem; }
+.menu { display: grid; gap: 2px; background: var(--chrome); border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: .84rem; max-width: 260px; }
+.menu .sec { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 4px 8px 6px; }
+.menu .it { padding: 5px 8px; border-radius: 6px; color: var(--text); display: flex; justify-content: space-between; }
+.menu .it.on { background: var(--surface-2); color: var(--strong); }
+.badge { background: var(--red-btn); color: #fff; border-radius: 999px; font: 700 .66rem/1.6 var(--sans); padding: 0 6px; }
+.crumb { color: var(--faint); font-size: .8rem; }
+@media (max-width: 800px) { .names { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Roadmap item 45 · a name, with picks</span>
+    <h1>Naming the tool behind Our Work</h1>
+    <p class="meta">You said the name is for everything in Our Work: For you, Feedback, Roadmap and Development, the tool we'll use to build new tools like askdnd from the ground up. Today it has three names at once: “Our work” in Backstage's menu, “Found, Fixed, Tried” in the code and the docs, and each page's own name. Here are four candidates, each shown where you'd see it.</p>
+  </header>
+
+  <section class="ctx" aria-labelledby="h-what">
+    <h2 id="h-what">What the name has to cover</h2>
+    <div class="terms">
+      <div class="term"><span class="tag">Ideas</span><span>The Roadmap: an idea, its scope in versions, your one OK.</span></div>
+      <div class="term"><span class="tag">Building</span><span>Development: the plans in your order, lanes, pull requests, what's live.</span></div>
+      <div class="term"><span class="tag">Trying</span><span>For you and the checks: what you try, Passed or Something's wrong.</span></div>
+      <div class="term"><span class="tag">Hearing</span><span>Feedback: notes from you and the table, issues and their fixes.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-names" style="display:grid;gap:12px">
+    <h2 id="h-names">Four names, in place</h2>
+    <div class="names">
+      <div class="nm mine-card"><div class="nm-h"><b>Shipyard</b><span class="mine-tag">my pick</span></div>
+        <p>Where a vessel is built from the keel up, tried at sea, and sent out; askdnd already says <i>Ship</i> for a change that goes out. Reads well as a place: “in Shipyard”.</p>
+        <div class="menu"><span class="sec">Shipyard</span><span class="it on">For you <span class="badge">3</span></span><span class="it">Feedback</span><span class="it">Roadmap</span><span class="it">Development</span></div>
+        <div class="crumb">Backstage › Shipyard › Development</div></div>
+      <div class="nm"><div class="nm-h"><b>Keel</b></div>
+        <p>The first piece laid when building from the ground up. Short, one syllable; less clear on its own what it does.</p>
+        <div class="menu"><span class="sec">Keel</span><span class="it on">For you <span class="badge">3</span></span><span class="it">Feedback</span><span class="it">Roadmap</span><span class="it">Development</span></div>
+        <div class="crumb">Backstage › Keel › Development</div></div>
+      <div class="nm"><div class="nm-h"><b>Atelier</b></div>
+        <p>A workshop where a maker and helpers build by hand, together: the collaboration between you and Claude. Harder to spell and say.</p>
+        <div class="menu"><span class="sec">Atelier</span><span class="it on">For you <span class="badge">3</span></span><span class="it">Feedback</span><span class="it">Roadmap</span><span class="it">Development</span></div>
+        <div class="crumb">Backstage › Atelier › Development</div></div>
+      <div class="nm"><div class="nm-h"><b>Found, Fixed, Tried</b></div>
+        <p>Keep the loop's own name, today's in the code. Says how it works; long for a menu, and it leaves out ideas and building.</p>
+        <div class="menu"><span class="sec">Found, Fixed, Tried</span><span class="it on">For you <span class="badge">3</span></span><span class="it">Feedback</span><span class="it">Roadmap</span><span class="it">Development</span></div>
+        <div class="crumb">Backstage › Found, Fixed, Tried › Development</div></div>
+    </div>
+    <p class="note">The name replaces “Our work” in Backstage and “Found, Fixed, Tried” in the docs; the code's own folder (app/fft/) moves to it once the tool leaves askdnd. Names I left out because real products already use them: Foundry, Forge, Workshop, Loom, Linear.</p>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your pick</h2>
+    <fieldset><legend>N1 · The tool's name</legend>
+      <label class="opt"><input type="radio" name="n1" value="shipyard"><span>A · Shipyard <span class="mine">my pick</span></span><small>Built from the keel up, tried, sent out.</small></label>
+      <label class="opt"><input type="radio" name="n1" value="keel"><span>B · Keel</span><small>The first piece of something built from the ground up.</small></label>
+      <label class="opt"><input type="radio" name="n1" value="atelier"><span>C · Atelier</span><small>A workshop built in together.</small></label>
+      <label class="opt"><input type="radio" name="n1" value="fft"><span>D · Found, Fixed, Tried</span><small>The loop's own name, as today.</small></label>
+    </fieldset>
+    <label for="notes"><b>Or a name of yours</b> <span class="note">(type it here and it wins)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my pick</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["n1"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick a name, or type one."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+(async () => {
+  // Comments made in askdnd, shown on claude.ai too (item 39, 6 of 6: either place, merged): Claude hands them to this
+  // page's own store (collection "askdnd", doc "comments") when it checks in; each is pinned by the words it was made at.
+  let db = null;
+  try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) return;
+  let d = null;
+  try { d = await db.collection("askdnd").doc("comments").get(); } catch (e) { return; }
+  const list = d && d.exists ? (d.data().comments || []).filter(c => c && c.words) : [];
+  if (!list.length) return;
+  const box = document.createElement("section");
+  box.setAttribute("aria-label", "Comments made in askdnd");
+  box.style.cssText = "display:grid;gap:8px;border:1px solid var(--line,#34383e);border-radius:12px;padding:12px 16px;background:var(--surface,#1f2226)";
+  const h = document.createElement("h2");
+  h.textContent = "Comments made in askdnd";
+  box.append(h);
+  const pin = n => { const b = document.createElement("span"); b.textContent = String(n);
+    b.style.cssText = "display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f08a8a;color:#15171a;font:700 .7rem/1 system-ui;margin-right:6px;vertical-align:1px"; return b; };
+  for (const c of list) {
+    const row = document.createElement("p");
+    row.style.cssText = "margin:0;font-size:.9rem";
+    row.append(pin(c.n), document.createTextNode(c.words));
+    if (c.near) { const w = document.createElement("span"); w.textContent = ` · near “${c.near}”`; w.style.color = "var(--muted,#a29d93)"; row.append(w); }
+    box.append(row);
+    const want = String(c.near || "").trim().slice(0, 60);
+    if (!want) continue;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || box.contains(t) || el.closest("script, style, template, title, noscript")) continue;  // (words a person sees)
+      if (t.nodeValue && t.nodeValue.includes(want) && el.getClientRects().length) { el.prepend(pin(c.n)); break; }
+    }
+  }
+  const form = document.querySelector("form.decide");
+  (form || document.body.lastElementChild).after(box);
+})();
+
+</script>

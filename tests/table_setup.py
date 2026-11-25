@@ -143,14 +143,22 @@ def address(path: str, op: dict, ids: dict) -> str:
     return url + ("?" + "&".join(query) if query else "")
 
 
-def run_reads(db) -> None:
-    """Run the D&D Beyond reads waiting on the jobs queue, here and now, as the worker's lane would (app/sheet_reads.py:
-    a page's tick and the unwatched look only ask)."""
+def run_queue(db, queue: str) -> None:
+    """Run the jobs waiting on a queue, here and now, as the worker's lane would (app/jobs.py): the D&D Beyond reads
+    (`sheet_reads.QUEUE`: a page's tick and the unwatched look only ask) or Claude's drafting (`drafts.QUEUE`)."""
     import contextlib
     import threading
 
-    from app import jobs, sheet_reads, worker
+    from app import jobs, worker
 
-    lane = worker.Lane(sheet_reads.QUEUE, lambda: contextlib.nullcontext(db), threading.Event(), jobs.me())
+    jobs.load_kinds()
+    lane = worker.Lane(queue, lambda: contextlib.nullcontext(db), threading.Event(), jobs.me())
     while lane.run_once():
         pass
+
+
+def run_reads(db) -> None:
+    """The D&D Beyond reads waiting on the queue, run here and now."""
+    from app import sheet_reads
+
+    run_queue(db, sheet_reads.QUEUE)

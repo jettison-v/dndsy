@@ -210,6 +210,8 @@ td { min-width: 0; }
           <text class="bs" x="602" y="202">code: Claude</text><text class="bs" x="602" y="218">secrets: Brett</text></g>
         <g class="bx me"><rect x="590" y="280" width="190" height="44" rx="6"/>
           <text class="bt" x="602" y="298">Postgres</text><text class="bs" x="602" y="314">everything except files</text></g>
+        <g class="bx me"><rect x="590" y="335" width="190" height="44" rx="6"/>
+          <text class="bt" x="602" y="353">askdnd-worker</text><text class="bs" x="602" y="369">background jobs: sheet reads, drafts</text></g>
         <g class="bx me"><rect x="590" y="390" width="190" height="44" rx="6"/>
           <text class="bt" x="602" y="408">askdnd-backup</text><text class="bs" x="602" y="424">nightly, 10:00 UTC</text></g>
 
@@ -343,6 +345,7 @@ td { min-width: 0; }
             <tr><td>askdnd-v2's code</td><td>Railway</td><td>Deploys itself when <code>main</code> changes. Claude follows it with <code>scripts/deploy_check.py</code> and reads its logs.</td></tr>
             <tr><td>Postgres</td><td>Railway</td><td>Its shape changes through migrations that ship with the code. Claude can look inside beta (<code>railway ssh</code>), and changes data there only with your OK.</td></tr>
             <tr><td>askdnd-backup</td><td>Railway (cron)</td><td>Same code as the website; rebuilt when a file it runs changes.</td></tr>
+            <tr><td>askdnd-worker</td><td>Railway</td><td>Same code as the website, started as <code>python -m app.worker</code> (Nov 25, Brett set it up): takes the background jobs (D&amp;D Beyond reads, Claude's drafts) one at a time per queue, so a website deploy no longer cuts them off. Its variables are references to the website's (<code>${{askdnd-v2.…}}</code>). The website runs <code>JOBS_RUNNER=worker</code> and reads D&amp;D Beyond itself if the worker goes quiet for 90 seconds; <code>/health</code> says how long since it was heard from.</td></tr>
             <tr><td>Local askdnd</td><td>Your Mac</td><td>A copy of beta's data for testing. Nothing here reaches beta.</td></tr>
             <tr><td>Staging (askdnd-staging and its own Postgres)</td><td>Railway, environment <code>staging</code></td><td>A second askdnd at <code>staging.askdnd.ai</code> (Nov 6), deploying the <code>staging</code> branch, its database a copy of a nightly backup (loaded from inside its own server with <code>railway ssh</code> and <code>restore_db.py --into-staging</code>). Claude puts a branch there to try what needs the cloud or several people before it reaches the table; the D&amp;D Beyond bridge and drafting are off there; its pictures go to <code>v2/staging/files/</code> and beta's are read, never changed.</td></tr>
           </tbody>
@@ -407,7 +410,7 @@ td { min-width: 0; }
         <tr><td><code>FFT_RELAY_KEY</code></td><td>website and staging: staging's notes reach askdnd.ai with it, and only notes (they always wait for an admin)</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> (and <code>--staging</code>)</td></tr>
         <tr><td><code>FFT_MINI_KEY</code></td><td>website and the Mac Mini: the Mini records its own runs of checks with it, and reports its own scheduled jobs (the live test, iPhone Safari, After each deploy), nothing else</td><td>Random, generated on the Mac</td><td>Claude, with <code>scripts/set-secret.sh</code> and on the Mini</td></tr>
         <tr><td><code>FFT_GITHUB_KEY</code></td><td>GitHub's runs: the D&amp;D Beyond drift run reports that job to Development › Scheduled, and Report to askdnd (<code>scripts/github_report.py</code>) sends the pull requests it sees, nothing else. In the repository's secrets and Dependabot's (Dependabot's runs read only their own)</td><td>Made by askdnd (<code>POST /api/fft/keys</code> with Claude's key), kept there only as its hash</td><td>Claude: a GitHub secret, set with <code>gh secret set</code> (and <code>--app dependabot</code>)</td></tr>
-        <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td>website, backup and worker (the worker's keys are all references to the website's)</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -431,5 +434,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-24 (SENTRY_READ_TOKEN: askdnd files new Sentry errors as issues once a day; earlier the same day, Report to askdnd reading only).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-25 (askdnd-worker: background jobs in their own Railway service, the website at JOBS_RUNNER=worker).</p>
 </main>
