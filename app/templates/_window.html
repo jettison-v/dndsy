@@ -5,10 +5,10 @@
    (`form`: its attributes, e.g. 'method="post" action="…"'), so Save submits it. tests/test_design_system.py fails on a
    window built any other way (only the three immersive heads, IMMERSIVE_HEADS, keep their own). `tools`: a few quiet buttons in its head beside ✕
    (Open as a page); `body_class`: a body laid out its own way in place of the usual stack (a document beside its
-   comments; "" for a plain body, as a side panel's; "stack" by default); `pic`: a picture before its name (a character, a token); `sub`: a
+   comments; "" for a plain body, as a side panel's; "stack" by default); `pic`: a picture before its name (a character, a token); `size`: "small" for a short form's window, 560px wide (Brett's pick S3, round 2); `sub`: a
    line under its name; `body_attrs`: markers on its body (a list's data-list). #}
-{% macro window(kind, title, foot="", form="", tall=False, attrs="", title_attrs="", title_id="peek-title", form_class="", tools="", body_class="stack", pic="", sub="", body_attrs="") -%}
-<div class="peek-head" data-window{% if not tall %} data-window-fit{% endif %}{{ attrs | safe }}>
+{% macro window(kind, title, foot="", form="", tall=False, attrs="", title_attrs="", title_id="peek-title", form_class="", tools="", body_class="stack", pic="", sub="", body_attrs="", size="") -%}
+<div class="peek-head" data-window{% if not tall %} data-window-fit{% endif %}{% if size %} data-window-size="{{ size }}"{% endif %}{{ attrs | safe }}>
   {% if pic %}{{ pic }}{% endif %}<div{% if pic %} class="grow"{% endif %}>{% if kind %}<div class="note">{{ kind }}</div>{% endif %}<h2{% if title_id %} id="{{ title_id }}"{% endif %}{{ title_attrs | safe }}>{{ title }}</h2>{% if sub %}<div class="note">{{ sub }}</div>{% endif %}</div>
   {% if tools %}<div class="row tight">{{ tools }}<button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
   {% else %}<button class="btn link peek-close" type="button" aria-label="Close">✕</button>{% endif %}

@@ -50,7 +50,14 @@
 {# The one field (Roadmap item 47, Brett's pick F1 B, Nov 25): its name in a column beside the box, its help under the
    box, and its error there too, in red, taking the help's place (app.js `fieldError` fills [data-field-error]; on a
    phone the name goes above). `key` marks it for code and tests; `tag="div"` for a group of chips or several boxes; `error`, one the server
-   found (a form drawn again after a refusal). #}
-{% macro field(name, help="", key="", tag="label", attrs="", error="") -%}
-<{{ tag }} class="fld{{ ' has-error' if error }}"{% if key %} data-field="{{ key }}"{% endif %}{{ attrs | safe }}><span class="fld-name">{{ name }}</span><span class="fld-box">{{ caller() }}</span>{% if help %}<span class="fld-help">{{ help }}</span>{% endif %}<span class="fld-err" data-field-error role="alert"{% if not error %} hidden{% endif %}>{{ error }}</span></{{ tag }}>
+   found (a form drawn again after a refusal). `size` (round 2, S4): "num" for an amount, a cost or a weight, "mid" for
+   a short choice or a name; the box is otherwise the whole row, and a date picker always one exact width. #}
+{% macro field(name, help="", key="", tag="label", attrs="", error="", size="") -%}
+<{{ tag }} class="fld{{ ' has-error' if error }}{{ ' fld-' ~ size if size in ('num', 'mid') }}"{% if key %} data-field="{{ key }}"{% endif %}{{ attrs | safe }}><span class="fld-name">{{ name }}</span><span class="fld-box">{{ caller() }}</span>{% if help %}<span class="fld-help">{{ help }}</span>{% endif %}<span class="fld-err" data-field-error role="alert"{% if not error %} hidden{% endif %}>{{ error }}</span></{{ tag }}>
+{%- endmacro %}
+
+{# A section of a long form (Roadmap item 47, round 2, Brett's pick S1 A): its title in amber small capitals over a light
+   line, a line of help when it needs one, then its fields; 24px and the line before it, 12px between its fields. #}
+{% macro form_section(title, help="", key="") -%}
+<section class="fsec"{% if key %} data-section="{{ key }}"{% endif %}><h3 class="fsec-title">{{ title }}</h3>{% if help %}<p class="fsec-help">{{ help }}</p>{% endif %}{{ caller() }}</section>
 {%- endmacro %}

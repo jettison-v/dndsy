@@ -4,9 +4,8 @@
 {% set w_kind %}Accounts{% endset %}{% set w_title %}Rename {{ u.name or u.email }}{% endset %}
 {% set w_foot %}<button class="btn primary" type="submit">Save name</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
 {% set w_form %}method="post" action="/manage/accounts/name"{% endset %}
-{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form, size="small") %}
       <input type="hidden" name="email" value="{{ u.email }}">
-      {% call field("Name") %}<input type="text" name="name" value="{{ u.name if u.name != u.email }}" maxlength="200" required>{% endcall %}
-      <p class="note">askdnd keeps this name: Google's only fills an empty one at sign-in.</p>
+      {% call field("Name", help="askdnd keeps this name: Google's only fills an empty one at sign-in.") %}<input type="text" name="name" value="{{ u.name if u.name != u.email }}" maxlength="200" required>{% endcall %}
     
 {% endcall %}
