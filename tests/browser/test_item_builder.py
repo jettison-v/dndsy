@@ -66,8 +66,8 @@ def test_an_item_is_built_a_piece_at_a_time_and_reads_the_same_everywhere(people
     assert dm.errors == []
 
 
-def test_a_refused_item_in_its_window_comes_back_with_its_error_under_the_box(people, server):
-    """Issue 172: Items' large window, refused, draws again in place: what was typed stays, the piece is open and the
+def test_a_refused_item_comes_back_with_its_error_under_the_box(people, server):
+    """Issue 143: Items' large window, refused, draws again in place: what was typed stays, the piece is open and the
     error sits under its box (before, a card said only "Not done: try again.")."""
     dm = people("dm")
     page = dm.open("/c/main/dm")
@@ -87,6 +87,17 @@ def test_a_refused_item_in_its_window_comes_back_with_its_error_under_the_box(pe
     assert page.locator("aside.peek [data-hb-name]").input_value() == "Wand of Tests"
     assert page.locator("aside.peek").evaluate("p => p.classList.contains('open')")
     assert page.locator("#cards > *").count() == 0  # (no "Not done" card: the window says it)
+
+    page = dm.open("/c/main/dm/items/new")  # (and on its own page: the page drawn again in place)
+    form = page.locator("main [data-item-builder]")
+    form.locator("[data-hb-name]").fill("Wand of Tests")
+    form.locator("[data-hb-add] > summary").click()
+    form.locator('[data-hb-new="add"]').click()
+    form.locator('[data-hb-piece="add"][data-open] [data-dp="box"]').fill("lots")
+    form.locator("button[type=submit]").first.click()
+    error = page.locator('main [data-hb-piece="add"][data-open] [data-field-error]:not([hidden])')
+    error.wait_for(state="visible")
+    assert page.locator("main [data-hb-name]").input_value() == "Wand of Tests" and page.locator("#cards > *").count() == 0
 
 
 def test_the_item_builders_open_pieces_fit_every_width(people, server):
