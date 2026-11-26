@@ -985,7 +985,8 @@ def answer_addition(db: Session, actor: str, addition: FftAddition, answer: str,
 
 
 def latest_scope(db: Session, item: FftItem) -> FftScope | None:
-    return db.scalar(select(FftScope).where(FftScope.item_id == item.id).order_by(FftScope.version.desc()))
+    """An item's newest scope (every item's in one read per request, issue 142)."""
+    return _memo(db, "scopes", lambda: latest_scopes(db, None)).get(item.id)
 
 
 def write_scope(db: Session, actor: str, item: FftItem, *, what: str, inside: list[str], not_now: list[str] | None = None,
@@ -1641,8 +1642,13 @@ def end_round(db: Session, actor: str, r: FftRound) -> None:
 
 
 def _expire_rounds(db: Session) -> None:
+    """Rounds idle past ROUND_IDLE end (once a request until something changes, issue 142: one read, not one a call)."""
+    if _memo(db, "rounds_expired", lambda: False):
+        return
     for r in db.scalars(select(FftRound).where(FftRound.ended_at.is_(None), FftRound.last_at < now() - ROUND_IDLE)):
         end_round(db, "askdnd", r)
+    if not (db.new or db.dirty or db.deleted):
+        _facts(db)["memo"]["rounds_expired"] = True
 
 
 def round_open(db: Session) -> FftRound | None:
@@ -1742,12 +1748,28 @@ def archive_area(db: Session, actor: str, area: FftArea) -> None:
     _event(db, actor, "area_archived", "area", area.id, area_id=area.id)
 
 
+def _by_area(rows) -> dict[int, list]:
+    out: dict[int, list] = {}
+    for r in rows:
+        out.setdefault(r.area_id, []).append(r)
+    return out
+
+
 def area_open_issues(db: Session, area: FftArea) -> list[FftIssue]:
-    return list(db.scalars(select(FftIssue).where(FftIssue.area_id == area.id, FftIssue.state != "closed")))
+    """An area's open issues, oldest first (every area's from the request's facts: no query per area, issue 142)."""
+    by = _memo(db, "open_issues", lambda: _by_area(i for i in sorted(_facts(db)["issues"].values(), key=lambda i: i.id) if i.state != "closed"))
+    return list(by.get(area.id, ()))
+
+
+def local_try_areas(db: Session) -> set[int]:
+    """The areas with a local try waiting on Brett's answer (one read per request, issue 142)."""
+    return _memo(db, "local_tries", lambda: set(db.scalars(select(FftLocalTry.area_id).where(FftLocalTry.answer == "", FftLocalTry.area_id.is_not(None)))))
 
 
 def area_checks(db: Session, area: FftArea) -> list[FftCheck]:
-    return list(db.scalars(select(FftCheck).where(FftCheck.area_id == area.id, FftCheck.retired.is_(False))))
+    """An area's checks not retired, oldest first (every area's in one read per request, issue 142)."""
+    by = _memo(db, "area_checks", lambda: _by_area(db.scalars(select(FftCheck).where(FftCheck.retired.is_(False)).order_by(FftCheck.id))))
+    return list(by.get(area.id, ()))
 
 
 def area_done(db: Session, area: FftArea) -> bool:
@@ -1901,12 +1923,12 @@ def is_build(db: Session, it: FftItem, *, scope: FftScope | bool | None = False,
     return any(area_turn(db, a) != "done" or area_open_issues(db, a) for a in areas)
 
 
-def latest_scopes(db: Session, item_ids: list[int]) -> dict[int, FftScope]:
-    """Each item's latest scope, in one read (`latest_scope` for many)."""
-    if not item_ids:
+def latest_scopes(db: Session, item_ids: list[int] | None) -> dict[int, FftScope]:
+    """Each item's latest scope, in one read (`latest_scope` for many; None: every item's)."""
+    if item_ids is not None and not item_ids:
         return {}
-    newest = (select(FftScope.item_id, func.max(FftScope.version).label("v")).where(FftScope.item_id.in_(item_ids))
-              .group_by(FftScope.item_id).subquery())
+    q = select(FftScope.item_id, func.max(FftScope.version).label("v"))
+    newest = (q.where(FftScope.item_id.in_(item_ids)) if item_ids is not None else q).group_by(FftScope.item_id).subquery()
     return {sc.item_id: sc for sc in db.scalars(select(FftScope).join(
         newest, (FftScope.item_id == newest.c.item_id) & (FftScope.version == newest.c.v)))}
 

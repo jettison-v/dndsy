@@ -1320,7 +1320,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const a = document.activeElement;
     // (on askdnd's table a side panel stays open through a fight, so the map keeps moving beside it)
     const table = /^(\/c\/[^/]+)?\/table$/.test(location.pathname);
-    return !!(document.querySelector((table ? '' : '.peek.open, ') + '.roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open], #tmap.dragging') ||
+    return !!(document.querySelector((table ? '' : '.peek.open, ') + '.roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open], details.act-more[open], #tmap.dragging') ||
               (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
@@ -1338,10 +1338,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // there (Nov 9: your own change landing on D&D Beyond closed the Exhaustion pill you had just opened)
     const POPS = 'details.cond-pill, details.conc-pop', pops = [...box.querySelectorAll(POPS)];
     const opened = pops.filter(d => d.open).map(d => d.classList.contains('cond-add') ? ['add'] : d.dataset.mark ? ['mark', d.dataset.mark] : ['at', pops.indexOf(d)]);
+    // (and a row's ⋯ or lane menu, by its row and which menu it is: issue 166, a redraw just after a lane was picked
+    // closed the ⋯ opened next)
+    const ROW = '[data-row], [data-area]', menuOf = d => { const row = d.closest(ROW); return row ? [row.dataset.row || '', row.dataset.area || '', d.classList.contains('fft-lane')] : null; };
+    const menus = [...box.querySelectorAll('details.act-more[open]')].map(menuOf).filter(Boolean);
     return () => {
       const now = [...box.querySelectorAll(POPS)];
       opened.forEach(([how, k]) => {
         const d = how === 'add' ? now.find(x => x.classList.contains('cond-add')) : how === 'mark' ? now.find(x => x.dataset.mark === k) : now[k];
+        if (d) d.open = true;
+      });
+      menus.forEach(([row, area, lane]) => {
+        const d = [...box.querySelectorAll('details.act-more')].find(x => { const m = menuOf(x); return m && m[0] === row && m[1] === area && m[2] === lane; });
         if (d) d.open = true;
       });
       tabs.forEach(id => { const t = box.querySelector('[role=tab][data-tab="' + id + '"]'); if (t) selectTab(t); });
