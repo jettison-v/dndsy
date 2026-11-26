@@ -489,10 +489,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     bar.addEventListener('pointercancel', end);
   });
 
-  // The round's card keys (Found, Fixed, Tried, screen 2): P passed, F something's wrong, C can't try; never while typing
-  // or with a window open, and only while the card is open
+  // The round's card keys (Found, Fixed, Tried, screen 2): P passed, F something's wrong, C can't try, S skip for now
+  // (issue 171); never while typing or with a window open, and only while the card is open
   document.addEventListener('keydown', e => {
-    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !/^[pfc]$/i.test(e.key)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !/^[pfcs]$/i.test(e.key)) return;
     const a = document.activeElement;
     if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('dialog[open], .peek.open')) return;
     const b = document.querySelector('[data-fft-card]:not(.folded) [data-key="' + e.key.toLowerCase() + '"]');

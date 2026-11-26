@@ -712,6 +712,25 @@ def round_end(request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(to, status_code=303)
 
 
+@router.post("/manage/testing/round/skip")
+def round_skip(request: Request, check: int = Form(0), db: Session = Depends(get_db)):
+    """Skip for now (issue 171, Brett, Nov 25: "skip to the next one without ending the round; you can come back to it
+    at the end, before ending the round"): the check moves to the end of the round's list, still to try, and the next
+    one comes up; nothing is recorded on it."""
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    r = _round(request)
+    if r is not None and r["i"] < len(r["checks"]) - 1 and r["checks"][r["i"]] == check:  # (the one on the card: a stale press skips nothing)
+        r["checks"].append(r["checks"].pop(r["i"]))
+        r["skipped"] = sorted(set(r.get("skipped", [])) | {check})
+        request.session[ROUND] = r
+        request.session["toast"] = "Skipped: it comes back at the end of the round, before End round"
+    to = _next_page(db, request)
+    db.commit()
+    return RedirectResponse(to, status_code=303)
+
+
 @router.post("/manage/testing/round/next")
 def round_next(request: Request, db: Session = Depends(get_db)):
     """Next check → after a fail (its issues sent)."""
@@ -1111,6 +1130,7 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     last = _last_failed(db, c, r["device"])
     sent = len(list(db.scalars(select(FftTryIssue.issue_id).where(FftTryIssue.try_id == last.id)))) if last else 0
     return templates.TemplateResponse(request, "_fft_card.html", {**cv, "n": r["i"] + 1, "of": len(r["checks"]), "device_said": DEVICE_SAID,
+                                                                  "can_skip": r["i"] < len(r["checks"]) - 1, "came_back": c.id in r.get("skipped", []),
                                                                    "device": r["device"], "elsewhere": r["device"] != device_of(request),
                                                                    "failed": last, "sent": sent, **card_prefs(request)})
 

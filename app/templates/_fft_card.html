@@ -1,7 +1,7 @@
 {# The round's card (screens 2 and 4 of docs/mockups/found-fixed-tried/; app/fft/testing_page.py `card`): on every
    askdnd page while a round is open, left by default; its top bar drags it to any corner, — folds it (both kept on the
    device: testing_page.card_prefs). The walkthrough, what you should see, ✓ Passed, ✗ Something's wrong…, Can't try…
-   (keys P, F, C), End round. After a fail: what was sent, ✗ Another…, Change result…, Next check →. Never in a note's
+   (keys P, F, C), Skip for now (S: it moves to the round's end, issue 171), End round. After a fail: what was sent, ✗ Another…, Change result…, Next check →. Never in a note's
    picture. `sample`: drawn on the Design system page, with no address to open. #}
 {% from "_lists.html" import grip %}
 {% from "_check_steps.html" import walkthrough, goal %}
@@ -10,6 +10,7 @@
     <button type="button" class="btn link small"{% if not sample %} data-cc-fold{% endif %} aria-expanded="true" aria-label="Fold the card">—</button></div>
   <div class="cc-body"{% if folded %} hidden{% endif %}>
     <p class="cc-title">{{ c.title }}{% if c.makes %} <span class="tag draft">in a test campaign</span>{% endif %}</p>
+    {% if came_back %}<p class="note" data-cc-came-back>You skipped this one: it's back before End round.</p>{% endif %}
     {% if elsewhere %}<p class="note" data-cc-elsewhere="{{ device }}">Do the steps {{ device_said[device].replace("your ", "on your ") }}; mark them here, and they count for it.</p>{% endif %}
     {% if failed %}
     <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
@@ -32,9 +33,10 @@
       <form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed" data-key="p">✓ Passed</button></form>
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="wrong" data-key="f">✗ Something's wrong…</button>
       <button type="button" class="btn link small" data-modal-url="/manage/testing/checks/{{ c.id }}/cant" data-do="cant" data-key="c">Can't try…</button>
+      {% if can_skip %}<form method="post" action="/manage/testing/round/skip"><input type="hidden" name="check" value="{{ c.id }}"><button class="btn link small" type="submit" data-do="skip" data-key="s">Skip for now</button></form>{% endif %}
     </div>{% endif %}
     {% endif %}
-    <div class="row cc-foot"><span class="note fft-keys">{% if not failed %}<kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try{% endif %}</span>
+    <div class="row cc-foot"><span class="note fft-keys">{% if not failed %}<kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try{% if can_skip %} · <kbd>S</kbd> skip{% endif %}{% endif %}</span>
       {% if sample %}<button class="btn link small" type="button">End round</button>{% else %}<form method="post" action="/manage/testing/round/end" class="cc-stop"><button class="btn link small" type="submit" data-do="end-round">End round</button></form>{% endif %}</div>
     </div>
   </div>
