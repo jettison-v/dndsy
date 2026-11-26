@@ -2187,5 +2187,16 @@
   "line": "Each Backstage page's one job, who opens it and how often",
   "source": "docs/mockups/backstage-review/index.html",
   "link": "https://claude.ai/artifact/DdjqGcUEwWgEbMTBE2YY2j"
+ },
+ {
+  "title": "Form Windows",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 26",
+  "what": "Roadmap item 47, round 2 (Brett: \"we can still do better with spacing and sections\"): today's form window measured, one spacing scale, a short form after (Add a top-up, New campaign), and New item's sections three ways. Four picks.",
+  "line": "Spacing and sections inside form windows",
+  "source": "docs/mockups/form-windows/index.html",
+  "link": "https://claude.ai/artifact/L54rwdn8cwJNBZrWnDQQfy"
  }
 ]

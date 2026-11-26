@@ -1177,3 +1177,10 @@ What was set up:
 **Why:** a website deploy restarts it, and anything it was doing in the background stopped half done. The worker deploys on its own and finishes or hands back what it's doing first (`RAILWAY_DEPLOYMENT_DRAINING_SECONDS`).
 
 **Reuse:** one repo can run as several services: same code, different start command. Use reference variables so a key is set once. Give a background service no domain and no health check, and give the main service a fallback for when it's down. Switch over with one variable, so going back is one variable too.
+
+## 2026-11-25 — A spending alert on Railway
+
+- **What:** Railway's workspace has a soft usage limit of $30 a month: Railway emails Brett when the month's bill passes it, and nothing stops (no hard limit, so askdnd never shuts off).
+- **Why:** the bill grew from $16.46 to an estimated $23.29 a month once the jobs worker and staging ran all month. Most of it (83%) is memory: services kept running, not people using askdnd or deploys.
+- **How:** `railway usage limit set --target workspace --soft 30`; `railway usage limit status` shows it; `railway usage` breaks the bill into CPU, memory, data out and volumes.
+- **For the next project:** set a soft limit on day one, and check which always-on services you really need (a staging copy can sleep when no one's trying something there).
