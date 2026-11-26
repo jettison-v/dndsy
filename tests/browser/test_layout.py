@@ -412,7 +412,7 @@ def test_the_live_pill_says_its_state_at_every_width(people, server):
                 seen = page.evaluate("""html => {
                   document.getElementById('live-pill').outerHTML = html;
                   const p = document.getElementById('live-pill'), on = e => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
-                  const labels = [...p.querySelectorAll('.lw-long, .lw-short, .live-noext')].filter(on);
+                  const labels = [...p.querySelectorAll('.lw-long, .lw-short, .lw-phone, .live-noext')].filter(on);
                   return { dot: p.classList.contains('dot'), words: labels.map(l => l.textContent.trim()).filter(Boolean),
                            spills: p.scrollWidth > p.clientWidth + 1 };
                 }""", html)
