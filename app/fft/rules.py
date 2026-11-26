@@ -2732,8 +2732,9 @@ def _review_state(db: Session, actor: str, run: FftReviewRun, to: str, **data) -
     if to not in REVIEW_MOVES.get(run.state, ()):
         raise RuleError("stale", f"This run is {run.state}: it can't be {to} from there.")
     _event(db, actor, "review_" + to, "review", run.id, **{"from": run.state, "to": to, "review": run.review, **data})
-    was, run.state = run.state, to
-    if was == "waiting" and to in ("done", "stopped") and run.question_id:  # (nothing superseded waits on Brett)
+    run.state = to
+    if to in ("done", "stopped", "skipped") and run.question_id:  # (nothing superseded waits on Brett: ended from waiting,
+        # or from running after it carried on past its question; run 1's review found the second)
         q = db.get(FftQuestion, run.question_id)
         if q is not None and q.answered_at is None:
             withdraw(db, actor, q, f"The review ended ({to}) before you answered.")

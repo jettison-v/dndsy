@@ -437,6 +437,24 @@ def test_the_inbox_held_open_answers_when_something_changes(api, db, monkeypatch
     assert api.get("/api/fft/inbox/wait?seconds=1").status_code == 404  # (no key: no inbox)
 
 
+def test_the_inbox_held_open_never_reads_as_slow_however_often_others_news_wakes_it(api, db, monkeypatch):
+    """Run 3's review (Check it runs well): each wake for someone else's news let the change settle outside the held
+    time, so three wakes made a 16.5 s "slow request" in Sentry, 14 of them in five days."""
+    from datetime import timedelta
+
+    from app import realtime, timing
+
+    monkeypatch.setattr(rules, "SETTLE", timedelta(0))
+    monkeypatch.setattr(timing, "SLOW", 0.3)
+    monkeypatch.setattr(realtime, "heard", lambda who, seconds: True)  # (woken at once, every time, by news not its own)
+    reported = []
+    monkeypatch.setattr(timing, "_report", lambda *a: reported.append(a))
+    _settle(db)
+    api.get("/api/fft/inbox", headers=_as(CLAUDE))
+    assert api.get("/api/fft/inbox/wait?seconds=1", headers=_as(CLAUDE)).json()["items"] == []
+    assert reported == []
+
+
 def test_a_check_waits_for_its_deploy_before_it_reaches_brett(api, db):
     """Brett, Nov 20 ("Ensure the test/checks do not arrive on Prod until the deployment is confirmed"): a check written
     with its change's pull request stays Claude's until a deploy carrying that pull request is live."""

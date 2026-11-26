@@ -197,6 +197,20 @@ def test_a_run_that_ends_while_it_waits_withdraws_its_question(db):
     assert run.state == "stopped" and q.answered_at is not None and q.answer_text.startswith("Withdrawn")
 
 
+def test_a_run_that_carried_on_past_its_question_withdraws_it_when_done(db):
+    """Run 1's review: a run carries on with the rest while it waits (review_on moves it back to running); done from
+    running took the question out of For you only when it ended straight from waiting."""
+    run = rules.ask_review(db, "claude", "dig_feature", DIG)
+    rules.start_review(db, "claude")
+    rules.review_on(db, "claude", run, "Elemental forms")
+    q = rules.ask(db, "claude", about="review", about_id=run.id, text="Which should askdnd follow?")
+    rules.review_waits(db, "claude", run, q)
+    rules.review_on(db, "claude", run, "The rest of the feature")
+    assert run.state == "running"
+    rules.finish_review(db, "claude", run, {"summary": "s", "covered": "c", "missed": "", "findings": [], "numbers": {}})
+    assert run.state == "done" and q.answered_at is not None and q.answer_text.startswith("Withdrawn")
+
+
 def test_a_cadence_with_no_slots_turns_its_schedule_off(db):
     rules.set_review(db, "claude", "the_week", scheduled=True)
     row = rules.set_review(db, "claude", "the_week", cadence="on_demand")

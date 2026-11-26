@@ -724,6 +724,9 @@ def sync(a) -> None:
     print(f"Brought in {got['comments']} comment{'s' if got['comments'] != 1 else ''} from claude.ai; picks: {got['picks']}")
 
 
+NOT_SAID = ("<scheduled-task", "<system-reminder", "<task-notification", "<agent-message", "[SYSTEM NOTIFICATION")
+
+
 def chat(a) -> None:
     """What Brett says in chat (item 42, his pick 2A). `chat said`: run by the Claude Code hook as each message arrives
     (reads the hook's JSON on stdin; never fails his message: any error is swallowed, and askdnd's id is said back so
@@ -731,8 +734,8 @@ def chat(a) -> None:
     if a.do == "said":
         try:
             hook = json.loads(sys.stdin.read() or "{}")
-            if hook.get("prompt", "").lstrip().startswith("<scheduled-task"):  # (a scheduled task's own prompt, like askdnd-reviews: not Brett's words)
-                return
+            if hook.get("prompt", "").lstrip().startswith(NOT_SAID):  # (not Brett's words: a scheduled task's prompt, or the
+                return  # app's own notices and a helper's report arriving as a message)
             got = call(a.base, "/chat", {"words": hook.get("prompt", ""), "session": hook.get("session_id", "")}, timeout=5)  # (never holds his message long)
             if got.get("id"):
                 print(f"askdnd saved this message as chat {got['id']}: file it onto its item or issue, or as just chat (feedback.py chat file {got['id']} …).")
