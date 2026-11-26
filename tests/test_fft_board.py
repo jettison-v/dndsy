@@ -255,3 +255,25 @@ def test_links_inside_the_window_open_in_the_window(db, admin):
     assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/c{c.id}").text
     assert f'data-panel-url="/manage/item/c{c.id}"' in admin.get(f"/manage/item/i{i.id}").text
     assert f'data-panel-url="/manage/item/i{i.id}"' in admin.get(f"/manage/item/q{q.id}").text
+
+
+def test_the_queue_reads_every_builds_scope_and_areas_once(db):
+    """Issue 94: Development read each Roadmap item's latest scope and its areas one query at a time."""
+    from sqlalchemy import event
+
+    items = [rules.new_item(db, "claude", f"Idea {n}", section="now") for n in range(4)]
+    db.flush()
+    for it in items:
+        rules.write_scope(db, "claude", it, what="w", inside=["i"])
+        rules.write_scope(db, "claude", it, what="w2", inside=["i"])
+    rules.agree_scope(db, "user:1", items[0])
+    db.flush()
+    seen = []
+    listen = lambda conn, cur, st, *a: seen.append(st)
+    event.listen(db.get_bind(), "before_cursor_execute", listen)
+    try:
+        got = [x.id for k, x in rules.queue_entries(db) if k == "i"]
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", listen)
+    assert items[0].id in got and not {i.id for i in items[1:]} & set(got)
+    assert len([s for s in seen if "FROM fft_scopes" in s]) == 1 and len([s for s in seen if "FROM fft_areas" in s]) <= 2

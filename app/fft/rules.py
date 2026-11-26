@@ -1885,16 +1885,28 @@ class Pick:
     reason: str = "queue"  # (which rule picked it: blocker, scope, shipped_fix, quiet_claim, queue; tests and pages read this, never `why`)
 
 
-def is_build(db: Session, it: FftItem) -> bool:
+def is_build(db: Session, it: FftItem, *, scope: FftScope | bool | None = False, areas: list[FftArea] | None = None) -> bool:
     """A Roadmap item in Development's queue (issue 62): its scope agreed (Brett's one OK) and not shipped, or a plan of
-    its own still open (a build from before the Roadmap's scopes)."""
+    its own still open (a build from before the Roadmap's scopes). `scope` and `areas`, when given, are its latest scope
+    and its open areas read beforehand for many items at once (`queue_entries`; issue 94: a query each, every item)."""
     if it.standing or it.section not in ("now", "next", "later"):  # (paused waits on the Roadmap)
         return False
-    sc = latest_scope(db, it)
+    sc = latest_scope(db, it) if scope is False else scope
     if sc is not None and sc.agreed_at is not None:
         return True
-    return any(area_turn(db, a) != "done" or area_open_issues(db, a)
-               for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False))))
+    if areas is None:
+        areas = list(db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False))))
+    return any(area_turn(db, a) != "done" or area_open_issues(db, a) for a in areas)
+
+
+def latest_scopes(db: Session, item_ids: list[int]) -> dict[int, FftScope]:
+    """Each item's latest scope, in one read (`latest_scope` for many)."""
+    if not item_ids:
+        return {}
+    newest = (select(FftScope.item_id, func.max(FftScope.version).label("v")).where(FftScope.item_id.in_(item_ids))
+              .group_by(FftScope.item_id).subquery())
+    return {sc.item_id: sc for sc in db.scalars(select(FftScope).join(
+        newest, (FftScope.item_id == newest.c.item_id) & (FftScope.version == newest.c.v)))}
 
 
 def queue_entries(db: Session) -> list[tuple[str, FftItem | FftArea]]:
@@ -1908,7 +1920,12 @@ def queue_entries(db: Session) -> list[tuple[str, FftItem | FftArea]]:
             rows.append(((a.queue_place is None, a.queue_place or 0, 0, n), "a", a))
     builds = db.scalars(select(FftItem).where(FftItem.standing.is_(False), FftItem.section.in_(("now", "next", "later")))
                         .order_by(item_rank(), FftItem.place, FftItem.id))
-    for n, it in enumerate(x for x in builds if is_build(db, x)):
+    builds = list(builds)
+    scopes = latest_scopes(db, [it.id for it in builds])
+    open_areas: dict[int, list[FftArea]] = {it.id: [] for it in builds}
+    for a in db.scalars(select(FftArea).where(FftArea.item_id.in_(list(open_areas)), FftArea.archived.is_(False)).order_by(FftArea.id)):
+        open_areas[a.item_id].append(a)
+    for n, it in enumerate(x for x in builds if is_build(db, x, scope=scopes.get(x.id), areas=open_areas[x.id])):
         rows.append(((it.queue_place is None, it.queue_place or 0, 1, n), "i", it))
     return [(k, x) for _, k, x in sorted(rows, key=lambda r: r[0])]
 
