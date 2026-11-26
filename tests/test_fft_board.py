@@ -277,3 +277,89 @@ def test_the_queue_reads_every_builds_scope_and_areas_once(db):
         event.remove(db.get_bind(), "before_cursor_execute", listen)
     assert items[0].id in got and not {i.id for i in items[1:]} & set(got)
     assert len([s for s in seen if "FROM fft_scopes" in s]) == 1 and len([s for s in seen if "FROM fft_areas" in s]) <= 2
+
+
+def _live_pull(db, number, branch):
+    p = _pull(db, number, branch)
+    p.state, p.merge_commit, p.closed_at, p.live_at = "merged", "a" * 40, rules.now(), rules.now()
+    db.flush()
+    return p
+
+
+def test_an_issue_asked_about_while_its_fix_went_live_is_ready_once_answered(db):
+    """Issue 137: release_live passed over an issue in Asks; answered, it went back to Fixing for good."""
+    i = _issue(db, "Asked about mid-fix")
+    rules.start_fixing(db, "claude", i)
+    rules.fix_ready(db, "claude", i, "https://github.com/o/r/pull/601")
+    q = rules.ask(db, "claude", about="issue", about_id=i.id, text="Which way?", choices=[{"label": "A"}, {"label": "B"}])
+    db.flush()
+    assert i.state == "asks"
+    _live_pull(db, 601, "some-fix")
+    rules.answer(db, "user:1", q, choice=0)
+    db.flush()
+    assert i.state not in ("fixing", "to_fix", "asks") and i.fixed_in == "a" * 40
+
+
+def test_a_check_for_a_pull_request_already_live_doesnt_wait_for_a_release(db):
+    """Issue 138: a check written after its fix went live waited for a release that never comes."""
+    from sqlalchemy import select
+
+    from app.fft.models import FftCheckWait
+
+    i = _issue(db, "Fixed and live")
+    _live_pull(db, 602, "some-fix")
+    c = rules.write_check(db, "claude", title="Try it", steps=["Open it"], expect="It opens", area_id=i.area_id)
+    db.flush()
+    rules.wait_for_deploy(db, "claude", c, "https://github.com/o/r/pull/602")
+    db.flush()
+    assert db.scalar(select(FftCheckWait).where(FftCheckWait.check_id == c.id)) is None
+    rules.wait_for_deploy(db, "claude", c, "https://github.com/o/r/pull/603")  # (not live yet: it waits)
+    db.flush()
+    assert db.scalar(select(FftCheckWait).where(FftCheckWait.check_id == c.id)) is not None
+
+
+def test_an_area_whose_pull_request_is_open_isnt_handed_out_and_its_lapsed_claim_goes(db):
+    """Issue 139: claim handed back an area under review, and a lapsed claim kept it at the front as "went quiet"."""
+    first = _issue(db, "Being shipped")
+    a = db.get(FftArea, first.area_id)
+    rules.lock_area(db, OWNER, a)
+    a.lock_until = rules.now() - timedelta(minutes=1)
+    db.flush()
+    _pull(db, 604, f"a{a.id}-the-fix")
+    assert not a.lock_owner
+    assert all(p.area is None or p.area.id != a.id for p in rules._ready(db))
+
+
+def test_claim_never_makes_a_second_plan_beside_plans_that_arent_claudes_turn(db):
+    """Issue 140: a build whose plans were all waiting (done, held, in a round) got a new empty plan at each claim."""
+    from sqlalchemy import func, select
+
+    it = rules.new_item(db, "claude", "A build", section="now")
+    db.flush()
+    rules.write_scope(db, "claude", it, what="w", inside=["i"])
+    rules.agree_scope(db, "user:1", it)
+    plan = rules.new_area(db, "claude", it, "Its plan")
+    plan.held = True  # (below Development's line: not Claude's to take)
+    db.flush()
+    before = db.scalar(select(func.count()).select_from(FftArea).where(FftArea.item_id == it.id))
+    rules.claim(db, OWNER)
+    db.flush()
+    assert db.scalar(select(func.count()).select_from(FftArea).where(FftArea.item_id == it.id)) == before
+
+
+def test_the_listener_hears_brett_past_a_page_of_its_own_events(db):
+    """Issue 141: 500 of Claude's own events first, and a peek never got past them to Brett's note."""
+    from datetime import timedelta as td
+
+    from app.fft.models import FftEvent
+
+    li = rules.listener(db, "deaf-test")
+    db.flush()
+    li.read_id = db.scalar(__import__("sqlalchemy").select(__import__("sqlalchemy").func.max(FftEvent.id))) or 0
+    old = rules.now() - td(minutes=1)
+    for n in range(rules.INBOX_PAGE + 5):
+        db.add(FftEvent(actor="claude", kind="issue_title", thing="issue", thing_id=n, data={}, at=old))
+    db.add(FftEvent(actor="user:1", kind="note_new", thing="note", thing_id=1, data={}, at=old))
+    db.flush()
+    got = [e for e in rules.unread(db, li, peek=True, actor="claude") if rules.heard(e, "claude")]
+    assert [e.actor for e in got] == ["user:1"]
