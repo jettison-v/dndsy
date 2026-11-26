@@ -13,7 +13,7 @@ from app.importer import import_bundle
 from app.main import app
 from app.models import Campaign, CampaignCharacter, Character, Entity, PlayerNote, User
 from tests.roles import set_role
-from tests.table_setup import BUNDLE, char, fake_fetch
+from tests.table_setup import BUNDLE, char, fake_fetch, plain_id
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -120,6 +120,28 @@ def test_moving_a_character_keeps_its_story_in_the_old_campaign(two, db):
     assert cole.entity.id == old.entity_id and len(cole.memberships) == 3
     assert len(list(db.scalars(select(CampaignCharacter).where(CampaignCharacter.character_id == cole.id,
                                                                   CampaignCharacter.left_on.is_(None))))) == 1
+
+
+@pytest.mark.parametrize(("typed", "want"), [
+    ("", ""), ("1234567", "1234567"), ("https://www.dndbeyond.com/campaigns/1234567", "1234567"),
+    ("dndbeyond.com/campaigns/1234567/edit?x=1", "1234567"), ("  https://dndbeyond.com/campaigns/42  ", "42"),
+    ("The Lost Mine", None), ("https://example.com/campaigns/1234567", None),
+], ids=plain_id)
+def test_a_dnd_beyond_campaign_is_read_from_its_link_or_its_id(typed, want):
+    """Issue 172 (Brett, Nov 25: "Is there a reason that you cannot set it in this widget?"): New campaign and Settings
+    take the campaign page's address or its id."""
+    from app.campaigns_admin import ddb_id_from
+
+    assert ddb_id_from(typed) == want
+
+
+def test_new_campaign_takes_its_dnd_beyond_link_and_refuses_what_isnt_one(two, db):
+    admin = two["admin"]
+    assert 'name="ddb_campaign_id"' in admin.get("/manage/campaigns/new").text
+    admin.post("/manage/campaigns", data={"name": "Lost Mine", "ddb_campaign_id": "https://www.dndbeyond.com/campaigns/7654321"})
+    assert db.scalar(select(Campaign).where(Campaign.slug == "lost-mine")).ddb_campaign_id == "7654321"
+    admin.post("/manage/campaigns", data={"name": "Tomb", "ddb_campaign_id": "the tomb"})
+    assert db.scalar(select(Campaign).where(Campaign.slug == "tomb")) is None  # (refused, said in a card)
 
 
 def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
