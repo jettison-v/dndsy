@@ -2,7 +2,7 @@
 thing is (the pill: Yours amber, Claude's violet, a player's blue, Closed grey), the one sentence under it, and what a
 note's sender is told on Notes you sent. The same words on every page; nothing here changes anything."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from markupsafe import Markup
 from sqlalchemy import func, select
@@ -536,15 +536,28 @@ GAP_GRACE = timedelta(minutes=15)  # (Brett, Nov 19, issue 39: what just happene
 
 
 def _since(db: Session, out: list[dict]) -> list[dict]:
-    """When each gap began: the last thing that happened to it (its newest event), else when it was made."""
-    for g in out:
-        if g.get("since"):
-            continue
-        at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == g["thing"], FftEvent.thing_id == g["id"]))
-        if g["thing"] == "area":
-            at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.kind == "issue_pr", FftEvent.area_id == g["id"])) or at
-        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea, "item": FftItem, "pull": FftPull}[g["thing"]]
-        g["since"] = at or getattr(db.get(row, g["id"]), "created_at", None) or rules.now()
+    """When each gap began: the last thing that happened to it (its newest event), else when it was made (a read per
+    kind of thing, not per gap: issue 142)."""
+    rows = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea, "item": FftItem, "pull": FftPull}
+    todo = [g for g in out if not g.get("since")]
+    ids: dict[str, set[int]] = {}
+    for g in todo:
+        ids.setdefault(g["thing"], set()).add(g["id"])
+    last: dict[tuple[str, int], datetime] = {}
+    made: dict[tuple[str, int], datetime] = {}
+    for thing, these in ids.items():
+        for i, at in db.execute(select(FftEvent.thing_id, func.max(FftEvent.at)).where(FftEvent.thing == thing, FftEvent.thing_id.in_(these))
+                                .group_by(FftEvent.thing_id)):
+            last[(thing, i)] = at
+        if thing == "area":  # (a plan's fix in a pull request is its newest news)
+            for i, at in db.execute(select(FftEvent.area_id, func.max(FftEvent.at)).where(FftEvent.kind == "issue_pr", FftEvent.area_id.in_(these))
+                                    .group_by(FftEvent.area_id)):
+                last[(thing, i)] = at
+        row = rows[thing]
+        made.update(((thing, r.id), r.created_at) for r in db.scalars(select(row).where(row.id.in_(these))) if getattr(r, "created_at", None))
+    for g in todo:
+        key = (g["thing"], g["id"])
+        g["since"] = last.get(key) or made.get(key) or rules.now()
     return out
 
 
