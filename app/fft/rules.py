@@ -683,6 +683,8 @@ def wait_for_deploy(db: Session, actor: str, check: FftCheck, pr: str) -> None:
     """The check reaches For you only once a deploy carrying this pull request is live (Brett, Nov 20)."""
     if not pr.strip():
         raise RuleError("bad", "Which pull request is its change in?")
+    if db.scalar(select(FftPull.id).where(_names_pull_any(pr), FftPull.live_at.is_not(None)).limit(1)):
+        return  # (already live: no release will come for it, so it would wait for good; issue 138)
     db.add(FftCheckWait(check_id=check.id, pr=pr.strip()[:300]))
     _event(db, actor, "check_waits", "check", check.id, area_id=check.area_id, pr=pr.strip()[:300])
 
@@ -2058,6 +2060,10 @@ def _settled(db: Session, actor: str, q: FftQuestion) -> None:
                                                               FftEvent.kind == "issue_asks").order_by(FftEvent.id.desc()))
                 back = (asked or {}).get("from")
                 _set_issue(db, actor, issue, back if back in ("to_fix", "fixing") else "to_fix", "issue_answered", question=q.id)
+                live = db.scalar(select(FftPull).where(or_(FftPull.issue_id == issue.id, _names_pull_any(issue.pr or "")), FftPull.live_at.is_not(None))
+                                 .order_by(FftPull.live_at.desc()).limit(1))
+                if live is not None and issue.state in ("fixing", "to_fix") and issue.pr:  # (its fix went live while it
+                    fix_live(db, actor, issue, live.merge_commit or "")  # asked: release_live skipped it; issue 137)
     if q.about == "check" and q.about_id:
         c = db.get(FftCheck, q.about_id)
         if c is not None:
@@ -2102,10 +2108,15 @@ def heard(e: FftEvent, listener_actor: str) -> bool:
     return not (e.kind == "job_ran" and (e.data or {}).get("result") != "failed")
 
 
-def unread(db: Session, li: FftListener, peek: bool = False) -> list[FftEvent]:
-    """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`."""
+def unread(db: Session, li: FftListener, peek: bool = False, actor: str = "") -> list[FftEvent]:
+    """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`. `actor`: the
+    listener's own, whose events `heard` drops, dropped here in the query too (issue 141: 500 of its own first, and a
+    peek never moved past them, so the note after them was never heard)."""
     q = select(FftEvent).where(FftEvent.id > li.read_id, FftEvent.at <= func.now() - SETTLE,
                                FftEvent.thing.not_in(QUIET_THINGS), FftEvent.kind.not_in(QUIET_KINDS)).order_by(FftEvent.id)  # (in the query: a page of 500 quiet ones would hide what's after them)
+    if actor:
+        q = q.where(FftEvent.actor != actor, ~FftEvent.actor.startswith(actor + ":", autoescape=True),  # (as `heard` reads it)
+                    or_(FftEvent.kind != "job_ran", FftEvent.data["result"].astext == "failed"))
     if li.area_id is not None:
         q = q.where(FftEvent.area_id == li.area_id)
     rows = list(db.scalars(q.limit(INBOX_PAGE)))
@@ -2244,8 +2255,8 @@ def _pull_opened(db: Session, actor: str, p: FftPull) -> None:
     if p.by_bot or pull_upkeep(p):
         return
     plans = [db.get(FftArea, p.area_id)] if p.area_id else list(db.scalars(select(FftArea).where(FftArea.item_id == (p.item_id or 0))))
-    held = [a for a in plans if a is not None and a.lock_owner and a.lock_until and a.lock_until > now()]
-    for a in held:
+    held = [a for a in plans if a is not None and a.lock_owner]  # (a lapsed claim too: left on, it led Ready as "went
+    for a in held:  # quiet" while its pull request was under review; issue 139)
         a.lock_owner, a.lock_until = "", None
         _event(db, actor, "area_unlocked", "area", a.id, area_id=a.id, by_pull=p.number)
     if not held:
@@ -2314,6 +2325,8 @@ def claim(db: Session, owner: str, area: FftArea | None = None) -> tuple[FftArea
     if area is None:
         pick = pick_next(db)
         area = pick.area
+        if area is None and pick.item is not None and pick.reason == "scope":  # (writing a scope is no build: no plan
+            return None, pick.why, False  # made or locked for it; issue 140)
         if area is None and pick.item is not None:  # (a build with no plan yet: its plan is made now)
             area = new_area(db, owner, pick.item, f"{pick.item.title}: the build"[:80])
             db.flush()
@@ -2366,18 +2379,24 @@ def _ready(db: Session, turn=None, skipped: list[tuple[str, str]] | None = None)
     def claimed(a: FftArea) -> bool:
         return bool(a.lock_owner and a.lock_until and a.lock_until > now())
 
+    shipping = set(db.scalars(select(FftPull.area_id).where(FftPull.state == "open", FftPull.area_id.is_not(None))))
+    # (an area whose pull request is open is Shipping, not Ready: claim handed it back; issue 139)
+
     for a in _areas_ready(db, select(FftArea).join(FftIssue, FftIssue.area_id == FftArea.id)
                           .where(FftIssue.origin_try_id.isnot(None), FftIssue.state.in_(("to_fix", "fixing"))), turn):
-        if a.id not in seen and not claimed(a):
+        if a.id not in seen and not claimed(a) and a.id not in shipping:
             seen.add(a.id)
             yield Pick(a, f"A fix to what just shipped: {a.title} (a try of Brett's found it)", reason="shipped_fix")
     for a in _areas_ready(db, select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until <= now()), turn):
-        if a.id not in seen:
+        if a.id not in seen and a.id not in shipping:
             seen.add(a.id)
             yield Pick(a, f"Back from a claim that went quiet: {a.title}", reason="quiet_claim")
 
     def plan_ok(area: FftArea, name: str) -> bool:
         if area.id in seen or turn_of(db, area) != "claude":
+            return False
+        if area.id in shipping:
+            skipped.append((name, "its pull request is open"))
             return False
         if area.held:  # (below Development's line: Brett holds it)
             skipped.append((name, "held below the line"))
@@ -2402,8 +2421,9 @@ def _ready(db: Session, turn=None, skipped: list[tuple[str, str]] | None = None)
         if x.next_whose == "brett":
             skipped.append((x.title, f"its next step is Brett's ({x.next_step})" if x.next_step else "its next step is Brett's"))
             continue
-        took = taken = False
+        took = taken = has_plans = False
         for a in db.scalars(select(FftArea).where(FftArea.item_id == x.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
+            has_plans = True
             taken = taken or claimed(a)
             if plan_ok(a, f"{x.title} › {a.title}"):
                 seen.add(a.id)
@@ -2411,6 +2431,9 @@ def _ready(db: Session, turn=None, skipped: list[tuple[str, str]] | None = None)
                 yield Pick(a, f"{x.title} › {a.title}", item=x)
         if took or taken:
             continue  # (its plans are Ready, or one is being built now: not a second plan for the same build)
+        if has_plans:  # (plans none of which is Claude's turn now: never an empty second plan beside them; issue 140)
+            skipped.append((x.title, "its plans aren't Claude's turn"))
+            continue
         sc = latest_scope(db, x)
         if sc is not None and sc.agreed_at is not None:
             yield Pick(None, f"{x.title}: {x.next_step or 'write its steps'}", item=x)
