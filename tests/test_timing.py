@@ -58,3 +58,36 @@ def test_a_step_outside_a_request_does_nothing():
 def test_the_route_is_written_without_its_numbers():
     assert timing.route_of({"path": "/bridge/heard/75423618"}) == "/bridge/heard/<n>"
     assert timing.route_of({"path": "/characters/12/battle"}) == "/characters/<n>/battle"
+
+
+def test_sentry_hears_the_query_count_as_a_count(monkeypatch):
+    """Issue 134: the report sent the number of queries among the times, multiplied by 1000 (474 read as 474,000)."""
+    import sentry_sdk
+
+    from app import errors
+
+    sent = []
+
+    class Scope:
+        def __init__(self):
+            self.extras = {}
+
+        def set_tag(self, *a):
+            pass
+
+        def set_extra(self, k, v):
+            self.extras[k] = v
+
+        def __enter__(self):
+            sent.append(self)
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(errors, "on", lambda: True)
+    monkeypatch.setattr(sentry_sdk, "new_scope", Scope)
+    monkeypatch.setattr(sentry_sdk, "capture_message", lambda *a, **k: None)
+    monkeypatch.setattr(timing, "_reported", {})
+    timing._report("GET", "/manage/work", 20.0, {timing.DB: 19.0, timing.READS: 474})
+    assert sent[0].extras["queries"] == 474 and sent[0].extras["steps_ms"] == {timing.DB: 19000}
