@@ -400,3 +400,13 @@ def test_a_run_waiting_behind_its_own_live_one_can_be_stopped(admin, db):
     assert f'data-run="{behind.id}"' in panel and live.state == "starting"
     admin.post(f"/manage/work/reviews/runs/{behind.id}/stop")
     assert behind.state == "stopped" and live.state == "starting"
+
+
+def test_every_review_has_askdnds_playbook_and_next_prints_it(api, db):
+    """Step 3: askdnd fills in how it runs each review (app/data/review_fills.json `how`); picking one up hands it over."""
+    fills = reviews.fills()
+    assert set(fills["how"]) == set(reviews.keys()) and all(len(v) >= 2 for v in fills["how"].values())
+    rules.ask_review(db, "user:1", "every_number")
+    db.flush()
+    run = api.post("/api/fft/reviews/next", headers=H).json()["run"]
+    assert run["how_to"] == fills["how"]["every_number"]
