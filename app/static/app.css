@@ -169,7 +169,7 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .live-pill { display: inline-flex; align-items: center; gap: 8px; min-height: var(--bar-h); background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 12px; font-size: var(--fs-sm); white-space: nowrap; }
 .live-pill:hover { color: var(--text); }
 .live-link { width: 18px; height: 18px; flex: none; color: var(--faint); }  /* the chain link (Brett chose it, Nov 16, docs/mockups/live-pill/): whole or broken, in the tone's colour */
-.live-noext, .live-noext-box, .lw-short { display: none; }
+.live-noext, .live-noext-box, .lw-short, .lw-phone, .live-say.live-phone { display: none; }
 .live-pill.dot { width: var(--bar-h); padding: 0; justify-content: center; }  /* connected: the green dot alone (Menu Bar by Person, Nov 13) */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the steps in the window */
 body.no-bridge .live-noext-box { display: grid; gap: var(--sp-3); }
@@ -217,6 +217,12 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-ag
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-bridge { display: revert; }
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-tx.cb-bridge { display: block; }
 @media (max-width: 900px) { .conn-band { display: none; } }  /* a phone never holds the sheet's connection */
+@media (max-width: 900px) {  /* (nor asks to: your own sheet's pill says how it stands, the Live window where it connects; issue 8) */
+  .live-ago:has(.lw-phone) :is(.lw-long, .lw-short) { display: none !important; }
+  .live-ago .lw-phone { display: inline; }
+  .live-say.live-phone { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .live-say.live-ask { display: none; }
+}
 @container bar (max-width: 1100px) { .live-ago:has(.lw-short) .lw-long { display: none; } .lw-short { display: inline; } }  /* step 3 of the collapse order: just what to do, never a bare "Live" */
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }

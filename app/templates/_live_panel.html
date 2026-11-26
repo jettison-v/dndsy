@@ -19,11 +19,14 @@
     <p class="bridge-other">The askdnd bridge needs Chrome. Open askdnd in Chrome on a computer to connect {{ "your sheet" if sheet else "D&amp;D Beyond" | safe }}.</p>
   </section>{% endif %}
   {% set me = tn.mine if tn.mine and tn.mine.connects else None %}
+  {% if me and not me.step %}{# (a phone: where your sheet connects, instead of asking it to; issue 8) #}
+  <div class="live-say live-phone{{ ' via' if me.via else ' bad' if tn.playing or fight_now() }}" data-live-say="phone"><span>{% if me.via %}Your sheet is closed, so the DM's D&amp;D Beyond is making your changes. {% elif tn.playing or fight_now() %}Your changes can't reach D&amp;D Beyond while your sheet is closed. {% endif %}Your sheet connects from Chrome on a computer, with the askdnd bridge: a phone can't run it. Open your sheet there to connect it.</span></div>
+  {% endif %}
   {% if me and me.via %}
-  <div class="live-say via"><span>Your sheet is closed, so the DM's D&amp;D Beyond is making your changes. Open it so your rolls reach D&amp;D Beyond's Game Log too.</span>
+  <div class="live-say live-ask via"><span>Your sheet is closed, so the DM's D&amp;D Beyond is making your changes. Open it so your rolls reach D&amp;D Beyond's Game Log too.</span>
     <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
   {% elif me and not me.step and (tn.playing or fight_now()) %}
-  <div class="live-say bad"><span>Your changes can't reach D&amp;D Beyond: your sheet is closed{% if backup and dm_here and not ddb_game %}, and this campaign isn't linked to its D&amp;D Beyond campaign, where the DM could make them{% elif backup and dm_here %}, and your character isn't in this campaign's D&amp;D Beyond campaign, where the DM could make them{% elif backup %} and the DM has no D&amp;D Beyond page open{% endif %}. Open it in Chrome with the askdnd bridge.</span>
+  <div class="live-say live-ask bad"><span>Your changes can't reach D&amp;D Beyond: your sheet is closed{% if backup and dm_here and not ddb_game %}, and this campaign isn't linked to its D&amp;D Beyond campaign, where the DM could make them{% elif backup and dm_here %}, and your character isn't in this campaign's D&amp;D Beyond campaign, where the DM could make them{% elif backup %} and the DM has no D&amp;D Beyond page open{% endif %}. Open it in Chrome with the askdnd bridge.</span>
     <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
   {% endif %}
   {% set unreached = tn.characters | selectattr("connects") | rejectattr("step") | rejectattr("via") | list %}
@@ -34,7 +37,8 @@
   {% elif dm_here %}
   <div class="live-say bad"><span>{% if unreached | length == 1 %}{{ names }} isn't in this campaign's D&amp;D Beyond campaign, so only its own sheet can make its changes.{% else %}{{ names }} aren't in this campaign's D&amp;D Beyond campaign, so only their own sheets can make their changes.{% endif %}</span></div>
   {% else %}
-  <div class="live-say bad"><span>{{ names }}: {{ "the sheet is" if unreached | length == 1 else "their sheets are" }} closed. Open D&amp;D Beyond in this browser to make {{ "its" if unreached | length == 1 else "their" }} changes.</span>
+  <div class="live-say live-phone bad" data-live-say="phone"><span>{{ names }}: {{ "the sheet is" if unreached | length == 1 else "their sheets are" }} closed. Your D&amp;D Beyond makes {{ "its" if unreached | length == 1 else "their" }} changes from Chrome on a computer, with the askdnd bridge: a phone can't run it.</span></div>
+  <div class="live-say live-ask bad"><span>{{ names }}: {{ "the sheet is" if unreached | length == 1 else "their sheets are" }} closed. Open D&amp;D Beyond in this browser to make {{ "its" if unreached | length == 1 else "their" }} changes.</span>
     <a class="btn small" href="{{ 'https://www.dndbeyond.com/campaigns/%s' % ddb_game if ddb_game else 'https://www.dndbeyond.com/my-campaigns' }}" target="_blank" rel="noopener">Open ↗</a></div>
   {% endif %}
   {% endif %}

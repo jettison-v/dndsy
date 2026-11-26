@@ -2,6 +2,7 @@
 a character's own sheet is closed, its campaign's DM's browser with any D&D Beyond page open makes its changes. D&D
 Beyond is never called: the fake sheet stands in (tests/conftest.py `sheet`)."""
 
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -187,3 +188,35 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
     cole.sheet_heard_at = datetime.now(UTC)
     db.flush()
     assert tone(player.get(f"/characters/{cole.id}").text) == "step"
+
+
+def _phone_say(html: str) -> str:
+    """The Live window's line for a phone (data-live-say="phone"): its tone, "" when calm, None when there's none."""
+    m = re.search(r'class="live-say live-phone ?([a-z]*)" data-live-say="phone"', html)
+    return m.group(1) if m else None
+
+
+def test_on_a_phone_the_live_pill_and_window_say_where_the_sheet_connects(player, dm, db, table):
+    """Issue 8 (Brett: "The widget on mobile should let the player know that the sheet needs to be opened on desktop or
+    somewhere that can run the chrome extension"): a phone's pill keeps to how your sheet stands, never asks to open it
+    (`lw-phone`, shown below 900px), and the Live window has a line of its own for a phone, in each state's tone."""
+    cole = table
+
+    def pill() -> str:
+        return player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
+
+    assert "lw-phone" not in pill() and _phone_say(player.get(f"/live?c={cole.id}").text) == ""  # (calm: says nothing to do)
+
+    other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.ddb_id)
+    other.sheet_heard_at = datetime.now(UTC)  # (the table is playing: red)
+    db.flush()
+    assert 'data-phone="closed"' in pill()  # (Not connected: a status, never "Open your sheet")
+    assert _phone_say(player.get(f"/live?c={cole.id}").text) == "bad"
+
+    carry(dm)  # (through the DM: yellow)
+    assert 'data-phone="via"' in pill()
+    assert _phone_say(player.get(f"/live?c={cole.id}").text) == "via"
+
+    cole.sheet_heard_at = datetime.now(UTC)  # (connected: nothing for a phone to say)
+    db.flush()
+    assert "lw-phone" not in pill() and _phone_say(player.get(f"/live?c={cole.id}").text) is None
