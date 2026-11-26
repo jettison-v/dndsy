@@ -31,7 +31,10 @@ def main() -> int:
     # a fresh copy each run: mutmut keeps its old copy of what isn't Python (templates, data), so a template changed since
     # failed its first full test run and nothing was tested (Nov 14)
     shutil.rmtree(Path(__file__).resolve().parent.parent / "mutants", ignore_errors=True)
-    subprocess.run(["uv", "run", "mutmut", "run", "--max-children", "4", f"app.{module}.*"], env=env, check=False)
+    ran = subprocess.run(["uv", "run", "mutmut", "run", "--max-children", "4", f"app.{module}.*"], env=env, check=False)
+    if ran.returncode:  # (its clean first run failed, so no bug was planted: "0 survived" would read as a pass; run 4 of
+        print(f"\nNothing was tested: mutmut's first full run failed (exit {ran.returncode}), see above.")  # Test the tests)
+        return 1
     out = subprocess.run(["uv", "run", "mutmut", "results"], env=env, capture_output=True, text=True).stdout
     survived = [line.split(":")[0].strip() for line in out.splitlines() if line.strip().endswith("survived") and f"app.{module}." in line]
     print(f"\n{len(survived)} survived in app/{module.replace('.', '/')}.py")
