@@ -214,11 +214,9 @@ def yours_waits(db: Session, a: FftArea) -> str:
     issues = rules.area_open_issues(db, a)
     states = [rules.check_state(db, c)["state"] for c in rules.area_checks(db, a)]
     to_try, asks = states.count("to_try"), states.count("asks") + sum(1 for i in issues if i.state == "asks")
-    from app.fft.models import FftLocalTry
-
     oks = sum(1 for i in issues if i.state == "merge_ok")
     live = sum(1 for i in issues if i.state == "ready")
-    local = db.scalar(select(func.count()).select_from(FftLocalTry).where(FftLocalTry.area_id == a.id, FftLocalTry.answer == ""))
+    local = a.id in rules.local_try_areas(db)
     bits = ["your local try" if local else "", f"{to_try} check{'s' if to_try != 1 else ''} to try" if to_try else "",
             f"{live} fix{'es' if live != 1 else ''} live to try" if live and not to_try else "",
             f"{asks} question{'s' if asks != 1 else ''}" if asks else "", f"{oks} fix{'es' if oks != 1 else ''} to OK" if oks else ""]
@@ -260,6 +258,14 @@ def board(db: Session) -> dict:
     placed: set[int] = set()
     shown: set[int] = set()
     now_ = rules.now()
+    lasts: dict[int, datetime | None] = {}
+
+    def last_of(a: FftArea) -> datetime | None:  # (each ready plan's last event, once: issue 142)
+        if not lasts:
+            lasts.update(db.execute(select(FftEvent.area_id, func.max(FftEvent.at)).where(FftEvent.area_id.in_(list(ready)))
+                                    .group_by(FftEvent.area_id)).all())
+            lasts.setdefault(0, None)  # (asked once, even when none had an event)
+        return lasts.get(a.id)
 
     def pulls_of(a: FftArea) -> list[FftPull]:  # (an item's own pull request goes to the first of its plans that shows it, once)
         return [p for p in open_pulls if p.id not in placed and (p.area_id == a.id or (p.area_id is None and p.item_id == a.item_id and not rules.pull_upkeep(p)))]
@@ -284,7 +290,7 @@ def board(db: Session) -> dict:
             pass  # (its card is in Yours to try, below)
         elif turn == "claude" and a.id in ready:
             reason, why = ready[a.id]
-            last = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.area_id == a.id))
+            last = last_of(a)
             stuck = kind == "roadmap" and it.section == "now" and reason == "queue" and order[a.id] > 0 and last is not None and (now_ - last).days >= WEEK
             cols["ready"].append(_card(**base, why=why + (" · waiting a week behind other work" if stuck else ""), stuck=stuck, stage=reason, n=order[a.id]))
         elif turn == "claude":

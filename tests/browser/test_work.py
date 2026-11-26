@@ -42,6 +42,25 @@ def test_a_rows_lane_menu_and_more_menu_open_over_the_next_row(people, server, b
     assert not admin.errors, admin.errors
 
 
+
+def test_a_rows_open_menu_stays_open_when_the_page_draws_again(people, server, browser_db):
+    """Issue 166: just after a lane was picked, the page's new copy (its own change coming back) closed the ⋯ opened
+    next. A redraw keeps a row's open menu open, placed over the page; someone else's change waits while it's open."""
+    first, _, _ = _plans(browser_db[0])
+    admin = people("admin")
+    page = admin.open("/manage/work?tab=queue")
+    row = f'tr.wk-plan[data-area="{first}"]'
+    page.locator(f"{row} .act-more:not(.fft-lane) > summary").click()
+    page.locator(".act-menu.floats").wait_for()
+    page.evaluate("""() => new Promise(done => { document.addEventListener('askdnd:swapped', done, { once: true });
+      document.body.dispatchEvent(new Event('tableChanged')); })""")  # (a new copy of the page, at once)
+    assert page.locator(f"{row} details.act-more:not(.fft-lane)").evaluate("d => d.open"), "the redraw closed ⋯"
+    hold = page.locator(f'{row} [data-do="hold"]')
+    hold.wait_for()
+    assert _on_top(page, hold), "⋯ is under the next row after the redraw"
+    page.keyboard.press("Escape")
+    assert not admin.errors, admin.errors
+
 def test_a_scopes_two_answers_are_one_height(people, server, browser_db):
     """Issue 57 (Brett's round 15, Nov 20: "Buttons have strange heights"): Scope looks right took a panel's lone-button
     size beside Needs changes…; side by side, buttons are one height, and a line's Comment no taller than its words."""
