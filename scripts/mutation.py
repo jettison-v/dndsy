@@ -37,6 +37,10 @@ def main() -> int:
         return 1
     out = subprocess.run(["uv", "run", "mutmut", "results"], env=env, capture_output=True, text=True).stdout
     survived = [line.split(":")[0].strip() for line in out.splitlines() if line.strip().endswith("survived") and f"app.{module}." in line]
+    killed = [line for line in out.splitlines() if line.strip().endswith("killed") and f"app.{module}." in line]
+    if survived and not killed:  # (no planted bug caught at all: the tests never ran against them, run 4 found 0 of 233)
+        print(f"\nNothing was really tested: none of the {len(survived)} planted bugs was caught, so the tests didn't run against them.")
+        return 1
     print(f"\n{len(survived)} survived in app/{module.replace('.', '/')}.py")
     for name in survived:
         diff = subprocess.run(["uv", "run", "mutmut", "show", name], env=env, capture_output=True, text=True).stdout
