@@ -73,7 +73,11 @@ def test_a_homebrew_item_plays_for_whoever_carries_it(dm, db, sheet):
 def test_the_form_says_what_is_wrong_and_keeps_what_was_typed(dm, db, sheet):
     bad = {**FORM, "name": "", "roll0_dice": "lots", "roll0_dc": "", "charges": "99"}
     r = dm.post("/c/main/dm/items", data=bad)
-    assert r.status_code == 422 and "Give it a name." in r.text and "write its dice" in r.text and "Charges: a number" in r.text
+    assert r.status_code == 422 and "Give it a name." in r.text and "Write its dice" in r.text and "A number from 1 to 50." in r.text
+    import re as _re  # (issue 143: each error under its own box, in the field piece, never one card at the top)
+    errs = _re.findall(r'<(?:label|div) class="fld has-error"[^>]*>.*?<span class="fld-err"[^>]*>([^<]*)</span>', r.text, _re.S)
+    assert "Give it a name." in errs and any(e.startswith("Write its dice") for e in errs) and "A number from 1 to 50." in errs
+    assert 'class="card bad"' not in r.text and 'data-hb-piece="charges" data-hb-kind="Charges" data-open' in r.text  # (its error in sight)
     assert "Its needle points" in r.text and db.scalar(select(CampaignContent)) is None
     assert 'value="lots"' in r.text and 'name="charges" value="99"' in r.text  # (what was typed stays, mistakes too: the item builder, Nov 16)
     save = {**FORM, "roll0_dice": "2d6 force", "roll0_dc": ""}
@@ -116,5 +120,5 @@ def test_items_opens_its_builder_in_a_large_window_and_refuses_what_it_cant_read
     form = dm.get("/c/main/dm/items/new").text
     assert "(a weapon)" not in form and form.count('class="fld-help"') >= 3  # (help under its box, the one field: Roadmap item 47, Brett's pick F1 B; was a ? tip, issue 4)
     r = dm.post("/c/main/dm/items", data={**FORM, "name": "Another compass", "charges_regain": "lots"})
-    assert r.status_code == 422 and "how many come back, like 1d3 or all" in r.text
+    assert r.status_code == 422 and "How many come back, like 1d3 or all" in r.text
     assert dm.post("/c/main/dm/items", data={**FORM, "name": "A third compass", "charges_regain": "all"}, follow_redirects=False).status_code == 303

@@ -398,6 +398,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   hbSetup(document);
   // (the builder in Items' large window: Brett's pick IT3, Nov 25; its clicks and typing are the page's, its first drawing here)
   document.addEventListener('panel:loaded', e => { e.target.querySelectorAll('[data-dice-picker]').forEach(dpSync); hbSetup(e.target); });
+  document.addEventListener('askdnd:swapped', () => { const m = document.querySelector('main'); if (m) { m.querySelectorAll('[data-dice-picker]').forEach(dpSync); hbSetup(m); } });  // (a page's new copy: a refused item, drawn again)
   // A roll or a bonus that isn't dice says so as it's typed, not only on Save (Brett's pick A on issue 2): the same shape
   // the server takes (app/homebrew.py DICE): 2d6 force, 1d8+2, 5; a bonus may start with +.
   const HB_DICE = /^\s*(\d*d\d+|\d+)(\s*[+-]\s*\d+)?(\s+[a-zA-Z]+)?\s*$/;
@@ -1150,7 +1151,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // something is sent in the background; when askdnd answers with this same page (a redirect back here, or a page drawn
   // for the answer), its new copy goes in through swapMain, as a change from elsewhere does: scroll, tabs and what was
   // open stay, the corner card says what happened, the address follows. An answer that is another page loads it as
-  // before, its card carried over. Refused: its words in a card, nothing redrawn. Opt out with data-reload on the form
+  // before, its card carried over. Refused: its words in a card, nothing redrawn, unless the answer is the form drawn
+  // again with its errors (its window's markup, or this page with that form), which goes in the same way. Opt out with data-reload on the form
   // (or a box around it) where the change reaches outside main: the menu bar, the page's settings on body.
   // The item window (app/fft/item_page.py; Brett, Nov 20, issue 44): after a press in it, the page underneath draws
   // again and the window moves on to the next item of its list, or closes at the end; a conversation, a rename or a
@@ -1193,6 +1195,13 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       .then(([r, html]) => {
         if (!r.ok) {
           unbusy(form);
+          // (a form refused with itself drawn again, its errors under their boxes and what was typed kept: in a window,
+          // the window's new copy (swapPanel); on a page, the page's (swapMain); the item builder, issue 143)
+          const refusedDoc = (r.headers.get('content-type') || '').includes('text/html') ? new DOMParser().parseFromString(html, 'text/html') : null;
+          const layer = panel && refusedDoc && refusedDoc.querySelector('.peek-head[data-window]') && !refusedDoc.querySelector('main') && [layers.top, layers.base].find(l => l && l.panel === panel);
+          if (layer) { swapPanel(layer, html); return; }
+          const redrawn = !panel && !r.redirected && refusedDoc && [...refusedDoc.querySelectorAll('main form[method="post"]')].some(f => new URL(f.getAttribute('action') || '', location.href).pathname === to.pathname);
+          if (redrawn) { swapMain(refusedDoc, true); return; }
           let words = '';
           try { words = JSON.parse(html).detail; } catch (err) { /* not askdnd's words */ }
           toast(typeof words === 'string' && words ? words : 'Not done: try again.', null, 'warn');
