@@ -187,6 +187,29 @@ def test_a_round_goes_page_to_page_and_passed_moves_on_with_undo(admin, db):
     assert ended.actor.startswith("user:")  # (whose hand ended it)
 
 
+def test_skip_for_now_moves_a_check_to_the_rounds_end_and_it_comes_back_before_end_round(admin, db):
+    """Issue 171 (Brett, Nov 25): "Checks should be able to skip to the next one without ending the round. You can come
+    back to it at the end, before ending the round." Nothing is recorded on a skipped check."""
+    a = _area(db)
+    first = _check(db, title="First", path="/party", area=a)
+    second = _check(db, title="Second", path="/help", area=a)
+    admin.post("/manage/testing/round")
+    card = admin.get("/manage/testing/card").text
+    assert f'data-check-card="{first.id}"' in card and 'data-do="skip"' in card and "Check 1 of 2" in card
+    r = admin.post("/manage/testing/round/skip", data={"check": first.id}, follow_redirects=False)
+    assert r.headers["location"] == "/help" and rules.check_state(db, first)["state"] == "to_try"
+    assert db.scalar(select(func.count()).select_from(FftTry).where(FftTry.check_id == first.id)) == 0
+    card = admin.get("/manage/testing/card").text
+    assert f'data-check-card="{second.id}"' in card and 'data-do="skip"' in card  # (the skipped one waits after it)
+    admin.post("/manage/testing/round/skip", data={"check": first.id})  # (a stale press for the check not on the card: nothing)
+    assert f'data-check-card="{second.id}"' in admin.get("/manage/testing/card").text
+    r = admin.post(f"/manage/testing/checks/{second.id}/try", data={"result": "passed"}, follow_redirects=False)
+    assert r.headers["location"] == "/party"  # (back to the skipped one, before End round)
+    card = admin.get("/manage/testing/card").text
+    assert f'data-check-card="{first.id}"' in card and "data-cc-came-back" in card and 'data-do="skip"' not in card  # (the last: nothing to skip to)
+    assert rules.round_open(db) is not None
+
+
 def test_try_it_on_one_check_ends_with_it(admin, db):
     """▶ Try it on one check isn't a round to Brett: passing it ends the round it opened, so nothing is left open that
     stops a merge (R11); only a round he started with ▶ Start round waits for End round (his round, Nov 18)."""
