@@ -8,6 +8,6 @@
   {% call field("Name", key="camp-name") %}<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}>{% endcall %}
   {% call field("DM's name", help="Optional.", key="camp-dm", size="mid") %}<input type="text" name="dm_name" maxlength="200">{% endcall %}
   {% if unmatched %}{% call field("D&D Beyond campaign", help="Optional: askdnd saw this one on a sheet. You can set or change it later on the campaign's Settings.", key="camp-ddb") %}<select name="ddb_campaign_id" aria-label="D&amp;D Beyond campaign">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select>{% endcall %}
-  {% else %}{% call field("D&D Beyond campaign", tag="div", help="Optional: a campaign plays without one. Set it later on the campaign's Settings, once its sheets are in a D&D Beyond campaign.", key="camp-ddb") %}<span class="note">None yet</span>{% endcall %}{% endif %}
+  {% else %}{% call field("D&D Beyond campaign", help="Optional: paste its campaign page's address (dndbeyond.com/campaigns/…) or its id. It can be set later on the campaign's Settings.", key="camp-ddb") %}<input type="text" name="ddb_campaign_id" maxlength="200" placeholder="dndbeyond.com/campaigns/…" aria-label="D&amp;D Beyond campaign">{% endcall %}{% endif %}
   {% call field("Test", key="camp-test") %}<span class="dm-check"><input type="checkbox" name="is_test" value="1" aria-label="A test campaign"> A test campaign (it holds test data)</span>{% endcall %}
 {% endcall %}

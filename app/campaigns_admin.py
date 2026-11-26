@@ -76,6 +76,16 @@ def new_window(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "_new_campaign.html", {"unmatched": overview(db)["unmatched"]})
 
 
+def ddb_id_from(text: str) -> str | None:
+    """A D&D Beyond campaign as typed (issue 172): its id, or its link (dndbeyond.com/campaigns/1234567, with or
+    without more after it); "" for none, None for what isn't either."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+    m = re.search(r"dndbeyond\.com/campaigns/(\d+)", text) or re.fullmatch(r"(\d{1,20})", text)
+    return m.group(1) if m else None
+
+
 @router.post(BACK)
 def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
            is_test: str = Form(""), db: Session = Depends(get_db)):
@@ -86,8 +96,12 @@ def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_
     if not name:
         request.session["toast"] = web.notice("Give the campaign a name.", "warn")
         return RedirectResponse(BACK, status_code=303)
+    ddb = ddb_id_from(ddb_campaign_id)
+    if ddb is None:
+        request.session["toast"] = web.notice("That isn't a D&D Beyond campaign link or id: paste the address of its campaign page.", "warn")
+        return RedirectResponse(BACK, status_code=303)
     c = Campaign(name=name, slug=slug_for(db, name), dm_name=" ".join(dm_name.split())[:200],
-                 ddb_campaign_id=ddb_campaign_id.strip()[:40] or None, is_test=bool(is_test))
+                 ddb_campaign_id=ddb or None, is_test=bool(is_test))
     db.add(c)
     db.commit()
     access.invalidate()
@@ -122,10 +136,13 @@ def save_settings(request: Request, name: str = Form(""), dm_name: str = Form(""
     if denied:
         return denied
     c = web.campaign(db)
-    if c is not None and " ".join(name.split()):
+    ddb = ddb_id_from(ddb_campaign_id)
+    if c is not None and ddb is None:
+        request.session["toast"] = web.notice("That isn't a D&D Beyond campaign link or id: paste the address of its campaign page.", "warn")
+    elif c is not None and " ".join(name.split()):
         c.name = " ".join(name.split())[:200]
         c.dm_name = " ".join(dm_name.split())[:200]
-        c.ddb_campaign_id = ddb_campaign_id.strip()[:40] or None
+        c.ddb_campaign_id = ddb or None
         db.commit()
         access.invalidate()
         request.session["toast"] = "Saved"

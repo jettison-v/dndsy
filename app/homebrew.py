@@ -102,13 +102,14 @@ def _clean(s, n: int = 200) -> str:
     return " ".join(str(s or "").split())[:n]
 
 
-def from_form(form) -> tuple[dict, list[str]]:
-    """The entry a DM Tools item form describes, and what's wrong with it (nothing saved while there's anything)."""
+def from_form(form) -> tuple[dict, list[tuple[str, str]]]:
+    """The entry a DM Tools item form describes, and what's wrong with it (nothing saved while there's anything): each
+    error with the field it's about, shown under that box (issue 143; "" for one about the whole item)."""
     get = lambda k: _clean(form.get(k))
     errors = []
     name = get("name")[:80]
     if not name:
-        errors.append("Give it a name.")
+        errors.append(("name", "Give it a name."))
     entry = {"name": name, "category": get("category") if get("category") in CATEGORIES else "Wondrous Item",
              "rarity": get("rarity") if get("rarity") in RARITIES else "Uncommon", "attunement": bool(form.get("attunement")),
              "text": str(form.get("text") or "").strip()[:4000] or "A homebrew item.", "cost": get("cost")[:40], "weight": get("weight")[:40],
@@ -119,14 +120,14 @@ def from_form(form) -> tuple[dict, list[str]]:
         if not dice:
             continue
         if not DICE.match(dice):
-            errors.append(f"Roll {i + 1}: write its dice like 2d6 force, 1d8+2 or 5.")
+            errors.append((f"roll{i}_dice", "Write its dice like 2d6 force, 1d8+2 or 5."))
             continue
         r = {"name": get(f"roll{i}_name")[:60] or name, "resolve": get(f"roll{i}_resolve") if get(f"roll{i}_resolve") in RESOLVE else "none",
              "effect": get(f"roll{i}_effect") if get(f"roll{i}_effect") in EFFECT else "damage", "dice": [dice]}
         if r["resolve"] == "save":
             dc = get(f"roll{i}_dc")
             if get(f"roll{i}_save") not in SAVES or not dc.isdigit() or not 1 <= int(dc) <= 30:
-                errors.append(f"Roll {i + 1}: a saving throw needs its ability and DC.")
+                errors.append((f"roll{i}_save", "A saving throw needs its ability and DC."))
                 continue
             r |= {"save": get(f"roll{i}_save"), "dc": int(dc), "success": "half" if form.get(f"roll{i}_half") else "none"}
             if r["effect"] not in ("damage",):
@@ -141,7 +142,7 @@ def from_form(form) -> tuple[dict, list[str]]:
         if not amount:
             continue
         if not DICE.match(amount.lstrip("+")):
-            errors.append(f"Bonus {i + 1}: write it like +1, 1d4 or 2d6 fire.")
+            errors.append((f"add{i}_amount", "Write it like +1, 1d4 or 2d6 fire."))
             continue
         when, to = get(f"add{i}_when"), get(f"add{i}_to")
         a = {"name": get(f"add{i}_name")[:60] or name, "when": when if when in WHEN else "before", "to": [to if to in TO else "attack"],
@@ -156,11 +157,11 @@ def from_form(form) -> tuple[dict, list[str]]:
     charges = get("charges")
     if charges:
         if not charges.isdigit() or not 1 <= int(charges) <= 50:
-            errors.append("Charges: a number from 1 to 50.")
+            errors.append(("charges", "A number from 1 to 50."))
         else:
             regain = get("charges_regain")[:20]
             if regain and regain.lower() != "all" and not DICE.match(regain):  # (issue 20: a value it can't read is refused, saying what it takes)
-                errors.append("Charges: how many come back, like 1d3 or all.")
+                errors.append(("charges_regain", "How many come back, like 1d3 or all."))
             else:
                 entry["play"]["charges"] = {"count": int(charges), "back": get("charges_back") if get("charges_back") in BACK else "",
                                             "regain": regain}
@@ -299,10 +300,11 @@ def dm_tools(request: Request, db: Session = Depends(get_db)):
         "toast": request.session.pop("toast", None)})
 
 
-def _form_page(request: Request, user, item: dict, key: str = "", errors: list[str] | None = None, status: int = 200, part: bool = False):
+def _form_page(request: Request, user, item: dict, key: str = "", errors: list[tuple[str, str]] | None = None, status: int = 200, part: bool = False):
     play = item.get("play") or {}
+    errors = errors or []
     return templates.TemplateResponse(request, "_dm_item_window.html" if part else "dm_item.html", {
-        "user": user, "item": item, "key": key, "errors": errors or [], "rolls": (play.get("rolls") or []) + [{}] * (MAX_ROLLS - len(play.get("rolls") or [])),
+        "user": user, "item": item, "key": key, "errors": [w for f, w in errors if not f], "field_errors": {f: w for f, w in errors if f}, "rolls": (play.get("rolls") or []) + [{}] * (MAX_ROLLS - len(play.get("rolls") or [])),
         "adds": (play.get("adds") or []) + [{}] * (MAX_ADDS - len(play.get("adds") or [])), "charges": play.get("charges") or {},
         "categories": CATEGORIES, "rarities": RARITIES, "effect": EFFECT, "when": WHEN, "to": TO,
         "save_options": [(x, x) for x in SAVES], "back_options": [(b, BACK_SAYS[b]) for b in BACK],
@@ -346,9 +348,9 @@ def save_item(request: Request, form=web.FormBody, db: Session = Depends(get_db)
         return web.not_found(request, "There's no homebrew item by that name.")
     clash = _row(db, campaign.id, rules_data.slug(entry["name"]))
     if clash is not None and clash is not old:
-        errors.append(f"There's already a homebrew item called {clash.name}.")
+        errors.append(("name", f"There's already a homebrew item called {clash.name}."))
     if errors:
-        return _form_page(request, user, {**entry, "play": as_typed(form)}, key=key, errors=errors, status=422)
+        return _form_page(request, user, {**entry, "play": as_typed(form)}, key=key, errors=errors, status=422, part=bool(form.get("part")))
     if old is not None and old.key != rules_data.slug(entry["name"]):
         db.delete(old)  # (renamed: saved again under its new name)
         db.flush()
@@ -358,7 +360,7 @@ def save_item(request: Request, form=web.FormBody, db: Session = Depends(get_db)
     try:
         rules_data.save(db, campaign.id, KIND, {**entry, "retired": False}, source=SOURCE, user_id=me.id if me else None)
     except ValueError as e:
-        return _form_page(request, user, entry, key=key, errors=[f"askdnd couldn't keep it: {e}"], status=422)
+        return _form_page(request, user, entry, key=key, errors=[("", f"askdnd couldn't keep it: {e}")], status=422, part=bool(form.get("part")))
     db.commit()
     invalidate()
     request.session["toast"] = web.notice(f"Saved: {entry['name']}")

@@ -1193,6 +1193,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       .then(([r, html]) => {
         if (!r.ok) {
           unbusy(form);
+          // (a window's form refused with the window drawn again, its errors under their boxes: the one way a window
+          // gets a new copy, swapPanel; the item builder, issue 172)
+          const refusedDoc = panel && (r.headers.get('content-type') || '').includes('text/html') ? new DOMParser().parseFromString(html, 'text/html') : null;
+          const layer = refusedDoc && refusedDoc.querySelector('.peek-head[data-window]') && !refusedDoc.querySelector('main') && [layers.top, layers.base].find(l => l && l.panel === panel);
+          if (layer) { swapPanel(layer, html); return; }
           let words = '';
           try { words = JSON.parse(html).detail; } catch (err) { /* not askdnd's words */ }
           toast(typeof words === 'string' && words ? words : 'Not done: try again.', null, 'warn');
