@@ -5,14 +5,13 @@
 {% from "_form_bits.html" import field %}
 {% if kind == "limit" %}
 {% set w_foot %}<button class="btn primary" type="submit">Save limit</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
-{% call window("Usage", "Monthly limit", foot=w_foot, form='method="post" action="/manage/usage/limit"') %}
-  {% call field("Limit per month", help="askdnd stops calling Claude and drawing pictures once this month's spending reaches it, until the 1st. Leave it empty for no limit; the Anthropic Console's own limit still applies.", key="usage-limit") %}<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}">{% endcall %}
+{% call window("Usage", "Monthly limit", foot=w_foot, form='method="post" action="/manage/usage/limit"', size="small") %}
+  {% call field("Limit per month", size="num", help="askdnd stops calling Claude and drawing pictures once this month's spending reaches it, until the 1st. Leave it empty for no limit; the Anthropic Console's own limit still applies.", key="usage-limit") %}<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}">{% endcall %}
 {% endcall %}
 {% else %}
 {% set w_foot %}<button class="btn primary" type="submit">Add top-up</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
-{% call window("Usage", "Add a top-up", foot=w_foot, form='method="post" action="/manage/usage/topups"') %}
-  <p class="note">What you bought in the Anthropic Console, for the balance estimate.</p>
-  {% call field("Amount", key="topup-amount") %}<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required>{% endcall %}
+{% call window("Usage", "Add a top-up", foot=w_foot, form='method="post" action="/manage/usage/topups"', size="small", sub="What you bought in the Anthropic Console, for the balance estimate.") %}
+  {% call field("Amount", key="topup-amount", size="num") %}<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required>{% endcall %}
   {% call field("Date bought", key="topup-date") %}<input type="date" name="added_on" value="{{ today_iso }}" required>{% endcall %}
   {% call field("Note", help="Optional, e.g. Initial funding.", key="topup-note") %}<input type="text" name="note">{% endcall %}
 {% endcall %}

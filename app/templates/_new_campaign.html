@@ -4,11 +4,10 @@
 {% from "_window.html" import window %}
 {% from "_form_bits.html" import field %}
 {% set foot %}<button class="btn primary" type="submit">Start it</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
-{% call window("Campaigns", "New campaign", foot=foot, form='method="post" action="/manage/campaigns" data-new-campaign data-reload') %}
+{% call window("Campaigns", "New campaign", foot=foot, form='method="post" action="/manage/campaigns" data-new-campaign data-reload', size="small", sub="Then add its people and characters on its Table.") %}
   {% call field("Name", key="camp-name") %}<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}>{% endcall %}
-  {% call field("DM's name", help="Optional.", key="camp-dm") %}<input type="text" name="dm_name" maxlength="200">{% endcall %}
+  {% call field("DM's name", help="Optional.", key="camp-dm", size="mid") %}<input type="text" name="dm_name" maxlength="200">{% endcall %}
   {% if unmatched %}{% call field("D&D Beyond campaign", help="Optional: askdnd saw this one on a sheet. You can set or change it later on the campaign's Settings.", key="camp-ddb") %}<select name="ddb_campaign_id" aria-label="D&amp;D Beyond campaign">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select>{% endcall %}
   {% else %}{% call field("D&D Beyond campaign", tag="div", help="Optional: a campaign plays without one. Set it later on the campaign's Settings, once its sheets are in a D&D Beyond campaign.", key="camp-ddb") %}<span class="note">None yet</span>{% endcall %}{% endif %}
   {% call field("Test", key="camp-test") %}<span class="dm-check"><input type="checkbox" name="is_test" value="1" aria-label="A test campaign"> A test campaign (it holds test data)</span>{% endcall %}
-  <p class="note">Then add its people and characters on its Table.</p>
 {% endcall %}

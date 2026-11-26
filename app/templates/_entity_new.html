@@ -5,7 +5,7 @@
 {% set w_kind %}Campaign{% endset %}{% set w_title %}New entry{% endset %}
 {% set w_foot %}<button type="submit" class="btn primary">Add</button><span class="note">It opens right away, ready for relationships, a picture and key moments.</span>{% endset %}
 {% set w_form %}hx-post="/campaign/new" hx-target="closest .peek" hx-swap="innerHTML" hx-disabled-elt="find button"{% endset %}
-{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form, size="small") %}
   {% if error %}<p class="quiet-warn" role="alert">{{ error }}</p>{% endif %}
   {% call field("Kind") %}<select name="kind">{% for value, label in kinds %}<option value="{{ value }}"{{ ' selected' if value == kind }}>{{ label }}</option>{% endfor %}</select>{% endcall %}
   {% call field("Name") %}<input type="text" name="name" required maxlength="200" value="{{ form.name or '' }}" placeholder="Captain Trager Grill" autofocus>{% endcall %}

@@ -6,7 +6,7 @@
 {% set w_kind %}Accounts{% endset %}{% set w_title %}Add an account{% endset %}
 {% set w_foot %}<button class="btn primary" type="submit">Add</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
 {% set w_form %}method="post" action="/manage/accounts"{% endset %}
-{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form, size="small") %}
       {% call field("Google email") %}<input type="text" name="email" placeholder="name@gmail.com" required>{% endcall %}
       {% call field("Name", help="Optional.") %}<input type="text" name="name">{% endcall %}
       {% call field("Admin") %}<span class="dm-check"><input type="checkbox" name="admin" value="1" aria-label="Admin"> Can open Backstage's askdnd-wide pages</span>{% endcall %}

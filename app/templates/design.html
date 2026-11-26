@@ -5,7 +5,7 @@
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head, show_more %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
-{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip, field %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip, field, form_section %}
 {% from "_live_link.html" import live_link %}
 {% from "_window.html" import window %}
 {% from "_suggest_form.html" import add_fold %}
@@ -138,6 +138,16 @@
   <section class="section" id="pills">
     <h2>Pills</h2>
     {{ ds("Any of a few", "_form_bits.html pick_any(name, options, current, label)", "Chips that each tick on and off (a checkbox each, the chip the control): Run…'s Check it against and With which characters (Roadmap item 46). One of a few is pick_chips.") }}
+    {{ ds("A form's sections and box widths", "_form_bits.html form_section(title, help, key) · field(…, size=\"num\" | \"mid\") · window(…, size=\"small\", sub=…)", "Form windows, round 2 (Roadmap item 47, Brett's picks S1–S4 A, Nov 26): a light line under every window's head, its explanation under the title (sub), 12px between fields, 24px and a line before a section, the section's title in amber small capitals. A box is as wide as what it holds: size=\"num\" for an amount, a cost or a weight, \"mid\" for a short choice or a name, the whole row otherwise, and a date picker always one width. A short form's window is size=\"small\" (560px).") }}
+    <div class="ds-sample">
+      {% call form_section("The item", key="ds-sec-item") %}
+        {% call field("Cost", key="ds-cost", size="num") %}<input type="text" placeholder="500 GP" aria-label="Cost">{% endcall %}
+        {% call field("Bought", key="ds-date") %}<input type="date" aria-label="Bought">{% endcall %}
+      {% endcall %}
+      {% call form_section("What it does in play", help="A line of help when the section needs one.", key="ds-sec-play") %}
+        {% call field("Its words", key="ds-words") %}<input type="text" aria-label="Its words">{% endcall %}
+      {% endcall %}
+    </div>
     {{ ds("Steps in a window", "form[data-steps] · .tabbar.review-steps · [data-step-back] [data-step-next] [data-step-start] · [data-sum]", "A window that asks a few things in order (Run… on Development › Scheduled: Polish an area two steps, Dig into a feature four; Roadmap item 46): the steps numbered in its tab bar, Back and Next in its foot (Next asks the step's own boxes first), Start on the last step, which says what will happen from what was chosen.") }}
     {{ ds("Fields for a choice", "[data-shows-for=\"name=value\"]", "A group of fields shown only while the form's choice is that value, its inputs off while hidden (the House rule window's kinds, AU8). One form, its fields following the choice, one button in the foot.") }}
     <form class="ds-sample stack" action="#">{{ pick_chips("ds_kind", [("a", "A ruling"), ("b", "One roll")], "a", "Sample kind") }}<label class="field" data-shows-for="ds_kind=a"><span>The ruling</span><input type="text" placeholder="Shown for A ruling"></label><label class="field" data-shows-for="ds_kind=b" hidden><span>Why</span><input type="text" placeholder="Shown for One roll" disabled></label></form>

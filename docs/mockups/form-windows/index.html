@@ -64,6 +64,8 @@ button { font: inherit; color: inherit; }
 .rw-head .sub { color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 60ch; }
 .rw-head .x { margin-left: auto; color: var(--muted); font-size: 18px; line-height: 1; }
 .rw-body { padding: 8px 22px 18px; display: grid; gap: 12px; }
+.rw:not(.today) .rw-head { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.rw:not(.today) .rw-body { padding-top: 16px; }
 .rw-foot { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
 .rw-foot .b { padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; }
 .rw-foot .b.go { background: var(--red-btn); color: #fff; }
@@ -79,7 +81,7 @@ button { font: inherit; color: inherit; }
 .bx.ph { color: var(--faint); }
 .bx.tall { height: 84px; }
 .bx.sel::after { content: "⌄"; float: right; color: var(--muted); }
-.bx.w-num { width: 140px; } .bx.w-date { width: 170px; } .bx.w-mid { width: 260px; }
+.bx.w-num { width: 140px; } .bx.w-date { width: 148px; } .bx.w-date::after { content: "▦"; float: right; color: var(--muted); font-size: 12px; } .bx.w-mid { width: 260px; }
 .hp { color: var(--faint); font-size: 12.5px; }
 .ck { display: flex; gap: 8px; align-items: center; padding-top: 6px; }
 .ck i { width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; display: inline-block; }
@@ -89,11 +91,11 @@ button { font: inherit; color: inherit; }
 /* sections: three ways (S1) */
 .s-a { display: grid; gap: 12px; }
 .s-a + .s-a { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 12px; }
-.s-a > h5, .s-c > h5 { margin: 0; font: 600 14px/1.2 var(--sans); color: var(--strong); }
+.s-a > h5, .s-c > h5 { margin: 0; font: 700 12px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
 .s-a > .shp, .s-c > .shp { color: var(--muted); font-size: 13px; margin-top: -6px; }
 .s-b { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 0 24px; }
 .s-b + .s-b { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 12px; }
-.s-b > .rail h5 { margin: 0 0 4px; font: 600 14px/1.2 var(--sans); color: var(--strong); }
+.s-b > .rail h5 { margin: 0 0 4px; font: 700 12px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
 .s-b > .rail p { color: var(--muted); font-size: 13px; }
 .s-b > .flds { display: grid; gap: 12px; }
 .s-b .fl { --nw: 110px; }
@@ -129,7 +131,7 @@ button { font: inherit; color: inherit; }
       <div class="num"><b>~100px</b><span class="note">of nothing between New item's two sections (your note, I173), and no line or title weight to say a new part begins.</span></div>
     </div>
     <div class="scene">
-      <div class="rw">
+      <div class="rw today">
         <div class="rw-head"><div><div class="k">Usage</div><h4>Add a top-up</h4></div><span class="x">✕</span></div>
         <div class="rw-body">
           <div class="gap-today mk-in"><span>the gap: ~50px</span></div>
@@ -146,8 +148,8 @@ button { font: inherit; color: inherit; }
   <section aria-labelledby="h-rules">
     <h2 id="h-rules">The spacing, one scale (in scope, no choice needed)</h2>
     <ul class="checks">
-      <li><b>Head to body: 4px, not ~50</b><span class="note">The first field (or the explanation) sits right under the title, as a page's first line sits under its heading.</span></li>
-      <li><b>12px between fields, 24px before a section</b><span class="note">One gap inside a section, a bigger one with a line where a new section starts. Never a blank gap of its own (New item's 100px goes).</span></li>
+      <li><b>Head to body: a light line, not ~50px of space</b><span class="note">A hairline under the title, as between sections, then the first field 16px below it (your comment: a light divider sets the head apart).</span></li>
+      <li><b>12px between fields, 24px and a line before a section</b><span class="note">One gap inside a section, a bigger one with a line where a new section starts, and the section's title in amber small capitals, the colour askdnd's windows already use for a part's heading. Never a blank gap of its own (New item's 100px goes).</span></li>
       <li><b>Text one size</b><span class="note">The explanation, the names and the boxes are all 14px; help under a box 12.5px. The title stays the only big line.</span></li>
       <li><b>Buttons their usual size</b><span class="note">Save and Cancel as everywhere else in askdnd (the top-up's were drawn large).</span></li>
       <li><b>A test that measures it</b><span class="note">The layout tests open every form window and fail on a gap off the scale, as they fail on a box that spills today.</span></li>
@@ -263,7 +265,7 @@ button { font: inherit; color: inherit; }
     <fieldset><legend>S1 · How a long form shows its sections</legend><label class="opt"><input type="radio" name="s1" value="line"><span>A · A title and a line <span class="mine">my pick</span></span><small>A short title over a hairline; reads the same in every window size.</small></label><label class="opt"><input type="radio" name="s1" value="rail"><span>B · Titles in a column on the left</span><small>Section titles beside the fields; falls back to A in a narrow window.</small></label><label class="opt"><input type="radio" name="s1" value="box"><span>C · Each section in its own box</span><small>The most separate; a box inside the window.</small></label></fieldset>
     <fieldset><legend>S2 · Where a window's explanation goes</legend><label class="opt"><input type="radio" name="s2" value="head"><span>A · Under the title, in the head <span class="mine">my pick</span></span><small>Small and grey, part of the title; the fields start right under it.</small></label><label class="opt"><input type="radio" name="s2" value="body"><span>B · The first line of the body, at field size</span><small>As today, without the big gap and the big text.</small></label></fieldset>
     <fieldset><legend>S3 · How wide a short form's window is</legend><label class="opt"><input type="radio" name="s3" value="fit"><span>A · As narrow as its fields need (560px) <span class="mine">my pick</span></span><small>A window of a few fields is small; a long one like New item stays large.</small></label><label class="opt"><input type="radio" name="s3" value="one"><span>B · One width for every form (720px)</span><small>Every form window the same size.</small></label></fieldset>
-    <fieldset><legend>S4 · How wide a box is</legend><label class="opt"><input type="radio" name="s4" value="fit"><span>A · As wide as what it holds <span class="mine">my pick</span></span><small>An amount, a date or a weight short; a name, a link or words the whole row.</small></label><label class="opt"><input type="radio" name="s4" value="full"><span>B · Every box the whole row</span><small>As today.</small></label></fieldset>
+    <fieldset><legend>S4 · How wide a box is</legend><label class="opt"><input type="radio" name="s4" value="fit"><span>A · As wide as what it holds <span class="mine">my pick</span></span><small>An amount or a weight short; a name, a link or words the whole row; a date picker always one exact size, the same in every window.</small></label><label class="opt"><input type="radio" name="s4" value="full"><span>B · Every box the whole row</span><small>As today.</small></label></fieldset>
     <label for="notes"><b>Anything else</b> <span class="note">(another window that bothers you)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
     <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
   </form>

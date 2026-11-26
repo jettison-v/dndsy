@@ -535,6 +535,10 @@ input[type=file]::file-selector-button { min-height: var(--control-h); margin-ri
 .fld-box { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 .fld-box > :is(input, select, textarea):not([type=checkbox]):not([type=radio]):not([type=number]) { flex: 1 1 200px; min-width: 0; }
 .fld-box > input[type=number] { flex: 0 0 auto; width: 7ch; min-width: 5rem; }  /* (a number is short: its box too) */
+/* each box as wide as what it holds (S4): a date picker one exact width everywhere, a field's `size` for the rest */
+.fld-box > input[type=date]:not([type=checkbox]):not([type=radio]):not([type=number]) { flex: 0 0 auto; width: 9.5rem; min-width: 0; }
+.fld.fld-num .fld-box > :is(input, select):not([type=checkbox]):not([type=radio]):not([type=number]) { flex: 0 0 auto; width: 9rem; }
+.fld.fld-mid .fld-box > :is(input, select):not([type=checkbox]):not([type=radio]):not([type=number]) { flex: 0 1 16rem; }
 .fld-help { color: var(--faint); font-size: var(--fs-xs); }
 .fld-err { color: var(--red); font-size: var(--fs-xs); }
 .fld.has-error .fld-help { display: none; }
@@ -1001,6 +1005,18 @@ a.ent:hover { text-decoration-color: var(--red); color: var(--text-strong); }
 .peek-body .story { padding: 14px 18px; }
 .peek-body h3 { font-size: var(--fs-md); margin: 18px 0 6px; }
 .peek-foot { padding: 14px 22px; border-top: 1px solid var(--line); }
+/* Form windows, round 2 (Roadmap item 47, Brett's picks S1-S4 A, docs/mockups/form-windows/): a light line under every
+   window's head, the body 16px under it, and one spacing scale: 12px between fields, 24px and a line before a section. */
+.peek-head[data-window] { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.peek-head[data-window] ~ .peek-body, .peek-head[data-window] ~ .peek-form > .peek-body { --pb-top: 16px; }
+.peek-head[data-window] .note + h2, .peek-head[data-window] h2 + .note { margin-top: 2px; }
+.peek-body:has(> .fld) , .peek-body > .fsec { gap: 12px; }
+.fsec { display: grid; gap: 12px; }
+.fsec + .fsec, .fld + .fsec, .peek-body > :not(.fsec) + .fsec { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 12px; }
+.fsec > h3.fsec-title, body:has(main.manage-page) .peek-body .fsec > h3.fsec-title { margin: 0; font-family: var(--sans); font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--amber); }
+.fsec > .fsec-help { color: var(--muted); font-size: var(--fs-sm); margin: -6px 0 0; }
+/* a short form's window as narrow as its fields need (S3) */
+.peek.modal:not(.large):has([data-window-size="small"]) { width: min(560px, calc(100% - 32px)); }
 ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .peek-backdrop { position: fixed; inset: 0; z-index: 7; background: transparent; }
 @media (max-width: 900px) {

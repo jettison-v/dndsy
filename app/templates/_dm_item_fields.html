@@ -1,23 +1,20 @@
 {# The item builder's fields (app/homebrew.py `_form_page`), on the one field (_form_bits.html `field`; Roadmap item 47,
    Brett's pick F1 B): its name beside each box, help and errors under it. Drawn inside the window's form
    (_dm_item_window.html) or the page's (_dm_item_form.html). #}
-{% from "_form_bits.html" import pick_chips, stepper, dice_picker, field %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker, field, form_section %}
       <input type="hidden" name="key" value="{{ key }}">
       {% if item.retired %}<p class="note" data-hb-retired>It's retired: its rolls and bonuses are off. Bring back puts it in play again.</p>{% endif %}
-      <section class="section stack">
-        <h2>The item</h2>
+      {% call form_section("The item", key="item") %}
         {% call field("Name", key="hb-name") %}<input type="text" name="name" value="{{ item.name or '' }}" maxlength="80" required data-hb-name>{% endcall %}
-        {% call field("Kind", key="hb-kind") %}<select name="category">{% for c in categories %}<option{% if c == item.category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select>{% endcall %}
-        {% call field("Rarity", key="hb-rarity") %}<select name="rarity">{% for r in rarities %}<option{% if r == item.rarity %} selected{% endif %}>{{ r }}</option>{% endfor %}</select>{% endcall %}
+        {% call field("Kind", key="hb-kind", size="mid") %}<select name="category">{% for c in categories %}<option{% if c == item.category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select>{% endcall %}
+        {% call field("Rarity", key="hb-rarity", size="mid") %}<select name="rarity">{% for r in rarities %}<option{% if r == item.rarity %} selected{% endif %}>{{ r }}</option>{% endfor %}</select>{% endcall %}
         {% call field("Attunement", key="hb-attune") %}<span class="dm-check"><input type="checkbox" name="attunement" value="1" aria-label="Needs attunement"{% if item.attunement %} checked{% endif %}> Needs attunement</span>{% endcall %}
-        {% call field("Cost", key="hb-cost") %}<input type="text" name="cost" value="{{ item.cost or '' }}" maxlength="40" placeholder="500 GP, or —">{% endcall %}
-        {% call field("Weight", key="hb-weight") %}<input type="text" name="weight" value="{{ item.weight or '' }}" maxlength="40" placeholder="1 lb">{% endcall %}
+        {% call field("Cost", key="hb-cost", size="num") %}<input type="text" name="cost" value="{{ item.cost or '' }}" maxlength="40" placeholder="500 GP, or —">{% endcall %}
+        {% call field("Weight", key="hb-weight", size="num") %}<input type="text" name="weight" value="{{ item.weight or '' }}" maxlength="40" placeholder="1 lb">{% endcall %}
         {% call field("Its words", help="What the table reads.", key="hb-text") %}<textarea name="text" rows="4" maxlength="4000">{{ item.text if item.text != "A homebrew item." else "" }}</textarea>{% endcall %}
-      </section>
+      {% endcall %}
 
-      <section class="section">
-        <div class="section-head"><h2>What it does in play</h2></div>
-        <p class="hint">Each piece is something askdnd plays: a character carrying an item of this name gets it on Battle and the roll card. askdnd plays the numbers you set; the DM rules on the rest.</p>
+      {% call form_section("What it does in play", help="Each piece is something askdnd plays: a character carrying an item of this name gets it on Battle and the roll card. askdnd plays the numbers you set; the DM rules on the rest.", key="play") %}
         <div class="hb-pieces" data-hb-pieces>
           {% for r in rolls %}{% set i = loop.index0 %}
           <div class="hb-piece" data-hb-piece="roll" data-hb-kind="A roll"{% if not r.dice %} hidden{% endif %}{% if errors and r.dice %} data-open{% endif %}>
@@ -74,5 +71,5 @@
             </div>
           </details>
         </div>
-      </section>
+      {% endcall %}
 

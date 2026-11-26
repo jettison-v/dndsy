@@ -5,7 +5,7 @@
 {% set w_kind %}Testing · {{ c.title }}{% endset %}{% set w_title %}Can't try it?{% endset %}
 {% set w_foot %}<button class="btn primary" type="submit" data-do="cant-try">Can't try it</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
 {% set w_form %}method="post" action="/manage/testing/checks/{{ c.id }}/try"{% endset %}
-{% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
+{% call window(w_kind, w_title, foot=w_foot, form=w_form, size="small") %}
     <input type="hidden" name="result" value="cant">
     <div class="fft-options" role="radiogroup" aria-label="Why">
       <label class="fft-opt" data-cant="later"><input type="radio" name="cant" value="later" required><span><b>Later</b> · not now: it needs my phone or a second person</span><small class="note">stays yours</small></label>
