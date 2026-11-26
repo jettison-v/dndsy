@@ -71,7 +71,7 @@
     "the_week": [
       "Skip it (review <run> skip) when no pull request merged since the last run (feedback.py pulls --all).",
       "Read the week's merged pull requests as one: fresh reviewers on the design system and the code (the code review on the week's combined diff).",
-      "Sweep every page (scripts/visual_compare.py against last week's main, scripts/layout_sweep.py).",
+      "Sweep every page: last week's main drawn with its own tests (a worktree at that commit, tests/browser/test_pictures.py with VISUAL_OUT; visual_compare.py --base would bring today's tests, which call code a week old doesn't have), today's the same, then scripts/visual_compare.py --only-compare on the two; and scripts/layout_sweep.py.",
       "Check Help's About and FAQ, the DM guide and the tour against what changed; each mismatch an issue."
     ],
     "rethink_build": [
