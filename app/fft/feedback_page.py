@@ -536,13 +536,20 @@ def drawn(request: Request, note_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/manage/feedback/lines/{line_id:int}")
-def line_approve(request: Request, line_id: int, db: Session = Depends(get_db)):
-    """A player's later line (their reply, their Still broken) approved: now Claude reads it (T1)."""
+def line_approve(request: Request, line_id: int, do: str = Form(""), db: Session = Depends(get_db)):
+    """A player's later line (their reply, their Still broken) approved: now Claude reads it (T1). Or Claude's question
+    to a note's sender: Send (`do=send`) or Don't send (`do=drop`; ask back, R10's slice 5)."""
     user, denied = _admin(request)
     if denied:
         return denied
     line = db.get(FftLine, line_id) or _missing()
-    _act(lambda: rules.approve_line(db, f"user:{views.person(db, user)['id']}", line))
+    me = f"user:{views.person(db, user)['id']}"
+    if do in ("send", "drop"):
+        _act(lambda: rules.send_ask(db, me, line, do == "send"))
+        db.commit()
+        request.session["toast"] = "Sent: it's on their note" if do == "send" else "Not sent: it stays here, theirs never sees it"
+        return _back(request, f"n{line.note_id}")
+    _act(lambda: rules.approve_line(db, me, line))
     db.commit()
     request.session["toast"] = "Approved: Claude reads it"
     issue = line.issue_id or (db.get(FftNote, line.note_id).issue_id if line.note_id else None)

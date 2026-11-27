@@ -226,6 +226,10 @@ def notes(a) -> None:
 
 
 def note(a) -> None:
+    if a.ask:  # (ask back: R10's slice 5)
+        call(a.base, f"/notes/{a.id}", {"do": "ask", "words": a.ask})
+        print(f"Asked note {a.id}'s sender: it waits for Brett's Send in For you, then reaches them on Notes you sent.")
+        return
     if a.answer:
         call(a.base, f"/notes/{a.id}", {"do": "answer", "words": a.answer})
         print(f"Answered note {a.id}: its sender reads it on Notes you sent.")
@@ -889,6 +893,7 @@ def main() -> None:
     s.add_argument("id", type=int)
     s.add_argument("--page", action="store_true")
     s.add_argument("--answer", help="a question someone sent: your answer (they read it on Notes you sent)")
+    s.add_argument("--ask", help="a vague note: one question for its sender, sent once Brett presses Send in For you")
     s = sub.add_parser("issues")
     s.add_argument("--state", default="")
     s.add_argument("--area", type=int, default=0)

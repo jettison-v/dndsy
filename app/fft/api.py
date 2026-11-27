@@ -228,8 +228,15 @@ def note_answer(note_id: int, body=web.JsonBody, x_fft_key: str | None = Header(
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
     n = _approved_note(db, note_id)
+    if _str(body, "do", 20) == "ask":  # (ask back: one question for its sender, waiting for Brett's Send; R10's slice 5)
+        try:
+            rules.ask_back(db, actor.name, n, _str(body, "words", need=True))
+        except rules.RuleError as e:
+            _rule(e)
+        db.commit()
+        return _ok(note_view(db, n))
     if _str(body, "do", 20) != "answer":
-        raise HTTPException(400, "do: answer")
+        raise HTTPException(400, "do: answer or ask")
     if n.filed_as != "question":
         raise HTTPException(409, f"It's filed as {n.filed_as or 'nothing yet'}, not a question waiting for its answer.")
     try:
