@@ -964,6 +964,13 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     if result is not None and result.strip():
         item.result = result.strip()[:4000]
     _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)
+    # Its ideas follow it, so each idea's sender reads it on Notes you sent (R10's slice 5): built, or not to be built
+    # after all, in words written for them (never the item's result, which is Brett's and Claude's)
+    for idea in db.scalars(select(FftIdea).where(FftIdea.item_id == item.id, FftIdea.state == "roadmap")):
+        idea.state = "declined" if not_doing else "shipped"
+        if not_doing:
+            idea.reason = "it won't be built after all"
+        _event(db, actor, "idea_declined" if not_doing else "idea_shipped", "idea", idea.id)
 
 
 def add_to_item(db: Session, actor: str, item: FftItem, words: str, where: str = "askdnd", user_id: int | None = None) -> FftAddition:

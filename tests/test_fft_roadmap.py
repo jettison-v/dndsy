@@ -395,3 +395,30 @@ def test_an_item_ships_only_once_every_step_is_ticked_or_removed(db):
     rules.add_step(db, "claude", other, "Something")
     rules.ship_item(db, "claude", other, not_doing=True, result="Not needed")
     assert other.section == "not_doing"
+
+
+def test_an_ideas_sender_hears_when_it_joins_the_roadmap_and_when_it_ships(db, admin):
+    """R10's slice 5 (Brett's OK on its scope, Nov 27): a note taken up as an idea says so on Notes you sent when it
+    joins a Roadmap item (a word of its own, so its marker changes and the note shows as new) and when that item ships
+    (or isn't done after all), in words written for its sender (R2: never the item's own words)."""
+    from app.fft import views
+
+    note = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="idea", text="Could the dice make a sound?")
+    db.flush()
+    before = views.marker(db, note, None)
+    admin.post(f"/manage/feedback/notes/{note.id}", data={"do": "idea"})
+    db.refresh(note)
+    joined = views.sender_says(db, note, None)
+    assert joined["word"] == "On the Roadmap" and views.marker(db, note, None) != before
+    it = db.get(FftItem, db.get(FftIdea, note.idea_id).item_id)
+    rules.ship_item(db, "claude", it, result="Dice make a sound\\nOne setting turns it off")
+    db.flush()
+    built = views.sender_says(db, note, None)
+    assert built["word"] == "Built" and "Dice make a sound" not in built["sentence"]
+    other = rules.send_note(db, user_id=None, first_name="Cole", role="player", kind="idea", text="A tray for the dice?")
+    db.flush()
+    admin.post(f"/manage/feedback/notes/{other.id}", data={"do": "idea"})
+    db.refresh(other)
+    rules.ship_item(db, "claude", db.get(FftItem, db.get(FftIdea, other.idea_id).item_id), not_doing=True, result="Not now")
+    db.flush()
+    assert "won't be built" in views.sender_says(db, other, None)["sentence"]

@@ -184,7 +184,9 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
             return out("closed", "Built: it's in askdnd now.", open_=False, word="Built")
         if st == "declined":
             return out("closed", "Not taken up as an idea" + (f": {idea.reason}" if idea and idea.reason else "."), open_=False)
-        return out("claude", "Taken up as an idea: on the Roadmap" if st == "roadmap" else "Taken up as an idea: it waits its turn.", word="An idea")
+        if st == "roadmap":  # (its own word, so the note's marker changes and Notes you sent marks it new: R10's slice 5)
+            return out("claude", "Taken up as an idea, and on the Roadmap now: it's built in its turn.", word="On the Roadmap")
+        return out("claude", "Taken up as an idea: it waits its turn.", word="An idea")
     issue = (db.get(FftIssue, note.issue_id) if note.issue_id else None) if issue is _FETCH else issue
     if issue is None:
         return out("closed", "Closed.", open_=False)
