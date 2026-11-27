@@ -467,3 +467,14 @@ def test_of_a_spells_two_copies_the_2024_one_is_offered(monkeypatch):
     monkeypatch.setattr(ddb, "_spell_list", lambda url, timeout: [old, new] if "always-known" in url else [])
     got = ddb.fetch_character("1")["askdnd"]["availableSpells"]["2"]
     assert [s["definition"]["id"] for s in got] == [2]
+
+
+def test_an_item_of_several_charges_is_gone_once_all_are_used():
+    """Issue 162: a Soul Coin (3 of 3, used up) said 'gone once used', as if one use ended it."""
+    from app.ddb_sheet import _Sheet
+
+    sheet = _Sheet.__new__(_Sheet)
+    sheet.pb, sheet.mods = 3, {}
+    three = sheet.limited_use({"maxUses": 3, "numberUsed": 0, "resetType": "Consumable"})
+    one = sheet.limited_use({"maxUses": 1, "numberUsed": 0, "resetType": "Consumable"})
+    assert three["reset_phrase"] == "gone once all are used" and one["reset_phrase"] == "gone once used"
