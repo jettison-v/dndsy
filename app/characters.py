@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import config, ddb, timing
 from app.models import NEW_CHARACTER, CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
@@ -19,11 +19,12 @@ Fetch = Callable[[str], dict]
 FETCH: Fetch = ddb.fetch_character  # how a sheet is read from D&D Beyond (tests put a stand-in here)
 
 
-def campaign_characters(db: Session, campaign_id: int) -> list[Character]:
-    """The characters in this campaign now, by name."""
-    return list(db.scalars(select(Character).join(CampaignCharacter)
-                           .where(CampaignCharacter.campaign_id == campaign_id, CampaignCharacter.left_on.is_(None))
-                           .order_by(Character.name)))
+def campaign_characters(db: Session, campaign_id: int, with_sheets: bool = False) -> list[Character]:
+    """The characters in this campaign now, by name; `with_sheets`, each one's D&D Beyond copy read with them in one go
+    (a page showing everyone's sheet: not one read a character, issue 77)."""
+    q = (select(Character).join(CampaignCharacter).where(CampaignCharacter.campaign_id == campaign_id, CampaignCharacter.left_on.is_(None))
+         .order_by(Character.name))
+    return list(db.scalars(q.options(selectinload(Character.snapshot)) if with_sheets else q))
 
 
 def for_entity(db: Session, entity_id: int) -> Character | None:
