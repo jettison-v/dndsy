@@ -357,6 +357,8 @@ def usage_bar(db: Session) -> dict:
         return {"limits": limits, "reading": None, "tone": "old", "why": "No reading yet", "cap": limits["week"], "days": rules.DAYS}
     verdict, why, cap = rules.usage_verdict(limits, r.five_hour, r.week, r.extra_spent, r.five_resets_at, r.week_resets_at)
     old = rules.now() - r.created_at > rules.USAGE_FRESH
+    if verdict == "wait" and r.five_resets_at and rules.now() >= r.five_resets_at:  # (the window has reset since: not paused now)
+        verdict, why = "go", "The 5-hour window has reset: Claude reads its usage again before going on."
     tone = {"stop": "over", "wait": "wait"}.get(verdict) or ("near" if cap - r.week <= 10 else "old" if old else "ok")
     return {"limits": limits, "reading": r, "verdict": verdict, "why": why, "cap": cap, "tone": tone, "old": old, "days": rules.DAYS}
 

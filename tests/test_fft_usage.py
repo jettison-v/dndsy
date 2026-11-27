@@ -167,3 +167,12 @@ def test_an_items_page_says_what_it_used_and_what_one_its_size_usually_takes(adm
     db.commit()
     page = admin.get(f"/manage/roadmap/{idea.id}").text
     assert "About 3% of a week of Claude's plan" in page and "about 8% of a week, from 1 shipped item of size M" in page
+
+
+def test_a_pause_for_the_5_hour_window_ends_on_the_bar_once_it_has_reset(db):
+    from app.fft import testing_page
+
+    rules.report_usage(db, "claude", OWNER, 95, 40, five_resets_at=rules.now() + timedelta(hours=1))
+    assert testing_page.usage_bar(db)["tone"] == "wait"
+    db.execute(update(FftUsageReading).values(five_resets_at=rules.now() - timedelta(minutes=1)))
+    assert testing_page.usage_bar(db)["tone"] != "wait"

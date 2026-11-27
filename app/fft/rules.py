@@ -3112,7 +3112,9 @@ def usage_verdict(limits: dict, five_hour: int, week: int, extra_spent: float, f
     if week >= cap:
         return "stop", f"The week is at {week}%: your limit is {cap}%{kept}.", cap
     if five_hour >= WINDOW_NEAR:
-        resets = f", resetting {five_resets_at:%H:%M} UTC" if five_resets_at else ""
+        from app import config
+
+        resets = f", resetting at {five_resets_at.astimezone(config.TABLE_TIME):%-I:%M %p}" if five_resets_at else ""  # (the table's time)
         if limits["window"] == "pause":
             return "wait", f"The 5-hour window is at {five_hour}%{resets}: paused until it resets.", cap
         return "stop", f"The 5-hour window is at {five_hour}%{resets}: stopped until you say go on.", cap
