@@ -2,9 +2,9 @@
 docs/mockups/found-fixed-tried/): sending a note, approving it, the Feedback page's issues, and Notes you sent, with
 the standing rules on who sees what."""
 
-import re
 import base64
 import io
+import re
 
 import pytest
 from PIL import Image

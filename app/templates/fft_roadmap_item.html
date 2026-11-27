@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, more_menu %}
+{% from "_tables.html" import table_box %}
 {% from "_lists.html" import empty_state, count_pill %}
 {% from "_fft_bits.html" import page_answers as answers_box with context %}
 {% block title %}{{ it.title }} · Roadmap · Backstage · askdnd{% endblock %}
@@ -155,20 +156,19 @@
   </div>
 
   <div id="t-plans" role="tabpanel"{% if tab != "plans" %} hidden{% endif %}>
-  {% if not plans %}{{ empty_state("No plan yet: Claude makes one in Development when it starts building.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-plans>
-    <thead><tr><th>Plan</th><th class="dt-w3">Stage</th><th class="num dt-w2">Fixed</th><th class="num dt-w2">Passed</th></tr></thead>
-    <tbody>{% for p in plans %}
+  {% call table_box("plans", "Its plans", plans | length, "", [("Plan", ""), ("Stage", "dt-w3"), ("Fixed", "num dt-w2"), ("Passed", "num dt-w2")],
+                    "No plan yet: Claude makes one in Development when it starts building.", attrs=' data-plans' | safe, search=false) %}
+    {% for p in plans %}
       <tr data-panel-url="/manage/item/a{{ p.a.id }}" data-area="{{ p.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ p.a.id }}">{{ p.a.title }}</a></td>
         <td>{{ state_word(p.stage_said[0], p.stage_said[1]) }}</td><td class="num">{% if p.issues %}{{ p.fixed }} of {{ p.issues }}{% else %}—{% endif %}</td><td class="num">{% if p.checks %}{{ p.passed }} of {{ p.checks }}{% else %}—{% endif %}</td></tr>
-    {% endfor %}</tbody></table></div>{% endif %}
+    {% endfor %}
+  {% endcall %}
   </div>
 
   <div id="t-updates" role="tabpanel"{% if tab != "updates" %} hidden{% endif %}>
-  {% if not events %}{{ empty_state("Nothing has happened to it yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-timeline>
-    <thead><tr><th class="dt-w3">When</th><th class="dt-w2">Who</th><th>What</th></tr></thead>
-    <tbody>{% for e, words, who in events %}<tr data-event="{{ e.kind }}"><td><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time></td><td>{{ who }}</td><td class="dt-title">{{ words }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+  {% call table_box("updates", "Updates", events | length, "", [("When", "dt-w3"), ("Who", "dt-w2"), ("What", "")], "Nothing has happened to it yet.", attrs=' data-timeline' | safe) %}
+    {% for e, words, who in events %}<tr data-event="{{ e.kind }}"><td><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time></td><td>{{ who }}</td><td class="dt-title">{{ words }}</td></tr>{% endfor %}
+  {% endcall %}
   </div>
 </main>
 {% endblock %}

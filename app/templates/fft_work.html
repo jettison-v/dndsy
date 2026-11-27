@@ -99,7 +99,8 @@
   {% call table_box("queue", "Your order", (q.rows + q.held) | length, "",
                     [("", "dt-w0"), ("Plan", ""), ("Lane", "dt-w2"), ("Stage", "dt-w3"), ("Progress", "num dt-w2"), ("Passed", "num dt-w2"), ("Waits on", "dt-w4"), ("", "dt-w0")],
                     "Nothing being built: a Roadmap item joins when you say its scope looks right, and a Product Area's fixes when they come in.",
-                    attrs=' id="wk-queue-table"' | safe, body_attrs=q_rows, finished=done | length) %}
+                    attrs=' id="wk-queue-table"' | safe, finished=done | length, bodies=true) %}
+    <tbody{{ q_rows }}>
     {% for r in q.rows %}{% if r.kind_key == "i" %}{{ build_row(r) }}{% else %}{{ plan_row(r) }}{% endif %}{% endfor %}
     </tbody>
     <tbody class="wk-held" data-held>
@@ -109,6 +110,7 @@
     <tbody data-done>
       {% if done %}<tr class="dt-group" data-finished-head><td colspan="8">Finished · {{ done | length }}</td></tr>{% endif %}
       {% for d in done %}{{ done_row(d) }}{% endfor %}
+    </tbody>
   {% endcall %}
   <div class="wk-forms">{% for r in q.rows + q.held if r.kind_key == "a" %}{{ plan_forms(r) }}{% endfor %}</div>
 

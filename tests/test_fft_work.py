@@ -116,7 +116,7 @@ def test_a_plans_page_has_its_issues_test_round_and_timeline(db, admin):
     db.flush()
     page = admin.get(f"/manage/work/{battle.id}").text
     assert 'data-facts' in page and 'data-stats' not in page and "Battle" in page and 'class="on" data-tab="overview"' in page
-    row = lambda page, key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)  # noqa: E731
+    row = lambda page, key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)
     issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (closed ones: finished rows, behind Show finished: issue 174)
     assert "data-ls-finished" not in row(issues, f"i{now.id}") and "data-ls-finished" in row(issues, f"i{old.id}")
     assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues and f'/manage/item/i{old.id}?from=plan%3A{battle.id}%3Aclosed' in issues
@@ -282,7 +282,7 @@ def test_done_leaves_feedbacks_list_behind_show_finished(db, admin):
     rules.close(db, "claude", gone, "works", "It works now.")
     db.flush()
     page = admin.get("/manage/feedback?tab=open").text
-    row = lambda key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)  # noqa: E731
+    row = lambda key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)
     assert 'data-tab="closed"' not in page and "data-ls-finished-toggle" in page
     assert "data-ls-finished" in row(f"i{gone.id}") and "data-ls-finished" not in row(f"i{still.id}")
     assert f"/manage/item/i{gone.id}?from=feedback%3Aclosed" in page  # (↑ ↓ from a closed one walk the closed ones)

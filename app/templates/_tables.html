@@ -8,9 +8,10 @@
    after the rest under a Finished group row), gives the Show finished box beside it, its tick remembered per table.
    The table is its own list (the list engine in app.js, `data-ls-table`: rows in the order drawn) unless `own_list`
    is false, where a page's list around it already holds its rows (the search box then feeds that list); `search=false`
-   where the page has its own search box already. #}
+   where the page has its own search box already; `bodies`, where the caller draws its own tbody
+   elements (several, as Your order's and the Roadmap's, each dragged on its own). #}
 {% from "_lists.html" import count_pill, empty_state %}
-{% macro table_box(key, title, n, what="", cols=[], empty="", controls="", attrs="", body_attrs="", search=true, own_list=true, finished=0) -%}
+{% macro table_box(key, title, n, what="", cols=[], empty="", controls="", attrs="", body_attrs="", search=true, own_list=true, finished=0, bodies=false) -%}
 {%- set rows = n or finished %}{% set own = own_list and rows and (search or finished) %}
 <section class="tbx{{ ' is-empty' if not rows }}" data-table="{{ key }}" aria-labelledby="tbx-h-{{ key }}"{% if own %} data-list="tbx-{{ key }}" data-ls-table{% endif %}>
   <header class="tbx-head"><h2 class="tbx-name" id="tbx-h-{{ key }}">{{ title }}{{ count_pill(n) }}</h2>
@@ -19,7 +20,7 @@
       {%- if rows and search %}<span class="ls-search tbx-search"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" placeholder="Search {{ title | lower }}" aria-label="Search {{ title | lower }}" data-ls-search></span>{% endif %}
       {%- if finished %}<label class="check tbx-fin"><input type="checkbox" data-ls-finished-toggle> Show finished{{ count_pill(finished) }}</label>{% endif %}</span>{% endif %}</header>
   {% if rows %}<div class="table-scroll"><table class="dtable fft-table"{{ attrs }}><thead><tr>{% for label, cls in cols %}<th{% if cls %} class="{{ cls }}"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
-    <tbody{{ body_attrs if body_attrs else (' data-ls-rows' if own else '') }}>{{ caller() }}</tbody></table></div>
+    {% if bodies %}{{ caller() }}{% else %}<tbody{{ body_attrs if body_attrs else (' data-ls-rows' if own else '') }}>{{ caller() }}</tbody>{% endif %}</table></div>
     {%- if own %}<div class="tbx-empty" data-ls-none{% if n %} hidden{% endif %}>{{ empty_state(empty or "Nothing open.") }}</div><p class="note tbx-none" data-ls-empty hidden>Nothing matches.</p>{% endif %}
   {% else %}<div class="tbx-empty">{{ empty_state(empty) }}</div>{% endif %}
 </section>

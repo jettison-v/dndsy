@@ -30,8 +30,7 @@
   {# The one table (issue 148): each section its own body for dragging, with its group row; the finished items last #}
   {% call table_box("roadmap", "On the Roadmap", rows | length, "",
                     [("", "dt-w0"), ("No.", "dt-w1"), ("Item", ""), ("Stage", "dt-w3"), ("Size", "dt-w1"), ("Steps", "num dt-w2"), ("Next", "dt-q"), ("Updated", "dt-w2")],
-                    "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.", attrs=' data-roadmap' | safe, body_attrs=' hidden' | safe, finished=finished | length) %}
-    </tbody>
+                    "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.", attrs=' data-roadmap' | safe, finished=finished | length, bodies=true) %}
     {% for key, said, rs in groups if rs %}
     <tbody class="rm-section" data-section="{{ key }}" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tr.rm-row" data-sort-handle=".wk-grip .grip">
       <tr class="dt-group"><td colspan="8">{{ said }} · {{ rs | length }}</td></tr>
@@ -40,6 +39,7 @@
     <tbody data-finished>
       {% if finished %}<tr class="dt-group" data-finished-head><td colspan="8">Finished · {{ finished | length }}</td></tr>{% endif %}
       {% for r in finished %}{{ item_row(r, drag=False, done=True) }}{% endfor %}
+    </tbody>
   {% endcall %}
 </main>
 {% endblock %}
