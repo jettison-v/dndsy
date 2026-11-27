@@ -36,6 +36,8 @@ def _done(o: pictures.Owner, said: str) -> Response:
 
 
 def _shown(db: Session, o: pictures.Owner) -> dict | None:
+    if o.book is not None:
+        return pictures.book_covers(db).get(o.book)
     if o.entity is not None:
         return pictures.urls(db, [o.entity.id]).get(o.entity.id)
     return pictures.creature_urls(db, [o.character.id]).get((o.character.id, o.creature))
@@ -85,6 +87,8 @@ def draw(request: Request, for_: str = Form("", alias="for"), words: str = Form(
     """Describe it: four to pick from, drawn in the campaign's style (app/drawing.py), going by the ticked pictures: a
     relative's (`like`) and entries named with @ (`ref`; feedback 34, 36)."""
     o, user = _owner(db, request, for_)
+    if not o.draws:  # (a book's cover is uploaded only)
+        raise HTTPException(404)
     campaign = db.get(Campaign, o.campaign_id) if o.campaign_id else None
     try:
         kept, look = drawing.draw(db, campaign, words, o.frame, match=bool(match),
@@ -177,6 +181,18 @@ def creature_picture(request: Request, character_id: int, creature: str, size: s
     if not user or ch is None or not (hit_points.can_apply(db, user, ch) or access.role(user.get("email"), ch.campaign_id)):
         return Response(status_code=404)
     pic = db.scalar(select(EntityPicture).where(EntityPicture.character_id == character_id, EntityPicture.creature == creature))
+    if pic is None or not pic.file_key:
+        return Response(status_code=404)
+    return pictures.serve(db, pic, size)
+
+
+@router.get("/manage/books/{key}/cover")
+def book_cover(request: Request, key: str, size: str = "full", db: Session = Depends(get_db)):
+    """A rule book's cover (issue 117): admins only, as Rule books is; nobody else learns one is there."""
+    user = current_user(request)
+    if not user or access.level(user.get("email")) != access.ADMIN:
+        return Response(status_code=404)
+    pic = db.scalar(select(EntityPicture).where(EntityPicture.book == key))
     if pic is None or not pic.file_key:
         return Response(status_code=404)
     return pictures.serve(db, pic, size)

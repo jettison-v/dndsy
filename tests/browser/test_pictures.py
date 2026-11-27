@@ -56,6 +56,7 @@ def test_pictures_of_every_main_page(people, server, browser_db, who):
         band(person, server, browser_db)
     if who == "admin":
         corrections_waiting(person, server, browser_db)
+        book_panel(person, server)
 
 
 def band(person, server, browser_db):
@@ -105,3 +106,22 @@ def corrections_waiting(person, server, browser_db):
         with engine.begin() as conn:
             conn.execute(text("DELETE FROM tool_corrections WHERE id = :i"), {"i": made})
         engine.dispose()
+
+
+def book_panel(person, server):
+    """A rule book's side panel open (issue 117, Brett's picks on docs/mockups/rule-books/): the drawn cover, what askdnd
+    takes from it, where you meet it, its campaigns. A state only a press shows."""
+    page = person.page
+    for width_name, width in WIDTHS.items():
+        page.set_viewport_size({"width": width, "height": 800})
+        answer = page.goto(server["base"] + "/manage/books/mm-2024")
+        if answer is not None and answer.status == 404:
+            return  # (not on this side: the panel is new)
+        person.open("/manage/books")
+        page.locator('tr[data-book-key="mm-2024"]').click()
+        page.locator("[data-book-panel]").wait_for()
+        page.wait_for_load_state("networkidle")
+        page.add_style_tag(content=STILL)
+        page.evaluate(SAME)
+        page.screenshot(path=str(OUT / name("admin", "rule-books-with-a-book-open", width_name)), mask=[page.locator(MASK)], mask_color="#888")
+

@@ -7,7 +7,7 @@
 {% call window(w_kind, w_title, body_class="pw", body_attrs=' data-picture-window') %}
   <div class="tabbar" role="tablist" aria-label="How to add it">
     <button type="button" role="tab" aria-selected="{{ 'false' if start == 'draw' else 'true' }}" data-tab="pw-up">Upload</button>
-    <button type="button" role="tab" aria-selected="{{ 'true' if start == 'draw' else 'false' }}" data-tab="pw-draw">Describe it</button>
+    {% if o.draws %}<button type="button" role="tab" aria-selected="{{ 'true' if start == 'draw' else 'false' }}" data-tab="pw-draw">Describe it</button>{% endif %}{# (not for a book's cover: its publisher's art, issue 117) #}
     {% if o.ddb_art %}<button type="button" role="tab" aria-selected="false" data-tab="pw-ddb">From D&amp;D Beyond</button>{% endif %}
   </div>
 
@@ -24,7 +24,7 @@
     </form>
   </div>
 
-  <div id="pw-draw"{% if start != "draw" %} hidden{% endif %}>
+  {% if o.draws %}<div id="pw-draw"{% if start != "draw" %} hidden{% endif %}>
     {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
     <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" class="pw-form pw-draw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
@@ -49,7 +49,7 @@
     </div>
     <div id="pw-options"></div>
     {% endif %}
-  </div>
+  </div>{% endif %}
 
   {% if o.ddb_art %}<div id="pw-ddb" hidden>
     <form hx-post="/pictures/ddb" hx-swap="none" class="pw-form">

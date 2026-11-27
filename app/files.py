@@ -190,8 +190,9 @@ def check(data: bytes, content_type: str) -> None:
         raise FileError(f"That file is over {limit // (1024 * 1024)} MB.")
 
 
-def key_for(campaign_id: int, data: bytes, content_type: str) -> str:
-    return f"{int(campaign_id)}/{hashlib.sha256(data).hexdigest()}{TYPES[content_type][0]}"
+def key_for(campaign_id: int | None, data: bytes, content_type: str) -> str:
+    """A campaign's files under its id; the tool's own (a rule book's cover, issue 117) under "tool"."""
+    return f"{'tool' if campaign_id is None else int(campaign_id)}/{hashlib.sha256(data).hexdigest()}{TYPES[content_type][0]}"
 
 
 def version(key: str | None) -> str:
@@ -199,7 +200,7 @@ def version(key: str | None) -> str:
     return key.rsplit("/", 1)[-1].split(".", 1)[0][:16] if key else ""
 
 
-def put(db: Session, campaign_id: int, data: bytes, content_type: str) -> str:
+def put(db: Session, campaign_id: int | None, data: bytes, content_type: str) -> str:
     """Store `data` for a campaign and return its key. Storing the same bytes again is harmless.
 
     The row is written (or marked in use again) before the file, so a nightly sweep running at the same moment

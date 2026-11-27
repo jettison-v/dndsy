@@ -40,6 +40,7 @@ FRAMES = {
     "place": ("A wide view of the place at eye level, as a traveller first sees it; no people up close.", "1536x1024", (0.5, 0.5)),
     "faction": ("The group's emblem or banner, centred on a plain background.", "1024x1024", (0.5, 0.5)),
     "scene": ("A wide scene that shows what happens, with room around it.", "1536x1024", (0.5, 0.5)),
+    "cover": ("A book's cover, upright.", "1024x1536", (0.5, 0.4)),  # (a rule book's: uploaded only, issue 117)
 }
 KIND_FRAMES = {"pc": "portrait", "npc": "portrait", "creature": "creature", "item": "item", "place": "place", "faction": "faction",
                "quest": "scene", "other": "scene"}
@@ -79,7 +80,8 @@ def process(raw: bytes, centering: tuple[float, float] = (0.5, 0.35)) -> tuple[b
 
 @dataclass
 class Owner:
-    """What a picture belongs to, as the Picture window names it (`ref`): "entity:<id>" or "creature:<character>:<id>"."""
+    """What a picture belongs to, as the Picture window names it (`ref`): "entity:<id>", "creature:<character>:<id>" or
+    "book:<key>" (a rule book's cover)."""
     ref: str
     campaign_id: int | None
     name: str  # "Pip's picture"
@@ -89,6 +91,8 @@ class Owner:
     character: Character | None = None
     creature: str | None = None  # "familiar", or a creature's D&D Beyond id
     frame: str = "scene"  # what it's a picture of (FRAMES)
+    book: str | None = None  # a rule book's key: its cover (issue 117), uploaded only, never drawn, seen only by admins
+    draws: bool = True  # (Describe it offered: not for a book's cover, which is its publisher's art)
 
     @property
     def framing(self) -> str:
@@ -145,6 +149,13 @@ def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
         what = f"a {k['made'].lower()} {k['kind'].lower()}" if k["made"] else f"a {k['kind'].lower()}"
         return Owner(ref, ch.campaign_id, f"{k['name']}'s picture", f"{k['name']}, {ch.name}'s {k['role']}: {what}",
                      ddb_art=c.get("picture") or "", character=ch, creature=creature_key(c), frame="creature")
+    if kind == "book":  # (a rule book's cover: admins only, as Rule books is; Brett's pick C1, issue 117)
+        from app import books
+
+        b = books.book(rest)
+        if b is None or access.level((user or {}).get("email")) != access.ADMIN:
+            return None
+        return Owner(ref, None, f"{b.title}'s cover", b.title, book=b.key, frame="cover", draws=False)
     return None
 
 
@@ -156,6 +167,8 @@ def creature_key(c: dict) -> str:
 
 
 def find(db: Session, o: Owner) -> EntityPicture | None:
+    if o.book is not None:
+        return db.scalar(select(EntityPicture).where(EntityPicture.book == o.book))
     if o.entity is not None:
         return db.scalar(select(EntityPicture).where(EntityPicture.entity_id == o.entity.id))
     return db.scalar(select(EntityPicture).where(EntityPicture.character_id == o.character.id, EntityPicture.creature == o.creature))
@@ -165,7 +178,7 @@ def _row(db: Session, o: Owner, user: dict) -> EntityPicture:
     pic = find(db, o)
     if pic is None:
         pic = EntityPicture(entity_id=o.entity.id if o.entity is not None else None,
-                            character_id=o.character.id if o.character is not None else None, creature=o.creature)
+                            character_id=o.character.id if o.character is not None else None, creature=o.creature, book=o.book)
         db.add(pic)
     pic.added_by = (user.get("email") or "")[:320]
     return pic
@@ -270,6 +283,11 @@ def creature_urls(db: Session, character_ids) -> dict[tuple[int, str], dict]:
         return {}
     return {(p.character_id, p.creature): _urls(p, f"/characters/{p.character_id}/creatures/{p.creature}/picture")
             for p in db.scalars(select(EntityPicture).where(EntityPicture.character_id.in_(ids)))}
+
+
+def book_covers(db: Session) -> dict[str, dict]:
+    """{book key: {"thumb", "full", …}} for the rule books with a cover (Rule books, admins only: their address is too)."""
+    return {p.book: _urls(p, f"/manage/books/{p.book}/cover") for p in db.scalars(select(EntityPicture).where(EntityPicture.book.is_not(None)))}
 
 
 def ddb_full(url: str) -> str:
