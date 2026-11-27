@@ -459,7 +459,7 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
          background: var(--surface-3); color: var(--text); font-size: .8em; font-weight: 600; line-height: 1; letter-spacing: 0;
          font-variant-numeric: tabular-nums; text-transform: none; vertical-align: .08em; white-space: nowrap; }
 a .count, h3.divider .count { background: color-mix(in srgb, currentColor 16%, transparent); color: inherit; }
-.tabbar [aria-selected=true] .count { background: var(--blue-soft); color: var(--text-strong); }
+.tabbar :is([aria-selected=true], a[aria-current]) .count { background: var(--blue-soft); color: var(--text-strong); }
 .muted { color: var(--muted); }
 .note { color: var(--muted); font-size: var(--fs-sm); }
 
@@ -2367,7 +2367,9 @@ body:has(.peek.open:not(.modal) .peek-foot) .cards { bottom: calc(14px + env(saf
 /* Above a round's card where both are at the foot of the screen (bottom right; on a phone either bottom corner, as well as
    above Table rolls): --cc-h is the card's height (app.js); a card nearly as tall as the screen lets them sit over its top
    (issue 28) */
-@media (min-width: 901px) { body:has(.check-card[data-corner="br"]) .cards { bottom: min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)); } }
+@media (min-width: 901px) { body:has(.check-card[data-corner="br"]) .cards { bottom: min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)); }
+  /* (both at once, a round's card and a side panel with a foot: above whichever is higher; the review of #549) */
+  body:has(.check-card[data-corner="br"]):has(.peek.open:not(.modal) .peek-foot) .cards { bottom: max(min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)), calc(14px + env(safe-area-inset-bottom, 0px) + 2 * 14px + var(--control-h) + 1px)); } }
 .card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: var(--lift); animation: card-in .18s ease-out; }
 .card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
