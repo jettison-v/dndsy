@@ -45,6 +45,7 @@ def test_claude_takes_the_top_of_ready_and_only_one_piece_at_a_time(api, db):
     shouldn't"): askdnd hands over the top, records it, and gives the same one back until it's released."""
     first = _issue(db, "Back clears what you typed")
     _issue(db, "The corner card stays over the panel", feature="hp")
+    rules.report_usage(db, "claude", OWNER, 10, 20)  # (a fresh reading under Brett's limits: new work may start, item 34)
     got = api.post("/api/fft/claim", headers={"X-Fft-Key": CLAUDE}, json={}).json()
     assert got["area"] == first.area_id and not got["already"]
     assert db.get(FftArea, first.area_id).lock_owner == OWNER

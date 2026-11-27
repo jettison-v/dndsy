@@ -43,6 +43,7 @@ from app.fft.models import (
     FftStep,
     FftTry,
     FftTryIssue,
+    FftUsageReading,
 )
 
 KINDS = ("problem", "idea", "question")
@@ -1025,6 +1026,9 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     item.scope_asked_at = None  # (done: a Scope it press doesn't come back with it)
     if result is not None and result.strip():
         item.result = result.strip()[:4000]
+    if not not_doing and (share := usage_shares(db).get(item.id)) and "of a week" not in (item.result or ""):
+        item.result = ((item.result or "").rstrip() + f"\nIt used about {share:.0f}% of a week of Claude's plan.").strip()[:4000]
+        # (each item's share, so the next one's estimate is better: Roadmap item 34)
     _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)
     # Its ideas follow it, so each idea's sender reads it on Notes you sent (R10's slice 5): built, or not to be built
     # after all, in words written for them (never the item's result, which is Brett's and Claude's)
@@ -3026,3 +3030,148 @@ def set_review(db: Session, actor: str, key: str, cadence: str | None = None, sc
     _event(db, actor, "review_set", "reviewset", row.id, review=key, cadence=row.cadence, scheduled=row.scheduled)
     return row
 
+
+
+# ------------------------------------------------------------------ Usage Limit Awareness (Roadmap item 34)
+# Claude reads its own plan usage (the 5-hour window, the week, extra usage: the usage card) before each piece of work
+# and each pull request and reports it here; askdnd says go, wait or stop against the limits Brett sets. Over one, a
+# new claim is refused (api.py `claim`), so Claude finishes or parks what's in hand and asks him in For you.
+
+USAGE_LIMITS = "fft_usage_limits"  # (a ToolSetting: Brett's limits, with who set them and when)
+USAGE_DEFAULTS = {"week": 85, "keep": 15, "game_day": None, "extra": 0.0, "window": "pause"}  # (scope v1's suggestions)
+USAGE_FRESH = timedelta(minutes=30)  # (a reading older than this doesn't let new work start)
+WINDOW_NEAR = 90  # (the 5-hour window at or past this is nearly full)
+DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+
+def usage_limits(db: Session) -> dict:
+    """Brett's limits: stop at `week` % of the week; keep `keep` % of it until game night (`game_day`, 0 Monday …;
+    None: the usual night from the table's sessions); extra usage up to `extra` dollars (0: never); when the 5-hour window
+    is nearly full, `window` "pause" (wait for it to reset, then go on) or "stop" (wait for him)."""
+    from app.fft.host import ToolSetting, game_weekday
+
+    row = db.get(ToolSetting, USAGE_LIMITS)
+    try:
+        got = json.loads(row.value) if row is not None and row.value else {}
+    except ValueError:
+        got = {}
+    out = USAGE_DEFAULTS | {k: v for k, v in got.items() if k in USAGE_DEFAULTS or k in ("by", "at")}
+    out["game_day_said"] = out["game_day"] is not None
+    if out["game_day"] is None:
+        out["game_day"] = game_weekday(db)
+    return out
+
+
+def set_usage_limits(db: Session, actor: str, week: int, keep: int, game_day: int | None, extra: float, window: str) -> dict:
+    """Brett sets the limits (Development's or For you's status bar, the Usage menu). Checked, kept, an event."""
+    from app.fft.host import ToolSetting
+
+    if not 1 <= week <= 100 or not 0 <= keep <= 50:
+        raise RuleError("bad", "Stop at 1 to 100% of the week, and keep 0 to 50% for game night.")
+    if game_day is not None and not 0 <= game_day <= 6:
+        raise RuleError("bad", "Game night is a day of the week.")
+    if not 0 <= extra <= 1000:
+        raise RuleError("bad", "Extra usage is 0 (never) to $1,000.")
+    if window not in ("pause", "stop"):
+        raise RuleError("bad", "Pause or stop.")
+    value = {"week": week, "keep": keep, "game_day": game_day, "extra": round(float(extra), 2), "window": window,
+             "by": actor[:80], "at": now().isoformat()}
+    row = db.get(ToolSetting, USAGE_LIMITS) or ToolSetting(key=USAGE_LIMITS)
+    row.value = json.dumps(value)
+    db.merge(row)
+    _event(db, actor, "usage_limits", "tool", 0, **{k: value[k] for k in USAGE_DEFAULTS})
+    return value
+
+
+def _game_ahead(limits: dict, week_resets_at: datetime | None, at: datetime) -> str:
+    """The game night still ahead before the week resets (its day's name), or "" (none set, or already played)."""
+    from app import config
+
+    day = limits.get("game_day")
+    if day is None or not limits.get("keep"):
+        return ""
+    today = at.astimezone(config.TABLE_TIME).date()
+    game = today + timedelta(days=(day - today.weekday()) % 7)
+    ends = (week_resets_at or at + timedelta(days=7)).astimezone(config.TABLE_TIME).date()
+    return DAYS[day] if game < ends else ""
+
+
+def usage_verdict(limits: dict, five_hour: int, week: int, extra_spent: float, five_resets_at: datetime | None,
+                  week_resets_at: datetime | None, at: datetime | None = None) -> tuple[str, str, int]:
+    """(go, wait or stop; why, in Brett's words; the week's limit now). Stop: the week at its limit (lower until game
+    night, by what's kept for it), or extra usage past what he allows. Wait: the 5-hour window nearly full and his
+    choice is to pause (stop, if he chose that)."""
+    at = at or now()
+    cap, game = limits["week"], _game_ahead(limits, week_resets_at, at)
+    if game:
+        cap = min(cap, 100 - limits["keep"])
+    kept = f" ({limits['keep']}% kept for game night, {game})" if game and cap < limits["week"] else ""
+    if extra_spent > limits["extra"] + 0.005:
+        allowed = "none allowed" if not limits["extra"] else f"your limit ${limits['extra']:.2f}"
+        return "stop", f"Extra usage is at ${extra_spent:.2f}: {allowed}.", cap
+    if week >= cap:
+        return "stop", f"The week is at {week}%: your limit is {cap}%{kept}.", cap
+    if five_hour >= WINDOW_NEAR:
+        from app import config
+
+        resets = f", resetting at {five_resets_at.astimezone(config.TABLE_TIME):%-I:%M %p}" if five_resets_at else ""  # (the table's time)
+        if limits["window"] == "pause":
+            return "wait", f"The 5-hour window is at {five_hour}%{resets}: paused until it resets.", cap
+        return "stop", f"The 5-hour window is at {five_hour}%{resets}: stopped until you say go on.", cap
+    return "go", f"{cap - week}% of the week left before your limit{kept}.", cap
+
+
+def report_usage(db: Session, actor: str, owner: str, five_hour: int, week: int, extra_spent: float = 0.0, extra_limit: float | None = None,
+                 five_resets_at: datetime | None = None, week_resets_at: datetime | None = None) -> FftUsageReading:
+    """Claude's reading, kept with the claim it holds now (what the use since the last reading went to) and askdnd's
+    verdict. A verdict that changes from the last reading's is an event (Brett hears of a stop, not every reading)."""
+    if not (0 <= five_hour <= 100 and 0 <= week <= 100 and extra_spent >= 0):
+        raise RuleError("bad", "Percentages are 0 to 100, extra usage $0 or more.")
+    verdict, why, _ = usage_verdict(usage_limits(db), five_hour, week, extra_spent, five_resets_at, week_resets_at)
+    held = db.scalar(select(FftArea).where(FftArea.lock_owner == owner[:60], FftArea.lock_until > now()))
+    last = db.scalar(select(FftUsageReading).order_by(FftUsageReading.id.desc()).limit(1))
+    r = FftUsageReading(five_hour=five_hour, week=week, extra_spent=round(extra_spent, 2), extra_limit=extra_limit,
+                        five_resets_at=five_resets_at, week_resets_at=week_resets_at, owner=owner[:60],
+                        area_id=held.id if held else None, item_id=held.item_id if held else None, verdict=verdict, why=why[:300])
+    db.add(r)
+    db.flush()
+    if last is None or last.verdict != verdict:
+        _event(db, actor, f"usage_{verdict}", "tool", 0, area_id=r.area_id, why=r.why, week=week, five_hour=five_hour)
+    return r
+
+
+def last_usage(db: Session) -> FftUsageReading | None:
+    return db.scalar(select(FftUsageReading).order_by(FftUsageReading.id.desc()).limit(1))
+
+
+def usage_lets_start(db: Session) -> tuple[bool, str]:
+    """Whether new work may start: a reading in the last 30 minutes, and its verdict go (a wait that has reset is go)."""
+    r = last_usage(db)
+    if r is None or now() - r.created_at > USAGE_FRESH:
+        return False, "Read your usage first (the usage card), then feedback.py usage report: no work starts on an old reading."
+    if r.verdict == "wait" and r.five_resets_at and now() >= r.five_resets_at:
+        return False, "The 5-hour window has reset since the last reading: read your usage again."
+    if r.verdict != "go":
+        return False, r.why
+    return True, r.why
+
+
+def usage_shares(db: Session) -> dict[int, float]:
+    """Each Roadmap item's share of a week so far, in %: between two readings the week rose by so much (or reset and
+    reached the newer reading's), and that went to the item claimed at the first of them."""
+    out: dict[int, float] = {}
+    prev = None
+    for r in db.scalars(select(FftUsageReading).order_by(FftUsageReading.id)):
+        if prev is not None and prev.item_id is not None:
+            reset = prev.week_resets_at is not None and r.created_at >= prev.week_resets_at
+            out[prev.item_id] = out.get(prev.item_id, 0.0) + (r.week if reset or r.week < prev.week else r.week - prev.week)
+        prev = r
+    return out
+
+
+def usage_estimate(db: Session, size: str) -> tuple[float, int] | None:
+    """(the average share of a week a shipped item of this size took, how many it's from), or None before any."""
+    shares = usage_shares(db)
+    took = [shares[it.id] for it in db.scalars(select(FftItem).where(FftItem.section == "shipped", FftItem.size == size))
+            if it.id in shares]
+    return (sum(took) / len(took), len(took)) if took else None

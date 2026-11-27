@@ -364,6 +364,13 @@ def event_words(ev) -> str:
         if ev.kind == "review_set":
             return f"{title}: {reviews.CADENCE_WORDS.get(d.get('cadence') or '', 'its catalog cadence')}, schedule {'on' if d.get('scheduled') else 'off'}"
         return f"{title} (run {ev.thing_id}): {reviews.STATE_WORDS.get(d.get('to', ''), d.get('to', ''))}"
+    if ev.kind == "usage_limits":  # (Roadmap item 34: Brett set Claude's usage limits)
+        days = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        night = days[d["game_day"]] if isinstance(d.get("game_day"), int) and 0 <= d["game_day"] <= 6 else "the usual night"
+        return (f"Brett set your usage limits: stop at {d.get('week')}% of the week, {d.get('keep')}% kept for game night ({night}),"
+                f" extra usage up to ${float(d.get('extra') or 0):.2f}, the 5-hour window nearly full: {d.get('window')}")
+    if ev.kind in ("usage_go", "usage_wait", "usage_stop"):
+        return {"usage_go": "Usage: go on", "usage_wait": "Usage: paused for the 5-hour window", "usage_stop": "Usage: stopped"}[ev.kind] + f" ({d.get('why', '')})"
     if ev.kind == "note_sent":
         return "A note from a player waits for Brett's approval" if d.get("role") != "admin" or d.get("staging") else f"Brett sent a note ({d.get('note_kind')})"
     if ev.kind == "line_added" and not d.get("approved", True):

@@ -74,7 +74,7 @@
    {"key": "send", "title": "Sending a note", "map": []},
    {"key": "feedback", "title": "Feedback", "map": ["Found, Fixed, Tried"]},
    {"key": "testing", "title": "Testing", "map": []},
-   {"key": "stands", "title": "Where it stands", "map": ["Handoffs"]},
+   {"key": "stands", "title": "Where it stands", "map": ["Handoffs", "Usage Limit Awareness"]},
    {"key": "roadmap", "title": "The Roadmap", "map": []}, {"key": "reviews", "title": "Reviews", "map": ["Reviews"]}
   ]},
   {"key": "behind", "title": "Behind the scenes", "what": "What no one sees until it breaks", "features": [

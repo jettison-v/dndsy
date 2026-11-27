@@ -4774,6 +4774,20 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-deploys-pill .k, .fft-deploys-pill .fft-until { color: var(--muted); font-weight: 600; }
 .fft-deploys-pill[data-tone="available"] { box-shadow: inset 0 0 0 1px var(--green); }
 .fft-deploys-pill[data-tone="frozen"] { box-shadow: inset 0 0 0 1px var(--amber); }
+/* Usage (Roadmap item 34): beside Deploys, the same pill; amber near the limit or paused for the 5-hour window, red once
+   stopped, muted when the last reading is old. Its menu says how things stand, then the limits form. */
+.fft-status-pills { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: var(--sp-2); }  /* (Usage and Deploys together at the bar's right end) */
+.fft-status-pills > .fft-deploys { margin-left: 0; }
+.fft-deploys-pill[data-tone="usage-near"], .fft-deploys-pill[data-tone="usage-wait"] { box-shadow: inset 0 0 0 1px var(--amber); }
+.fft-deploys-pill[data-tone="usage-over"] { box-shadow: inset 0 0 0 1px var(--red); }
+.fft-deploys-pill[data-tone="usage-old"] { color: var(--muted); }
+.fft-usage-menu { padding: var(--sp-3); gap: var(--sp-2); }
+.fft-usage-menu > p { margin: 0; }
+.fft-usage-now { color: var(--text-strong); font-weight: 600; }
+.fft-usage-form { display: grid; gap: var(--sp-2); margin: var(--sp-1) 0 0; padding-top: var(--sp-2); border-top: 1px solid var(--line); }
+.fft-usage-form input[type=number] { width: 6rem; }
+.fft-usage-form fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fft-usage-form legend { padding: 0; margin-bottom: 4px; }
 .fft-deploys-menu { width: 340px; max-width: calc(100vw - 2 * var(--sp-4)); gap: 2px; }
 .fft-deploys-menu > form { margin: 0; display: grid; }
 .fft-deploys-menu button[data-mode-pick] { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 0 var(--sp-2); }
@@ -4796,7 +4810,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-status[data-mode="available"] { border-color: var(--green); background: var(--green-soft); }
 .fft-status[data-mode="frozen"] { border-color: var(--amber); background: var(--amber-soft); }
 .fft-status ~ :is(.reader, .empty-state, .tabbar, .fft-missed, .fft-foryou-sum) { margin-top: var(--sp-4); }  /* (room between the bar and what follows it: For you's list, Development's tabs; issue 48) */
-@media (max-width: 640px) { .fft-status-top { flex-wrap: wrap; row-gap: var(--sp-2); } .fft-deploys { margin-left: 0; max-width: 100%; } .fft-deploys-pill { white-space: normal; } }  /* (a phone: listening on its line, Deploys whole under it, never over it; its words may wrap, never cut) */
+@media (max-width: 640px) { .fft-status-top { flex-wrap: wrap; row-gap: var(--sp-2); } .fft-status-pills { margin-left: 0; max-width: 100%; flex-wrap: wrap; row-gap: var(--sp-2); } .fft-deploys { margin-left: 0; max-width: 100%; } .fft-deploys-pill { white-space: normal; } }  /* (a phone: listening on its line, Deploys whole under it, never over it; its words may wrap, never cut) */
 .fft-local-kick { color: var(--green); }
 .fft-local-list { margin: 0 0 var(--sp-2); padding-left: 1.2em; display: grid; gap: var(--sp-1); }
 /* Backstage › Global › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
