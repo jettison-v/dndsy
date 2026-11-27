@@ -12,7 +12,7 @@
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
-{% from "_admin_bits.html" import state_word, state_line, timeline, more_menu, rd_section, kind_word, needs_line %}
+{% from "_admin_bits.html" import state_word, lane_tag, state_line, timeline, more_menu, rd_section, kind_word, needs_line %}
 {% block title %}Design system · Backstage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -107,13 +107,13 @@
     </div></div>
     {{ ds("Choice tiles", ".choice-tiles > button.choice-tile (its line a .note)", "A few choices to make before going on, each with what it means for you (Change spells asks why you're changing first). For a choice that changes a page already showing, the switch below.") }}
     <div class="choice-tiles"><button type="button" class="choice-tile"><b>After a Long Rest</b><span class="note">Paladin prepared spells: one</span></button><button type="button" class="choice-tile"><b>I gained a Sorcerer level</b><span class="note">Sorcerer cantrips: one · Sorcerer prepared spells: one</span></button><button type="button" class="choice-tile"><b>Just looking</b><span class="note">See the lists; nothing is marked Now.</span></button></div>
-    {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is a blue rounded piece inside its track, like a chip that's on (red is for the one main action; the UI pass, 2026-11-02).") }}
+    {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is a blue rounded piece inside its track, like a chip that's on (red is for the one main action; the UI pass, 2026-11-02). A character's Battle · Sheet · Plan (.modes) is chosen the same blue (Brett's pick T1 A, issue 175: it was red, and read like a button).") }}
     <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
     {{ ds("Switch", "_settings.html switch(action, on, label) · set_row(title, note) · .switch · .set-row · choice()", "A setting that takes effect now: its name and one line on the left, the switch at the row's right, green when on. It saves itself the moment it's flipped, with a corner card, and goes back with an amber one if it couldn't; dimmed when it isn't yours, its line saying who changes it. A choice of two or three that takes effect now is the two-way switch (choice), saving on press. A choice inside a form you're filling in stays a checkbox.") }}
     <div class="ds-sample" style="max-width: 560px">{% call set_row("Labs: try what's still being built", "On: switch each feature below on or off for this table.") %}{{ switch("#", true, "Labs on here (sample)") }}{% endcall %}
       {% call set_row("This campaign holds test data", "Only admins change this.") %}{{ switch("#", false, "Test campaign (sample)", disabled=true) }}{% endcall %}
       {% call set_row("What Party's Trophies counts") %}{{ choice("#", "counts", [("sessions", "During sessions", ""), ("all", "Every roll", "")], "sessions", "Sample choice") }}{% endcall %}</div>
-    {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02).") }}
+    {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02). A part that's its own address (Development's Board, Feedback's Issues) is the same bar with links: nav.tabbar > a[aria-current] (issue 144: the second tab style, .sub-tabs, went).") }}
     <div class="ds-narrow"><div class="tabbar cut-r" role="tablist" aria-label="Sample tabs"><button type="button" role="tab" aria-selected="false">Combos <span class="count">4</span></button><button type="button" role="tab" aria-selected="true">Leveling <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Quests <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Notes <span class="count">2</span></button><button type="button" role="tab" aria-selected="false">Reminders <span class="count">3</span></button></div></div>
   </section>
 
@@ -164,7 +164,7 @@
     {{ ds("Waiting count", ".mcount", "How many things wait for you, red, beside Needs you and Inbox in the Manage menu and on Manage pages. Asked for when the menu opens (/manage/counts), so no page waits for it; hidden at zero.") }}
     <div class="ds-row"><span>Needs you <span class="mcount">3</span></span><span>Inbox <span class="mcount">5</span></span></div>
     {{ ds("A plan's lane", ".state-word.lane-tag[data-lane-tag]", "How much of Brett's testing a plan needs (the work flow, Nov 19), the same pill as whose turn it is: Ship green, Look blue, Careful red; outlined \"Lane\" until one is set. On Development it opens the lane's own menu.") }}
-    <div class="ds-row"><span class="state-word lane-tag" data-lane-tag="ship">Ship</span><span class="state-word lane-tag" data-lane-tag="look">Look</span><span class="state-word lane-tag" data-lane-tag="careful">Careful</span><span class="state-word lane-tag" data-lane-tag="none">Lane ▾</span></div>
+    <div class="ds-row">{{ lane_tag("ship", "Ship") }}{{ lane_tag("look", "Look") }}{{ lane_tag("careful", "Careful") }}{{ lane_tag("", "Lane ▾") }}</div>
     {{ ds("A pill with a menu", "details.act-more > summary .state-word + .act-menu(.end) · _fft_status.html", "A setting whose current choice is a pill and whose choices open under it, each with one line saying what it does, so no separate Help is needed (Deploys in the status bar on For you and Development, Brett's pick A, issue 42; the lane menu is the same pieces). At a row's right end the menu opens toward the page (.act-menu.end). The pill never shortens; words beside it do first.") }}
     <div class="ds-row"><details class="act-more fft-deploys" style="margin-left:0"><summary aria-label="Deploys: When tests pass (sample)"><span class="state-word fft-deploys-pill" data-tone="independent"><span class="k">Deploys:</span> When tests pass ▾</span></summary>
       <div class="act-menu fft-deploys-menu" role="group" aria-label="Deploys (sample)"><button type="button" data-mode-pick="sample" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="pick">After my local try</span><small>Visible changes wait for your try on your Mac.</small></button><button type="button" data-mode-pick="sample" aria-pressed="true"><span class="ck" aria-hidden="true">✓</span><span class="pick">When tests pass</span><small>The default. Visible changes go live once their tests pass.</small></button></div></details></div>
@@ -448,8 +448,8 @@
     {% set demo_ctl %}<button class="btn primary small" type="button">▶ Start round</button>{% endset %}
     <div class="tbx-stack" id="titled-table">
     {% call table_box("demo-try", "Try", 2, "about 4 min · you use askdnd and mark what you saw", [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w2")], controls=demo_ctl) %}
-      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
-      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
+      <tr><td>{{ state_word("Try", "ask") }}</td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
+      <tr><td>{{ state_word("Try", "ask") }}</td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
     {% endcall %}
     {% call table_box("demo-decide", "Decide", 0, "one read and one press each", [], "Nothing to decide.") %}{% endcall %}
     </div>

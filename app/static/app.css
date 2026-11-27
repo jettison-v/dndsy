@@ -459,7 +459,7 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
          background: var(--surface-3); color: var(--text); font-size: .8em; font-weight: 600; line-height: 1; letter-spacing: 0;
          font-variant-numeric: tabular-nums; text-transform: none; vertical-align: .08em; white-space: nowrap; }
 a .count, h3.divider .count { background: color-mix(in srgb, currentColor 16%, transparent); color: inherit; }
-.tabbar [aria-selected=true] .count { background: var(--blue-soft); color: var(--text-strong); }
+.tabbar :is([aria-selected=true], a[aria-current]) .count { background: var(--blue-soft); color: var(--text-strong); }
 .muted { color: var(--muted); }
 .note { color: var(--muted); font-size: var(--fs-sm); }
 
@@ -550,6 +550,11 @@ input[type=file]::file-selector-button { min-height: var(--control-h); margin-ri
 .fld.has-error .fld-help { display: none; }
 .fld.has-error .fld-box :is(input, select, textarea) { border-color: var(--red); }
 @media (max-width: 640px) { .fld { grid-template-columns: minmax(0, 1fr); } .fld-name { padding-top: 0; } .fld-box, .fld-help, .fld-err { grid-column: 1; } }
+/* In a side panel the name column is narrower, so the box keeps its room, and a narrow panel puts the name above, as a
+   phone does (issue 147: a 160px name column left the box 200-260px at laptop width) */
+.peek:not(.modal) { container: panel / inline-size; }
+.peek:not(.modal) .fld { --fld-name-w: 112px; }
+@container panel (max-width: 460px) { .fld { grid-template-columns: minmax(0, 1fr); } .fld-name { padding-top: 0; } .fld-box, .fld-help, .fld-err { grid-column: 1; } }
 /* The one window (_window.html; Roadmap item 47, Brett's pick W1 A): as tall as what's in it, up to the screen, its foot
    at the bottom edge while the body scrolls */
 .peek.modal.large:has(> [data-window-fit]) { height: auto; }
@@ -1093,10 +1098,12 @@ details.feat > summary:hover { color: var(--text-strong); }
 .tabbar.cut-r { mask-image: linear-gradient(to right, var(--bg) calc(100% - 36px), transparent); }
 .tabbar.cut-l { mask-image: linear-gradient(to left, var(--bg) calc(100% - 36px), transparent); }
 .tabbar.cut-l.cut-r { mask-image: linear-gradient(to right, transparent, var(--bg) 36px, var(--bg) calc(100% - 36px), transparent); }
-.tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
-.tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
+.tabbar button, .tabbar > a { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
+.tabbar > a { display: inline-flex; align-items: center; text-decoration: none; }  /* (a tab that's its own address: the same tab, issue 144) */
+.tabbar > a:hover { color: var(--text); }
+.tabbar button[aria-selected=true], .tabbar > a[aria-current] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
 /* A focused tab's ring inside it: the bar scrolls sideways (phones), so a ring outside is cut to a stray red bar between tabs (Brett, Nov 10: seen on every tab bar when a key was pressed, a screenshot's shortcut included) */
-.tabbar button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--r-sm); }
+.tabbar button:focus-visible, .tabbar > a:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--r-sm); }
 details.opt { border-top: 1px solid var(--line); }
 details.opt > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
 details.opt > summary::-webkit-details-marker { display: none; }
@@ -1897,9 +1904,7 @@ button.rm-box { cursor: pointer; }
 .ov-section { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-4); }
 .ov-section-h { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
-.sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); overflow-x: auto; scrollbar-width: none; }  /* (narrower than its tabs, it scrolls as the tab bar does) */
-.sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; white-space: nowrap; }  /* (one line always: the UI review, Nov 16) */
-.sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
+/* (.sub-tabs went: one tab bar, its links as its buttons, issue 144) */
 
 /* Player notes (Plan, Battle combos, and the note form) */
 .note-mech { margin: 4px 0 8px; }
@@ -2354,15 +2359,18 @@ body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 5; left: 0; top:
 .ds-total { font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); line-height: 1.1; }
 .ds-total.nat20 { color: var(--green); } .ds-total.nat1 { color: var(--red); }
 /* Corner cards (app.js "corner cards"; Brett, 2026-10-29, docs/mockups/temporary-items.html): everything you read and
-   dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Beside an open side
-   panel, not under it; on phones one at a time above the bottom bar, or above the Table rolls sheet. */
+   dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Over an open side
+   panel, still in the bottom right corner, just above the panel's foot (Brett's answer on issue 66: pushed left by a
+   fixed 494px they landed mid-page, across a wider panel's edge); on phones one at a time above the bottom bar, or
+   above the Table rolls sheet. */
 .cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(400px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
-body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
+body:has(.peek.open:not(.modal) .peek-foot) .cards { bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 2 * 14px + var(--control-h) + 1px); }  /* (the foot: its padding, a button, its line) */
 /* Above a round's card where both are at the foot of the screen (bottom right; on a phone either bottom corner, as well as
    above Table rolls): --cc-h is the card's height (app.js); a card nearly as tall as the screen lets them sit over its top
    (issue 28) */
-@media (min-width: 901px) { body:has(.check-card[data-corner="br"]) .cards { bottom: min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)); } }
-@media (min-width: 1100px) { body:has(.peek.open:not(.modal)) .cards { right: 494px; } }
+@media (min-width: 901px) { body:has(.check-card[data-corner="br"]) .cards { bottom: min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)); }
+  /* (both at once, a round's card and a side panel with a foot: above whichever is higher; the review of #549) */
+  body:has(.check-card[data-corner="br"]):has(.peek.open:not(.modal) .peek-foot) .cards { bottom: max(min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)), calc(14px + env(safe-area-inset-bottom, 0px) + 2 * 14px + var(--control-h) + 1px)); } }
 .card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: var(--lift); animation: card-in .18s ease-out; }
 .card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
@@ -2438,7 +2446,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 /* Backstage › Dice tuning (manage_dice.html; docs/mockups/dice-tuning.html): sliders on the left, a preview that throws on the right */
 .tn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: var(--sp-5); align-items: start; margin-bottom: var(--sp-5); }
 .section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; container: tuner / inline-size; }
-.tn-controls .sub-tabs { margin-bottom: var(--sp-2); }
+.tn-controls .tabbar { margin-bottom: var(--sp-2); }
 .tn-why { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
 .tn-group h3 { margin: var(--sp-4) 0 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
 .tn-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 2px var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line-soft); align-items: center; }
@@ -2580,7 +2588,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .modes { display: inline-flex; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 3px; gap: 2px; }
 .modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: var(--r-md); font-weight: 500; white-space: nowrap; }  /* (feedback 20: "Battl/e" in a tight header) */
 .modes a:hover { color: var(--text); }
-.modes a[aria-current=page] { background: var(--red); color: var(--text-strong); font-weight: 600; }
+.modes a[aria-current=page] { background: var(--selected-bg); color: var(--text-strong); font-weight: 600; box-shadow: inset 0 0 0 1px var(--blue); }  /* (the chosen one blue, as every chosen control; red is the main action: Brett's pick T1 A, issue 175) */
 .forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Reminders */
 .forget-tab .sec-head { justify-content: flex-end; }
 .econ-tabs { display: none; }
@@ -4496,7 +4504,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ws-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
 .ws-tile { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
 .ws-tile .row { margin-top: var(--sp-2); }
-.ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }
 
 /* A spell's Material component (app/components.py; Brett chose A and B, Nov 13): lacking (amber), unsure (muted), used
    up when cast (green); in a spell's row and said in the Cast window */
@@ -4787,7 +4794,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-flight-row { display: grid; gap: 2px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
 .fft-status[data-mode="available"] { border-color: var(--green); background: var(--green-soft); }
 .fft-status[data-mode="frozen"] { border-color: var(--amber); background: var(--amber-soft); }
-.fft-status ~ :is(.reader, .empty-state, .sub-tabs, .fft-missed, .fft-foryou-sum) { margin-top: var(--sp-4); }  /* (room between the bar and what follows it: For you's list, Development's tabs; issue 48) */
+.fft-status ~ :is(.reader, .empty-state, .tabbar, .fft-missed, .fft-foryou-sum) { margin-top: var(--sp-4); }  /* (room between the bar and what follows it: For you's list, Development's tabs; issue 48) */
 @media (max-width: 640px) { .fft-status-top { flex-wrap: wrap; row-gap: var(--sp-2); } .fft-deploys { margin-left: 0; max-width: 100%; } .fft-deploys-pill { white-space: normal; } }  /* (a phone: listening on its line, Deploys whole under it, never over it; its words may wrap, never cut) */
 .fft-local-kick { color: var(--green); }
 .fft-local-list { margin: 0 0 var(--sp-2); padding-left: 1.2em; display: grid; gap: var(--sp-1); }

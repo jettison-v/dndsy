@@ -440,3 +440,22 @@ def test_the_bars_rows_keep_its_spacing_with_a_round_and_claudes_hands(people, s
         return rows.slice(1).map((r, i) => Math.round(r.getBoundingClientRect().top - rows[i].getBoundingClientRect().bottom)); }""")
     assert gaps and all(g == 0 for g in gaps), gaps
     assert not admin.errors, admin.errors
+
+
+def test_a_corner_card_stays_in_the_corner_over_the_side_panel_above_its_foot(people, server, browser_db):
+    """Issue 66 (Brett: "The side panel pushes over the notifications"): pushed left by a fixed 494px, a card landed mid-
+    page across a wider panel's edge. His answer: bottom right, over the panel, just above its foot."""
+    nid = _waiting_note(browser_db[0], "The rest button does nothing.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
+    panel = _item(page, f"n{nid}")
+    page.evaluate("askdndToast('Saved')")
+    page.locator("#cards > .card.k-ok").wait_for()
+    card = page.locator("#cards > .card.k-ok").last.bounding_box()
+    wide, high = page.evaluate("[document.documentElement.clientWidth, innerHeight]")
+    assert card["x"] + card["width"] > wide - 30  # (in the corner, not pushed beside the panel)
+    if panel.locator(".peek-foot").count():
+        assert card["y"] + card["height"] <= panel.locator(".peek-foot").first.bounding_box()["y"] + 1  # (above its foot)
+    else:
+        assert card["y"] + card["height"] > high - 40  # (no foot: the corner itself)
+    assert not admin.errors, admin.errors
