@@ -24,7 +24,7 @@
     </form>
   </div>
 
-  <div id="pw-draw"{% if start != "draw" %} hidden{% endif %}>
+  {% if o.draws %}<div id="pw-draw"{% if start != "draw" %} hidden{% endif %}>
     {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
     <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" class="pw-form pw-draw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
@@ -49,7 +49,7 @@
     </div>
     <div id="pw-options"></div>
     {% endif %}
-  </div>
+  </div>{% endif %}
 
   {% if o.ddb_art %}<div id="pw-ddb" hidden>
     <form hx-post="/pictures/ddb" hx-swap="none" class="pw-form">
