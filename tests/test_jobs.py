@@ -94,16 +94,38 @@ def test_asked_again_while_it_runs_a_draft_runs_the_newer_request_after_it(db, k
     assert same == job_id and not new
     assert jobs.finish(db, job_id, got["attempts"], {"ok": True})
     row = _row(db, job_id)
-    assert row.state == "queued" and row.payload == {"session": 1, "update": True} and row.rerun is None and row.attempts == 0
+    assert row.state == "queued" and row.payload == {"session": 1, "update": True} and row.rerun is None
+    assert row.attempts == 1 and row.max_attempts == 3 and row.started_at is None  # (its tries afresh, its number still rising)
+    second = jobs.claim(db, "lane", "w2")
+    assert second["attempts"] == 2 and not jobs.finish(db, job_id, got["attempts"], {"old": True})  # (the first try fenced out)
     waiting, _ = jobs.enqueue(db, "test_a", {"v": 1}, "read:1")
     jobs.enqueue(db, "test_a", {"v": 2}, "read:1")
-    assert _row(db, waiting).payload == {"v": 2}  # (waiting: the newer request's)
+    jobs.enqueue(db, "test_a", {"v": 3}, "read:1", label="Asked again", by="DM")
+    assert _row(db, waiting).payload == {"v": 3} and _row(db, waiting).requested_by == "DM"  # (waiting: the newer request's, and its asker)
     read = jobs.claim(db, "lane", "w1")
     while read["id"] != waiting:
         jobs.finish(db, read["id"], read["attempts"], {})
         read = jobs.claim(db, "lane", "w1")
     jobs.enqueue(db, "test_a", {"v": 3}, "read:1")
     assert jobs.finish(db, waiting, read["attempts"], {}) and _row(db, waiting).state == "done"  # (a read: answered by the one under way)
+
+
+def test_asked_again_past_its_time_limit_the_newer_request_waits_for_the_older_to_stop(db, kinds):
+    """Issue 154 with 153: a draft past its limit may still be running on its worker, so the newer request asked meanwhile
+    waits a time limit more rather than run beside it (two paid drafts writing over each other), and its tries keep
+    rising, so the old worker can't finish over the new one."""
+    jobs.register(jobs.Kind("test_long", "lane", lambda db, p: None, max_attempts=2, timeout=timedelta(minutes=20), again_if_asked=True))
+    job_id, _ = jobs.enqueue(db, "test_long", {"v": 1}, "long")
+    got = jobs.claim(db, "lane", "w1")
+    jobs.enqueue(db, "test_long", {"v": 2}, "long")
+    db.execute(text("UPDATE jobs SET started_at = now() - interval '25 minutes', heartbeat_at = now() WHERE id = :id"), {"id": job_id})
+    db.commit()
+    assert jobs.reap(db) == 1
+    row = _row(db, job_id)
+    assert row.state == "queued" and row.payload == {"v": 2} and row.attempts == got["attempts"] and row.max_attempts == got["attempts"] + 2
+    assert db.scalar(text("SELECT run_at > now() + interval '19 minutes' FROM jobs WHERE id = :id"), {"id": job_id})
+    assert jobs.claim(db, "lane", "w2") is None  # (not yet)
+    assert not jobs.finish(db, job_id, got["attempts"], {"old": True}) and _row(db, job_id).state == "queued"
 
 
 def test_past_its_time_limit_a_job_fails_rather_than_run_twice(db, kinds):

@@ -94,7 +94,9 @@ def enqueue(db: Session, kind: str, payload: dict | None = None, dedup_key: str 
         "VALUES (:kind, :queue, CAST(:payload AS jsonb), :dedup, :campaign, :label, :by, :priority, COALESCE(:run_at, now()), :max) "
         "ON CONFLICT (dedup_key) WHERE state IN ('queued', 'running') DO UPDATE SET priority = GREATEST(jobs.priority, EXCLUDED.priority), "
         "run_at = LEAST(jobs.run_at, EXCLUDED.run_at), "
-        "payload = CASE WHEN jobs.state = 'queued' THEN EXCLUDED.payload ELSE jobs.payload END, "  # (waiting: the newer request's)
+        "payload = CASE WHEN jobs.state = 'queued' THEN EXCLUDED.payload ELSE jobs.payload END, "  # (waiting: the newer request's,
+        "label = CASE WHEN jobs.state = 'queued' AND EXCLUDED.label <> '' THEN EXCLUDED.label ELSE jobs.label END, "  # and who asked for it with it)
+        "requested_by = CASE WHEN jobs.state = 'queued' AND EXCLUDED.requested_by <> '' THEN EXCLUDED.requested_by ELSE jobs.requested_by END, "
         "rerun = CASE WHEN jobs.state = 'running' AND :again THEN EXCLUDED.payload ELSE jobs.rerun END "  # (running: after it, issue 153)
         "RETURNING id, (xmax = 0) AS created"),
         {"kind": kind, "queue": k.queue, "payload": _json(payload or {}), "dedup": dedup_key, "campaign": campaign_id,
@@ -128,9 +130,17 @@ def beat(db: Session, job_id: int, attempts: int) -> bool:
     return bool(n)
 
 
-# Asked again while it ran (issue 153): instead of ending, it goes back in line with the newer request, tried afresh
-_RERUN = ("state = 'queued', payload = rerun, rerun = NULL, attempts = 0, run_at = now(), finished_at = NULL, claimed_by = '', "
-          "started_at = NULL")
+# Asked again while it ran (issue 153): instead of ending, it goes back in line with the newer request, given its kind's
+# tries afresh. Its attempt number keeps rising (each try's number is its fence: started again from 0, a worker given up on
+# at try 1 would match the new try 1, issue 155), so its allowance grows instead (`:maxes`, `_maxes()`)
+_FRESH = "max_attempts = attempts + COALESCE(CAST(CAST(:maxes AS jsonb) ->> kind AS integer), 1)"
+_RERUN = (f"state = 'queued', payload = rerun, rerun = NULL, {_FRESH}, run_at = now() + make_interval(secs => :later), "
+          "finished_at = NULL, claimed_by = '', started_at = NULL")
+
+
+def _maxes() -> str:
+    """Each kind's tries, for a rerun's fresh allowance."""
+    return _json({k.name: k.max_attempts for k in KINDS.values()})
 
 
 def finish(db: Session, job_id: int, attempts: int, result: dict | None = None) -> bool:
@@ -138,10 +148,13 @@ def finish(db: Session, job_id: int, attempts: int, result: dict | None = None) 
     again while it ran, it goes back in line with the newer request instead (issue 153)."""
     n = db.execute(text(f"UPDATE jobs SET result = CAST(:result AS jsonb), error = '', {_TRIED}, "  # noqa: S608 (constants)
                         "state = CASE WHEN rerun IS NULL THEN 'done' ELSE 'queued' END, finished_at = CASE WHEN rerun IS NULL THEN now() END, "
-                        "payload = COALESCE(rerun, payload), attempts = CASE WHEN rerun IS NULL THEN attempts ELSE 0 END, "
-                        "run_at = CASE WHEN rerun IS NULL THEN run_at ELSE now() END, claimed_by = CASE WHEN rerun IS NULL THEN claimed_by ELSE '' END, "
+                        "payload = COALESCE(rerun, payload), max_attempts = CASE WHEN rerun IS NULL THEN max_attempts ELSE "
+                        f"{_FRESH.split(' = ', 1)[1]} END, run_at = CASE WHEN rerun IS NULL THEN run_at ELSE now() END, "
+                        "claimed_by = CASE WHEN rerun IS NULL THEN claimed_by ELSE '' END, "
+                        "started_at = CASE WHEN rerun IS NULL THEN started_at END, "
                         "rerun = NULL WHERE id = :id AND state = 'running' AND attempts = :n RETURNING state, queue"),
-                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None, "ended": "done", "error": ""}).one_or_none()
+                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None, "ended": "done", "error": "",
+                    "maxes": _maxes()}).one_or_none()
     if n is not None and n.state == "queued":
         db.execute(text("SELECT pg_notify('askdnd_jobs', :queue)"), {"queue": n.queue})
     db.commit()
@@ -170,10 +183,12 @@ def fail(db: Session, job_id: int, attempts: int, error: str, retry: bool = True
     return "queued" if again else "failed"
 
 
-def _rerun_waiting(db: Session, job_id: int) -> bool:
-    """A job that just failed for good, asked again while it ran: back in line with the newer request (issue 153)."""
+def _rerun_waiting(db: Session, job_id: int, later: float = 0) -> bool:
+    """A job that just failed for good, asked again while it ran: back in line with the newer request (issue 153), after
+    `later` seconds (past its time limit, its worker may still be running the older one: the newer waits a time limit
+    more rather than run beside it, issue 154)."""
     row = db.execute(text(f"UPDATE jobs SET {_RERUN} WHERE id = :id AND state = 'failed' AND rerun IS NOT NULL RETURNING queue"),  # noqa: S608 (a constant)
-                     {"id": job_id}).one_or_none()
+                     {"id": job_id, "maxes": _maxes(), "later": later}).one_or_none()
     if row is not None:
         db.execute(text("SELECT pg_notify('askdnd_jobs', :queue)"), {"queue": row.queue})
     return row is not None
@@ -209,7 +224,7 @@ def reap(db: Session, now: datetime | None = None) -> int:
                    {"state": "queued" if again else "failed", "error": "Interrupted" if silent else "Timed out", "again": again,
                     "id": r.id, "n": r.attempts, "ended": "again" if again else "failed"})
         if not again:
-            _rerun_waiting(db, r.id)
+            _rerun_waiting(db, r.id, later=0 if silent else k.timeout.total_seconds())
         n += 1
     db.commit()
     return n

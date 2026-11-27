@@ -90,7 +90,8 @@ class Lane:
             self.current = None
         return True
 
-    def _finish(self, job: dict, result: dict | None, tries: int = 3) -> None:
+    def _finish(self, job: dict, result: dict | None, tries: int = 7) -> None:
+        """Done saved, tried for about a minute (its beat goes on meanwhile, so it isn't given up on and run again)."""
         for n in range(tries):
             try:
                 with self.factory() as db:
@@ -99,7 +100,7 @@ class Lane:
             except Exception:
                 log.warning("Job %s ran, but saying so didn't save (try %s of %s)", job["id"], n + 1, tries, exc_info=n == tries - 1)
                 if n < tries - 1:
-                    time.sleep(2)
+                    time.sleep(min(2 ** n, 20))  # (1, 2, 4, 8, 16, 20 seconds)
 
     def _beat(self, job: dict, done: threading.Event) -> None:
         while not done.wait(jobs.BEAT_SECONDS):

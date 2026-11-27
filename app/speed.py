@@ -88,7 +88,8 @@ def _save(db: Session, taken: dict) -> int:
     from app.models import RequestTime
 
     day = config.table_today()
-    for (method, route), (count, total, top, db_ms, reads, before_ms, *bands) in taken.items():
+    for (method, route), (count, total, top, db_ms, reads, before_ms, *bands) in sorted(taken.items()):  # (rows locked in one
+        # order: two copies saving at once never wait on each other's)
         db.execute(insert(RequestTime).values(day=day, method=method, route=route[:200], count=0, total_ms=0, max_ms=0, db_ms=0, reads=0,
                                               before_ms=0, bands=[0] * (len(BANDS_MS) + 1)).on_conflict_do_nothing())
         row = db.scalar(select(RequestTime).where(RequestTime.day == day, RequestTime.method == method, RequestTime.route == route[:200])
