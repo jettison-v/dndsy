@@ -132,9 +132,10 @@ def test_a_table_page_reads_the_same_however_many_are_at_the_table(db, table, mo
     cole_id, campaign_id = cole.id, cole.campaign_id
     pages = ("/party", f"/characters/{cole_id}/battle", f"/characters/{cole_id}", "/hp/now")
     clients = {who: sign_in(monkeypatch, db, who) for who in ("player@example.com", "dm@example.com")}
-    before = {(who, p): _reads(db, c, p)[0] for who, c in clients.items() for p in pages}
+    # (each page's fewest of two: a cache that refills during one pass, the sign-in list's, isn't a read a character makes)
+    before = {(who, p): min(_reads(db, c, p)[0] for _ in range(2)) for who, c in clients.items() for p in pages}
     for n in (1, 2):
         _another_character(db, campaign_id, db.get(Character, cole_id), n)
-    after = {(who, p): _reads(db, c, p)[0] for who, c in clients.items() for p in pages}
+    after = {(who, p): min(_reads(db, c, p)[0] for _ in range(2)) for who, c in clients.items() for p in pages}
     grew = {f"{who.split('@')[0]} {p}": (before[(who, p)], n) for (who, p), n in after.items() if n > before[(who, p)]}
     assert not grew, f"pages whose reads grow with the party (before, after two more): {grew}"
