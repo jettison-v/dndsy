@@ -147,7 +147,7 @@ def file_issue(db: Session, actor: str, note: FftNote, title: str = "", kind: st
     kind = kind or ("improvement" if note.kind == "idea" else "fix")
     if kind not in ISSUE_KINDS:
         raise RuleError("bad", "A fix or an improvement.")
-    issue = FftIssue(title=(title or _first_words(note.text))[:120], from_player=note.role != "admin", **({"kind": kind} if kind != "fix" else {}))
+    issue = FftIssue(title=(title or _first_words(note.text))[:120], from_player=note.role != "admin", source="note", **({"kind": kind} if kind != "fix" else {}))
     db.add(issue)
     db.flush()
     note.state, note.filed_as, note.issue_id = "filed", "issue", issue.id
@@ -337,13 +337,39 @@ ISSUE_KINDS = ("fix", "improvement")  # (Brett, Nov 20: a change to a Product Ar
 # make it better; an idea that needs discussion is the Roadmap's)
 
 
+# Where an issue came from (R10's slice 5): its window and Feedback's Who found it say so, in these words
+SOURCES = {"note": "A note", "check": "A check", "sentry": "Sentry", "speed": "The speed numbers", "live_test": "The nightly live test",
+           "iphone": "The iPhone check", "review": "A review", "claude": "Claude"}
+SOURCE_FROM = {"note": "from a note", "check": "from a check", "sentry": "from Sentry", "speed": "from the speed numbers",
+               "live_test": "from the nightly live test", "iphone": "from the iPhone check", "review": "from a review", "claude": "Claude's"}
+
+
+def source_of(issue: FftIssue, has_notes: bool = False) -> str:
+    """Where an issue came from: its own source, or, made before it was kept, what it holds says (a person's note, a
+    check's try, Sentry's and the speed numbers' own titles), else Claude."""
+    if issue.source in SOURCES:
+        return issue.source
+    if issue.from_player or has_notes:
+        return "note"
+    if issue.origin_try_id:
+        return "check"
+    if issue.feature == "errors" and issue.title.startswith("Error:"):
+        return "sentry"
+    if issue.feature == "speed" and issue.title.startswith("Slow:"):
+        return "speed"
+    return "claude"
+
+
 def new_issue(db: Session, actor: str, title: str, area_id: int | None = None, origin_try_id: int | None = None,
-              feature: str = "", kind: str = "fix") -> FftIssue:
+              feature: str = "", kind: str = "fix", source: str = "") -> FftIssue:
     if not title.strip():
         raise RuleError("bad", "Give it a title.")
     if kind not in ISSUE_KINDS:
         raise RuleError("bad", "A fix or an improvement.")
-    issue = FftIssue(title=title.strip()[:120], area_id=area_id, origin_try_id=origin_try_id, **({"kind": kind} if kind != "fix" else {}))
+    if source and source not in SOURCES:
+        raise RuleError("bad", "Where it came from: " + ", ".join(SOURCES) + ".")
+    source = source or ("check" if origin_try_id else "claude")
+    issue = FftIssue(title=title.strip()[:120], area_id=area_id, origin_try_id=origin_try_id, source=source, **({"kind": kind} if kind != "fix" else {}))
     db.add(issue)
     db.flush()
     _event(db, actor, "issue_new", "issue", issue.id, area_id=area_id, origin_try=origin_try_id)
@@ -949,6 +975,13 @@ def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
     if section != "shipped":
         item.shipped_at = None
     _event(db, actor, "item_moved", "item", item.id, was=was, section=section)
+    if was in ("shipped", "not_doing"):  # (Reopen: its ideas go back onto the Roadmap with it, so their senders read it so;
+        # the review of #553. Only those shipping or Not doing moved: never one declined in its own right, with its own why)
+        moved = {e.thing_id for e in db.scalars(select(FftEvent).where(FftEvent.thing == "idea", FftEvent.kind.in_(("idea_shipped", "idea_declined")),
+                                                                     FftEvent.data["by_item"].astext == str(item.id)))}
+        for idea in db.scalars(select(FftIdea).where(FftIdea.item_id == item.id, FftIdea.id.in_(moved or {0}))):
+            idea.state, idea.reason = "roadmap", ""
+            _event(db, actor, "idea_roadmap", "idea", idea.id)
 
 
 def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, result: str | None = None) -> None:
@@ -964,6 +997,13 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     if result is not None and result.strip():
         item.result = result.strip()[:4000]
     _event(db, actor, "item_not_doing" if not_doing else "item_shipped", "item", item.id)
+    # Its ideas follow it, so each idea's sender reads it on Notes you sent (R10's slice 5): built, or not to be built
+    # after all, in words written for them (never the item's result, which is Brett's and Claude's)
+    for idea in db.scalars(select(FftIdea).where(FftIdea.item_id == item.id, FftIdea.state == "roadmap")):
+        idea.state = "declined" if not_doing else "shipped"
+        if not_doing:
+            idea.reason = "it won't be built after all"
+        _event(db, actor, "idea_declined" if not_doing else "idea_shipped", "idea", idea.id, by_item=item.id)
 
 
 def add_to_item(db: Session, actor: str, item: FftItem, words: str, where: str = "askdnd", user_id: int | None = None) -> FftAddition:

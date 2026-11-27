@@ -395,3 +395,52 @@ def test_an_item_ships_only_once_every_step_is_ticked_or_removed(db):
     rules.add_step(db, "claude", other, "Something")
     rules.ship_item(db, "claude", other, not_doing=True, result="Not needed")
     assert other.section == "not_doing"
+
+
+def test_an_ideas_sender_hears_when_it_joins_the_roadmap_and_when_it_ships(db, admin):
+    """R10's slice 5 (Brett's OK on its scope, Nov 27): a note taken up as an idea says so on Notes you sent when it
+    joins a Roadmap item (a word of its own, so its marker changes and the note shows as new) and when that item ships
+    (or isn't done after all), in words written for its sender (R2: never the item's own words)."""
+    from app.fft import views
+
+    note = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="idea", text="Could the dice make a sound?")
+    db.flush()
+    before = views.marker(db, note, None)
+    admin.post(f"/manage/feedback/notes/{note.id}", data={"do": "idea"})
+    db.refresh(note)
+    joined = views.sender_says(db, note, None)
+    assert joined["word"] == "On the Roadmap" and views.marker(db, note, None) != before
+    it = db.get(FftItem, db.get(FftIdea, note.idea_id).item_id)
+    rules.ship_item(db, "claude", it, result="Dice make a sound\\nOne setting turns it off")
+    db.flush()
+    built = views.sender_says(db, note, None)
+    assert built["word"] == "Built" and "Dice make a sound" not in built["sentence"]
+    other = rules.send_note(db, user_id=None, first_name="Cole", role="player", kind="idea", text="A tray for the dice?")
+    db.flush()
+    admin.post(f"/manage/feedback/notes/{other.id}", data={"do": "idea"})
+    db.refresh(other)
+    rules.ship_item(db, "claude", db.get(FftItem, db.get(FftIdea, other.idea_id).item_id), not_doing=True, result="Not now")
+    db.flush()
+    assert "won't be built" in views.sender_says(db, other, None)["sentence"]
+    rules.move_item(db, "user:1", it, "now")  # (Reopen: its ideas come back onto the Roadmap with it; the review of #553)
+    db.flush()
+    assert views.sender_says(db, note, None)["word"] == "On the Roadmap"
+
+
+def test_an_issue_says_where_it_came_from(db, admin, api):
+    """R10's slice 5 (Brett's OK on its scope, Nov 27): each issue names its source, kept when it's made (a note, a
+    check, Sentry, the speed numbers, a review, the nightly tests…) and worked out for issues made before it; its window
+    says so and Feedback's Who found it filters by it."""
+    from app.fft.models import FftIssue
+
+    made = api.post("/api/fft/issues", headers=H, json={"title": "A review found the menu wraps", "source": "review"}).json()
+    review = db.get(FftIssue, made["id"])
+    plain = rules.new_issue(db, "claude", "Claude noticed the sort is off")
+    before = rules.new_issue(db, "askdnd", "Slow: GET /party", feature="speed")
+    before.source = ""  # (made before sources were kept)
+    db.flush()
+    assert (review.source, plain.source, rules.source_of(before)) == ("review", "claude", "speed")
+    assert api.post("/api/fft/issues", headers=H, json={"title": "Nowhere", "source": "gossip"}).status_code == 400
+    page = admin.get("/manage/feedback?tab=open&chip=review").text
+    assert f'data-row="i{review.id}"' in page and f'data-row="i{plain.id}"' not in page
+    assert "from a review" in admin.get(f"/manage/item/i{review.id}").text

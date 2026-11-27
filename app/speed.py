@@ -143,7 +143,7 @@ def review(db: Session) -> dict:
         said = f"{title} (slowest tenth {r['p90_ms'] / 1000:.1f} s, average {r['avg_ms']} ms, {r['count']} requests this week)"
         issue = db.scalar(select(FftIssue).where(FftIssue.title.startswith(title + " ("), FftIssue.state != "closed"))  # (never a longer route that starts the same)
         if issue is None:
-            issue = rules.new_issue(db, "askdnd", said[:120], feature="speed", kind="improvement")
+            issue = rules.new_issue(db, "askdnd", said[:120], feature="speed", kind="improvement", source="speed")
         else:
             issue.title = said[:120]
         filed.append(issue.id)
