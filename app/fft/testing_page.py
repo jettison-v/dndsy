@@ -61,6 +61,12 @@ def needs_of(c: FftCheck, mine: list[str]) -> list[str]:
     """The groups a check of Brett's is in: more than one person, or each device it's still to try on."""
     return ["people"] if c.people else (mine or ["laptop"])
 DEVICE_SAID = {"laptop": "your laptop", "iphone": "your iPhone", "ipad": "your iPad", "mac_mini": "the Mac Mini"}
+# The same device in the other ways a sentence needs it, each written whole (issue 146: they were cut from DEVICE_SAID
+# with replace(), so a translation would have broken them): "on your laptop", and the bare name
+DEVICE_ON = {"laptop": "on your laptop", "iphone": "on your iPhone", "ipad": "on your iPad", "mac_mini": "on the Mac Mini"}
+DEVICE_NAME = {"laptop": "laptop", "iphone": "iPhone", "ipad": "iPad", "mac_mini": "Mac Mini"}
+DEVICE_LABEL = {"laptop": "Laptop", "iphone": "iPhone", "ipad": "iPad", "mac_mini": "Mac Mini"}  # (a label's own capital: capitalize made "Iphone")
+templates.env.globals.update(device_on=DEVICE_ON, device_name=DEVICE_NAME, device_label=DEVICE_LABEL)  # (every page with a check says it the same way)
 
 
 def _admin(request: Request):
@@ -150,7 +156,7 @@ def history(db: Session, c: FftCheck) -> list[dict]:
         who = "the Mac Mini" if t.actor == "mini" else "you"
         what = {"passed": "Passed", "failed": "Failed", "cant": {"later": "Later", "blocked": "Blocked", "wrong": "The check is wrong"}.get(t.cant_kind, "Can't try"),
                 "untried": "Back to try"}[t.result]
-        line = f"{what} by {who} · {DEVICE_SAID.get(t.device, t.device).replace('your ', '')} · v{t.version}" + (f" · {n} issue{'s' if n != 1 else ''}" if n else "") \
+        line = f"{what} by {who} · {DEVICE_NAME.get(t.device, t.device)} · v{t.version}" + (f" · {n} issue{'s' if n != 1 else ''}" if n else "") \
             + (f" · {t.where}" if t.where != "live" else "")
         replaced_by = db.scalar(select(FftTry).where(FftTry.replaces_id == t.id))
         out.append({"at": t.created_at, "line": line, "why": t.why if t.result in ("cant", "untried") or t.replaces_id else "",

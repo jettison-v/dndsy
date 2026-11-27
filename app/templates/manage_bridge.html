@@ -13,7 +13,7 @@
     <h2>Right now</h2>
     {# Its health, once, as the needs-you line with what to do (Brett's picks BR1 and AU3, Nov 25); app.js keeps it current #}
     {% set tone = {'live': 'done', 'wait': 'you', 'off': 'broken', 'asleep': 'done'}[health.state] %}
-    {% set says %}<span data-bridge-health>{{ health.text | replace("D&D Beyond · ", "") | replace("D&D Beyond bridge · ", "") }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span> <span class="note" data-bridge-todo>{{ health.todo }}</span>{% endset %}
+    {% set says %}<span data-bridge-health>{{ health.said }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</span> <span class="note" data-bridge-todo>{{ health.todo }}</span>{% endset %}
     {% call needs_line({'live': 'Working', 'wait': 'Waiting', 'off': 'Problem', 'asleep': 'Asleep'}[health.state], tone, says, "bridge") %}<button type="button" class="btn small" data-br-check data-confirm="Run the check? It changes the test character's sheet on D&amp;D Beyond and puts it back.">Run the check…</button>{% endcall %}
     <dl class="br-now">
       <dt>Awake</dt><dd>{% if a.awake %}Yes, until {{ a.until | clock }}{% else %}No. {{ a.why }}{% endif %}</dd>

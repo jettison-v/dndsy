@@ -14,7 +14,7 @@
   {% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude"), "closed": ("Done", "quiet")}[picked.turn] %}
   {{ state_line(w[0], w[1], picked.sentence) }}
   {{ goal(v) }}
-  <div class="fft-devices" data-devices>{% if c.people %}<span data-need="people"><b>Needs more than one person</b></span>{% endif %}{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
+  <div class="fft-devices" data-devices>{% if c.people %}<span data-need="people"><b>Needs more than one person</b></span>{% endif %}{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_label.get(d, d) }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
   {% if picked.turn == "yours" %}
   <div class="act-bar" data-check-acts>
     <form method="post" action="/manage/testing/checks/{{ c.id }}/go" data-reload>{# (it takes you to the check's page: a full load) #}<button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
