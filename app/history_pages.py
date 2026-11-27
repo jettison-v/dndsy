@@ -196,20 +196,26 @@ def moments(db: Session, revs: list[Revision], known: dict) -> dict[int, tuple[s
     return {i: (words, numbers.get(sid)) for i, (words, sid) in found.items()}
 
 
-def _subject(r: Revision, known: dict, named: dict | None = None) -> str:
+SHORT = 60  # (a key moment's words in History's list: the window shows them whole, issue 177)
+
+
+def _subject(r: Revision, known: dict, named: dict | None = None, whole: bool = False) -> str:
     """What a change is about, named (Brett's pick HI1): a key moment by its own words and its session (issue 123), else
-    the row's label."""
+    the row's label. The list cuts a moment's words at SHORT; the window (`whole`) shows them all, as what you'd
+    restore has to be read to be judged (issue 177: "I cannot see the full text so it is difficult to make a decision")."""
     if r.table == "story_events" and named and r.row_id in named:
         text, number = named[r.row_id]
         words = " ".join(str(text).split())
-        return (f"Session {number} · " if number else "") + f"“{words[:60]}{'…' if len(words) > 60 else ''}”"
+        if not whole and len(words) > SHORT:
+            words = words[:SHORT] + "…"
+        return (f"Session {number} · " if number else "") + f"“{words}”"
     return r.label or NOUNS.get(r.table, (r.table, r.table))[0].capitalize()
 
 
-def _item(db: Session, user: dict, r: Revision, people: dict, known: dict, named: dict | None = None) -> dict:
+def _item(db: Session, user: dict, r: Revision, people: dict, known: dict, named: dict | None = None, whole: bool = False) -> dict:
     by_email = {e: n for n, e in people.values()}
     return {"r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
-            "subject": _subject(r, known, named), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
+            "subject": _subject(r, known, named, whole), "short": _subject(r, known, named), "who": by_email.get((r.actor or "").lower(), r.actor or ""),  # (people by name: S5)
             **_present(db, r, people),
             "long": r.field in ("summary", "description", "data", "note", "deleted") or len(str(r.old or "")) + len(str(r.new or "")) > LONG,  # (a rule's data is for the window, not the row)
             "restorable": may_restore(db, user, r) and history.can_restore(db, r, known)}
@@ -239,11 +245,11 @@ def group_changes(items: list[dict]) -> list[dict]:
         e["who"] = newest["who"]
         n = len(e["items"])
         if e["kind"] == "one":
-            e["title"] = newest["subject"]
+            e["title"] = newest["short"]  # (a title stays short; the window's lines carry the whole words)
         elif e["kind"] == "batch":
             e["title"] = f"An import: {n} changes" if newest["r"].source in ("import", "undo-import") else f"{n} changes together"
         elif e["kind"] == "run":
-            e["title"] = f"{newest['subject']}: {newest['field'].lower()}"
+            e["title"] = f"{newest['short']}: {newest['field'].lower()}"
             e["run"] = {"n": n, "since": first["r"].created_at, "now": newest.get("new") or newest.get("change") or "—"}  # (times through `clock`: the viewer's own)
         else:
             noun = NOUNS.get(newest["r"].table, ("thing", "things"))[1]
@@ -273,7 +279,7 @@ def history_window(request: Request, ids: str = "", db: Session = Depends(get_db
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     known = history.targets(db, revs)
     named = moments(db, revs, known)
-    items = [_item(db, user, r, people, known, named) for r in revs]
+    items = [_item(db, user, r, people, known, named, whole=True) for r in revs]
     entry = (group_changes(items) or [{"title": "Nothing to show", "items": [], "kind": "one", "who": ""}])[0]
     return templates.TemplateResponse(request, "_history_window.html", {
         "e": entry, "all": items, "page_url": f"{web.base()}/manage/history" if in_campaign else "/manage/history"})

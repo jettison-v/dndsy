@@ -8,7 +8,7 @@ from app.db import get_db
 from app.extraction import Source, build_messages, store_result
 from app.importer import import_bundle
 from app.main import app
-from app.models import Correction, Entity, EventKind, ExtractionRun, GameSession, GlossaryTerm, Proposal, Recap, StoryEvent
+from app.models import Campaign, Correction, Entity, EventKind, ExtractionRun, GameSession, GlossaryTerm, Proposal, Recap, StoryEvent
 
 RESULT = {
     "title": "Devils",
@@ -69,6 +69,23 @@ def test_review_list_and_draft_button(client, db, monkeypatch):
     sid = db.scalar(select(GameSession)).id
     r = client.post("/manage/sessions/draft", data={"session_ids": [sid]}, follow_redirects=False)
     assert started == [[sid]] and r.headers["location"] == f"/c/main/manage/sessions/{sid}"
+
+
+def test_a_standing_rule_drafting_only_takes_this_campaigns_sessions(client, db, monkeypatch):
+    """A standing rule (who sees what, CLAUDE.md › Privacy; issue 150): /manage/sessions/draft drafted whatever session
+    ids it was sent, so a reviewer of one campaign could have Claude draft another's. Only this campaign's are taken,
+    in the order sent."""
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 1}, {"number": 2}]})
+    import_bundle(db, {"campaign": {"slug": "other", "name": "Other"}, "sessions": [{"number": 7}]})
+    main = db.scalar(select(Campaign).where(Campaign.slug == "main"))
+    ours = [g.id for g in db.scalars(select(GameSession).where(GameSession.campaign_id == main.id).order_by(GameSession.number.desc()))]
+    theirs = db.scalar(select(GameSession).where(GameSession.campaign_id != main.id)).id
+    started = []
+    monkeypatch.setattr(admin_sessions, "_draft_in_background", lambda ids: started.append(ids) or True)
+    client.post("/c/main/manage/sessions/draft", data={"session_ids": [ours[0], theirs, ours[1]]}, follow_redirects=False)
+    assert started == [[ours[0], ours[1]]]  # (theirs dropped, the order kept)
+    r = client.post("/c/main/manage/sessions/draft", data={"session_ids": [theirs]}, follow_redirects=False)
+    assert started == [[ours[0], ours[1]]] and r.headers["location"] == "/c/main/manage/sessions"  # (nothing of theirs started)
 
 
 def test_review_page_shows_draft(client, db):
