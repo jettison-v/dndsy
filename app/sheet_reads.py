@@ -103,7 +103,7 @@ def read_now(db: Session, chars_: list, *, by: str = "", seconds: float = WAIT_S
     deadline = time.monotonic() + seconds
     states = _state(db, ids) if ids else {}
     if ids and worker.runner() == "inline" and not worker.serving(QUEUE):
-        lane = worker.Lane(QUEUE, lambda: contextlib.nullcontext(db), threading.Event(), jobs.me())
+        lane = worker.Lane(QUEUE, lambda: contextlib.nullcontext(db), threading.Event(), jobs.me(), beats=False)  # (the request's own session: no beat thread on it, issue 156)
         while any(_open(states.get(j)) for j in ids) and time.monotonic() < deadline and lane.run_once():
             states = _state(db, ids)
     while any(_open(states.get(j)) for j in ids) and time.monotonic() < deadline:

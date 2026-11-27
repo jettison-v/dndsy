@@ -9,8 +9,11 @@ app/worker.py, never holding a transaction while it waits on D&D Beyond or Claud
 The rules, in one place:
 - a job is `queued`, `running`, `done`, `failed` or `cancelled`;
 - the same `dedup_key` is never queued or running twice (adding it again raises the waiting one's priority);
-- a running job's worker beats every 15 seconds; one silent for 60 (or past its kind's time limit) goes back to the
-  queue while it has attempts left, else fails ("interrupted" or "timed out");
+- a running job's worker beats every 15 seconds; one silent for 60 goes back to the queue while it has attempts left,
+  else fails ("interrupted"); one past its kind's time limit fails ("timed out"), never put back while its worker may
+  still be running it (issue 154: a draft run twice is paid for twice);
+- asked again while it runs, a kind that wants it (`again_if_asked`: drafts) keeps the newer request and runs it once
+  this one ends (issue 153); one waiting takes the newer request's payload;
 - finishing is fenced on the attempt it was claimed for, so a worker that was given up on can't overwrite a later try;
 - a worker takes only kinds it knows (an older worker leaves a newer kind waiting).
 """
@@ -47,6 +50,8 @@ class Kind:
     keep_done: timedelta = timedelta(hours=24)
     gap: float = 0  # (seconds its lane waits after each one: D&D Beyond is asked at most once a second)
     rest: float = 0  # (seconds its lane rests after one fails: D&D Beyond struggling isn't asked again at once)
+    again_if_asked: bool = False  # (asked again while it runs: run the newer request after it, issue 153; a read needn't:
+    # the read under way answers it)
 
 
 KINDS: dict[str, Kind] = {}
@@ -88,10 +93,12 @@ def enqueue(db: Session, kind: str, payload: dict | None = None, dedup_key: str 
         "INSERT INTO jobs (kind, queue, payload, dedup_key, campaign_id, label, requested_by, priority, run_at, max_attempts) "
         "VALUES (:kind, :queue, CAST(:payload AS jsonb), :dedup, :campaign, :label, :by, :priority, COALESCE(:run_at, now()), :max) "
         "ON CONFLICT (dedup_key) WHERE state IN ('queued', 'running') DO UPDATE SET priority = GREATEST(jobs.priority, EXCLUDED.priority), "
-        "run_at = LEAST(jobs.run_at, EXCLUDED.run_at) "
+        "run_at = LEAST(jobs.run_at, EXCLUDED.run_at), "
+        "payload = CASE WHEN jobs.state = 'queued' THEN EXCLUDED.payload ELSE jobs.payload END, "  # (waiting: the newer request's)
+        "rerun = CASE WHEN jobs.state = 'running' AND :again THEN EXCLUDED.payload ELSE jobs.rerun END "  # (running: after it, issue 153)
         "RETURNING id, (xmax = 0) AS created"),
         {"kind": kind, "queue": k.queue, "payload": _json(payload or {}), "dedup": dedup_key, "campaign": campaign_id,
-         "label": label[:200], "by": by[:200], "priority": priority, "run_at": run_at, "max": k.max_attempts}).one()
+         "label": label[:200], "by": by[:200], "priority": priority, "run_at": run_at, "max": k.max_attempts, "again": k.again_if_asked}).one()
     db.execute(text("SELECT pg_notify('askdnd_jobs', :queue)"), {"queue": k.queue})
     return row.id, bool(row.created)
 
@@ -121,13 +128,24 @@ def beat(db: Session, job_id: int, attempts: int) -> bool:
     return bool(n)
 
 
+# Asked again while it ran (issue 153): instead of ending, it goes back in line with the newer request, tried afresh
+_RERUN = ("state = 'queued', payload = rerun, rerun = NULL, attempts = 0, run_at = now(), finished_at = NULL, claimed_by = '', "
+          "started_at = NULL")
+
+
 def finish(db: Session, job_id: int, attempts: int, result: dict | None = None) -> bool:
-    """Done, fenced on the attempt it was claimed for: False (and nothing written) when the job was given up on."""
-    n = db.execute(text(f"UPDATE jobs SET state = 'done', finished_at = now(), result = CAST(:result AS jsonb), error = '', {_TRIED} "  # noqa: S608 (_TRIED is a constant)
-                        "WHERE id = :id AND state = 'running' AND attempts = :n"),
-                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None, "ended": "done", "error": ""}).rowcount
+    """Done, fenced on the attempt it was claimed for: False (and nothing written) when the job was given up on. Asked
+    again while it ran, it goes back in line with the newer request instead (issue 153)."""
+    n = db.execute(text(f"UPDATE jobs SET result = CAST(:result AS jsonb), error = '', {_TRIED}, "  # noqa: S608 (constants)
+                        "state = CASE WHEN rerun IS NULL THEN 'done' ELSE 'queued' END, finished_at = CASE WHEN rerun IS NULL THEN now() END, "
+                        "payload = COALESCE(rerun, payload), attempts = CASE WHEN rerun IS NULL THEN attempts ELSE 0 END, "
+                        "run_at = CASE WHEN rerun IS NULL THEN run_at ELSE now() END, claimed_by = CASE WHEN rerun IS NULL THEN claimed_by ELSE '' END, "
+                        "rerun = NULL WHERE id = :id AND state = 'running' AND attempts = :n RETURNING state, queue"),
+                   {"id": job_id, "n": attempts, "result": _json(result) if result is not None else None, "ended": "done", "error": ""}).one_or_none()
+    if n is not None and n.state == "queued":
+        db.execute(text("SELECT pg_notify('askdnd_jobs', :queue)"), {"queue": n.queue})
     db.commit()
-    return bool(n)
+    return n is not None
 
 
 def fail(db: Session, job_id: int, attempts: int, error: str, retry: bool = True) -> str:
@@ -145,13 +163,27 @@ def fail(db: Session, job_id: int, attempts: int, error: str, retry: bool = True
                     "run_at = now() + make_interval(secs => :wait) WHERE id = :id AND state = 'running' AND attempts = :n"),
                {"state": "queued" if again else "failed", "error": error[:2000], "again": again, "wait": wait, "id": job_id, "n": attempts,
                 "ended": "again" if again else "failed"})
+    if not again and _rerun_waiting(db, job_id):  # (failed for good, but asked again meanwhile: the newer request runs)
+        db.commit()
+        return "queued"
     db.commit()
     return "queued" if again else "failed"
 
 
+def _rerun_waiting(db: Session, job_id: int) -> bool:
+    """A job that just failed for good, asked again while it ran: back in line with the newer request (issue 153)."""
+    row = db.execute(text(f"UPDATE jobs SET {_RERUN} WHERE id = :id AND state = 'failed' AND rerun IS NOT NULL RETURNING queue"),  # noqa: S608 (a constant)
+                     {"id": job_id}).one_or_none()
+    if row is not None:
+        db.execute(text("SELECT pg_notify('askdnd_jobs', :queue)"), {"queue": row.queue})
+    return row is not None
+
+
 def put_back(db: Session, job_id: int, attempts: int) -> bool:
-    """A worker stopping (a deploy): its job goes back to the queue as it was, this attempt not counted against it."""
-    n = db.execute(text(f"UPDATE jobs SET {_TRIED}, state = 'queued', attempts = attempts - 1, claimed_by = '', started_at = NULL "  # noqa: S608 (_TRIED is a constant)
+    """A worker stopping (a deploy): its job goes back to the queue, this attempt not counted against it. Its attempt
+    number stays (each try's number is its fence: taken back, the next worker's try had the same number, and the old
+    worker, still running, could finish over it, issue 155); its try is given back as one more allowed."""
+    n = db.execute(text(f"UPDATE jobs SET {_TRIED}, state = 'queued', max_attempts = max_attempts + 1, claimed_by = '', started_at = NULL "  # noqa: S608 (_TRIED is a constant)
                         "WHERE id = :id AND state = 'running' AND attempts = :n"),
                    {"id": job_id, "n": attempts, "ended": "stopped", "error": "The worker stopped (a deploy): back in line, not counted"}).rowcount
     db.commit()
@@ -170,11 +202,14 @@ def reap(db: Session, now: datetime | None = None) -> int:
         overrun = k is not None and r.started_at is not None and now - r.started_at > k.timeout
         if not (silent or overrun):
             continue
-        again = r.attempts < r.max_attempts
+        again = silent and r.attempts < r.max_attempts  # (past its time limit while still beating: its worker may still be
+        # running it, so it's never put back for a second worker to run too, issue 154; it fails, its finish fenced out)
         db.execute(text(f"UPDATE jobs SET {_TRIED}, state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END "  # noqa: S608 (_TRIED is a constant)
                         "WHERE id = :id AND state = 'running' AND attempts = :n"),
                    {"state": "queued" if again else "failed", "error": "Interrupted" if silent else "Timed out", "again": again,
                     "id": r.id, "n": r.attempts, "ended": "again" if again else "failed"})
+        if not again:
+            _rerun_waiting(db, r.id)
         n += 1
     db.commit()
     return n

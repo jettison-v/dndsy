@@ -3,6 +3,8 @@ same, given up on when its worker goes silent, and a late worker can't overwrite
 
 from datetime import UTC, datetime, timedelta
 
+import threading
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -70,11 +72,56 @@ def test_a_failure_tries_again_after_its_backoff_then_fails(db, kinds):
 
 
 def test_a_stopping_worker_puts_its_job_back_uncounted(db, kinds):
+    """Issue 155: put back, its try is given back as one more allowed, but its number stays, so the next worker's try
+    is another number and the old worker, still running for a moment, can't finish over it."""
     job_id, _ = jobs.enqueue(db, "test_a", {}, "deploy")
     got = jobs.claim(db, "lane", "w1")
     assert jobs.put_back(db, job_id, got["attempts"])
     row = _row(db, job_id)
-    assert row.state == "queued" and row.attempts == 0 and jobs.claim(db, "lane", "w2")["attempts"] == 1
+    assert row.state == "queued" and row.max_attempts == 3  # (2, and the try given back)
+    again = jobs.claim(db, "lane", "w2")
+    assert again["attempts"] == 2 and not jobs.finish(db, job_id, got["attempts"], {"old": True})  # (the old worker fenced out)
+    assert jobs.finish(db, job_id, again["attempts"], {"new": True}) and _row(db, job_id).result == {"new": True}
+
+
+def test_asked_again_while_it_runs_a_draft_runs_the_newer_request_after_it(db, kinds):
+    """Issue 153: a resent transcript or Start over while a draft runs was folded into the run under way and lost. A
+    kind that wants it keeps the newer request and runs it once this one ends; one waiting takes the newer payload; a
+    read (no again_if_asked) needn't run twice."""
+    jobs.register(jobs.Kind("test_draft", "lane", lambda db, p: {"ok": True}, max_attempts=2, again_if_asked=True))
+    job_id, _ = jobs.enqueue(db, "test_draft", {"session": 1, "update": False}, "draft:1")
+    got = jobs.claim(db, "lane", "w1")
+    same, new = jobs.enqueue(db, "test_draft", {"session": 1, "update": True}, "draft:1")
+    assert same == job_id and not new
+    assert jobs.finish(db, job_id, got["attempts"], {"ok": True})
+    row = _row(db, job_id)
+    assert row.state == "queued" and row.payload == {"session": 1, "update": True} and row.rerun is None and row.attempts == 0
+    waiting, _ = jobs.enqueue(db, "test_a", {"v": 1}, "read:1")
+    jobs.enqueue(db, "test_a", {"v": 2}, "read:1")
+    assert _row(db, waiting).payload == {"v": 2}  # (waiting: the newer request's)
+    read = jobs.claim(db, "lane", "w1")
+    while read["id"] != waiting:
+        jobs.finish(db, read["id"], read["attempts"], {})
+        read = jobs.claim(db, "lane", "w1")
+    jobs.enqueue(db, "test_a", {"v": 3}, "read:1")
+    assert jobs.finish(db, waiting, read["attempts"], {}) and _row(db, waiting).state == "done"  # (a read: answered by the one under way)
+
+
+def test_past_its_time_limit_a_job_fails_rather_than_run_twice(db, kinds):
+    """Issue 154: a draft past its 20 minutes was put back while its worker still ran it, and run (and paid for) twice.
+    Past its kind's limit while still beating, it fails; silent, it's put back as before."""
+    jobs.register(jobs.Kind("test_slow", "lane", lambda db, p: None, max_attempts=3, timeout=timedelta(minutes=20)))
+    slow, _ = jobs.enqueue(db, "test_slow", {}, "slow")
+    got = jobs.claim(db, "lane", "w1")
+    db.execute(text("UPDATE jobs SET started_at = now() - interval '25 minutes', heartbeat_at = now() WHERE id = :id"), {"id": slow})
+    db.commit()
+    assert jobs.reap(db) == 1 and _row(db, slow).state == "failed" and _row(db, slow).error == "Timed out"
+    assert not jobs.finish(db, slow, got["attempts"], {})  # (its worker, finishing late, is fenced out)
+    quiet, _ = jobs.enqueue(db, "test_slow", {}, "quiet")
+    jobs.claim(db, "lane", "w1")
+    db.execute(text("UPDATE jobs SET heartbeat_at = now() - interval '2 minutes' WHERE id = :id"), {"id": quiet})
+    db.commit()
+    assert jobs.reap(db) == 1 and _row(db, quiet).state == "queued"
 
 
 def test_a_jobs_story_keeps_each_try_and_who_pressed_retry_or_cancel(db, kinds):
@@ -315,3 +362,51 @@ def test_health_says_how_jobs_run(db, monkeypatch):
     assert got["jobs"] == "worker" and "quiet_seconds" in got["worker"]
     monkeypatch.setenv("JOBS_RUNNER", "inline")
     assert "worker" not in client.get("/health").json()
+
+
+def test_a_job_that_ran_is_never_failed_because_saying_so_didnt_save(db, kinds, monkeypatch):
+    """Issue 154: a failed finish() was taken for the job failing, so it was put back and run (and paid for) again. Its
+    finish is tried again instead; the job itself is never failed for it. A lane on a request's own session doesn't
+    beat on it (issue 156)."""
+    import contextlib
+    import threading
+
+    from app import worker
+
+    monkeypatch.setattr(worker, "_announce", lambda job, state: None)
+    monkeypatch.setattr(worker.time, "sleep", lambda s: None)
+    real, calls = jobs.finish, []
+
+    def flaky(db, job_id, attempts, result=None):
+        calls.append(job_id)
+        if len(calls) == 1:
+            raise RuntimeError("the database blinked")
+        return real(db, job_id, attempts, result)
+
+    monkeypatch.setattr(worker.jobs, "finish", flaky)
+    started = []
+    monkeypatch.setattr(worker.threading, "Thread", lambda target, args=(), daemon=False: type("T", (), {"start": lambda self: started.append(1)})())
+    lane = worker.Lane("lane", lambda: contextlib.nullcontext(db), threading.Event(), "w1", beats=False)
+    ok, _ = jobs.enqueue(db, "test_a", {}, "flaky")
+    assert lane.run_once() and _row(db, ok).state == "done" and len(calls) == 2 and lane.last == ("test_a", "done")
+    assert started == []  # (no beat thread on the request's session)
+
+
+def test_while_covering_for_the_worker_the_web_app_gives_up_on_its_silent_jobs(db, kinds, monkeypatch):
+    """Issue 152: with the worker away nothing gave up on the jobs it held, so a read it was running stayed running for
+    good and that sheet was never read again. While the web app covers, it does."""
+    import contextlib
+
+    from app import worker
+
+    monkeypatch.setattr(worker.threading, "Thread", lambda target, name, daemon: type("T", (), {"start": lambda self: None})())
+    held, _ = jobs.enqueue(db, "test_a", {}, "held")
+    jobs.claim(db, "lane", "dead-worker")
+    db.execute(text("UPDATE jobs SET heartbeat_at = now() - interval '5 minutes' WHERE id = :id"), {"id": held})
+    db.commit()
+    stop = threading.Event()
+    watch = worker.Watch(lambda: contextlib.nullcontext(db), "web")
+    looks = iter([False, True])
+    monkeypatch.setattr(stop, "wait", lambda s: next(looks))
+    watch.run(stop)
+    assert _row(db, held).state == "queued"  # (given up on, back in line for the web app's own lane)
