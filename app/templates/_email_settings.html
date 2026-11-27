@@ -1,5 +1,5 @@
-{# Your picture › Email digest (app/digest.py): the Inbox digest, one switch per campaign you could get it for. A switch
-   posts and this list is drawn again (`only_rows`). #}
+{# Your picture › Email (app/digest.py), for everyone (issue 136): the Inbox digest, one switch per campaign you could
+   get it for, and A fix to try. A switch posts and this list is drawn again (`only_rows`). #}
 {% from "_window.html" import window %}
 {% set w_rows %}<div class="email-settings">
   {% for c, role, on in rows %}
@@ -8,23 +8,19 @@
     <button class="switch" type="button" role="switch" aria-checked="{{ 'true' if on else 'false' }}" aria-label="Inbox digest for {{ c.name }}"
             hx-post="/email/inbox" hx-vals='{{ {"campaign": c.id, "on": "" if on else "1"} | tojson }}' hx-target="closest .email-settings" hx-swap="outerHTML"></button>
   </div>
-  {% else %}
-  {% if fixes is none %}<p class="note">Nothing to send you: the digest is for a campaign's DM, and its reviewers if they choose.</p>{% endif %}
   {% endfor %}
-  {% if fixes is not none %}
   <div class="email-row" data-email="fixes">
     <span><b>A fix to try</b> <small class="note">when something you said was broken is fixed: one email that day, counts and a link</small></span>
     <button class="switch" type="button" role="switch" aria-checked="{{ 'true' if fixes else 'false' }}" aria-label="Email when a fix waits for you"
             hx-post="/email/fixes" hx-vals='{{ {"on": "" if fixes else "1"} | tojson }}' hx-target="closest .email-settings" hx-swap="outerHTML"></button>
   </div>
-  {% endif %}
 </div>
 {% endset %}
 {% if only_rows %}{{ w_rows }}{% else %}
-{% set w_intro %}<p class="note">The <b>Inbox digest</b>: one email a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox. Counts and a link, never what was written.</p>
+{% set w_intro %}<p class="note">The emails askdnd may send you, each with its own switch: counts and a link, never what was written.{% if rows %} The <b>Inbox digest</b> comes once a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox.{% endif %}</p>
 {% if not sending %}<p class="note">askdnd isn't sending email here (no Resend key: your own computer, or staging).</p>{% endif %}
 {% endset %}
-{% call window("Your picture", "Email digest", body_class="") %}
+{% call window("Your picture", "Email", body_class="") %}
 {{ w_intro }}
 {{ w_rows }}
 {% endcall %}

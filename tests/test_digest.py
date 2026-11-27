@@ -95,7 +95,11 @@ def test_your_account_email_switches_it(db, campaign, dm, player):
     db.expire_all()
     assert db.scalar(select(User).where(User.email == "dm@example.com")).emails["inbox"][str(c.id)] is False
     assert player.post("/email/inbox", data={"campaign": c.id, "on": "1"}).status_code == 403
-    assert "Nothing to send you" in player.get("/email").text
+    mine = player.get("/email").text  # (Email for everyone, issue 136: no digest of theirs, but A fix to try's switch)
+    assert c.name not in mine and 'data-email="fixes"' in mine and 'aria-checked="true"' in mine
+    assert player.post("/email/fixes", data={"on": ""}).status_code == 200  # (set before they've sent a note)
+    db.expire_all()
+    assert db.scalar(select(User).where(User.email == "player@example.com")).emails["fixes"] is False
 
 
 def test_no_email_without_a_key_or_on_staging(monkeypatch):

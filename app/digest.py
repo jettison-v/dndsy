@@ -264,20 +264,17 @@ def settings(request: Request, db: Session = Depends(get_db)):
                                                                         "sending": enabled(), "fixes": _fixes_row(db, me)})
 
 
-def _fixes_row(db: Session, user: User) -> bool | None:
-    """The fix-to-try switch, for someone who sends notes (on or off), else None (no row)."""
-    from app.fft.models import FftNote
-
-    if not db.scalar(select(func.count()).select_from(FftNote).where(FftNote.user_id == user.id)):
-        return None
+def _fixes_row(db: Session, user: User) -> bool:
+    """The fix-to-try switch, for everyone (Email for everyone, Brett's pick on question 39, issue 136): on or off, so
+    it's set before anything is sent, not only from the email's own link."""
     return wants_fixes(user)
 
 
 @router.post("/email/fixes")
 def choose_fixes(request: Request, on: str = Form(""), db: Session = Depends(get_db)):
     me = _me(db, request)
-    if me is None or _fixes_row(db, me) is None:
-        return HTMLResponse("", status_code=403)
+    if me is None:
+        return HTMLResponse("", status_code=401)
     me.emails = {**(me.emails or {}), "fixes": on == "1"}
     db.commit()
     resp = templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "fixes": _fixes_row(db, me), "only_rows": True})

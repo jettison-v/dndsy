@@ -19,8 +19,9 @@ def test_a_players_menu_is_short_and_help_is_in_it(player, db):
     assert not has_door(page, "help") and "help-btn" not in topbar(page)  # (the ? left the bar)
     menu = items(page, "account")
     assert menu[0] == "me" and menu[-1] == "signout"
-    assert {"notes", "tour", "help"} <= set(menu)
-    assert not {"dice", "email", "guide"} & set(menu)  # (dice live in Table rolls' Roll; email and the guide are the DM's)
+    assert {"notes", "email", "tour", "help"} <= set(menu)  # (Email for everyone: issue 136)
+    assert not {"dice", "guide"} & set(menu)  # (dice live in Table rolls' Roll; the guide is the DM's)
+    assert 'class="menu-state"' not in door(page, "account")  # (no digest of theirs to say On or Off)
 
 
 def test_the_dms_menu_adds_the_digest_and_the_dm_guide(dm, db):
