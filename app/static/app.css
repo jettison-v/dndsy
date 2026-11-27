@@ -550,6 +550,11 @@ input[type=file]::file-selector-button { min-height: var(--control-h); margin-ri
 .fld.has-error .fld-help { display: none; }
 .fld.has-error .fld-box :is(input, select, textarea) { border-color: var(--red); }
 @media (max-width: 640px) { .fld { grid-template-columns: minmax(0, 1fr); } .fld-name { padding-top: 0; } .fld-box, .fld-help, .fld-err { grid-column: 1; } }
+/* In a side panel the name column is narrower, so the box keeps its room, and a narrow panel puts the name above, as a
+   phone does (issue 147: a 160px name column left the box 200-260px at laptop width) */
+.peek:not(.modal) { container: panel / inline-size; }
+.peek:not(.modal) .fld { --fld-name-w: 112px; }
+@container panel (max-width: 460px) { .fld { grid-template-columns: minmax(0, 1fr); } .fld-name { padding-top: 0; } .fld-box, .fld-help, .fld-err { grid-column: 1; } }
 /* The one window (_window.html; Roadmap item 47, Brett's pick W1 A): as tall as what's in it, up to the screen, its foot
    at the bottom edge while the body scrolls */
 .peek.modal.large:has(> [data-window-fit]) { height: auto; }
