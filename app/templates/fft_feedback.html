@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, kind_word %}
-{% from "_lists.html" import empty_state, count_pill, history_link, history_head %}
+{% from "_tables.html" import table_box %}
+{% from "_lists.html" import empty_state, count_pill %}
 {% block title %}Feedback · Backstage · askdnd{% endblock %}
 {% block content %}
 {# Backstage › Global › Feedback (app/fft/feedback_page.py; screens 10–14 of docs/mockups/found-fixed-tried/): the record
@@ -19,7 +20,6 @@
   </nav>
   {% set g = grouped %}
   {% macro here_with(tab_=tab, chip_=chip, area_=area, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab_ }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area_ %}&amp;area={{ area_ }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
-  {% if tab == "closed" %}{{ history_head("closed issues and declined notes", "?tab=open") }}{% endif %}
   {% if issues_on %}
   {# Feedback's filters on one row (Brett's pick P1 A on docs/mockups/our-work-audit/, Nov 24): Open · Ready to try as the
      two-way switch, then the design system's Filters ▾ (filters_above's button, its chip groups and its pills) as links,
@@ -62,29 +62,27 @@
   </div>
   {% endif %}
 
-  {% if not rows %}{{ empty_state({"approve": "Nothing waits for your approval.", "open": "Nothing open. Press \\ on any page to send a note.", "ready": "Nothing ready to try.", "closed": "Nothing closed yet.", "ideas": "No ideas yet."}[tab]) }}{% else %}
-  {# A table, one row an item (Backstage mode; The Work Pages, Nov 20); a row opens its item in the item window at the
-     right (app/fft/item_page.py), ↑ ↓ for the next #}
-  {% macro row(r) %}
-  <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}"{% if r.key == pick %} aria-current="true"{% endif %}>
+  {# A table, one row an item (Backstage mode; The Work Pages, Nov 20), on the one table piece (issue 148); a row opens
+     its item in the item window at the right (app/fft/item_page.py), ↑ ↓ for the next; on Open and Ready to try, what's
+     closed is its finished rows, behind Show finished (issue 174) #}
+  {% macro row(r, from_, done=False) %}
+  <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}"{% if r.key == pick %} aria-current="true"{% endif %}{% if done %} data-ls-finished{% endif %}>
     <td class="num"><span class="dt-id">{{ mark(r.key) }}</span></td>
     <td class="dt-title"><span class="ts-title">{{ r.title }}</span>{% if r.sub %}<span class="dt-why nt-sum">{{ r.sub }}</span>{% endif %}</td>
     {% if issues_on %}<td>{% if r.kind %}{{ kind_word(r.kind) }}{% endif %}</td>{% endif %}
     <td>{{ state_word(r.word, r.tone, ' data-turn="' ~ r.tone ~ '"') }}</td>
   </tr>
   {% endmacro %}
-  <div class="table-scroll" id="fb-list">
-  <table class="dtable fft-table" data-fft-list="{{ tab }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}>
-    <thead><tr><th class="num dt-w1">No.</th><th>{{ {"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") }}, and where it stands</th>{% if issues_on %}<th class="dt-w3">Kind</th>{% endif %}<th class="dt-w3">Whose</th></tr></thead>
-    <tbody>
+  {% set fb_cols = [("No.", "num dt-w1"), ({"approve": "Note", "ideas": "Idea"}.get(tab, "Issue") ~ ", and where it stands", "")] + ([("Kind", "dt-w3")] if issues_on else []) + [("Whose", "dt-w3")] %}
+  {% set fb_attrs %} data-fft-list="{{ tab }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ from_ | urlencode }}"{% endif %}{% endset %}
+  {% call table_box("feedback", {"approve": "To approve", "open": "Open", "ready": "Ready to try", "closed": "Closed", "ideas": "Ideas"}[tab], rows | length, "", fb_cols,
+                    {"approve": "Nothing waits for your approval.", "open": "Nothing open. Press \\ on any page to send a note.", "ready": "Nothing ready to try.", "closed": "Nothing closed yet.", "ideas": "No ideas yet."}[tab], attrs=fb_attrs, finished=finished | length) %}
     {% if g %}{% for grp in g.groups %}
       <tr class="dt-group" data-group="{{ grp.key }}"><td colspan="{{ 4 if issues_on else 3 }}">{{ grp.title }} · {{ grp.rows | length }}</td></tr>
-      {% for r in grp.rows %}{{ row(r) }}{% endfor %}
-    {% endfor %}{% else %}{% for r in rows %}{{ row(r) }}{% endfor %}{% endif %}
-    </tbody>
-  </table>
-  </div>
-  {% endif %}
-  {% if tab in ("open", "ready") %}{{ history_link("?tab=closed") }}{% endif %}
+      {% for r in grp.rows %}{{ row(r, from_) }}{% endfor %}
+    {% endfor %}{% else %}{% for r in rows %}{{ row(r, from_) }}{% endfor %}{% endif %}
+    {% if finished %}<tr class="dt-group" data-finished-head><td colspan="{{ 4 if issues_on else 3 }}">Finished · {{ finished | length }}</td></tr>{% endif %}
+    {% for r in finished %}{{ row(r, closed_from, done=True) }}{% endfor %}
+  {% endcall %}
 </main>
 {% endblock %}

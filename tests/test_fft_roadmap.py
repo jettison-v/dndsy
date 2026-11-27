@@ -2,6 +2,8 @@
 its scope as versions, Brett's additions and Claude's answers, his one OK, steps his or Claude's, and the plans
 building it; done is History. Claude writes it from chat through the API; only Brett says a scope looks right."""
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -59,17 +61,18 @@ def test_an_idea_is_scoped_in_versions_and_brett_says_it_looks_right(db, admin):
     assert 'data-do="agree"' not in admin.get(f"/manage/roadmap/{it.id}").text
 
 
-def test_the_roadmap_lists_open_items_by_section_and_done_is_history(db, admin):
+def test_the_roadmap_lists_open_items_by_section_and_done_behind_show_finished(db, admin):
+    """Done leaves the list (Brett, Nov 20), now behind Show finished in the same table (issue 174, his pick F1 A)."""
     now = rules.new_idea(db, "claude", "Found, Fixed, Tried", section="now")
     later = rules.new_idea(db, "claude", "The component library", section="later")
     shipped = rules.new_idea(db, "claude", "The menu bar")
     rules.ship_item(db, "claude", shipped)
     db.flush()
     page = admin.get("/manage/roadmap").text
-    assert page.index(f'data-item="{now.id}"') < page.index(f'data-item="{later.id}"') and f'data-item="{shipped.id}"' not in page
-    assert 'data-section="now"' in page and 'data-stage-word="idea"' in page and "data-history" in page
-    hist = admin.get("/manage/roadmap?history=1").text
-    assert f'data-item="{shipped.id}"' in hist and "data-history-head" in hist and f'data-item="{now.id}"' not in hist
+    assert page.index(f'data-item="{now.id}"') < page.index(f'data-item="{later.id}"') < page.index(f'data-item="{shipped.id}"')
+    assert 'data-section="now"' in page and 'data-stage-word="idea"' in page and "data-ls-finished-toggle" in page
+    done = re.search(rf'<tr[^>]*data-item="{shipped.id}"[^>]*>', page).group(0)
+    assert "data-ls-finished" in done and "data-ls-finished" not in re.search(rf'<tr[^>]*data-item="{now.id}"[^>]*>', page).group(0)
     admin.post(f"/manage/roadmap/{later.id}", data={"do": "move", "section": "paused"})
     assert later.section == "paused"
     assert "data-move" in admin.get(f"/manage/roadmap/{now.id}").text
@@ -195,7 +198,7 @@ def test_a_shipped_item_says_what_it_changed_with_its_numbers(db, admin, api):
     rules.ship_item(db, "claude", it, result="Pages about 74% quicker\nTool corrections 5.8 s → 0.8 s")
     db.flush()
     assert not any(g["kind"] == "no_result" for g in views.gaps(db))
-    hist = admin.get("/manage/roadmap?history=1").text
+    hist = admin.get("/manage/roadmap").text  # (its finished rows say what each shipped item changed)
     assert "Pages about 74% quicker" in hist and "One bar, one way to show where you are" in hist
     assert 'data-result="done"' in admin.get(f"/manage/roadmap/{it.id}").text
 

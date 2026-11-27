@@ -179,3 +179,13 @@ def test_every_state_word_is_the_one_state_word():
     made = [f"{p.name}:{n}" for p in (Path(__file__).parent.parent / "app" / "templates").rglob("*.html") if p.name not in own
             for n, line in enumerate(p.read_text().splitlines(), 1) if re.search(r'class="state-word(?! fft-deploys-pill)', line)]
     assert not made, f"Use state_word(word, tone) or lane_tag(key, said) from _admin_bits.html: {made}"
+
+
+def test_workshop_and_your_notes_build_their_fields_from_the_one_field():
+    """Issue 145: 20 fields on Workshop's pages and Your notes were built by hand (`<label class="field">`) instead of the
+    field piece (_form_bits.html `field`), so its name column, help and error slot didn't reach them. Nothing brings
+    one back on those pages."""
+    root = Path(__file__).parent.parent / "app" / "templates"
+    pages = [p for p in root.rglob("*.html") if p.name.startswith(("fft_", "_fft_", "your_notes", "manage_document"))]
+    made = [f"{p.name}:{n}" for p in pages for n, line in enumerate(p.read_text().splitlines(), 1) if 'class="field' in line]
+    assert pages and not made, f"Use {{% call field(name) %}} from _form_bits.html: {made}"

@@ -1,43 +1,45 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word %}
-{% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head %}
+{% from "_lists.html" import empty_state, count_pill, grip %}
+{% from "_tables.html" import table_box %}
 {% block title %}Roadmap · Backstage · askdnd{% endblock %}
-{% block head %}{% if not history %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
+{% block head %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endblock %}
 {% block content %}
 {# Backstage › Global › Roadmap (app/fft/roadmap_page.py; Brett's picks, Nov 20, docs/mockups/roadmap-in-askdnd/): the
-   ideas that need discussion, by section in Brett's one order; a row goes to its item's page; done is History. #}
+   ideas that need discussion, by section in Brett's one order; a row goes to its item's page; shipped and not doing
+   are its finished rows, behind Show finished (issue 174). #}
 <main class="page manage-page" data-fft-page="roadmap">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Roadmap</h1>
-    {% if not history %}<button class="btn title-action" type="button" data-modal-url="/manage/roadmap/new" data-do="new-idea">+ New idea</button>{% endif %}</div>
+    <button class="btn title-action" type="button" data-modal-url="/manage/roadmap/new" data-do="new-idea">+ New idea</button></div>
   <p class="subtitle">The ideas that need discussion, in your order: each one's scope, your additions and Claude's answers, its steps. Changes to what exists are in <a href="/manage/feedback?tab=open">Feedback</a>; what's being built, in <a href="/manage/work">Development</a>. Only admins can see this page.</p>
   {% with bar = status, back = "roadmap" %}{% include "_fft_status.html" %}{% endwith %}
-  {% if history %}{{ history_head("shipped and not doing", "/manage/roadmap") }}{% else %}
-  <p class="note fft-foryou-sum" data-summary><b>{{ rows | length }} on the Roadmap</b>{% if yours %} · {{ yours }} wait{{ "s" if yours == 1 }} on you{% endif %} · drag to reorder</p>{% endif %}
-  {% if not rows %}{{ empty_state("Nothing shipped yet." if history else "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.") }}{% else %}
-  <div class="table-scroll" id="rm-list">
-  <table class="dtable dt-wide fft-table rm-table" data-roadmap>
-    <thead><tr><th class="dt-w0"></th><th class="dt-w1">No.</th><th>Item</th><th class="dt-w3">Stage</th><th class="dt-w1">Size</th><th class="num dt-w2">Steps</th><th class="dt-q">Next</th><th class="dt-w2">Updated</th></tr></thead>
-    {% macro item_row(r, drag=True) %}
-    <tr class="rm-row" data-key="{{ r.it.id }}" data-item="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0">
+  <p class="note fft-foryou-sum" data-summary><b>{{ rows | length }} on the Roadmap</b>{% if yours %} · {{ yours }} wait{{ "s" if yours == 1 }} on you{% endif %} · drag to reorder</p>
+  {% macro item_row(r, drag=True, done=False) %}
+    <tr class="rm-row" data-key="{{ r.it.id }}" data-item="{{ r.it.id }}" data-href="/manage/roadmap/{{ r.it.id }}" data-stage="{{ r.stage }}" tabindex="0"{% if done %} data-ls-finished{% endif %}>
       <td class="wk-grip">{% if drag %}{{ grip() }}{% endif %}</td>
       <td><span class="dt-id">{{ mark("r" ~ r.it.id) }}</span></td>
-      <td class="dt-title"><span class="ts-title wk-name">{{ r.it.title }}</span>{% set said = (r.it.result.splitlines() | first if history and r.it.result else r.status) %}{% if said %}<span class="dt-why"{% if history and r.it.result %} data-result{% endif %}>{{ said }}</span>{% endif %}</td>
+      <td class="dt-title"><span class="ts-title wk-name">{{ r.it.title }}</span>{% set said = (r.it.result.splitlines() | first if done and r.it.result else r.status) %}{% if said %}<span class="dt-why"{% if done and r.it.result %} data-result{% endif %}>{{ said }}</span>{% endif %}</td>
       <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
       <td>{{ r.it.size or "—" }}</td>
       <td class="num">{% if r.steps %}{{ r.done }} of {{ r.steps }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
-      <td{% if r.next[1] %} title="{{ r.next[1] }}"{% endif %}>{% if r.next[1] %}{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude", ' data-whose="' ~ r.next[0] ~ '"') }} {{ r.next[1] }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+      <td class="dt-wrap"{% if r.next[1] and not done %} title="{{ r.next[1] }}"{% endif %}>{% if r.next[1] and not done %}{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude", ' data-whose="' ~ r.next[0] ~ '"') }} {{ r.next[1] }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
       <td>{% if r.last %}<time datetime="{{ r.last.isoformat() }}" data-clock="ago">{{ r.last | ago }}</time>{% endif %}</td>
     </tr>
-    {% endmacro %}
-    {% if history %}<tbody>{% for r in rows %}{{ item_row(r, drag=False) }}{% endfor %}</tbody>
-    {% else %}{% for key, said, rs in groups if rs %}
+  {% endmacro %}
+  {# The one table (issue 148): each section its own body for dragging, with its group row; the finished items last #}
+  {% call table_box("roadmap", "On the Roadmap", rows | length, "",
+                    [("", "dt-w0"), ("No.", "dt-w1"), ("Item", ""), ("Stage", "dt-w3"), ("Size", "dt-w1"), ("Steps", "num dt-w2"), ("Next", "dt-q"), ("Updated", "dt-w2")],
+                    "Nothing on the Roadmap yet: + New idea, or tell Claude in chat.", attrs=' data-roadmap' | safe, finished=finished | length, bodies=true) %}
+    {% for key, said, rs in groups if rs %}
     <tbody class="rm-section" data-section="{{ key }}" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item="tr.rm-row" data-sort-handle=".wk-grip .grip">
       <tr class="dt-group"><td colspan="8">{{ said }} · {{ rs | length }}</td></tr>
       {% for r in rs %}{{ item_row(r) }}{% endfor %}
-    </tbody>{% endfor %}{% endif %}
-  </table>
-  </div>{% endif %}
-  {% if not history %}{{ history_link("?history=1") }}{% endif %}
+    </tbody>{% endfor %}
+    <tbody data-finished>
+      {% if finished %}<tr class="dt-group" data-finished-head><td colspan="8">Finished · {{ finished | length }}</td></tr>{% endif %}
+      {% for r in finished %}{{ item_row(r, drag=False, done=True) }}{% endfor %}
+    </tbody>
+  {% endcall %}
 </main>
 {% endblock %}
