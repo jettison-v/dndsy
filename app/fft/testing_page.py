@@ -36,6 +36,7 @@ from app.fft.models import (
     FftIdea,
     FftIssue,
     FftItem,
+    FftLine,
     FftLocalTry,
     FftNote,
     FftQuestion,
@@ -180,12 +181,12 @@ def history(db: Session, c: FftCheck) -> list[dict]:
 # read and one press), From the Roadmap (in his order), then Try (the long one, its rounds)
 SECTIONS = (("decide", "Decide"), ("roadmap", "From the Roadmap"), ("try", "Try"))
 SECTION_ORDER = {k: n for n, (k, _) in enumerate(SECTIONS)}
-SECTION_OF = {"local": "try", "check": "try", "question": "decide", "decision": "decide", "merge": "decide", "note": "decide", "idea": "decide",
+SECTION_OF = {"local": "try", "check": "try", "question": "decide", "decision": "decide", "merge": "decide", "note": "decide", "idea": "decide", "ask": "decide",
               "roadmap": "roadmap", "scope": "roadmap"}
 # What each row asks of him, as one action word (his comments on the mockup: action words, fewer of them, Approve for
 # what's sent for his yes, a local try named for what it is), with its tone
 ACT = {"local": ("Try locally", "ask"), "check": ("Try", "ask"), "question": ("Answer", "claude"), "decision": ("Answer", "claude"),
-       "merge": ("Approve", "passed"), "note": ("Approve", "passed"), "idea": ("Approve", "passed"), "scope": ("Approve", "passed"), "roadmap": ("Do", "quiet")}
+       "merge": ("Approve", "passed"), "note": ("Approve", "passed"), "idea": ("Approve", "passed"), "ask": ("Send", "passed"), "scope": ("Approve", "passed"), "roadmap": ("Do", "quiet")}
 NUMBER = {"c": "check", "q": "question", "i": "issue", "n": "note", "d": "idea", "r": "item", "l": "local try"}  # (the numbers Claude writes)
 
 
@@ -254,6 +255,10 @@ def for_you(db: Session, device: str) -> list[dict]:
             put(SECTION_OF[row["kind"]], dict(SECTIONS)[SECTION_OF[row["kind"]]], row | {"from": a.title if a else ""})
     for n in db.scalars(select(FftNote).where(FftNote.state == "waiting").order_by(FftNote.id)):  # (from the table: a yes or no, in Decide)
         put("decide", "Decide", {"key": f"n{n.id}", "title": views.title_of(n.text), "kind": "note", "sub": f"{n.first_name}'s note: your yes sends it to Claude", "from": "The table"})
+    for line in db.scalars(select(FftLine).where(FftLine.who == "claude", FftLine.to == "sender", FftLine.approved.is_(False),
+                                                FftLine.note_id.isnot(None)).order_by(FftLine.id)):  # (ask back: R10's slice 5)
+        n = db.get(FftNote, line.note_id)
+        put("decide", "Decide", {"key": f"n{n.id}", "title": views.title_of(n.text), "kind": "ask", "sub": f"Claude's question for {n.first_name}: send it?", "from": "The table"})
     for d in db.scalars(select(FftIdea).where(FftIdea.state == "new").order_by(FftIdea.id)):
         who = db.scalar(select(FftNote.first_name).where(FftNote.idea_id == d.id))
         put("decide", "Decide", {"key": f"d{d.id}", "title": d.title, "kind": "idea", "sub": f"{who}'s idea: place it" if who else "An idea to place", "from": "The table"})
@@ -276,7 +281,7 @@ def summary(groups: list[dict]) -> dict:
     checks = [r for r in rows if r["kind"] == "check"]
     act = lambda *kinds: sum(count(k) for k in kinds)
     bits = [(act("question", "decision"), "to answer", ""), (act("merge", "note", "idea", "scope"), "to approve", ""), (count("roadmap"), "to do", ""),
-            (count("local"), "to try locally", ""), (len(checks), "to try", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else "")]
+            (count("ask"), "to send", ""), (count("local"), "to try locally", ""), (len(checks), "to try", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else "")]
     return {"n": len(rows), "line": " · ".join(f"{n} {words}{extra}" for n, words, extra in bits if n)}
 
 

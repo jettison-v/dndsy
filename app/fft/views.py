@@ -184,7 +184,9 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
             return out("closed", "Built: it's in askdnd now.", open_=False, word="Built")
         if st == "declined":
             return out("closed", "Not taken up as an idea" + (f": {idea.reason}" if idea and idea.reason else "."), open_=False)
-        return out("claude", "Taken up as an idea: on the Roadmap" if st == "roadmap" else "Taken up as an idea: it waits its turn.", word="An idea")
+        if st == "roadmap":  # (its own word, so the note's marker changes and Notes you sent marks it new: R10's slice 5)
+            return out("claude", "Taken up as an idea, and on the Roadmap now: it's built in its turn.", word="On the Roadmap")
+        return out("claude", "Taken up as an idea: it waits its turn.", word="An idea")
     issue = (db.get(FftIssue, note.issue_id) if note.issue_id else None) if issue is _FETCH else issue
     if issue is None:
         return out("closed", "Closed.", open_=False)
@@ -233,7 +235,7 @@ def sender_lines(db: Session, note: FftNote) -> list[FftLine]:
     """A note's conversation as its sender reads it: their own lines (approved or not: they wrote them) and the
     lines meant for them; never another sender's, never Brett and Claude's to each other."""
     rows = db.scalars(select(FftLine).where(_their_lines(note)).order_by(FftLine.id))
-    return [x for x in rows if x.who == "sender" or x.to == "sender"]
+    return [x for x in rows if x.who == "sender" or (x.to == "sender" and x.approved)]  # (Claude's question waits for Brett's Send)
 
 
 def marker(db: Session, note: FftNote, me_id: int | None) -> str:
@@ -260,7 +262,7 @@ def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, s
     for n in notes:
         on = {n.issue_id, *split.get(n.id, [])} if n.issue_id else set()
         mine = [x for x in lines if (x.note_id == n.id or (x.issue_id in on and x.to == "sender"))
-                and (x.who == "sender" or x.to == "sender")]
+                and (x.who == "sender" or (x.to == "sender" and x.approved))]  # (a question not yet sent isn't theirs: ask back)
         parts = [issues[i] for i in split.get(n.id, []) if i in issues] if n.issue_id else []
         said = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id), parts=parts)
         word = said["word"] + (f"/{sum(1 for p in said['parts'] if p['open'])}of{len(said['parts'])}" if said.get("parts") else "")  # (short: the marker keeps 40 characters)

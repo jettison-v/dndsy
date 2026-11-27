@@ -111,7 +111,8 @@ def _draft_recap(db: Session, payload: dict) -> dict:
 _RUN = {"draft_notes": _draft_notes, "read_transcript": _read_transcript, "revise": _revise, "draft_recap": _draft_recap}
 for _step in STEPS:  # (tried once more only after an interruption: a failure Claude reports is kept on its run, not retried)
     jobs.register(jobs.Kind(_step, QUEUE, _RUN[_step], max_attempts=2, timeout=timedelta(minutes=20), backoff=(0,),
-                            keep_done=timedelta(days=90)))
+                            keep_done=timedelta(days=90), again_if_asked=True))  # (asked again while it runs, a resent
+    # transcript or Start over: run once more after it, issue 153)
 
 
 def start(db: Session, step: str, session_id: int, *, by: str = "", **extra) -> int:

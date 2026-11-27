@@ -190,3 +190,24 @@ def test_the_wait_before_the_route_is_the_time_to_get_db():
         timing._now.reset(t1)
         timing._came.reset(t2)
     assert 0.25 <= watch[timing.BEFORE] < 5 and watch.get(timing.READS, 0) >= 0
+
+
+def test_numbers_that_didnt_save_wait_for_the_next_save_and_two_saves_both_land(db, monkeypatch):
+    """Issue 157: a save that failed lost its numbers (taken from memory before they were kept), and two copies saving
+    at once during a deploy could each make today's row, one losing. A failed save puts them back; each save adds to
+    the one row."""
+    speed._now.clear()
+    speed.record("GET", "/party", 100)
+    real = speed._save
+    monkeypatch.setattr(speed, "_save", lambda db, taken: (_ for _ in ()).throw(RuntimeError("the database blinked")))
+    try:
+        speed.flush(db)
+    except RuntimeError:
+        pass
+    speed.record("GET", "/party", 300)
+    monkeypatch.setattr(speed, "_save", real)
+    assert speed.flush(db) == 1
+    speed.record("GET", "/party", 50)
+    speed.flush(db)  # (a second save, as another copy's would, adds to the same row)
+    row = db.scalar(select(RequestTime).where(RequestTime.route == "/party"))
+    assert row.count == 3 and row.total_ms == 450 and row.max_ms == 300

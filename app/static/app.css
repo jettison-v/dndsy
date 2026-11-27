@@ -1823,6 +1823,7 @@ button.rm-box { cursor: pointer; }
 .tbx.is-empty .tbx-head { border-bottom: 0; }
 .tbx-empty { padding: 0 var(--sp-3); }  /* (the shared empty line inside a table's box) */
 .tbx-stack { display: grid; gap: var(--sp-4); }
+.tbx-stack > * { min-width: 0; }  /* (a grid item would grow to its table's width and scroll the page sideways on a phone: issue 158, Backups at 375) */
 .tbx ~ .tbx { margin-top: var(--sp-4); }  /* (two tables on one page, one gap apart, the same as a stack's, each with its own title row: issues 122, 125) */
 .tbx-stack > .tbx ~ .tbx { margin-top: 0; }  /* (a stack keeps its own gap) */
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
