@@ -1,0 +1,316 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rule Books Panel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.quote { border-left: 3px solid var(--red-btn); padding: 4px 0 4px 12px; color: var(--text); font-style: italic; max-width: 92ch; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-3); color: var(--strong); font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); }
+.opt-h { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.opt-h .mine, .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* the page, drawn at askdnd's own size (14px text), a 13" laptop's width */
+.scene { border: 1px solid var(--line-strong); border-radius: 12px; background: var(--bg); overflow-x: auto; }
+.app { min-width: 1100px; font-size: 14px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: 640px; }
+.bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 8px 16px; color: var(--muted); font-size: 13px; }
+.bar b { font-size: 14px; }
+.bar .sp { margin-left: auto; }
+.pg { padding: 18px 22px; display: grid; gap: 12px; align-content: start; }
+.crumb { display: flex; justify-content: space-between; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--muted); }
+.crumb b { color: var(--strong); }
+.trow { display: flex; align-items: center; gap: 12px; }
+.trow h2 { font: 700 26px/1.15 var(--sans); }
+.trow .btn { margin-left: auto; }
+.sub { color: var(--muted); font-size: 13.5px; }
+.tbx { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.tbx-head { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.tbx-head h4 { margin: 0; font: 600 15px/1.2 var(--sans); color: var(--strong); }
+.cnt { background: var(--surface-3); color: var(--muted); border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; color: var(--muted); font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+th.end, td.end { text-align: right; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--surface-2); }
+tbody tr.sel td { background: var(--blue-soft); }
+tbody tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
+.bk { display: flex; align-items: center; gap: 10px; }
+.mini { width: 22px; height: 30px; border-radius: 3px; flex: none; }
+.dim { color: var(--muted); }
+
+/* the side panel */
+.peek { border-left: 1px solid var(--line-strong); background: var(--surface); display: grid; align-content: start; }
+.pk-top { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+.pk-top .x { margin-left: auto; color: var(--muted); font-size: 16px; }
+.pk { padding: 16px 18px 22px; display: grid; gap: 16px; }
+.hero { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: end; }
+.hero h3 { font: 600 22px/1.15 var(--serif); }
+.hero .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 600; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.on { background: var(--green-soft); color: var(--green); }
+.tag.none { background: var(--amber-soft); color: var(--amber); }
+/* a drawn cover: the book's colour, its short name, a spine */
+.cover { width: 112px; aspect-ratio: 3 / 4; max-width: 100%; border-radius: 4px 8px 8px 4px; position: relative; display: grid; align-content: end; padding: 10px 10px 12px 16px; box-shadow: 0 6px 18px rgba(0,0,0,.45), inset 6px 0 0 rgba(0,0,0,.28), inset 7px 0 0 rgba(255,255,255,.08); overflow: hidden; }
+.cover::before { content: ""; position: absolute; inset: 10px 8px auto 16px; height: 1px; background: rgba(255,255,255,.35); }
+.cover::after { content: ""; position: absolute; inset: auto 8px 34px 16px; height: 1px; background: rgba(255,255,255,.25); }
+.cover b { font: 700 15px/1.05 var(--serif); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.cover small { font: 700 9px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); margin-top: 6px; }
+.c-mm { background: linear-gradient(160deg, #7a2f2a, #3d1715); }
+.c-phb { background: linear-gradient(160deg, #2f4f7a, #18273d); }
+.c-dmg { background: linear-gradient(160deg, #4c3a72, #241a38); }
+.cover.photo { background: repeating-linear-gradient(135deg, #2a2d31 0 10px, #24272b 10px 20px); box-shadow: none; border: 1px dashed var(--line-strong); place-content: center; text-align: center; padding: 10px; }
+.cover.photo::before, .cover.photo::after { display: none; }
+.cover.photo b { font: 600 12px/1.3 var(--sans); color: var(--muted); text-shadow: none; }
+.sec { display: grid; gap: 6px; }
+.sec-h { font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.big { display: flex; align-items: baseline; gap: 10px; }
+.big b { font: 700 28px/1 var(--sans); }
+.uses { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.uses li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; font-size: 13.5px; }
+.uses li i { font-style: normal; color: var(--blue); }
+.uses li a, .lnk { color: var(--blue); text-decoration: none; }
+.camps { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.camps div { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+.camps div:last-child { border-bottom: 0; }
+.camps .tag, .camps .sw { margin-left: auto; }
+.sw { width: 34px; height: 20px; border-radius: 999px; background: var(--blue); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+.kept { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--muted); display: grid; gap: 8px; }
+.kept .btns { display: flex; gap: 8px; }
+
+/* option drawings */
+.optpic { border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); padding: 16px; display: flex; gap: 16px; align-items: center; min-height: 170px; overflow-x: auto; }
+.page-own { min-width: 520px; display: grid; gap: 10px; font-size: 13px; }
+.page-own .h { display: flex; gap: 14px; align-items: end; }
+.page-own .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.page-own .cols div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--muted); }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .btn { min-height: 34px; font-size: .9rem; }
+@media (max-width: 760px) { .duo { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Books · issue 117</span>
+    <h1>Rule books: a panel for each book</h1>
+    <p class="meta"><b>Where it lives:</b> Backstage › General › Rule books, the admins' page listing the private books askdnd reads (the Player's Handbook, the Dungeon Master's Guide and the Monster Manual, all 2024). Today it's a table of titles and counts. Below, pressing a book opens a side panel that says what the book is, what askdnd takes from it, where you meet it in askdnd, and which campaigns have it on. Three picks follow.</p>
+    <p class="quote">"Rulebooks should have a sidebar that describes the rulebook and what we are pulling from it. It should be visually pleasing, hopefully with an image." (you, note 67)</p>
+  </header>
+
+  <section style="display:grid;gap:12px" aria-labelledby="h-page">
+    <h2 id="h-page">The page, with a book open</h2>
+    <p class="meta">At a 13" laptop's width. Press another book to see its panel: the Player's Handbook gives askdnd only its 10 summoned creatures so far, and the Dungeon Master's Guide nothing yet.</p>
+    <div class="scene">
+      <div class="app">
+        <div class="bar"><b>askdnd</b><span>Campaign</span><span>Table ↗</span><span>Party ▾</span><span class="sp">⌕ Search</span><span>Backstage ▾</span></div>
+        <div class="pg">
+          <div class="crumb"><b>Rule books</b><span>All pages ▾</span></div>
+          <div class="trow"><h2>Rule books</h2><span class="btn">+ Upload a book</span></div>
+          <p class="sub">The private rules books askdnd reads, only ever in this database (never in git). Only admins can see this page.</p>
+          <div class="tbx">
+            <div class="tbx-head"><h4>Books</h4><span class="cnt">3</span></div>
+            <table>
+              <thead><tr><th>Book</th><th class="end">What's here</th></tr></thead>
+              <tbody>
+                <tr data-bk="phb"><td><span class="bk"><span class="mini c-phb"></span><b>Player's Handbook (2024)</b> <span class="dim">PHB 2024</span></span></td><td class="end">10 summoned creatures</td></tr>
+                <tr data-bk="dmg"><td><span class="bk"><span class="mini c-dmg"></span><b>Dungeon Master's Guide (2024)</b> <span class="dim">DMG 2024</span></span></td><td class="end dim">Nothing here yet</td></tr>
+                <tr data-bk="mm" class="sel"><td><span class="bk"><span class="mini c-mm"></span><b>Monster Manual (2024)</b> <span class="dim">MM 2024</span></span></td><td class="end">510 monsters</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="peek" aria-label="The book's panel">
+          <div class="pk-top">Rule books › <span data-f="short">MM 2024</span><span class="x" aria-hidden="true">✕</span></div>
+          <div class="pk">
+            <div class="hero">
+              <div class="cover c-mm" data-f="cover"><b data-f="ctitle">Monster Manual</b><small>2024 · D&amp;D</small></div>
+              <div><h3 data-f="title">Monster Manual (2024)</h3><p class="note" data-f="kind">The creatures a DM runs, from beasts to dragons</p>
+                <div class="tags"><span class="tag" data-f="short2">MM 2024</span><span class="tag on" data-f="state">On in 2 campaigns</span></div></div>
+            </div>
+            <div class="sec"><span class="sec-h">What askdnd takes from it</span>
+              <div class="big"><b data-f="n">510</b><span data-f="nwhat">stat blocks</span></div>
+              <p class="note" data-f="takes">Each creature's numbers, actions and traits, and the page it's on, so askdnd can say where to read it (MM 2024 p. 373). Read from D&amp;D Beyond's copy, with what that leaves out filled in from your book.</p></div>
+            <div class="sec"><span class="sec-h">Where you meet it</span>
+              <ul class="uses" data-f="uses">
+                <li><i>◆</i><span><b>Wild Shape</b>: its Beasts are the forms a Druid can take</span></li>
+                <li><i>◆</i><span><b>askdnd's table</b>: the monsters the DM places as tokens</span></li>
+                <li><i>◆</i><span><b>Your creatures</b>: familiars, and creatures an item brings</span></li>
+                <li><i>◆</i><span><b>Search</b>: any creature by name, with its page</span></li>
+              </ul></div>
+            <div class="sec"><span class="sec-h">What it leaves out</span>
+              <p class="note" data-f="out">The book's lore, art and the rest of its text. askdnd keeps the stat blocks only.</p></div>
+            <div class="sec"><span class="sec-h">Campaigns</span>
+              <div class="camps"><div><b>Your campaign</b><span class="tag on">On</span></div><div><b>VTT test</b><span class="tag on">On</span></div></div>
+              <p class="note">Each campaign's DM switches its books on <a class="lnk" href="#h-k">Settings › Books</a>.</p></div>
+            <div class="kept"><span><b>Kept private.</b> Only in askdnd's database, never in git or anywhere public. <span data-f="loaded">Loaded from your copy; + Upload a book replaces it.</span></span>
+              <div class="btns"><span class="btn">Replace…</span><span class="btn">Add a cover…</span></div></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px" aria-labelledby="h-c">
+    <h2 id="h-c">1 · The cover</h2>
+    <p class="meta">The book's real cover is Wizards of the Coast's art, so it can't go in the public repo or on a page anyone can reach. It can live where the books do: in askdnd's database and private file storage, shown only to admins.</p>
+    <div class="duo">
+      <div class="card"><div class="opt-h"><h3>A · Your cover image, drawn until you add one</h3><span class="mine">my pick</span></div>
+        <div class="optpic"><div class="cover photo"><b>Your cover image<br>(Add a cover…)</b></div><div class="cover c-mm"><b>Monster Manual</b><small>2024 · D&amp;D</small></div></div>
+        <p class="note">Add a cover… takes a picture you upload (a photo of your copy, or the image from your D&amp;D Beyond library), kept privately like the book. Until then the drawn one shows.</p></div>
+      <div class="card"><div class="opt-h"><h3>B · Drawn only</h3></div>
+        <div class="optpic"><div class="cover c-phb"><b>Player's Handbook</b><small>2024 · D&amp;D</small></div><div class="cover c-dmg"><b>Dungeon Master's Guide</b><small>2024 · D&amp;D</small></div><div class="cover c-mm"><b>Monster Manual</b><small>2024 · D&amp;D</small></div></div>
+        <p class="note">Each book in its own colour with its name; no upload, nothing to keep private.</p></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px" aria-labelledby="h-w">
+    <h2 id="h-w">2 · Where a book opens</h2>
+    <div class="duo">
+      <div class="card"><div class="opt-h"><h3>A · A side panel beside the list</h3><span class="mine">my pick</span></div>
+        <p class="note">As drawn above: the list stays in view, and the next book is one press away. It's the one side panel every list in askdnd already uses.</p></div>
+      <div class="card"><div class="opt-h"><h3>B · A page of its own</h3></div>
+        <div class="optpic"><div class="page-own"><div class="h"><div class="cover c-mm" style="width:72px"><b style="font-size:11px">Monster Manual</b></div><div><b style="font-size:18px">Monster Manual (2024)</b><p class="note">‹ Rule books</p></div></div><div class="cols"><div>What askdnd takes · 510</div><div>Where you meet it</div><div>What it leaves out</div><div>Campaigns</div></div></div></div>
+        <p class="note">Room for more later (a list of the creatures), but a step away from the list.</p></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px" aria-labelledby="h-k">
+    <h2 id="h-k">3 · Campaigns in the panel</h2>
+    <div class="duo">
+      <div class="card"><div class="opt-h"><h3>A · Said here, switched on Settings › Books</h3><span class="mine">my pick</span></div>
+        <div class="camps"><div><b>Your campaign</b><span class="tag on">On</span></div><div><b>VTT test</b><span class="tag on">On</span></div></div>
+        <p class="note">One place to switch a book, the campaign's own settings, where its DM looks. The panel says how things stand.</p></div>
+      <div class="card"><div class="opt-h"><h3>B · Switches in the panel</h3></div>
+        <div class="camps"><div><b>Your campaign</b><span class="sw" aria-hidden="true"></span></div><div><b>VTT test</b><span class="sw" aria-hidden="true"></span></div></div>
+        <p class="note">Quicker for an admin; two places to switch the same thing.</p></div>
+    </div>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>C1 · The cover</legend><label class="opt"><input type="radio" name="c1" value="upload"><span>A · Your cover image, drawn until you add one <span class="mine">my pick</span></span><small>Add a cover… on the panel; kept privately like the book.</small></label><label class="opt"><input type="radio" name="c1" value="drawn"><span>B · Drawn only</span><small>Each book's colour and name; nothing to upload.</small></label></fieldset>
+    <fieldset><legend>W1 · Where a book opens</legend><label class="opt"><input type="radio" name="w1" value="panel"><span>A · A side panel beside the list <span class="mine">my pick</span></span><small>The list stays in view.</small></label><label class="opt"><input type="radio" name="w1" value="page"><span>B · A page of its own</span><small>More room, a step away.</small></label></fieldset>
+    <fieldset><legend>K1 · Campaigns in the panel</legend><label class="opt"><input type="radio" name="k1" value="said"><span>A · Said here, switched on Settings › Books <span class="mine">my pick</span></span><small>One place to switch.</small></label><label class="opt"><input type="radio" name="k1" value="switch"><span>B · Switches in the panel</span><small>Two places to switch the same thing.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(something the panel should say)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // Press a book: its panel (the drawn page above)
+  const BOOKS = {
+    mm: { short: "MM 2024", title: "Monster Manual (2024)", ctitle: "Monster Manual", cover: "c-mm", kind: "The creatures a DM runs, from beasts to dragons", state: ["on", "On in 2 campaigns"],
+      n: "510", nwhat: "stat blocks", takes: "Each creature's numbers, actions and traits, and the page it's on, so askdnd can say where to read it (MM 2024 p. 373). Read from D&D Beyond's copy, with what that leaves out filled in from your book.",
+      uses: [["Wild Shape", "its Beasts are the forms a Druid can take"], ["askdnd's table", "the monsters the DM places as tokens"], ["Your creatures", "familiars, and creatures an item brings"], ["Search", "any creature by name, with its page"]],
+      out: "The book's lore, art and the rest of its text. askdnd keeps the stat blocks only.", loaded: "Loaded from your copy; + Upload a book replaces it." },
+    phb: { short: "PHB 2024", title: "Player's Handbook (2024)", ctitle: "Player's Handbook", cover: "c-phb", kind: "The rules for players: classes, species, spells", state: ["on", "On in 2 campaigns"],
+      n: "10", nwhat: "summoned creatures", takes: "The stat blocks a spell brings (Summon Beast, Summon Fey and the rest), with their page. A character's own class, spells and items come from their D&D Beyond sheet, not from here.",
+      uses: [["Your creatures", "a summoned creature's card and hit points on Battle"], ["askdnd's table", "its token when it's placed"]],
+      out: "Everything else in the book. Rules answers quote the free SRD for now.", loaded: "Loaded from your copy; + Upload a book replaces it." },
+    dmg: { short: "DMG 2024", title: "Dungeon Master's Guide (2024)", ctitle: "Dungeon Master's Guide", cover: "c-dmg", kind: "The rules for running the game: magic items, traps, worlds", state: ["none", "Nothing taken yet"],
+      n: "0", nwhat: "entries", takes: "Nothing yet. It's on for both campaigns, so anything loaded from it shows at once.",
+      uses: [["Nowhere yet", "its magic items would join Items and Search when loaded"]],
+      out: "The whole book, for now.", loaded: "Not loaded yet: + Upload a book adds it." },
+  };
+  const peek = document.querySelector(".peek"), f = k => peek.querySelector(`[data-f=${k}]`);
+  document.querySelectorAll("tbody tr[data-bk]").forEach(tr => tr.addEventListener("click", () => {
+    const b = BOOKS[tr.dataset.bk];
+    document.querySelectorAll("tbody tr").forEach(r => r.classList.toggle("sel", r === tr));
+    f("short").textContent = f("short2").textContent = b.short;
+    f("title").textContent = b.title; f("ctitle").textContent = b.ctitle; f("kind").textContent = b.kind;
+    f("cover").className = "cover " + b.cover;
+    f("state").className = "tag " + b.state[0]; f("state").textContent = b.state[1];
+    f("n").textContent = b.n; f("nwhat").textContent = b.nwhat; f("takes").textContent = b.takes; f("out").textContent = b.out; f("loaded").textContent = b.loaded;
+    const ul = f("uses"); ul.replaceChildren(...b.uses.map(([h, t]) => { const li = document.createElement("li"), i = document.createElement("i"), s = document.createElement("span"), bb = document.createElement("b");
+      i.textContent = "◆"; bb.textContent = h; s.append(bb, ": " + t); li.append(i, s); return li; }));
+  }));
+
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["c1", "w1", "k1"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
