@@ -2755,6 +2755,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .sh-status.off { color: var(--faint); }
 .tag.sh-always { color: var(--green); background: var(--green-soft); }
 .ls-views button[aria-pressed="true"] { background: var(--selected-bg); color: var(--text); }
+.ls-views { flex-wrap: wrap; max-width: 100%; }  /* (a choice keeps its name and count on one line; the choices go onto a second row when there isn't room: Sync's five at 375px, issue 161) */
+.ls-views button { white-space: nowrap; }
 @container list (max-width: 920px) {
   .sh-cols { display: block; }
   .sh-cols > .ls-head { display: none; }
