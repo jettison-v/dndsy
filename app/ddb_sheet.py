@@ -571,7 +571,8 @@ class _Sheet:
             reset_label = "Used up"
         used = lu.get("numberUsed") or 0
         note = lu.get("resetTypeDescription") or ""
-        phrase = {"Dawn": "back at dawn", "Used up": "gone once used", "Other": note or "see the description"}.get(
+        gone = "gone once used" if maximum == 1 else "gone once all are used"  # (a Soul Coin's 3 charges: issue 162)
+        phrase = {"Dawn": "back at dawn", "Used up": gone, "Other": note or "see the description"}.get(
             reset_label, f"back after a {reset_label}" if reset_label else note)
         return {"max": maximum, "used": used, "left": max(0, maximum - used), "reset": reset_label,
                 "reset_note": note, "reset_phrase": phrase}
