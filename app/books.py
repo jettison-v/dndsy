@@ -36,6 +36,28 @@ DEFAULT_JSON = json.dumps(list(DEFAULT))
 KIND_NAMES = {"monster": ("monster", "monsters"), "spell": ("spell", "spells"), "magic_item": ("magic item", "magic items"),
               "summon": ("summoned creature", "summoned creatures")}
 
+# The Rule books side panel (issue 117, Brett's picks on docs/mockups/rule-books/, Nov 27): what each book is, what askdnd
+# takes of each kind, where you meet it, and what it leaves out. Words only, never the book's own.
+ABOUT = {
+    "phb-2024": "The rules for players: classes, species, backgrounds, feats and spells.",
+    "dmg-2024": "The rules for running the game: magic items, traps, building adventures and worlds.",
+    "mm-2024": "The creatures a DM runs, from beasts to dragons.",
+}
+TAKES = {
+    "monster": "Each creature's numbers, actions and traits, and the page it's on, so askdnd can say where to read it. Read from D&D Beyond's copy, with what that leaves out filled in from your book.",
+    "summon": "The stat blocks a spell brings (Summon Beast, Summon Fey and the rest), with their page. A character's own class, spells and items come from their D&D Beyond sheet, not from here.",
+    "spell": "Each spell's level, school, casting and what it does, with its page.",
+    "magic_item": "Each magic item's rarity, attunement and what it does, with its page.",
+}
+WHERE = {  # (where you meet each kind in askdnd)
+    "monster": (("Wild Shape", "its Beasts are the forms a Druid can take"), ("askdnd's table", "the monsters the DM places as tokens"),
+                ("Your creatures", "familiars, and creatures an item brings"), ("Search", "any creature by name, with its page")),
+    "summon": (("Your creatures", "a summoned creature's card and hit points on Battle"), ("askdnd's table", "its token when it's placed")),
+    "spell": (("Search", "a spell by name, with its page"),),
+    "magic_item": (("Items", "a magic item's details and its page"), ("Search", "an item by name")),
+}
+LEAVES_OUT = "The book's lore, art and the rest of its text: askdnd keeps only what it uses, and only in its database."
+
 
 def book(key: str) -> Book | None:
     return BY_KEY.get(key)

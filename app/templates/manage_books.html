@@ -2,15 +2,16 @@
 {% block title %}Rule books · Backstage · askdnd{% endblock %}
 {% block content %}
 {% from "_tables.html" import table_box %}
+{% from "_book_cover.html" import cover_of %}
 {# Backstage › General › Rule books (app/admin.py `books_page`; Brett's pick BK3 on docs/mockups/backstage-round-1/, Nov 25:
    rule books aren't backups, so a page of their own). Private books the DM owns, only ever in this database. #}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Rule books</h1><button class="btn title-action" type="button" data-modal-url="/manage/books/upload-window" data-item="upload-book">+ Upload a book</button></div>
-  <p class="subtitle">The private rules books askdnd reads, only ever in this database (never in git). Only admins can see this page.</p>
+  <p class="subtitle">The private rules books askdnd reads, only ever in this database (never in git). Press a book for what askdnd takes from it. Only admins can see this page.</p>
   {% call table_box("books", "Books", books | length, cols=[("Book", ""), ("What's here", "end dt-w5")], empty="No books yet: + Upload a book adds one.") %}{# (the one table piece: the end-of-day review, Nov 25) #}
     {% for b in books %}
-    <tr data-book="{{ b.short }}"><td class="dt-title"><b>{{ b.title }}</b> <span class="note">{{ b.short }}</span></td>
+    <tr data-book="{{ b.short }}" data-book-key="{{ b.key }}" data-panel-url="/manage/books/{{ b.key }}" tabindex="0"><td class="dt-title"><span class="book-title">{{ cover_of(b, b.cover, mini=True) }}<b>{{ b.title }}</b> <span class="note">{{ b.short }}</span></span></td>
       <td class="end dt-wrap">{% for k, n in b.kinds.items() %}{{ "{:,}".format(n) }} {{ k }}{{ "s" if n != 1 }}{{ ", " if not loop.last }}{% else %}<span class="note">Nothing here yet</span>{% endfor %}</td></tr>
     {% endfor %}
   {% endcall %}

@@ -4,7 +4,7 @@ this way)."""
 
 import json
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -87,10 +87,32 @@ def book_window(request: Request, db: Session = Depends(get_db)):
 
 
 def _books(db: Session) -> list[dict]:
-    from app import books
+    from app import books, pictures
 
-    have = books.counts(db)
-    return [{"title": b.title, "short": b.short, "kinds": have.get(b.key, {})} for b in books.BOOKS]
+    have, covers = books.counts(db), pictures.book_covers(db)
+    return [{"key": b.key, "title": b.title, "short": b.short, "kinds": have.get(b.key, {}), "cover": covers.get(b.key)} for b in books.BOOKS]
+
+
+@books_router.get("/{key}")
+def book_panel(request: Request, key: str, db: Session = Depends(get_db)):
+    """A book's side panel (issue 117, Brett's picks on docs/mockups/rule-books/: C1 his own cover, drawn until he adds one;
+    W1 a side panel beside the list; K1 the campaigns said here, switched on each campaign's Settings › Books): what it
+    is, what askdnd takes from it, where you meet it, what it leaves out, which campaigns have it on."""
+    from app import books, pictures
+    from app.models import Campaign
+
+    user, denied = _guard(request)
+    if denied:
+        return denied
+    b = books.book(key)
+    if b is None:
+        raise HTTPException(404)
+    kinds = books.counts(db).get(b.key, {})
+    camps = [{"name": c.name, "slug": c.slug, "on": b.key in (c.books or []), "test": c.is_test} for c in db.scalars(select(Campaign).order_by(Campaign.id))]
+    return templates.TemplateResponse(request, "_book_panel.html", {
+        "b": b, "about": books.ABOUT.get(b.key, ""), "kinds": [(k, n, books.KIND_NAMES.get(k, (k, k + "s")), books.TAKES.get(k, "")) for k, n in kinds.items()],
+        "where": [w for k in kinds for w in books.WHERE.get(k, ())], "leaves_out": books.LEAVES_OUT, "campaigns": camps,
+        "cover": pictures.book_covers(db).get(b.key), "total": sum(kinds.values())})
 
 
 MAX_BOOK_BYTES = 20_000_000  # (the whole Monster Manual is about 130 KB packed, 1.5 MB unpacked)
