@@ -75,6 +75,10 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     player = people("player")
     page = battle(player, server)
     player.live()
+    # (the bridge answers the page's ping, as the extension does: unanswered, the page decides after 1.5 s that it isn't
+    # in this browser and says so, which on a slow machine landed mid-test; issue 176)
+    page.evaluate("window.postMessage({ askdndBridge: 'hello', version: 'test' }, location.origin)")
+    page.wait_for_function("document.body.dataset.bridgeVersion === 'test'")
     note = page.locator(f"{WINDOW} [data-log-note]")
 
     def roll_with(**log):
@@ -87,7 +91,7 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
         page.locator(WINDOW).wait_for()
 
     roll_with()
-    expect(note).to_be_hidden()  # no bridge here: nothing to say
+    expect(note).to_be_hidden()  # the Live pill has said nothing about the Game Log yet: nothing to say
     roll_with(log="sheet", sheet="https://www.dndbeyond.com/characters/75423618")
     expect(note).to_contain_text("your sheet isn't open")
     expect(note).to_have_class(re.compile("rw-log-warn"))  # said loudly, with the way to fix it (connection-drops, Nov 13)

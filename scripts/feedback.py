@@ -256,7 +256,7 @@ def issues(a) -> None:
 
 def issue(a) -> None:
     if a.id == "new":
-        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area, "feature": a.feature or "", "kind": a.kind or "fix"}))
+        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area, "feature": a.feature or "", "kind": a.kind or "fix", "source": a.source}))
         return
     if not a.do:
         print_issue(call(a.base, f"/issues/{a.id}"))
@@ -505,6 +505,7 @@ def review(a) -> None:
             print(f"  Asked: {json.dumps(run['inputs'])}")
         for i, step in enumerate(run.get("how_to") or [], 1):
             print(f"  {i}. {step}")
+        print("  Its findings as issues: issue new \"…\" --feature … --source review (where it came from: R10's slice 5).")
         print(f"  Then: review {run['id']} on \"…\" as it goes; done --file result.json at the end.")
         return
     if w[0] == "due":
@@ -899,6 +900,8 @@ def main() -> None:
     s.add_argument("--area", type=int)
     s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
     s.add_argument("--kind", choices=["fix", "improvement"], help="new: a fix (it's broken) or an improvement (make it better)")
+    s.add_argument("--source", default="", choices=["", "check", "sentry", "speed", "live_test", "iphone", "review", "claude"],
+                   help="new: where it came from (R10's slice 5): a review's finding, the nightly live test, the iPhone check… (default Claude)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
     s.add_argument("--part", action="append", default=[], help="split: a new issue's title (one per part)")
