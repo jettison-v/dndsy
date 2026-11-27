@@ -116,14 +116,12 @@ def test_a_plans_page_has_its_issues_test_round_and_timeline(db, admin):
     db.flush()
     page = admin.get(f"/manage/work/{battle.id}").text
     assert 'data-facts' in page and 'data-stats' not in page and "Battle" in page and 'class="on" data-tab="overview"' in page
-    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (done leaves the list: closed ones are its History)
-    assert f'data-row="i{now.id}"' in issues and f'data-row="i{old.id}"' not in issues and "data-history" in issues
-    assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues
-    closed = admin.get(f"/manage/work/{battle.id}?tab=issues&history=1").text
-    assert f'data-row="i{old.id}"' in closed and f'data-row="i{now.id}"' not in closed and "data-history-head" in closed
+    row = lambda page, key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)  # noqa: E731
+    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (closed ones: finished rows, behind Show finished: issue 174)
+    assert "data-ls-finished" not in row(issues, f"i{now.id}") and "data-ls-finished" in row(issues, f"i{old.id}")
+    assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues and f'/manage/item/i{old.id}?from=plan%3A{battle.id}%3Aclosed' in issues
     rnd = admin.get(f"/manage/work/{battle.id}?tab=round").text
-    assert f'data-row="c{current.id}"' in rnd and f'data-row="c{passed_before.id}"' not in rnd
-    assert f'data-row="c{passed_before.id}"' in admin.get(f"/manage/work/{battle.id}?tab=round&history=1").text
+    assert "data-ls-finished" not in row(rnd, f"c{current.id}") and "data-ls-finished" in row(rnd, f"c{passed_before.id}")
     assert work_page.listed_keys(db, f"round:{battle.id}") == [f"c{current.id}"]
     assert work_page.listed_keys(db, f"round:{battle.id}:passed") == [f"c{passed_before.id}"]
     assert work_page.listed_keys(db, f"plan:{battle.id}:closed") == [f"i{old.id}"]

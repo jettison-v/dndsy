@@ -595,8 +595,9 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     issues = _plan_issues(db, a.id)
     checks, devices = check_rows(db, a)
     now_ = [r for r in checks if r["c"].id in row["check_ids"]]  # (this plan's checks now; those that passed before, its History)
-    shown_checks = [r for r in checks if r["c"].id not in row["check_ids"]] if history else now_
-    shown_issues = [i for i in issues if (i.state == "closed") == bool(history)]
+    before = [r for r in checks if r["c"].id not in row["check_ids"]]  # (passed before its open work: finished rows)
+    shown_issues = [i for i in issues if i.state != "closed"]
+    closed_issues = [i for i in issues if i.state == "closed"]  # (behind Show finished in the same table: issue 174)
     events = [e for e in db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200))
               if e.thing != "pull" or views.pull_worth_saying(e)]
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
@@ -606,8 +607,8 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
-        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "col": on_board(board(db)).get(f"a{a.id}"), "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "history": bool(history),
-        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": shown_checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
+        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "col": on_board(board(db)).get(f"a{a.id}"), "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "closed_issues": closed_issues,
+        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": now_, "before": before, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
         "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events], "questions": questions,
         "issue_word": views.ISSUE_WORD, "closed_word": views.CLOSED_WORD, "lane_said": rules.LANE_SAID, "lanes": rules.LANES,
         "at": at, "of": len(order), "paths": {i.id: taxonomy.path(i.feature) for i in issues},

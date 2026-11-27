@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, kind_word %}
-{% from "_lists.html" import empty_state, count_pill, history_link, history_head %}
+{% from "_tables.html" import table_box %}
+{% from "_lists.html" import empty_state, count_pill %}
 {% from "_fft_bits.html" import plan_facts with context %}
 {% block title %}{{ a.title }} · Development · Backstage · askdnd{% endblock %}
 {% block content %}
@@ -19,56 +20,59 @@
   </nav>
 
   {% if tab == "overview" %}
-  <h2 class="plabel wk-h2">Next</h2>
-  <div class="table-scroll"><table class="dtable fft-table" data-next>
-    <thead><tr><th class="dt-w3">Whose</th><th>What</th></tr></thead>
-    <tbody>
+  {% call table_box("next", "Next", 1 + questions | length, "", [("Whose", "dt-w3"), ("What", "")], attrs=' data-next' | safe, search=false) %}
       {% if row.stage == "held" %}<tr><td>{{ state_word("Held", "quiet") }}</td><td class="dt-title">Below the line on Development: Claude takes it once you let it go.</td></tr>
       {% elif row.turn == "brett" %}<tr><td>{{ state_word("Yours", "ask") }}</td><td class="dt-title">{{ row.waits[5:] }}: in <a href="/manage/for-you">For you</a></td></tr>
       {% elif row.turn == "claude" %}<tr><td>{{ state_word("Claude's", "claude") }}</td><td class="dt-title">{{ {"building": "Building the fix, then the review and one pull request", "next": "Takes it next: reads its issues whole, then designs one fix", "frozen": "Waits for game night to end: nothing merges", "waiting": "Waits for the plans above it"}.get(row.stage, "Fixing what's open") }}</td></tr>
       {% else %}<tr><td>{{ state_word("Done", "passed") }}</td><td class="dt-title">Nothing open.</td></tr>{% endif %}
       {% for qn in questions %}<tr data-panel-url="/manage/item/q{{ qn.id }}" tabindex="0"><td>{{ state_word("Yours", "ask") }}</td><td class="dt-title">Answer: {{ qn.text | truncate(110) }}</td></tr>{% endfor %}
-    </tbody></table></div>
+  {% endcall %}
 
-  {% elif tab == "issues" %}{% set i_from = "plan:" ~ a.id ~ (":closed" if history else "") %}
-  {% if history %}{{ history_head("closed issues", "?tab=issues") }}{% endif %}
-  {% if not issues %}{{ empty_state("Nothing closed yet." if history else "Nothing open in this plan.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-fft-list="{{ i_from }}">
-    <thead><tr><th class="num dt-w1">#</th><th>Issue</th><th class="dt-w3">Kind</th><th class="dt-w4">Feature</th><th class="dt-w3">State</th><th class="dt-w2">Turn</th></tr></thead>
-    <tbody>{% for i in issues %}
-      <tr data-panel-url="/manage/item/i{{ i.id }}?from={{ i_from | urlencode }}" tabindex="0" data-row="i{{ i.id }}" data-kind="issue" data-state="{{ i.state }}">
+  {% elif tab == "issues" %}
+  {% macro issue_row(i, from_) %}
+      <tr data-panel-url="/manage/item/i{{ i.id }}?from={{ from_ | urlencode }}" tabindex="0" data-row="i{{ i.id }}" data-kind="issue" data-state="{{ i.state }}"{% if i.state == "closed" %} data-ls-finished{% endif %}>
         <td class="num"><span class="dt-id">{{ i.id }}</span></td>
         <td class="dt-title">{{ i.title }}</td>
         <td>{{ kind_word(i.kind) }}</td>
         <td>{{ paths[i.id] or "—" }}</td>
         <td>{% if i.state == "closed" %}{{ state_word(closed_word.get(i.close_reason, "Closed"), "quiet") }}{% else %}{{ state_word(issue_word[i.state], "passed" if i.state == "ready" else "ask" if i.state in ("asks", "merge_ok") else "claude") }}{% endif %}</td>
         <td>{% if turns.get(i.id) %}{{ state_word(turns[i.id][0], turns[i.id][1]) }}{% endif %}</td>
-      </tr>{% endfor %}</tbody></table></div>{% endif %}
-  {% if not history %}{{ history_link("?tab=issues&history=1") }}{% endif %}
+      </tr>
+  {% endmacro %}
+  {% set i_from = "plan:" ~ a.id %}
+  {% set i_attrs %} data-fft-list="{{ i_from }}"{% endset %}
+  {% call table_box("issues", "Issues", issues | length, "", [("#", "num dt-w1"), ("Issue", ""), ("Kind", "dt-w3"), ("Feature", "dt-w4"), ("State", "dt-w3"), ("Turn", "dt-w2")],
+                    "Nothing open in this plan.", attrs=i_attrs, finished=closed_issues | length) %}
+    {% for i in issues %}{{ issue_row(i, i_from) }}{% endfor %}
+    {% if closed_issues %}<tr class="dt-group" data-finished-head><td colspan="6">Finished · {{ closed_issues | length }}</td></tr>{% endif %}
+    {% for i in closed_issues %}{{ issue_row(i, i_from ~ ":closed") }}{% endfor %}
+  {% endcall %}
 
-  {% elif tab == "round" %}{% set r_from = "round:" ~ a.id ~ (":passed" if history else "") %}
-  {% if history %}{{ history_head("checks that passed before this plan's open work", "?tab=round") }}
-  {% else %}<p class="note">Its checks on each device you try them on. They come to For you once the plan's fix is live; a failed one files an issue back into this plan.</p>{% endif %}
-  {% if not checks %}{{ empty_state("Nothing passed before." if history else "No checks in this plan's open work.") }}{% else %}
-  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="{{ r_from }}">
-    <thead><tr><th class="num dt-w1">#</th><th>Check</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}<th class="dt-w3">Tries</th></tr></thead>
-    <tbody>{% for r in checks %}
-      
-      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ r_from | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check">
+  {% elif tab == "round" %}
+  {% macro round_row(r, from_, done=False) %}
+      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check"{% if done %} data-ls-finished{% endif %}>
         <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
         <td class="dt-title">{{ r.c.title }}<span class="dt-why">about {{ r.c.minutes }} min</span></td>
         {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
         <td>{% if r.issues %}issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
-      </tr>{% endfor %}</tbody></table></div>{% endif %}
-  {% if not history %}{{ history_link("?tab=round&history=1") }}{% endif %}
+      </tr>
+  {% endmacro %}
+  {% set r_from = "round:" ~ a.id %}
+  {% set rc = namespace(cols=[("#", "num dt-w1"), ("Check", "")]) %}{% for d in devices %}{% set rc.cols = rc.cols + [(device_name[d], "dt-w3")] %}{% endfor %}
+  {% set r_attrs %} data-fft-list="{{ r_from }}"{% endset %}
+  {% call table_box("round", "Test round", checks | length, "its checks on each device; they come to For you once the plan's fix is live, and a failed one files an issue back into this plan",
+                    rc.cols + [("Tries", "dt-w3")], "No checks in this plan's open work.", attrs=r_attrs, finished=before | length) %}
+    {% for r in checks %}{{ round_row(r, r_from) }}{% endfor %}
+    {% if before %}<tr class="dt-group" data-finished-head><td colspan="{{ 3 + devices | length }}">Passed before · {{ before | length }}</td></tr>{% endif %}
+    {% for r in before %}{{ round_row(r, r_from ~ ":passed", done=True) }}{% endfor %}
+  {% endcall %}
 
   {% else %}
-  {% if not events %}{{ empty_state("Nothing has happened in this plan yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-timeline>
-    <thead><tr><th class="dt-w3">When</th><th class="dt-w2">Who</th><th>What</th></tr></thead>
-    <tbody>{% for e, words, who in events %}
+  {% call table_box("timeline", "Timeline", events | length, "", [("When", "dt-w3"), ("Who", "dt-w2"), ("What", "")], "Nothing has happened in this plan yet.", attrs=' data-timeline' | safe) %}
+    {% for e, words, who in events %}
       <tr data-event="{{ e.kind }}"><td><time datetime="{{ e.at.isoformat() }}" data-clock="ago">{{ e.at | ago }}</time></td><td>{{ who }}</td><td class="dt-title">{{ words }}</td></tr>
-    {% endfor %}</tbody></table></div>{% endif %}
+    {% endfor %}
+  {% endcall %}
   {% endif %}
 </main>
 {% endblock %}
