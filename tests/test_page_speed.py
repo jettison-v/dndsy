@@ -16,7 +16,7 @@ from sqlalchemy import event
 
 from app import relations
 from app.models import Entity, EntityKind, EventKind, GameSession, Recap, Status, StoryEvent
-from tests.table_setup import address, sign_in
+from tests.table_setup import address, char, sign_in
 from tests.test_reading import reading_routes, table
 
 pytestmark = pytest.mark.usefixtures("no_network")
@@ -104,3 +104,37 @@ def table_campaign(db, ids) -> int:
     from app.models import Character
 
     return db.get(Character, ids["character_id"]).campaign_id
+
+
+def _another_character(db, campaign_id: int, like, n: int) -> None:
+    """One more character at the table, with a sheet like `like`'s (a copy of its summary)."""
+    from app import characters
+    from app.models import Character, CharacterSnapshot
+
+    entity = Entity(campaign_id=campaign_id, kind=EntityKind.PC, name=f"Newcomer {n}", status=Status.PUBLISHED)
+    db.add(entity)
+    db.flush()
+    ch = Character(name=f"Newcomer {n}")
+    db.add(ch)
+    db.flush()
+    characters.join(db, ch, entity)
+    db.add(CharacterSnapshot(character_id=ch.id, fetched_at=like.snapshot.fetched_at, summary=like.snapshot.summary, status="ok"))
+    db.flush()
+
+
+def test_a_table_page_reads_the_same_however_many_are_at_the_table(db, table, monkeypatch):
+    """Issue 77: Party, the busiest page on askdnd.ai, read each character's sheet, its changes on the way and its
+    campaign on its own, and its person several times over (SQLAlchemy keeps what a session read only while something
+    holds it). With two more at the table, Party, a sheet and Battle read no more than before."""
+    from app.models import Character
+
+    cole = char(db, "Cole")
+    cole_id, campaign_id = cole.id, cole.campaign_id
+    pages = ("/party", f"/characters/{cole_id}/battle", f"/characters/{cole_id}", "/hp/now")
+    clients = {who: sign_in(monkeypatch, db, who) for who in ("player@example.com", "dm@example.com")}
+    before = {(who, p): _reads(db, c, p)[0] for who, c in clients.items() for p in pages}
+    for n in (1, 2):
+        _another_character(db, campaign_id, db.get(Character, cole_id), n)
+    after = {(who, p): _reads(db, c, p)[0] for who, c in clients.items() for p in pages}
+    grew = {f"{who.split('@')[0]} {p}": (before[(who, p)], n) for (who, p), n in after.items() if n > before[(who, p)]}
+    assert not grew, f"pages whose reads grow with the party (before, after two more): {grew}"

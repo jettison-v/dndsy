@@ -644,8 +644,23 @@ def as_shown(db: Session, character: Character, summary: dict | None) -> dict | 
     any, `summary` as it is."""
     if not summary or not character.id:
         return summary
-    rows = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state.in_(OPEN))
-                           .order_by(BridgeIntent.id)))
+    return _shown(character, summary, list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id,
+                                                                                  BridgeIntent.state.in_(OPEN)).order_by(BridgeIntent.id))))
+
+
+def as_shown_all(db: Session, characters: list[Character], summaries: list[dict | None]) -> list[dict | None]:
+    """`as_shown` for several characters at once (Party, askdnd's table): their changes on the way read in one go, not
+    one read a character (issue 77: Party was the slowest page on askdnd.ai)."""
+    ids = [ch.id for ch, s in zip(characters, summaries, strict=True) if s and ch.id]
+    rows: dict[int, list[BridgeIntent]] = {}
+    for it in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id.in_(ids), BridgeIntent.state.in_(OPEN))
+                         .order_by(BridgeIntent.id)) if ids else ():
+        rows.setdefault(it.character_id, []).append(it)
+    return [_shown(ch, s, rows.get(ch.id, [])) if s and ch.id else s for ch, s in zip(characters, summaries, strict=True)]
+
+
+def _shown(character: Character, summary: dict, rows: list) -> dict:
+    """The sheet as shown, from its open changes (`rows`, oldest first)."""
     n = numbers(character) if rows else {}
     if not n:
         return summary
