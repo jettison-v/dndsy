@@ -452,6 +452,10 @@ LANES = ("ship", "look", "careful")  # (Brett's picks, Nov 19: how much of his t
 LANE_SAID = {"ship": "Ship", "look": "Look", "careful": "Careful", "": "No lane yet"}
 INCIDENT_DAYS = 30
 CLAUDE_AI_LOOKED = "fft_claude_ai_looked"  # (a ToolSetting: when Claude last looked at claude.ai; Handoffs, Roadmap item 45)
+LISTENING_SINCE = "fft_listening_since"  # (a ToolSetting: when listening last began after a gap; issue 178: the look's
+# clock counts from there, not across a night no one listened)
+LISTENING_BREAK = timedelta(minutes=15)  # (a gap this long is a break: shorter ones, between turns of work, keep the clock,
+# or each would push an overdue look out again: the review of #546)
 
 
 def claude_ai_looked(db: Session) -> None:
@@ -2130,6 +2134,20 @@ def heard(e: FftEvent, listener_actor: str) -> bool:
     return not (e.kind == "job_ran" and (e.data or {}).get("result") != "failed")
 
 
+def _heard(db: Session, li: FftListener) -> None:
+    """A listener asked just now. When no listener had asked for LISTENING_BREAK, listening begins again here: kept as
+    LISTENING_SINCE, so Handoffs' claude.ai look is due 15 minutes from now, not from a look before the break."""
+    from app.fft.host import ToolSetting
+
+    t = now()
+    last = db.scalar(select(func.max(FftListener.heard_at)))
+    if last is None or t - last >= LISTENING_BREAK:
+        row = db.get(ToolSetting, LISTENING_SINCE) or ToolSetting(key=LISTENING_SINCE)
+        row.value = t.isoformat()
+        db.add(row)
+    li.heard_at = t
+
+
 def unread(db: Session, li: FftListener, peek: bool = False, actor: str = "") -> list[FftEvent]:
     """What this listener hasn't read (one area's only, for an area's own chat); marked read unless `peek`. `actor`: the
     listener's own, whose events `heard` drops, dropped here in the query too (issue 141: 500 of its own first, and a
@@ -2142,7 +2160,7 @@ def unread(db: Session, li: FftListener, peek: bool = False, actor: str = "") ->
     if li.area_id is not None:
         q = q.where(FftEvent.area_id == li.area_id)
     rows = list(db.scalars(q.limit(INBOX_PAGE)))
-    li.heard_at = now()
+    _heard(db, li)
     if rows and not peek:
         li.read_id = rows[-1].id
     return rows
