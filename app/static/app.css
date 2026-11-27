@@ -2353,15 +2353,16 @@ body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 5; left: 0; top:
 .ds-total { font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); line-height: 1.1; }
 .ds-total.nat20 { color: var(--green); } .ds-total.nat1 { color: var(--red); }
 /* Corner cards (app.js "corner cards"; Brett, 2026-10-29, docs/mockups/temporary-items.html): everything you read and
-   dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Beside an open side
-   panel, not under it; on phones one at a time above the bottom bar, or above the Table rolls sheet. */
+   dismiss, bottom right, newest at the bottom; an icon and colour by kind, ✕, at most one button. Over an open side
+   panel, still in the bottom right corner, just above the panel's foot (Brett's answer on issue 66: pushed left by a
+   fixed 494px they landed mid-page, across a wider panel's edge); on phones one at a time above the bottom bar, or
+   above the Table rolls sheet. */
 .cards { position: fixed; z-index: 16; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(400px, calc(100vw - 28px)); display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-2); pointer-events: none; }
-body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
+body:has(.peek.open:not(.modal) .peek-foot) .cards { bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 2 * 14px + var(--control-h) + 1px); }  /* (the foot: its padding, a button, its line) */
 /* Above a round's card where both are at the foot of the screen (bottom right; on a phone either bottom corner, as well as
    above Table rolls): --cc-h is the card's height (app.js); a card nearly as tall as the screen lets them sit over its top
    (issue 28) */
 @media (min-width: 901px) { body:has(.check-card[data-corner="br"]) .cards { bottom: min(calc(var(--sp-4) + env(safe-area-inset-bottom, 0px) + var(--cc-h, 0px) + var(--sp-2)), calc(100dvh - var(--bar-h) - 180px)); } }
-@media (min-width: 1100px) { body:has(.peek.open:not(.modal)) .cards { right: 494px; } }
 .card { pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) 10px; align-items: center; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-left: 3px solid var(--k); border-radius: var(--r-lg); padding: 9px 6px 9px 11px; font-size: var(--fs-sm); line-height: 1.4; box-shadow: var(--lift); animation: card-in .18s ease-out; }
 .card.out { opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
