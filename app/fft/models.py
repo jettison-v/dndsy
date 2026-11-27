@@ -188,8 +188,9 @@ class FftIssue(_Stamped, Base):
     fixed_in: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the commit that fixed it
     from_player: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # a player's words prompted it (R17)
     # where it came from (rules.SOURCES: note, check, sentry, speed, live_test, iphone, review, claude; R10's slice 5); ""
-    # on issues made before it, whose source rules.source_of works out
-    source: Mapped[str] = mapped_column(String(16), default="", server_default="")
+    # on issues made before it, whose source rules.source_of works out. No Python default, as `kind`: written only when
+    # known, so the carry-over migration never writes a column its database doesn't have yet
+    source: Mapped[str] = mapped_column(String(16), server_default="")
     origin_try_id: Mapped[int | None] = mapped_column(ForeignKey("fft_tries.id", ondelete="SET NULL", use_alter=True, name="fft_issues_origin_try_fkey"), nullable=True)
     confirm_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # a player confirms it (R5)
     confirm_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # three days, then Brett's
