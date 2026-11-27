@@ -129,3 +129,29 @@ def test_a_count_never_blinks_through_a_press(people, server, browser_db):
         press(page.locator(f'[data-area="{area}"] [data-lane-pick="{lane}"]'))
     page.wait_for_timeout(300)
     assert page.evaluate("cancelAnimationFrame(window.__frames), window.__blinks") == 0, "the For you count went missing in a frame"
+
+
+def test_a_pop_up_menu_you_opened_holds_off_a_redraw(people, server, browser_db):
+    """Issue 76: the live test opened Dismiss… on a familiar and its button went before it could be pressed: the familiar
+    coming back on D&D Beyond redrew Battle under the open menu. A pop-up menu (a <details> whose contents float over the
+    page) that's open holds a change from elsewhere until it's closed; a fold that opens in place doesn't."""
+    from tests.browser.test_table import battle
+
+    player = people("player")
+    page = battle(player, server)
+    live = f"document.dispatchEvent(new CustomEvent('askdnd:live', {{ detail: {{ type: 'character', id: {server['cole']} }} }}))"
+    # (a menu as Dismiss… is drawn: its contents float under it)
+    page.evaluate("""() => { const d = document.createElement('details'); d.id = 'test-pop'; d.style.position = 'relative';
+      d.innerHTML = '<summary>Dismiss…</summary><div style="position:absolute"><button type="button" id="test-go">Dismiss</button></div>';
+      document.querySelector('main').prepend(d); d.open = true; }""")
+    page.evaluate(live)
+    page.wait_for_timeout(1500)  # (past the live connection's gathering of changes, 400 ms, and the redraw it would ask for)
+    assert page.locator("#test-pop[open] #test-go").is_visible()  # (still there: nothing redrew under it)
+    page.locator("#test-pop > summary").click()  # (closed: the change it held comes in)
+    page.wait_for_function("!document.getElementById('test-pop')", timeout=8000)
+    # A fold that opens in place holds nothing
+    page.evaluate("""() => { const d = document.createElement('details'); d.id = 'test-fold';
+      d.innerHTML = '<summary>More</summary><div>In place</div>'; document.querySelector('main').prepend(d); d.open = true; }""")
+    page.evaluate(live)
+    page.wait_for_function("!document.getElementById('test-fold')", timeout=8000)
+    assert player.errors == []
