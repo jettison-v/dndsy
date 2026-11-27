@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_form_bits.html" import field %}
 {% from "_admin_bits.html" import state_word, lane_tag, more_menu %}
 {% from "_tables.html" import table_box %}
 {% from "_lists.html" import empty_state, count_pill, grip, search_box, show_more, view_switch %}
@@ -29,11 +30,11 @@
 {% endmacro %}
 {% macro plan_forms(r) %}{% if not r.a.key %}{# (a hand-made plan's Rename, Merge and Move, under the table: each opens from ⋯) #}
   <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-rename-{{ r.a.id }}" hidden><input type="hidden" name="do" value="rename"><input type="hidden" name="back" value="/manage/work?tab=queue">
-    <label class="field"><span>Name</span><input type="text" name="title" value="{{ r.a.title }}" maxlength="80" required></label><div class="row tight"><button class="btn primary small" type="submit">Rename</button><button class="btn link small" type="button" data-cancel="fft-rename-{{ r.a.id }}">Cancel</button></div></form>
+    {% call field("Name") %}<input type="text" name="title" value="{{ r.a.title }}" maxlength="80" required>{% endcall %}<div class="row tight"><button class="btn primary small" type="submit">Rename</button><button class="btn link small" type="button" data-cancel="fft-rename-{{ r.a.id }}">Cancel</button></div></form>
   <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-merge-{{ r.a.id }}" hidden><input type="hidden" name="do" value="merge"><input type="hidden" name="back" value="/manage/work?tab=queue">
-    <label class="field"><span>Its issues and checks join</span><select name="into" class="ls-select" required>{% for o in all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Merge</button><button class="btn link small" type="button" data-cancel="fft-merge-{{ r.a.id }}">Cancel</button></div></form>
+    {% call field("Its issues and checks join") %}<select name="into" class="ls-select" required>{% for o in all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select>{% endcall %}<div class="row tight"><button class="btn primary small" type="submit">Merge</button><button class="btn link small" type="button" data-cancel="fft-merge-{{ r.a.id }}">Cancel</button></div></form>
   <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move"><input type="hidden" name="back" value="/manage/work?tab=queue">
-    <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in all_items if o.id != r.a.item_id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button><button class="btn link small" type="button" data-cancel="fft-moveto-{{ r.a.id }}">Cancel</button></div></form>
+    {% call field("To the item") %}<select name="item" class="ls-select" required>{% for o in all_items if o.id != r.a.item_id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select>{% endcall %}<div class="row tight"><button class="btn primary small" type="submit">Move</button><button class="btn link small" type="button" data-cancel="fft-moveto-{{ r.a.id }}">Cancel</button></div></form>
 {% endif %}
 {% endmacro %}
 {% macro board_stage(key, fallback) %}{# (Your order in the Board's words: its column, amber when stuck, and when it also has checks for you; step 36, Nov 24) #}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_form_bits.html" import field %}
 {% from "_admin_bits.html" import state_word, more_menu %}
 {% from "_tables.html" import table_box %}
 {% from "_lists.html" import empty_state, count_pill %}
@@ -62,7 +63,7 @@
     {% if can %}<button class="btn link small rm-cbtn" type="button" data-show="rm-c-{{ key | replace(':', '-') }}" data-do="comment-line">{% if mine %}{{ mine | length }} comment{{ "s" if mine | length != 1 }}{% else %}Comment{% endif %}</button>
     <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold rm-cform" id="rm-c-{{ key | replace(':', '-') }}" hidden>
       <input type="hidden" name="do" value="comment"><input type="hidden" name="on" value="{{ key }}">
-      <label class="field"><span>Your comment on this line</span><textarea name="words" rows="2" required maxlength="8000"></textarea></label>
+      {% call field("Your comment on this line") %}<textarea name="words" rows="2" required maxlength="8000"></textarea>{% endcall %}
       <div class="row tight"><button class="btn primary small" type="submit" data-do="comment">Comment</button><button class="btn link small" type="button" data-cancel="rm-c-{{ key | replace(':', '-') }}">Cancel</button></div>
     </form>{% endif %}
   </div>
@@ -93,7 +94,7 @@
           <span class="rm-line-text">{{ q }}</span>
           {% if can and waits %}
           <form method="post" action="/manage/roadmap/{{ it.id }}" class="rm-answer"><input type="hidden" name="do" value="comment"><input type="hidden" name="on" value="q:{{ n }}">
-            <label class="field"><span>Your answer{% if a %} · not sent yet{% endif %}</span><input type="text" name="words" maxlength="2000" value="{{ a.words if a else '' }}" placeholder="Or leave it: Claude asks again in the next version"></label>
+            {% set fld_name %}Your answer{% if a %} · not sent yet{% endif %}{% endset %}{% call field(fld_name) %}<input type="text" name="words" maxlength="2000" value="{{ a.words if a else '' }}" placeholder="Or leave it: Claude asks again in the next version">{% endcall %}
             <div class="row tight"><button class="btn small" type="submit" data-do="answer">{{ "Change answer" if a else "Save answer" }}</button>
               {% if sug and not a %}<span class="note rm-sug">Claude suggests: <b>{{ sug }}</b></span><button class="btn small" type="submit" name="words" value="{{ sug }}" data-do="use-suggestion">Use it</button>{% endif %}</div>
           </form>
@@ -109,7 +110,7 @@
           <span class="note" data-held="{{ held | length }}">Goes with it: {% if nc %}{{ nc }} comment{{ "s" if nc != 1 }}{% endif %}{% if nc and nq %} and {% endif %}{% if nq %}{{ nq }} answer{{ "s" if nq != 1 }}{% endif %}</span>{% endif %}
         </div>
         <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer fb-fold" id="rm-changes-{{ it.id }}" hidden><input type="hidden" name="do" value="changes"><input type="hidden" name="seen" value="{{ shown.version }}">
-          <label class="field"><span>What's missing or wrong{% if held %} (beyond your comments){% endif %}</span><textarea name="words" rows="3" maxlength="8000"{% if not held %} required{% endif %}></textarea></label>
+          {% set fld_name %}What's missing or wrong{% if held %} (beyond your comments){% endif %}{% endset %}{% call field(fld_name) %}<textarea name="words" rows="3" maxlength="8000"{% if not held %} required{% endif %}></textarea>{% endcall %}
           <div class="row tight"><button class="btn primary small" type="submit" data-do="send-changes">Send to Claude</button><button class="btn link small" type="button" data-cancel="rm-changes-{{ it.id }}">Cancel</button></div>
         </form>
         <p class="note">Comment on a line, or answer a question, before either: they go with your answer.</p>
@@ -123,7 +124,7 @@
       <h3 class="rm-side-h" id="rm-adds-h">Comments and additions <span class="note">· {{ adds | length }}</span></h3>
       {% if open %}
       <form method="post" action="/manage/roadmap/{{ it.id }}" class="composer rm-general" data-general><input type="hidden" name="do" value="comment">
-        <label class="field"><span>{% if waits %}A comment on the whole scope, or something to add{% elif not latest %}Something to add, or how you'd like it scoped{% else %}Something to add to this item{% endif %}</span><textarea name="words" rows="3" required maxlength="8000"></textarea></label>
+        {% set fld_name %}{% if waits %}A comment on the whole scope, or something to add{% elif not latest %}Something to add, or how you'd like it scoped{% else %}Something to add to this item{% endif %}{% endset %}{% call field(fld_name) %}<textarea name="words" rows="3" required maxlength="8000"></textarea>{% endcall %}
         <div class="row tight"><button class="btn small" type="submit" data-do="comment">{{ "Add comment" if waits else "Add" }}</button><span class="note">{{ "It goes to Claude with your answer to the scope." if waits else "It reaches Claude now." }}</span></div>
       </form>{% endif %}
       {% for a in adds %}
