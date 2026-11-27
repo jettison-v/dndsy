@@ -27,7 +27,7 @@
      it, Brett's comment on docs/mockups/product-taxonomy/) open under it as a menu, so the list starts under the row; what's
      on shows beside it as pills with their ×, and Clear. #}
   {% set kinds = (("fix", "Fixes"), ("improvement", "Improvements")) %}
-  {% set sources = (("players", "From players"), ("checks", "Found on a check")) %}
+  {% set sources = (("players", "From players"), ("checks", "Found on a check"), ("sentry", "Sentry"), ("speed", "The speed numbers"), ("live_test", "The nightly live test"), ("iphone", "The iPhone check"), ("review", "A review"), ("claude", "Claude")) %}{# (where an issue came from: R10's slice 5) #}
   {% set on_n = (1 if chip else 0) + (1 if area else 0) + (1 if g and g.pa else 0) + (1 if g and g.feature else 0) %}
   <div class="ls-above-row fft-filter-row" data-filter-row>
     {% if tab != "closed" %}<span class="seg" role="group" aria-label="Show issues" data-views>

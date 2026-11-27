@@ -106,7 +106,8 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), b
     ddb_bridge.reach(ch)
     it, o = _item(db, ch, item_id)
     if not o["use"]["left"]:
-        raise HTTPException(409, f"{it['name']}: none left, {o['use']['back'] or 'gone once used'}.")
+        gone = "gone once used" if (o["use"].get("max") or 1) == 1 else "gone once all are used"  # (issue 162)
+        raise HTTPException(409, f"{it['name']}: none left, {o['use']['back'] or gone}.")
     if not o["use"]["gives"] or (to and to not in _others(db, ch)):
         to = ""
     me = picks.user_row(db, user)

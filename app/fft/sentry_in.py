@@ -77,7 +77,7 @@ def run(db: Session, now: datetime | None = None, force: bool = False) -> list[i
         if not sid or sid in seen:
             continue
         title = " ".join(str(s.get("title") or "An error").split())
-        i = rules.new_issue(db, "askdnd", f"Error: {title}"[:120], feature="errors", kind="fix")
+        i = rules.new_issue(db, "askdnd", f"Error: {title}"[:120], feature="errors", kind="fix", source="sentry")
         rules.add_line(db, "askdnd", f"From Sentry: {s.get('count', '?')} times, {s.get('userCount', 0)} people, first {str(s.get('firstSeen', ''))[:16]} UTC"
                        f"{' · ' + str(s.get('culprit')) if s.get('culprit') else ''} · {s.get('permalink', '')}", issue=i, to="claude")
         seen.append(sid)

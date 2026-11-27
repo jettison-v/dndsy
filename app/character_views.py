@@ -243,7 +243,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
             recipe=rr.item_for(sheet, it["base_name"]) or rr.item_for(sheet, it["name"]), cost_from=conditions.cost_source(it, choice),
             use={"mark": (kinds or {}).get("label", "") if not kind else "", "id": it["key"].split(":", 1)[1], "left": left, "said": said, "verb": {"Potion": "Drink", "Scroll": "Read"}.get(it["type"], "Use"),
-                 "gives": it["type"] == "Potion", "back": ch["reset_phrase"] if ch else ""})
+                 "gives": it["type"] == "Potion", "back": ch["reset_phrase"] if ch else "", "max": ch["max"] if ch else 1})
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)

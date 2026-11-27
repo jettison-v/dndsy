@@ -579,3 +579,30 @@ def test_a_reply_on_a_split_part_shows_as_new(db):
     db.flush()
     after = views.marker(db, note, None)
     assert after != before and len(after) <= 40
+
+
+def test_ask_back_waits_for_bretts_send_before_its_sender_sees_it(admin, sender, db):
+    """R10's slice 5 (Brett's OK on its scope, Nov 27, with Claude's suggested answer: every question to a player waits
+    for his Send): Claude writes one question for a vague note's sender; it's in For you's Decide; its sender sees
+    nothing until Brett sends it, and Don't send keeps it from them for good."""
+    from app.fft import views
+
+    send(sender, text="Something is off with the rest thing.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "fix"})
+    db.refresh(n)
+    line = rules.ask_back(db, "claude", n, "Which rest: the Short Rest window, or Long Rest's dice?")
+    db.commit()
+    with pytest.raises(rules.RuleError):
+        rules.ask_back(db, "claude", n, "A second question")  # (one at a time)
+    assert line not in views.sender_lines(db, n)  # (not theirs until it's sent)
+    assert f"/manage/item/n{n.id}" in admin.get("/manage/for-you").text
+    assert 'data-do="ask-send"' in admin.get(f"/manage/item/n{n.id}").text
+    admin.post(f"/manage/feedback/lines/{line.id}", data={"do": "send"})
+    db.refresh(line)
+    assert line in views.sender_lines(db, n) and "Which rest" in sender.get("/your-notes?tab=askdnd").text
+    other = rules.ask_back(db, "claude", n, "And on which page?")
+    db.commit()
+    admin.post(f"/manage/feedback/lines/{other.id}", data={"do": "drop"})
+    db.refresh(other)
+    assert other not in views.sender_lines(db, n) and other.to == "" and other.approved
