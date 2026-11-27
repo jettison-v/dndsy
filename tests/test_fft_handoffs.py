@@ -4,7 +4,7 @@ step past its usual time shown as missed, with a button that does it."""
 
 from datetime import timedelta
 
-from app.fft import handoffs, rules
+from app.fft import handoffs, host, rules, views
 from app.fft.models import FftChat, FftEvent, FftLine, FftListener, FftNote, FftPull, FftQuestion
 
 
@@ -75,6 +75,42 @@ def test_claude_ai_unlooked_while_listening_is_missed_and_a_look_clears_it(db):
     handoffs.looked(db)
     db.flush()
     assert _row(db, "look") is None
+
+
+def test_the_look_counts_from_when_listening_began_not_across_a_night_without_it(db):
+    """Issue 178 (Brett, Nov 27: "This one seems overly stuck"): the last look was the night before, no one listened
+    overnight, and the row was Missed for "1 day" the moment listening began. It counts from then instead."""
+    handoffs.looked(db)  # (last night's look)
+    row = db.get(host.ToolSetting, rules.CLAUDE_AI_LOOKED)
+    row.value = (rules.now() - timedelta(hours=13)).isoformat()
+    db.add(FftListener(name="main", read_id=0, heard_at=rules.now() - timedelta(hours=12)))  # (stopped listening last night)
+    db.flush()
+    rules.unread(db, rules.listener(db, "main"), peek=True)  # (listening again this morning)
+    db.flush()
+    assert _row(db, "look") is None  # (not due until 15 minutes after listening began)
+    since = db.get(host.ToolSetting, rules.LISTENING_SINCE)
+    since.value = (rules.now() - timedelta(minutes=20)).isoformat()  # (20 minutes on, still no look)
+    db.flush()
+    r = _row(db, "look")
+    assert r["state"] == "missed" and rules.now() - r["at"] < timedelta(minutes=21)  # (late by minutes, not a day)
+
+
+def test_asking_again_after_a_short_gap_keeps_when_listening_began(db):
+    """The review of #546: a few minutes between turns of work isn't a break, or each would push an overdue look out."""
+    db.add(FftListener(name="main", read_id=0, heard_at=rules.now() - timedelta(minutes=5)))
+    db.flush()
+    rules.unread(db, rules.listener(db, "main"), peek=True)
+    db.flush()
+    assert db.get(host.ToolSetting, rules.LISTENING_SINCE) is None  # (no break: nothing began)
+
+
+def test_bring_in_now_says_what_to_do_in_claudes_inbox(db):
+    """Issue 178: the wake read only "Tool 0: claude woken", so Claude took it for nothing."""
+    rules.wake_claude(db, "user:1", "look")
+    rules.wake_claude(db, "user:1", "claude", "t1")
+    db.flush()
+    said = [views.event_words(e) for e in db.query(FftEvent).filter(FftEvent.kind == "claude_woken").order_by(FftEvent.id)]
+    assert "Bring in now" in said[0] and "sync list" in said[0] and "Wake Claude" in said[1] and "t1" in said[1]
 
 
 def test_missed_comes_first_then_yours_then_claudes_then_done(db):

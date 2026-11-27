@@ -29,7 +29,7 @@
       order, docs/DESIGN.md › Navigation), never to a bare "Live" or a bare dot; a state that's short already (Not
       connected, Open your sheet) keeps its words. One label shows at a time: without the bridge in this browser "Add
       the bridge" takes the words' place (app.css), and a connected pill widens for it. -#}
-  {%- set words = none %}{% set short = none %}
+  {%- set words = none %}{% set short = none %}{% set phone = none %}
   {%- if p.by_hand %}{% set words = "%d didn't go through" % p.by_hand %}{% set short = "%d not sent" % p.by_hand %}
   {%- elif party and tn.connected == tn.connectable %}{% set words = "" %}
   {%- elif party and tn.via %}{% set words = "%d of %d sheets · %d via %s" % (tn.connected + tn.via, tn.connectable, tn.via, "you" if tn.dm else "the DM") %}{% set short = "%d of %d sheets" % (tn.connected + tn.via, tn.connectable) %}
@@ -37,14 +37,16 @@
   {%- elif party %}{% set words = "None connected" %}{% set short = "0 of %d sheets" % tn.connectable %}
   {%- elif p.step and p.mine %}{% set words = "" %}
   {%- elif p.step %}{% set words = "%s connected" % p.name %}{% set short = "Connected" %}
-  {%- elif p.via and p.mine %}{% set words = "Via the DM · open your sheet" %}{% set short = "Open your sheet" %}
+  {%- elif p.via and p.mine %}{% set words = "Via the DM · open your sheet" %}{% set short = "Open your sheet" %}{% set phone = ("via", "Via the DM") %}
   {%- elif p.via %}{% set words = "%s: via the DM" % p.name %}{% set short = "Via the DM" %}
   {%- elif p.failed %}{% set words = "D&D Beyond not answering" %}{% set short = "Not answering" %}
-  {%- elif ours and tone == "bad" %}{% set words = "Open your sheet" %}
+  {%- elif ours and tone == "bad" %}{% set words = "Open your sheet" %}{% set phone = ("closed", "Not connected") %}
   {%- elif ours %}{% set words = "Not connected" %}
   {%- elif tn.party_pill %}{% set words = "Slowest sheet " ~ ((p.fetched_at | ago) or "never") %}
   {%- else %}{% set words = "Updated " ~ ((p.fetched_at | ago) or "never") %}{% endif %}
+  {#- (`phone`: on a phone, where the bridge can't run, your own sheet's pill says how it stands, never to open it; the
+      Live window says where it connects. Issue 8, Brett: "let the player know that the sheet needs to be opened on desktop") -#}
   {%- set broken = (ours and not p.step and not p.via) or (party and not tn.connected and not tn.via) %}{{ live_link(broken) }}
-  {%- if words %}<span class="live-ago"><span class="lw-long">{{ words }}</span>{% if short %}<span class="lw-short">{{ short }}</span>{% endif %}</span>
+  {%- if words %}<span class="live-ago"><span class="lw-long">{{ words }}</span>{% if short %}<span class="lw-short">{{ short }}</span>{% endif %}{% if phone %}<span class="lw-phone" data-phone="{{ phone[0] }}">{{ phone[1] }}</span>{% endif %}</span>
   {%- else %}<span class="live-ago sr">Connected</span>{% endif %}<span class="live-noext">Add the bridge</span></button>
 {% endif %}

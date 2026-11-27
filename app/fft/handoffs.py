@@ -44,8 +44,8 @@ def looked(db: Session) -> None:
     rules.claude_ai_looked(db)  # (the change itself is rules.py's, as every one in Workshop)
 
 
-def _looked_at(db: Session) -> datetime | None:
-    row = db.get(host.ToolSetting, LOOKED)
+def _setting_at(db: Session, key: str) -> datetime | None:
+    row = db.get(host.ToolSetting, key)
     try:
         return datetime.fromisoformat(row.value) if row and row.value else None
     except ValueError:
@@ -82,10 +82,12 @@ def rows(db: Session, now: datetime | None = None) -> list[dict]:
     listening = views.listening(db)
     out = _notes(db, now, since) + _questions(db, now, since, read) + _comments(db, now, since, read) + _checks(db, now, since) \
         + _pulls(db, now, since) + _chats(db, now, since)
-    last = _looked_at(db)
-    if listening and (last is None or now - last > LATE["claude.ai"]):  # (claude.ai can't wake Claude: Claude looks)
-        out.append(_row("look", "roadmap", last or now, "Claude's look at claude.ai for your comments and picks",
-                        [("every 10 minutes while listening", False)], "claude", now, (last or now) + LATE["claude.ai"] if last else now - timedelta(seconds=1),
+    # (claude.ai can't wake Claude: Claude looks. Its clock counts from the last look or from when listening began
+    # again, whichever is later: issue 178, a night without listening made it Missed the moment listening began)
+    clock = max((t for t in (_setting_at(db, LOOKED), _setting_at(db, rules.LISTENING_SINCE)) if t), default=None)
+    if listening and (clock is None or now - clock > LATE["claude.ai"]):
+        out.append(_row("look", "roadmap", clock or now, "Claude's look at claude.ai for your comments and picks",
+                        [("every 10 minutes while listening", False)], "claude", now, clock + LATE["claude.ai"] if clock else now - timedelta(seconds=1),
                         wake="look"))
     for r in out:
         if r["whose"] and r["late"] and now > r["late"] and (r["whose"] != "claude" or listening):
