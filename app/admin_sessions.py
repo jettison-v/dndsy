@@ -178,10 +178,17 @@ def sessions_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/sessions/draft")
-def draft(request: Request, session_ids: list[int] = Form(...)):
+def draft(request: Request, session_ids: list[int] = Form(...), db: Session = Depends(get_db)):
     user, denied = _guard(request)
     if denied:
         return denied
+    here = web.campaign(db)  # (only this campaign's sessions: issue 150, a reviewer here could draft another campaign's)
+    ours = set(db.scalars(select(GameSession.id).where(GameSession.id.in_(session_ids[:50]),
+                                                         GameSession.campaign_id == (here.id if here is not None else -1))))
+    session_ids = [i for i in dict.fromkeys(session_ids[:50]) if i in ours]  # (in the order posted: drafted one after another)
+    if not session_ids:
+        request.session["toast"] = "Nothing to draft here"
+        return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
     started = _draft_in_background(session_ids)
     request.session["toast"] = (
         "Claude is drafting… about a minute per session" if started else "Claude is already drafting; try again when it finishes"
