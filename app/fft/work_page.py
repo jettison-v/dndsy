@@ -470,7 +470,7 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
     user, denied = testing_page._admin(request)
     if denied:
         return denied
-    tab = tab if tab in dict(TABS) or tab == "done" else "board"
+    tab = "queue" if tab == "done" else tab if tab in dict(TABS) else "board"  # (an old link to the finished plans: they're Your order's finished rows now, issue 174)
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
@@ -479,13 +479,10 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
            "pick": testing_page._key(open), "toast": request.session.pop("toast", None)}
-    if tab == "done":
-        ctx["done"] = done(db)
-    elif tab == "checks":  # (open checks; History, the passed ones)
+    if tab == "checks":  # (open checks; History, the passed ones)
         rows, ctx["devices"] = check_rows(db)
-        if ctx["pick"] and any(r["key"] == ctx["pick"] and r["state"] == "passed" for r in rows):
-            ctx["history"] = history = 1  # (an old link to a check that has passed: it's in History now)
-        ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
+        ctx["checks"] = [r for r in rows if r["state"] != "passed"]  # (to pass; those that passed are finished rows in the
+        ctx["passed"] = [r for r in rows if r["state"] == "passed"]  # same table, behind Show finished: issue 174)
     elif tab == "scheduled":
         ctx["jobs"], ctx["reviews"] = jobs(db), review_rows(db)
         ctx["run_title"] = run_title
@@ -495,6 +492,8 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
         ctx["handoffs"], ctx["handoff_views"] = handoffs.rows(db), handoffs.AREAS
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
+    if tab == "queue":
+        ctx["done"] = done(db)  # (finished plans: Your order's finished rows, behind Show finished)
     if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
         ob = on_board(board(db))
         for r in q["rows"] + q["held"]:  # (a build with plans has no card of its own: its row says its first plan's column)

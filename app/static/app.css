@@ -1689,8 +1689,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .bd-card[data-kind="roadmap"] { border-left-color: var(--kind-roadmap); }
 .bd-card[data-stuck] { border-color: var(--amber); border-left-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-soft); }
 /* Your order in the Board's look (step 36, Nov 24): each row's kind as the Board's coloured edge, its stage the Board's column */
-.wk-queue tr.wk-top[data-kind] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-feedback); }
-.wk-queue tr.wk-top[data-kind="roadmap"] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-roadmap); }
+.tbx[data-table="queue"] tr.wk-top[data-kind] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-feedback); }
+.tbx[data-table="queue"] tr.wk-top[data-kind="roadmap"] > td:first-child { box-shadow: inset 3px 0 0 var(--kind-roadmap); }
 .bd-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }  /* the card's kind and its short mark (P12, R38: Nov 24) */
 abbr.mark { text-decoration: none; cursor: help; font-variant-numeric: tabular-nums; }
 .bd-kind { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--kind-upkeep); }
@@ -1705,7 +1705,7 @@ abbr.mark { text-decoration: none; cursor: help; font-variant-numeric: tabular-n
 .bd-foot { display: flex; gap: var(--sp-1); align-items: center; flex-wrap: wrap; }
 .bd-stuck-sum { color: var(--amber); font-weight: 600; }
 @container (max-width: 860px) { .bd-board { grid-template-columns: minmax(0, 1fr); } }  /* (by the Board's own width: Table rolls open beside it on a laptop, a tablet, a phone) */
-.wk-queue .grip { cursor: grab; color: var(--faint); vertical-align: -2px; }
+.tbx[data-table="queue"] .grip { cursor: grab; color: var(--faint); vertical-align: -2px; }
 .wk-plan.is-next td:first-child { box-shadow: inset 3px 0 0 var(--violet); }  /* (Claude's next: its edge violet, as on the old Where it stands) */
 .wk-plan .wk-name { color: var(--text-strong); text-decoration: none; }
 .wk-plan .wk-name:hover { text-decoration: underline; }
@@ -1848,7 +1848,7 @@ button.rm-box { cursor: pointer; }
 .dtable td.dt-title { white-space: normal; color: var(--text-strong); line-height: 1.3; padding-block: var(--sp-2); }
 .dtable td.dt-title .dt-why { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .dtable td.dt-wrap { white-space: normal; line-height: 1.3; padding-block: var(--sp-2); }  /* (a cell of a few words that may wrap, never cut) */
-.table-scroll > .dtable.dt-wide { min-width: 880px; }
+.table-scroll > .dtable.dt-wide, .tbx:is([data-table="queue"], [data-table="checks"]) .table-scroll > .dtable { min-width: 880px; }  /* (Your order and Checks: many fixed columns) */
 .dt-history { display: flex; justify-content: flex-end; margin: var(--sp-2) 0 0; font-size: var(--fs-xs); }  /* (done leaves the list: one quiet link under it, _lists.html history_link) */
 .dt-history a { color: var(--muted); }
 .dt-history-head { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); align-items: baseline; margin: 0 0 var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }

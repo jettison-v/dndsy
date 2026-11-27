@@ -179,10 +179,10 @@ def test_checks_done_scheduled_and_how_we_work(db, admin, monkeypatch):
     rules.record_try(db, "user:1", c, result="passed")
     rules.close(db, "claude", issue, "works", "It works now.")
     db.flush()
-    checks = admin.get("/manage/work?tab=checks").text  # (a passed check is History's)
-    assert f'data-row="c{c.id}"' not in checks and "data-history" in checks
-    checks = admin.get("/manage/work?tab=checks&history=1").text
-    assert f'data-row="c{c.id}"' in checks and 'data-device="laptop"' in checks and "Passed" in checks
+    checks = admin.get("/manage/work?tab=checks").text  # (a passed check is a finished row, behind Show finished: issue 174)
+    row = re.search(rf'<tr[^>]*data-row="c{c.id}"[^>]*>', checks).group(0)
+    assert "data-ls-finished" in row and "data-ls-finished-toggle" in checks and "data-history" not in checks
+    assert 'data-device="laptop"' in checks and "Passed" in checks
     assert f'data-open-item="/manage/item/c{c.id}?from=checks%3Apassed"' in admin.get(f"/manage/work?tab=checks&open=c{c.id}").text  # (passed: opens in History)
     assert 'data-tab="done"' not in admin.get("/manage/work?tab=queue").text  # (no Done tab: History, a link under the queue)
     done = admin.get("/manage/work?tab=done").text
@@ -240,7 +240,7 @@ def test_a_standing_rule_work_is_for_admins_only(db, dm, player):
 def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
     page = admin.get("/manage/work?tab=queue").text
     assert 'data-item="work"' in page and 'data-item="testing"' not in page
-    assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
+    assert "data-fft-tabs" not in page and 'data-table="queue"' in page  # (Our work in the side list is the one way between For you, Work and Feedback)
 
 
 def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admin):

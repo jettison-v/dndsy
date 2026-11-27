@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, lane_tag, more_menu %}
-{% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head, search_box, show_more, view_switch %}
+{% from "_tables.html" import table_box %}
+{% from "_lists.html" import empty_state, count_pill, grip, search_box, show_more, view_switch %}
 {% from "_admin_bits.html" import needs_line %}
 {% from "_fft_bits.html" import hands_list %}
 {% from "_board.html" import board as work_board, kind_tag %}
@@ -87,50 +88,48 @@
 
   {% elif tab == "queue" %}
   <p class="note fft-foryou-sum" data-summary><b>{{ q.above }} above the line</b>{% if q.yours %} · {{ q.yours }} wait{{ "s" if q.yours == 1 }} on you{% endif %}{% if q.held %} · {{ q.held | length }} held{% endif %}{% if q.next %} · Claude's next: <b>{{ q.next }}</b>{% endif %} · drag to reorder</p>
-  <div class="table-scroll" id="wk-queue">
-  <table class="dtable dt-wide fft-table wk-queue">
-    <thead><tr><th class="dt-w0"></th><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Stage</th><th class="num dt-w2" title="A batch's open issues with a fix; a build's steps done">Progress</th><th class="num dt-w2" title="Its checks that passed">Passed</th><th class="dt-w4">Waits on</th><th class="dt-w0"></th></tr></thead>
-    <tbody class="wk-rows" data-queue data-sort-column="queue" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-top" data-sort-handle=".wk-grip .grip">
-    {% for r in q.rows %}{% if r.kind_key == "i" %}{{ build_row(r) }}{% else %}{{ plan_row(r) }}{% endif %}
-    {% else %}<tr><td colspan="8" class="dt-wrap">{{ empty_state("Nothing being built: a Roadmap item joins when you say its scope looks right, and a Product Area's fixes when they come in.") }}</td></tr>
-    {% endfor %}
+  {# Your order on the one table (issue 148): the plans Claude takes, the line, those held below it, then the finished
+     plans behind Show finished (issue 174: they were History, a link under the table) #}
+  {% macro done_row(d) %}<tr class="wk-plan" data-ls-finished data-area="{{ d.a.id }}" data-panel-url="/manage/item/a{{ d.a.id }}" tabindex="0">
+      <td class="wk-grip"></td><td class="dt-title"><a href="/manage/work/{{ d.a.id }}" class="wk-name">{{ d.a.title }}</a><span class="dt-why">{{ d.item.title if d.item else "" }}{% if d.last %} · <time datetime="{{ d.last.isoformat() }}" data-clock="ago">{{ d.last | ago }}</time>{% endif %}</span></td>
+      <td>{{ lane_said[d.lane] if d.lane else "—" }}</td><td>{{ state_word("Done", "passed") }}</td>
+      <td class="num">{{ d.closed }} closed</td><td class="num">{{ d.passed }}</td><td class="dt-wrap wk-waits">—</td>
+      <td>{% if not d.a.key %}<form method="post" action="/manage/testing/areas/{{ d.a.id }}" class="inline"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work?tab=queue"><button class="btn link small" type="submit">Archive</button></form>{% endif %}</td></tr>{% endmacro %}
+  {% set q_rows %} data-queue data-sort-column="queue" data-sort-url="/manage/testing/order" data-sort-item="tr.wk-top" data-sort-handle=".wk-grip .grip" class="wk-rows" data-ls-rows{% endset %}
+  {% call table_box("queue", "Your order", (q.rows + q.held) | length, "",
+                    [("", "dt-w0"), ("Plan", ""), ("Lane", "dt-w2"), ("Stage", "dt-w3"), ("Progress", "num dt-w2"), ("Passed", "num dt-w2"), ("Waits on", "dt-w4"), ("", "dt-w0")],
+                    "Nothing being built: a Roadmap item joins when you say its scope looks right, and a Product Area's fixes when they come in.",
+                    attrs=' id="wk-queue-table"' | safe, body_attrs=q_rows, finished=done | length) %}
+    {% for r in q.rows %}{% if r.kind_key == "i" %}{{ build_row(r) }}{% else %}{{ plan_row(r) }}{% endif %}{% endfor %}
     </tbody>
     <tbody class="wk-held" data-held>
       <tr class="dt-cut"><td colspan="8">Claude takes the plans above this line{% if q.held %} · held below it{% else %} · Hold a plan (⋯) to put it below{% endif %}</td></tr>
       {% for r in q.held %}{% if r.kind_key == "i" %}{{ build_row(r, drag=False) }}{% else %}{{ plan_row(r, drag=False) }}{% endif %}{% endfor %}
     </tbody>
-  </table>
-  </div>
-  {{ history_link("?tab=done") }}
+    <tbody data-done>
+      {% if done %}<tr class="dt-group" data-finished-head><td colspan="8">Finished · {{ done | length }}</td></tr>{% endif %}
+      {% for d in done %}{{ done_row(d) }}{% endfor %}
+  {% endcall %}
   <div class="wk-forms">{% for r in q.rows + q.held if r.kind_key == "a" %}{{ plan_forms(r) }}{% endfor %}</div>
 
-  {% elif tab == "done" %}
-  {{ history_head("finished plans", "?tab=queue") }}
-  {% if not done %}{{ empty_state("No plan is done yet.") }}{% else %}
-  <div class="table-scroll"><table class="dtable fft-table" data-done>
-    <thead><tr><th>Plan</th><th class="dt-w2">Lane</th><th class="dt-w3">Last change</th><th class="dt-w5">What it closed</th><th class="dt-w0"></th></tr></thead>
-    <tbody>{% for d in done %}
-      <tr data-area="{{ d.a.id }}" data-panel-url="/manage/item/a{{ d.a.id }}" tabindex="0"><td class="dt-title"><a href="/manage/work/{{ d.a.id }}">{{ d.a.title }}</a><span class="dt-why">{{ d.item.title if d.item else "" }}</span></td>
-        <td>{{ lane_said[d.lane] if d.lane else "—" }}</td>
-        <td>{% if d.last %}<time datetime="{{ d.last.isoformat() }}" data-clock="ago">{{ d.last | ago }}</time>{% endif %}</td>
-        <td>{{ d.closed }} issue{{ "s" if d.closed != 1 }} · {{ d.passed }} check{{ "s" if d.passed != 1 }} passed</td>
-        <td>{% if not d.a.key %}<form method="post" action="/manage/testing/areas/{{ d.a.id }}" class="inline"><input type="hidden" name="do" value="archive"><input type="hidden" name="back" value="/manage/work?tab=done"><button class="btn link small" type="submit">Archive</button></form>{% endif %}</td></tr>
-    {% endfor %}</tbody></table></div>{% endif %}
-
   {% elif tab == "checks" %}
-  {% if history %}{{ history_head("checks that passed", "?tab=checks") }}{% else %}<p class="note">Every check still to pass, with where it stands on each device. A check is tried in its plan's test round; a row opens it.</p>{% endif %}
-  {% if not checks %}{{ empty_state("Nothing passed yet." if history else "Every check has passed.") }}{% else %}
-  {% set ck_from = "checks:passed" if history else "checks" %}
-  <div class="table-scroll"><table class="dtable dt-wide fft-table" data-fft-list="{{ ck_from }}"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ ck_from | urlencode }}"{% endif %}>
-    <thead><tr><th class="num dt-w1">#</th><th>Check</th><th class="dt-w4">Plan</th>{% for d in devices %}<th class="dt-w3">{{ device_name[d] }}</th>{% endfor %}</tr></thead>
-    <tbody>{% for r in checks %}
-      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ ck_from | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check">
+  {# Every check still to pass, where it stands on each device; those that passed are finished rows behind Show finished
+     (issue 174: they were History, a link under the table). A row opens it. #}
+  {% macro check_row(r, from_) %}
+      <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="check"{% if r.state == "passed" %} data-ls-finished{% endif %}>
         <td class="num"><span class="dt-id">{{ r.c.id }}</span></td>
         <td class="dt-title">{{ r.c.title }}{% if r.issues %}<span class="dt-why">issue{{ "s" if r.issues | length != 1 }} {{ r.issues | join(", ") }}</span>{% endif %}</td>
         <td>{% if r.area %}<a href="/manage/work/{{ r.area.id }}" data-panel-url="/manage/item/a{{ r.area.id }}">{{ r.area.title }}</a>{% else %}<span class="dt-id">In no plan</span>{% endif %}</td>
         {% for d in devices %}<td>{% if r.devices.get(d) %}{{ state_word(r.devices[d][0], r.devices[d][1], ' data-device="' ~ d ~ '"') }}{% else %}<span class="dt-id">—</span>{% endif %}</td>{% endfor %}
-      </tr>{% endfor %}</tbody></table></div>{% endif %}
-  {% if not history %}{{ history_link("?tab=checks&history=1") }}{% endif %}
+      </tr>
+  {% endmacro %}
+  {% set ck = namespace(cols=[("#", "num dt-w1"), ("Check", ""), ("Plan", "dt-w4")]) %}{% for d in devices %}{% set ck.cols = ck.cols + [(device_name[d], "dt-w3")] %}{% endfor %}
+  {% set ck_attrs %} data-fft-list="checks"{% if pick %} data-open-item="/manage/item/{{ pick }}?from={{ 'checks%3Apassed' if pick in passed | map(attribute='key') | list else 'checks' }}"{% endif %}{% endset %}
+  {% call table_box("checks", "Checks to pass", checks | length, "a check is tried in its plan's test round", ck.cols, "Every check has passed.", attrs=ck_attrs, finished=passed | length) %}
+    {% for r in checks %}{{ check_row(r, "checks") }}{% endfor %}
+    {% if passed %}<tr class="dt-group" data-finished-head><td colspan="{{ 3 + devices | length }}">Finished · {{ passed | length }}</td></tr>{% endif %}
+    {% for r in passed %}{{ check_row(r, "checks:passed") }}{% endfor %}
+  {% endcall %}
 
   {% elif tab == "scheduled" %}
   {# Reviews (Roadmap item 46, Brett's picks on docs/mockups/review-catalog/, version 6): the ten in six buckets, each
