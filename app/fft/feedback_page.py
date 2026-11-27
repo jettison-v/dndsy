@@ -373,7 +373,7 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
         return RedirectResponse(f"{BACK}?tab=approve", status_code=303)
     if key[:1] == "i":  # (the last one: where it went)
         return RedirectResponse(f"{BACK}?tab=open&open={key}", status_code=303)
-    return RedirectResponse(f"{BACK}?tab=ideas" if do == "idea" else f"{BACK}?tab=closed" if do in ("answer", "decline") else f"{BACK}?tab=approve&open={key}", status_code=303)
+    return RedirectResponse(f"{BACK}?tab=ideas" if do == "idea" else f"{BACK}?tab=open" if do in ("answer", "decline") else f"{BACK}?tab=approve&open={key}", status_code=303)
 
 
 @router.post("/manage/feedback/notes/{note_id:int}/undo")

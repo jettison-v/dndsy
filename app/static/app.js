@@ -4194,12 +4194,20 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // to show the table gives way to its line (Nothing open, or Nothing matches while searching): never headings over
   // nothing (issue 148)
   function table(root, rows, q) {
-    let head = null, any = false;
-    const close = () => { if (head) head.hidden = !any; };
-    root.querySelectorAll(':scope tbody > tr').forEach(tr => {
-      if (tr.matches('.dt-group')) { close(); head = tr; any = false; } else if (tr.hasAttribute('data-ls-row') && !tr.hidden) any = true;
+    // (a group row right above another is an outer heading, as For you's device over its areas: its rows run to the
+    // next outer heading; the review of #550)
+    const trs = [...root.querySelectorAll(':scope tbody > tr')], group = tr => tr && tr.matches('.dt-group');
+    trs.forEach((tr, i) => {
+      if (!group(tr)) return;
+      const outer = group(trs[i + 1]);
+      let any = false;
+      for (let j = i + 1; j < trs.length; j++) {
+        const t = trs[j];
+        if (group(t) && (outer ? group(trs[j + 1]) : true)) break;
+        if (t.hasAttribute('data-ls-row') && !t.hidden) { any = true; break; }
+      }
+      tr.hidden = !any;
     });
-    close();
     const shown = rows.some(r => !r.hidden), frame = root.querySelector(':scope > .table-scroll');
     if (frame) frame.hidden = !shown;
     const none = root.querySelector('[data-ls-none]'); if (none) none.hidden = shown || !!q;

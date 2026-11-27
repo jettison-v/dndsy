@@ -33,8 +33,8 @@ WORK = "/manage/work"
 REPO = "jettison-v/dndsy"  # (where an Upkeep card's pull request opens)
 # ("queue" is Your order: the Queue, kept with one job, Brett's order of importance, lanes and holds; Nov 24)
 TABS = (("board", "Board"), ("queue", "Your order"), ("handoffs", "Handoffs"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))  # (Handoffs: Roadmap item 45, Brett's pick CQ1)
-# (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
-# `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
+# (Done leaves the list, Brett Nov 20: finished plans and passed checks are Your order's and Checks' finished rows,
+# behind Show finished, never a tab or a count; issue 174, his pick F1 A)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
 # (the Work Flow Map's stages, worked out from what's true: words and state_word's tone)
 STAGES = {"blocker": ("Blocker: Claude's now", "failed"), "held": ("Held", "quiet"), "frozen": ("Held for game night", "quiet"), "round": ("In your round", "ask"),
