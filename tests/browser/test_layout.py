@@ -428,6 +428,30 @@ def test_the_live_pill_says_its_state_at_every_width(people, server):
 
 
 
+def test_the_admins_menu_bar_is_one_row_at_1280_in_every_live_state(people, server):
+    """Issue 159 (the week's review, Nov 25: the layout sweep saw the bar's right end wrap at 1280 when the Live menu said
+    Not connected with Add the bridge): an admin's bar is the fullest (Backstage, a campaign switcher, a character), so at
+    a laptop's 1280 every Live state, with the bridge and without, keeps it to one row."""
+    admin = people("admin")
+    page = admin.page
+    page.set_viewport_size({"width": 1280, "height": 800})
+    admin.open("/party")
+    found = []
+    for bridge in (True, False):
+        page.evaluate("b => document.body.classList.toggle('no-bridge', !b)", bridge)
+        for state, html in _pills().items():
+            rows = page.evaluate("""html => {
+              document.getElementById('live-pill').outerHTML = html;
+              const bar = document.querySelector('.topbar');
+              const tops = [...bar.querySelectorAll('a, button, .live-pill, [data-door]')].filter(e => e.getClientRects().length)
+                .map(e => e.getBoundingClientRect()).filter(r => r.height > 0).map(r => Math.round(r.top + r.height / 2));
+              return Math.max(...tops) - Math.min(...tops);
+            }""", html)
+            if rows > 12:
+                found.append(f"{state}{'' if bridge else ', no bridge'}: the bar wraps ({rows}px between its rows)")
+    assert not found, "\n".join(found)
+
+
 SHIFTS = """new PerformanceObserver(l => { window.__shifts = (window.__shifts || []).concat(
   l.getEntries().filter(e => !e.hadRecentInput).map(e => ({ value: e.value, nodes: (e.sources || []).map(s => s.node && (s.node.id || s.node.className || s.node.nodeName)) }))); })
   .observe({ type: 'layout-shift', buffered: true });"""

@@ -160,3 +160,22 @@ def test_a_window_on_the_one_window_opens_and_closes_its_own_boxes():
         text = p.read_text()
         if 'import window %}' in text and "{% call window(" in text:
             assert text.count("<div") == text.count("</div>"), f"{p.name}: its <div>s don't close"
+
+
+def test_every_tab_row_is_the_one_tab_bar():
+    """Issue 144: Feedback, Development, a plan, Dice tuning, a document and Sessions had a second tab style (.sub-tabs)
+    the design system didn't have. A tab row is .tabbar, its tabs buttons (parts of a page) or links (parts with their
+    own address, `aria-current` on the open one); nothing brings the second style back."""
+    root = Path(__file__).parent.parent / "app"
+    used = [f"{p.relative_to(root)}" for p in [*root.joinpath("templates").rglob("*.html"), root / "static" / "app.js", root / "static" / "app.css"]
+            if re.search(r"\bsub-tabs\b(?![^\n]*went)", p.read_text())]
+    assert not used, used
+
+
+def test_every_state_word_is_the_one_state_word():
+    """Issue 149: a state said as a word (Failed, Stuck, a lane) is `state_word` or `lane_tag` from _admin_bits.html,
+    never a hand-made `<span class="state-word …">`, so its look changes in one place. The Deploys pill is its own piece."""
+    own = {"_admin_bits.html"}
+    made = [f"{p.name}:{n}" for p in (Path(__file__).parent.parent / "app" / "templates").rglob("*.html") if p.name not in own
+            for n, line in enumerate(p.read_text().splitlines(), 1) if re.search(r'class="state-word(?! fft-deploys-pill)', line)]
+    assert not made, f"Use state_word(word, tone) or lane_tag(key, said) from _admin_bits.html: {made}"

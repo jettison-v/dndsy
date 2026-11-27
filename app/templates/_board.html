@@ -1,3 +1,4 @@
+{% from "_admin_bits.html" import state_word, lane_tag %}
 {# The Board (item 39, 4 of 4; Brett's picks on The Work Board, docs/mockups/work-board/): five columns of cards, each
    card one piece of work that ends in one pull request. One piece, used by Development's Board and the design system
    (Backstage › Global › Design system › Board). `cols`: [(key, label, who, cards)], as app/fft/work_page.py `board`. #}
@@ -11,7 +12,7 @@
   {% if c.stage_said %}<span class="bd-stage">{{ c.stage_said }}</span>{% endif %}
   <span class="bd-sub">{{ c.sub }}</span>
   <span class="bd-why">{{ c.why }}{% if c.since %} · <time datetime="{{ c.since.isoformat() }}">checked in {{ c.since | ago }}</time>{% endif %}</span>
-  {% if c.lane %}<span class="bd-foot"><span class="state-word lane-tag" data-lane-tag="{{ c.lane }}">{{ lane_said[c.lane] }}</span>{% if c.pr %}<span class="dt-id">#{{ c.pr }}</span>{% endif %}</span>{% elif c.pr %}<span class="bd-foot"><span class="dt-id">#{{ c.pr }}</span></span>{% endif %}
+  {% if c.lane %}<span class="bd-foot">{{ lane_tag(c.lane, lane_said[c.lane]) }}{% if c.pr %}<span class="dt-id">#{{ c.pr }}</span>{% endif %}</span>{% elif c.pr %}<span class="bd-foot"><span class="dt-id">#{{ c.pr }}</span></span>{% endif %}
 </a>
 {% endmacro %}
 {% macro board(cols, lane_said, empty) %}
