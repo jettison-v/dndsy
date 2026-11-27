@@ -2585,7 +2585,7 @@ body:has(.peek.open:not(.modal) .peek-foot) .cards { bottom: calc(14px + env(saf
 .modes { display: inline-flex; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 3px; gap: 2px; }
 .modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: var(--r-md); font-weight: 500; white-space: nowrap; }  /* (feedback 20: "Battl/e" in a tight header) */
 .modes a:hover { color: var(--text); }
-.modes a[aria-current=page] { background: var(--red); color: var(--text-strong); font-weight: 600; }
+.modes a[aria-current=page] { background: var(--selected-bg); color: var(--text-strong); font-weight: 600; box-shadow: inset 0 0 0 1px var(--blue); }  /* (the chosen one blue, as every chosen control; red is the main action: Brett's pick T1 A, issue 175) */
 .forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Reminders */
 .forget-tab .sec-head { justify-content: flex-end; }
 .econ-tabs { display: none; }
