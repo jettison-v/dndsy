@@ -284,18 +284,18 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
 def _deploys_on_one_row(page, width):
     """Brett's pick A on issue 42: the bar's top row never wraps, Deploys is one pill at its right end that never
     shortens (the grey note beside Claude is listening does first), and its menu opens on the page with three choices."""
-    top, pill = page.locator(".fft-status-top").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
+    top, pill = page.locator(".fft-status-top").bounding_box(), page.locator("[data-mode-menu] > summary").bounding_box()
     listen = page.locator(".fft-listening").bounding_box()
     assert abs((listen["y"] + listen["height"] / 2) - (pill["y"] + pill["height"] / 2)) < 6 and pill["height"] < 40, f"the top row wrapped at {width}px"
     bar = page.locator(".fft-status").bounding_box()
     assert bar["x"] + bar["width"] - (pill["x"] + pill["width"]) < 30, f"Deploys isn't at the bar's right end at {width}px"
-    assert page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1"), f"Deploys shortened at {width}px"
-    page.locator(".fft-deploys > summary").click()
-    menu = page.locator(".fft-deploys-menu")
+    assert page.locator("[data-mode-menu] .fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1"), f"Deploys shortened at {width}px"
+    page.locator("[data-mode-menu] > summary").click()
+    menu = page.locator("[data-mode-menu] .fft-deploys-menu")
     m = menu.bounding_box()
     assert menu.is_visible() and m["x"] >= 0 and m["x"] + m["width"] <= width, f"Deploys' menu off the page at {width}px"
     assert menu.locator("[data-mode-pick]").count() == 3 and menu.locator("[data-mode-pick] small").count() == 3  # (each says what it does)
-    page.locator(".fft-deploys > summary").click()
+    page.locator("[data-mode-menu] > summary").click()
     assert top["height"] < 64
 
 
@@ -310,7 +310,7 @@ def test_an_open_round_has_its_own_row_under_the_bar(people, server, browser_db)
         admin.open("/manage/work?tab=queue")
         def where():  # (the pill against its bar's right end, where it sits: a scrollbar the round's row brings narrows
             # the bar, so from its left the pill seemed to move 13 px; Nov 20, main's run after PR 449)
-            p, b = page.locator(".fft-deploys > summary").bounding_box(), page.locator(".fft-status").bounding_box()
+            p, b = page.locator("[data-mode-menu] > summary").bounding_box(), page.locator(".fft-status").bounding_box()
             return {"x": (b["x"] + b["width"]) - (p["x"] + p["width"]), "y": p["y"] - b["y"], "height": p["height"], "top": p["y"]}
         before = where()
         engine = create_engine(browser_db[0])
@@ -361,9 +361,9 @@ def test_on_a_phone_the_bar_wraps_deploys_under_listening(people, server, browse
     page = admin.page
     page.set_viewport_size({"width": 375, "height": 812})
     admin.open("/manage/work")
-    said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator(".fft-deploys > summary").bounding_box()
+    said, pill = page.locator(".fft-listening-said").bounding_box(), page.locator("[data-mode-menu] > summary").bounding_box()
     assert pill["y"] >= said["y"] + said["height"] - 1, "Deploys sits over Claude listening on a phone"
-    assert pill["x"] + pill["width"] <= 375 and page.locator(".fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)
+    assert pill["x"] + pill["width"] <= 375 and page.locator("[data-mode-menu] .fft-deploys-pill").evaluate("e => e.scrollWidth <= e.clientWidth + 1")  # (on the screen, whole: its words may wrap)
 
 
 def test_for_you_opens_a_check_in_the_item_window_and_passed_moves_on(people, server, browser_db):

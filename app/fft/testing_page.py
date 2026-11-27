@@ -350,7 +350,23 @@ def status(db: Session) -> dict:
             "after": after, "flight": rules.in_flight(db),  # (a round waiting for changes to go live; what pausing would hold)
             "round_area": area.title if area else "",  # (what the round holds: its own area, a lighter round, Nov 19)
             "freeze": rules.freeze_state(db), "mode": rules.mode_of(db),
+            "usage": usage_bar(db),
             "updated": config.STARTED_AT.isoformat()}  # (askdnd.ai's last deploy: a pause has settled once nothing newer comes)
+
+
+def usage_bar(db: Session) -> dict:
+    """The Usage pill beside Deploys (Roadmap item 34): the last reading, its verdict now (against Brett's limits as they
+    stand, so a change of limit shows at once), the week's limit, and the limits for its menu. `tone`: ok, near (within
+    10% of the limit), over (stopped), wait (the 5-hour window), old (no reading in the last 30 minutes)."""
+    limits, r = rules.usage_limits(db), rules.last_usage(db)
+    if r is None:
+        return {"limits": limits, "reading": None, "tone": "old", "why": "No reading yet", "cap": limits["week"], "days": rules.DAYS}
+    verdict, why, cap = rules.usage_verdict(limits, r.five_hour, r.week, r.extra_spent, r.five_resets_at, r.week_resets_at)
+    old = rules.now() - r.created_at > rules.USAGE_FRESH
+    if verdict == "wait" and r.five_resets_at and rules.now() >= r.five_resets_at:  # (the window has reset since: not paused now)
+        verdict, why = "go", "The 5-hour window has reset: Claude reads its usage again before going on."
+    tone = {"stop": "over", "wait": "wait"}.get(verdict) or ("near" if cap - r.week <= 10 else "old" if old else "ok")
+    return {"limits": limits, "reading": r, "verdict": verdict, "why": why, "cap": cap, "tone": tone, "old": old, "days": rules.DAYS}
 
 
 def _render(request: Request, db: Session, user: dict, show: str, open: str):
@@ -525,6 +541,26 @@ def mode(request: Request, mode: str = Form(...), back: str = Form(""), here: st
         return RedirectResponse(here, status_code=303)
     back_to = {"work": WORK, "stands": WORK, "feedback": "/manage/feedback", "roadmap": "/manage/roadmap"}
     return RedirectResponse(back_to.get(back, FOR_YOU), status_code=303)
+
+
+@router.post("/manage/for-you/usage")
+def usage_limits(request: Request, week: int = Form(...), keep: int = Form(...), game_day: str = Form(""), extra: float = Form(0.0),
+                 window: str = Form("pause"), here: str = Form(""), db: Session = Depends(get_db)):
+    """Brett's usage limits (Roadmap item 34), from the Usage menu beside Deploys."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    try:
+        rules.set_usage_limits(db, f"user:{me['id']}", week, keep, int(game_day) if game_day.isdigit() else None, extra, window)
+    except rules.RuleError as e:
+        request.session["toast"] = web.notice(e.words, "warn")
+    else:
+        db.commit()
+        request.session["toast"] = f"Claude stops at {week}% of the week" + (f", {keep}% kept for game night" if keep else "")
+    if here.startswith("/manage/") and "//" not in here and "\\" not in here:  # (the page you were on: one of Backstage's own)
+        return RedirectResponse(here, status_code=303)
+    return RedirectResponse(FOR_YOU, status_code=303)
 
 
 @router.post("/manage/for-you/local/{try_id:int}")

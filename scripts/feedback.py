@@ -813,6 +813,34 @@ def claim(a) -> None:
         print(f"Nothing to claim: {got['why']}")
 
 
+def usage(a) -> None:
+    """Usage Limit Awareness (Roadmap item 34). `usage report --five N --week N [--extra $] [--extra-limit $]
+    [--five-resets ISO] [--week-resets ISO]`: the reading from the usage card (the get_usage tool), before each piece of
+    work and each pull request; askdnd answers GO, WAIT or STOP against Brett's limits (exit 0, 2 or 1). `usage`: his
+    limits, the last reading, whether new work may start, and each Roadmap item's share of a week so far."""
+    if a.do == "report":
+        if a.five is None or a.week is None:
+            sys.exit("usage report needs --five and --week (percent, from the usage card)")
+        body = {"owner": a.listener, "five_hour": a.five, "week": a.week, "extra_spent": a.extra or 0.0}
+        body |= {k: v for k, v in (("extra_limit", a.extra_limit), ("five_resets_at", a.five_resets), ("week_resets_at", a.week_resets)) if v is not None}
+        got = call(a.base, "/usage", body)
+        print(f"{got['verdict'].upper()}: {got['why']}")
+        if got["verdict"] == "stop":
+            print("  Over Brett's limit: start nothing new. Finish or park the pull request in hand (nothing half merged), write where it\n"
+                  "  stands on its item, ask him in askdnd (feedback.py ask … : raise the limit, or wait for the reset) and send one push.")
+        sys.exit({"go": 0, "stop": 1, "wait": 2}[got["verdict"]])
+    st = call(a.base, "/usage")
+    lim, last = st["limits"], st["last"]
+    day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][lim["game_day"]] if lim.get("game_day") is not None else "none"
+    print(f"Brett's limits: stop at {lim['week']}% of the week; keep {lim['keep']}% for game night ({day}); extra usage up to ${lim['extra']:.2f};"
+          f" the 5-hour window nearly full: {lim['window']}")
+    print(f"Last reading {last['at'][:16].replace('T', ' ')} UTC: the week {last['week']}%, the 5-hour window {last['five_hour']}%,"
+          f" extra ${last['extra_spent']:.2f}: {last['verdict'].upper()}, {last['why']}" if last else "No reading yet.")
+    print(("New work may start." if st["lets_start"] else "New work may not start: ") + ("" if st["lets_start"] else st["said"]))
+    for item, share in sorted(st["shares"].items(), key=lambda kv: -kv[1])[:10]:
+        print(f"  item {item}: {share}% of a week so far")
+
+
 def pulls(a) -> None:
     """The pull requests askdnd knows from GitHub (item 39): each one's tests, whether it's behind main, and its work."""
     items = call(a.base, "/pulls" + ("?open=0" if a.all else ""))["items"]
@@ -1031,6 +1059,15 @@ def main() -> None:
     s.add_argument("id", nargs="?")
     s.add_argument("as_", nargs="?", metavar="as", choices=[None, "item", "issue", "chat"])
     s.add_argument("thing", nargs="?")
+    s = sub.add_parser("usage", help="Claude's plan usage: report a reading (go, wait or stop against Brett's limits), or show the limits")
+    s.add_argument("do", nargs="?", choices=["report"])
+    s.add_argument("--five", type=int, help="the 5-hour window, percent")
+    s.add_argument("--week", type=int, help="the week (all models), percent")
+    s.add_argument("--extra", type=float, help="extra usage spent this month, dollars")
+    s.add_argument("--extra-limit", type=float, help="the plan's monthly extra usage limit, dollars")
+    s.add_argument("--five-resets", help="when the 5-hour window resets (ISO, its resetsAt)")
+    s.add_argument("--week-resets", help="when the week resets (ISO, its resetsAt)")
+    s.add_argument("--listener", default="main", help="the claim's listener (as claim's)")
     s = sub.add_parser("page", help="page send docs/<path>: a page to askdnd's Documents at once, before its pull request")
     s.add_argument("do", choices=["send"])
     s.add_argument("path")
@@ -1046,7 +1083,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "question": question, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "page": page, "sync": sync, "chat": chat, "review": review}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "job": job, "sort": sort, "roadmap": roadmap, "ideas": ideas, "available": available, "local": local, "pulls": pulls, "claim": claim, "usage": usage, "page": page, "sync": sync, "chat": chat, "review": review}[a.cmd](a)
 
 
 if __name__ == "__main__":

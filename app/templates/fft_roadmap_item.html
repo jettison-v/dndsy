@@ -26,6 +26,7 @@
   <dl class="rm-facts" data-facts>
     {% if not done %}<div><dt>Section</dt><dd data-section="{{ it.section }}">{{ section_said[it.section] }}</dd></div>{% endif %}
     {% if it.size %}<div><dt>Size</dt><dd>{{ it.size }}</dd></div>{% endif %}
+    {% if usage %}<div><dt>{{ "Used so far" if usage.so_far is not none else "Likely to use" }}</dt><dd class="rm-fact-words" data-usage-share>{% if usage.so_far is not none %}About {{ "%.0f" | format(usage.so_far) }}% of a week of Claude's plan{% endif %}{% if usage.estimate %}{{ " · " if usage.so_far is not none }}{{ "about" if usage.so_far is not none else "About" }} {{ "%.0f" | format(usage.estimate[0]) }}% of a week, from {{ usage.estimate[1] }} shipped item{{ "s" if usage.estimate[1] != 1 }} of size {{ it.size }}{% endif %}</dd></div>{% endif %}{# (Usage Limit Awareness, Roadmap item 34: an estimate, never a promise) #}
     <div><dt>Stage</dt><dd>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</dd></div>
     {% if r.next[1] %}<div><dt>Next step</dt><dd data-next="{{ r.next[0] }}">{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude") }} <span>{{ r.next[1] }}</span></dd></div>{% endif %}
     {% if r.status %}<div><dt>Where it stands</dt><dd class="rm-fact-words">{{ r.status }}</dd></div>{% endif %}
