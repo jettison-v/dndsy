@@ -29,7 +29,7 @@
     {% if customs %}
     <div data-list="custom-items" data-default-sort="default" data-ls-group-count>
     {% set find %}{{ search_box("Search custom items") }}{% endset %}
-    {% call table_box("custom-items", "Custom items on the table's sheets", customs | length, "made up on D&D Beyond, not a homebrew item here yet: make one into a homebrew item to set what it does in play", cols=[("Item", ""), ("", "end dt-w4")], controls=find, body_attrs=" data-ls-rows") %}
+    {% call table_box("custom-items", "Custom items on the table's sheets", customs | length, "made up on D&D Beyond, not a homebrew item here yet: make one into a homebrew item to set what it does in play", cols=[("Item", ""), ("", "end dt-w4")], controls=find, body_attrs=" data-ls-rows", search=false) %}
         {% for c in customs | sort(attribute="who") %}
         <tr data-ls-row data-group-label="{{ c.who }}" data-sort-default="{{ loop.index }}" data-name="{{ (c.name ~ ' ' ~ c.who) | lower }}"><td class="dt-title"><b>{{ c.name }}</b></td>
           <td class="end"><a class="btn small" href="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}" data-modal-url="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}&amp;part=1" data-modal-size="large">Make it homebrew</a></td></tr>

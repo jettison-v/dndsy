@@ -1822,6 +1822,13 @@ button.rm-box { cursor: pointer; }
 .tbx .dtable { border: 0; border-radius: 0; }
 .tbx.is-empty .tbx-head { border-bottom: 0; }
 .tbx-empty { padding: 0 var(--sp-3); }  /* (the shared empty line inside a table's box) */
+/* A table's own search and Show finished, in its title row (issue 174, Brett's picks F1 A, F2 A): a small search box, the
+   tick beside it; a finished row (data-ls-finished) shows faded, at the end under its Finished group row */
+.tbx-search { height: var(--control-h-sm); width: 13rem; max-width: 100%; padding: 0 var(--sp-2); }
+.tbx-fin { white-space: nowrap; }
+.tbx-none { padding: var(--sp-2) var(--sp-3); margin: 0; }
+.dtable tr[data-ls-finished] td { color: var(--muted); }
+.dtable tr[data-ls-finished] td.dt-title { color: var(--muted); font-weight: 400; }
 .tbx-stack { display: grid; gap: var(--sp-4); }
 .tbx ~ .tbx { margin-top: var(--sp-4); }  /* (two tables on one page, one gap apart, the same as a stack's, each with its own title row: issues 122, 125) */
 .tbx-stack > .tbx ~ .tbx { margin-top: 0; }  /* (a stack keeps its own gap) */

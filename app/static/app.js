@@ -4152,7 +4152,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
 // after a day without use; the view is kept for good, All the first time (Brett, 2026-11-02). The Spell Book adds
 // its "Averages at" lens on top (below).
 (function () {
-  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list, VIEW = r => 'askdnd:view:' + r.dataset.list;
+  const DAY = 864e5, KEY = r => 'askdnd:list:' + r.dataset.list, VIEW = r => 'askdnd:view:' + r.dataset.list, FIN = r => 'askdnd:finished:' + r.dataset.list;
   const vals = (f, g) => { const v = f[g]; return Array.isArray(v) ? v : (v ? [v] : []); };
   const fOf = row => row._f || (row._f = (() => { try { return JSON.parse(row.dataset.f || '{}'); } catch (e) { return {}; } })());
   function load(root) {
@@ -4167,6 +4167,15 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
     root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, above: !!s.above, q: '',
                  view: views.includes(kept) ? kept : views.includes(root.dataset.lsStart) ? root.dataset.lsStart : views.includes('all') ? 'all' : (views[0] || '') };  // (a list may start elsewhere the first time: Documents on what waits on you, Nov 24)
+    // A table (_tables.html table_box, data-ls-table): its rows as drawn, each searched by its words, unless the page
+    // marked them; Show finished's tick as left on this table (issue 174, Brett's picks F1 A, F2 A)
+    if (root.hasAttribute('data-ls-table')) {
+      root.querySelectorAll(':scope tbody > tr:not(.dt-group):not(.dt-cut):not(.ls-grouphead)').forEach(r => {
+        if (!r.hasAttribute('data-ls-row')) { r.setAttribute('data-ls-row', ''); r.dataset.name = r.textContent.replace(/\s+/g, ' ').trim().toLowerCase(); }
+      });
+    }
+    try { root._ls.fin = localStorage.getItem(FIN(root)) === '1'; } catch (e) { root._ls.fin = false; }
+    const fin = root.querySelector('[data-ls-finished-toggle]'); if (fin) fin.checked = root._ls.fin;
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
@@ -4178,18 +4187,37 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     try {
       localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, above: st.above }));
       if (st.view) localStorage.setItem(VIEW(root), st.view);
+      if (root.querySelector('[data-ls-finished-toggle]')) localStorage.setItem(FIN(root), st.fin ? '1' : '0');
     } catch (e) { /* private window */ }
+  }
+  // A table's rows stay in the order drawn: a group row (tr.dt-group) shows only over rows that show, and with nothing
+  // to show the table gives way to its line (Nothing open, or Nothing matches while searching): never headings over
+  // nothing (issue 148)
+  function table(root, rows, q) {
+    let head = null, any = false;
+    const close = () => { if (head) head.hidden = !any; };
+    root.querySelectorAll(':scope tbody > tr').forEach(tr => {
+      if (tr.matches('.dt-group')) { close(); head = tr; any = false; } else if (tr.hasAttribute('data-ls-row') && !tr.hidden) any = true;
+    });
+    close();
+    const shown = rows.some(r => !r.hidden), frame = root.querySelector(':scope > .table-scroll');
+    if (frame) frame.hidden = !shown;
+    const none = root.querySelector('[data-ls-none]'); if (none) none.hidden = shown || !!q;
+    const empty = root.querySelector('[data-ls-empty]'); if (empty) empty.hidden = shown || !q;
   }
   function apply(root) {
     const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
     // (a row a scope leaves out, such as another class's in Change spells' class tabs, isn't in the list at all)
-    const all = [...root.querySelectorAll('[data-ls-row]')], rows = all.filter(r => !r.hasAttribute('data-ls-out'));
+    const all = [...root.querySelectorAll('[data-ls-row]')].filter(r => r.parentElement.closest('[data-list]') === root), rows = all.filter(r => !r.hasAttribute('data-ls-out'));  // (a table inside a page's list is its own: issue 174)
     all.forEach(r => { if (r.hasAttribute('data-ls-out')) r.hidden = true; });
     const on = Object.keys(sel).filter(g => (sel[g] || []).length);
     const passes = (f, skip) => on.every(g => g === skip || vals(f, g).some(v => sel[g].includes(v)));
     const inView = (r, v = st.view) => !v || (r.dataset.views || '').split(' ').includes(v);
     // A search looks through every row, whatever the view and filters
     rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !(inView(r) && passes(fOf(r))); });
+    // Finished rows wait behind Show finished; a search looks at them too, marked as finished (issue 174)
+    if (!q && !st.fin) rows.forEach(r => { if (r.hasAttribute('data-ls-finished')) r.hidden = true; });
+    if (root.hasAttribute('data-ls-table')) { table(root, rows, q); save(root); return; }
     // A list that shows its newest few (data-ls-cap="20") or keeps its older rows back (data-ls-later on a row), with one
     // fold to open them in place and fold them again (_lists.html show_more; Brett's pick AU5, Nov 25). A search looks
     // through every row; the cap counts in the view that's on (Usage: the newest 20 of each kind).
@@ -4345,6 +4373,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const root = rootOf(e.target); if (!root || !root._ls) return;
     if (e.target.matches('[data-ls-sort]')) { root._ls.sort = e.target.value; apply(root); }
     if (e.target.matches('[data-ls-lens]')) { root._ls.lens = e.target.value; apply(root); }
+    if (e.target.matches('[data-ls-finished-toggle]')) { root._ls.fin = e.target.checked; apply(root); }
   });
   document.addEventListener('toggle', e => {
     const root = rootOf(e.target);

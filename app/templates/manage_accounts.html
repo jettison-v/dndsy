@@ -34,9 +34,9 @@
         {% endcall %}{% endif %}</td>
     </tr>
     {% endmacro %}
-    {% call table_box("people", "People", people | length, cols=[("Person", ""), ("Campaigns", ""), ("Admin", "dt-w2"), ("Feedback", "dt-w2"), ("", "end dt-w2")], controls=views, body_attrs=" data-ls-rows") %}{% for p in people %}{{ person(p, loop.index) }}{% endfor %}{% endcall %}
+    {% call table_box("people", "People", people | length, cols=[("Person", ""), ("Campaigns", ""), ("Admin", "dt-w2"), ("Feedback", "dt-w2"), ("", "end dt-w2")], controls=views, body_attrs=" data-ls-rows", own_list=false) %}{% for p in people %}{{ person(p, loop.index) }}{% endfor %}{% endcall %}
     {% if away %}<details class="fold"><summary>Removed or not invited yet{{ count_pill(away | length) }}</summary>
-      {% call table_box("away", "Removed or not invited yet", away | length, cols=[("Person", ""), ("Campaigns", ""), ("Admin", "dt-w2"), ("Feedback", "dt-w2"), ("", "end dt-w2")]) %}{% for p in away %}{{ person(p) }}{% endfor %}{% endcall %}</details>{% endif %}
+      {% call table_box("away", "Removed or not invited yet", away | length, cols=[("Person", ""), ("Campaigns", ""), ("Admin", "dt-w2"), ("Feedback", "dt-w2"), ("", "end dt-w2")], search=false) %}{% for p in away %}{{ person(p) }}{% endfor %}{% endcall %}</details>{% endif %}
   </div>
 
 </main>

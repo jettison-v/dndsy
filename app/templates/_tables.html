@@ -2,14 +2,25 @@
    Nov 24: one table piece, its title, count and buttons right above its column headings). `cols`: (label, class) for
    each column head; the caller's block is the rows; with no rows, its head and one line say so (the page keeps its
    shape). `controls`, `attrs` and `body_attrs` are markup the page builds (a `{% set %}` block; attrs start with a space; body_attrs on the tbody, e.g. ` data-ls-rows` for the list engine). #}
+{# Every table can be searched, and one with finished rows hides them behind Show finished (Brett's picks F1 A and F2 A on
+   docs/mockups/tables-and-tabs/, Nov 27, issue 174): a search box in the title row, filtering as you type and looking
+   at finished rows too (marked Finished); `finished`, how many finished rows the caller drew (each `data-ls-finished`,
+   after the rest under a Finished group row), gives the Show finished box beside it, its tick remembered per table.
+   The table is its own list (the list engine in app.js, `data-ls-table`: rows in the order drawn) unless `own_list`
+   is false, where a page's list around it already holds its rows (the search box then feeds that list); `search=false`
+   where the page has its own search box already. #}
 {% from "_lists.html" import count_pill, empty_state %}
-{% macro table_box(key, title, n, what="", cols=[], empty="", controls="", attrs="", body_attrs="") -%}
-<section class="tbx{{ ' is-empty' if not n }}" data-table="{{ key }}" aria-labelledby="tbx-h-{{ key }}">
+{% macro table_box(key, title, n, what="", cols=[], empty="", controls="", attrs="", body_attrs="", search=true, own_list=true, finished=0) -%}
+{%- set rows = n or finished %}{% set own = own_list and rows and (search or finished) %}
+<section class="tbx{{ ' is-empty' if not rows }}" data-table="{{ key }}" aria-labelledby="tbx-h-{{ key }}"{% if own %} data-list="tbx-{{ key }}" data-ls-table{% endif %}>
   <header class="tbx-head"><h2 class="tbx-name" id="tbx-h-{{ key }}">{{ title }}{{ count_pill(n) }}</h2>
     {%- if what %}<span class="tbx-what">{{ what }}</span>{% endif %}
-    {%- if controls %}<span class="tbx-ctl">{{ controls }}</span>{% endif %}</header>
-  {% if n %}<div class="table-scroll"><table class="dtable fft-table"{{ attrs }}><thead><tr>{% for label, cls in cols %}<th{% if cls %} class="{{ cls }}"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
-    <tbody{{ body_attrs }}>{{ caller() }}</tbody></table></div>
+    {%- if controls or (rows and (search or finished)) %}<span class="tbx-ctl">{{ controls }}
+      {%- if rows and search %}<span class="ls-search tbx-search"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" placeholder="Search {{ title | lower }}" aria-label="Search {{ title | lower }}" data-ls-search></span>{% endif %}
+      {%- if finished %}<label class="check tbx-fin"><input type="checkbox" data-ls-finished-toggle> Show finished{{ count_pill(finished) }}</label>{% endif %}</span>{% endif %}</header>
+  {% if rows %}<div class="table-scroll"><table class="dtable fft-table"{{ attrs }}><thead><tr>{% for label, cls in cols %}<th{% if cls %} class="{{ cls }}"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody{{ body_attrs if body_attrs else (' data-ls-rows' if own else '') }}>{{ caller() }}</tbody></table></div>
+    {%- if own %}<div class="tbx-empty" data-ls-none{% if n %} hidden{% endif %}>{{ empty_state(empty or "Nothing open.") }}</div><p class="note tbx-none" data-ls-empty hidden>Nothing matches.</p>{% endif %}
   {% else %}<div class="tbx-empty">{{ empty_state(empty) }}</div>{% endif %}
 </section>
 {%- endmacro %}
