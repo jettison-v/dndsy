@@ -422,3 +422,22 @@ def test_an_ideas_sender_hears_when_it_joins_the_roadmap_and_when_it_ships(db, a
     rules.ship_item(db, "claude", db.get(FftItem, db.get(FftIdea, other.idea_id).item_id), not_doing=True, result="Not now")
     db.flush()
     assert "won't be built" in views.sender_says(db, other, None)["sentence"]
+
+
+def test_an_issue_says_where_it_came_from(db, admin, api):
+    """R10's slice 5 (Brett's OK on its scope, Nov 27): each issue names its source, kept when it's made (a note, a
+    check, Sentry, the speed numbers, a review, the nightly tests…) and worked out for issues made before it; its window
+    says so and Feedback's Who found it filters by it."""
+    from app.fft.models import FftIssue
+
+    made = api.post("/api/fft/issues", headers=H, json={"title": "A review found the menu wraps", "source": "review"}).json()
+    review = db.get(FftIssue, made["id"])
+    plain = rules.new_issue(db, "claude", "Claude noticed the sort is off")
+    before = rules.new_issue(db, "askdnd", "Slow: GET /party", feature="speed")
+    before.source = ""  # (made before sources were kept)
+    db.flush()
+    assert (review.source, plain.source, rules.source_of(before)) == ("review", "claude", "speed")
+    assert api.post("/api/fft/issues", headers=H, json={"title": "Nowhere", "source": "gossip"}).status_code == 400
+    page = admin.get("/manage/feedback?tab=open&chip=review").text
+    assert f'data-row="i{review.id}"' in page and f'data-row="i{plain.id}"' not in page
+    assert "from a review" in admin.get(f"/manage/item/i{review.id}").text

@@ -329,7 +329,7 @@ def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     _area_given(db, body.get("area_id"))
     try:
         i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"), feature=_str(body, "feature", 20),
-                            kind=_str(body, "kind", 12) or "fix")
+                            kind=_str(body, "kind", 12) or "fix", source=_str(body, "source", 16))
     except rules.RuleError as e:
         _rule(e)
     db.commit()

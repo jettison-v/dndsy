@@ -84,6 +84,9 @@ def pictures(db: Session, note: FftNote) -> list[FftPicture]:
     return list(db.scalars(select(FftPicture).where(FftPicture.note_id == note.id).order_by(FftPicture.id)))
 
 
+FOUND_BY = ("sentry", "speed", "live_test", "iphone", "review", "claude")  # (Who found it's chips beyond players and checks)
+
+
 def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
     """The list: each row's id ("n" a note, "i" an issue, "d" an idea), title, pill and line under it."""
     out = []
@@ -109,6 +112,8 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         # Where it stands. Brett's round, Nov 18, issue 33: "From checks" said neither)
         q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftTryIssue.issue_id))))
     for i in db.scalars(q.limit(300)):
+        if chip in FOUND_BY and rules.source_of(i) != chip:  # (Who found it, by where it came from: R10's slice 5; worked
+            continue  # out per issue, since issues made before it hold no source of their own)
         turn, name = views.issue_turn(db, i)
         word, tone = views.turn_pill(turn, name)
         notes = notes_of_issue(db, i)
@@ -120,8 +125,8 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
             bits.append(f.title)
         if who := senders(notes):
             bits.append(", ".join(who))
-        elif i.origin_try_id:
-            bits.append("from a check")
+        else:  # (where it came from, when no one's note did: R10's slice 5)
+            bits.append(rules.SOURCE_FROM[rules.source_of(i)])
         out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits), "kind": i.kind,
                     "pa": f.area if f else "", "feature": f.key if f else ""})
     if tab == "open" and not chip and not area:  # (a question sent for Claude to answer, waiting: Claude's; issue 27)
@@ -197,6 +202,7 @@ def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
     asked = [views.question_view(q) for q in db.scalars(select(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id == issue.id)
                                                            .order_by(FftQuestion.id))]
     return {"i": issue, "turn": turn, "pill": views.turn_pill(turn, name), "sentence": views.issue_sentence(db, issue), "asked": asked,
+            "source_from": rules.SOURCE_FROM[rules.source_of(issue, bool(notes))],  # (where it came from: R10's slice 5)
             "area": db.get(FftArea, issue.area_id) if issue.area_id else None, "feature": taxonomy.feature(issue.feature),
             "pa": taxonomy.area(taxonomy.feature(issue.feature).area) if taxonomy.feature(issue.feature) else None, "notes": [note_view(db, n, viewer_id) for n in notes],
             "senders": senders(notes), "lines": list(db.scalars(select(FftLine).where(FftLine.issue_id == issue.id).order_by(FftLine.id))),
@@ -252,7 +258,7 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
         return denied
     n = counts(db)
     tab = tab if tab in dict(TABS) else ("approve" if n["approve"] else "open")
-    chip = chip if chip in ("players", "checks", *rules.ISSUE_KINDS) else ""
+    chip = chip if chip in ("players", "checks", *FOUND_BY, *rules.ISSUE_KINDS) else ""
     keyed = db.get(FftArea, area) if area else None
     if keyed is not None and keyed.key:  # (a Product Area's batch, as Where it stands links it: its chip)
         pa, area = keyed.key, 0
