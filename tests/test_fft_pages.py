@@ -2,6 +2,7 @@
 docs/mockups/found-fixed-tried/): sending a note, approving it, the Feedback page's issues, and Notes you sent, with
 the standing rules on who sees what."""
 
+import re
 import base64
 import io
 
@@ -198,7 +199,7 @@ def test_a_question_an_admin_sends_waits_on_open_for_claude_then_its_answer_come
     assert 'data-turn="claude"' in mine and 'data-turn="closed"' not in mine
     rules.answer_note(db, "claude", q, "Press End round on the round's card.")
     db.flush()
-    assert f'data-row="n{q.id}"' not in admin.get("/manage/feedback?tab=open").text
+    assert "data-ls-finished" in re.search(rf'<tr[^>]*data-row="n{q.id}"[^>]*>', admin.get("/manage/feedback?tab=open").text).group(0)  # (answered: finished)
     assert f'data-row="n{q.id}"' in admin.get("/manage/feedback?tab=closed").text
     assert "Press End round on the round" in admin.get(f"/your-notes?tab=askdnd&note=f{q.id}").text
 

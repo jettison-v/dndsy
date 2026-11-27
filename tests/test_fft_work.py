@@ -274,17 +274,18 @@ def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admi
     assert f'data-build="{build.id}"' in held[held.index("data-held"):]
 
 
-def test_done_leaves_feedbacks_list_for_its_history(db, admin):
-    """Brett, Nov 20 ("If it is done, it is off the list"): Feedback's Issues have no Closed chip beside Open; a quiet
-    History link under the list opens the closed ones, with the way back."""
-    rules.new_issue(db, "claude", "Still open")
+def test_done_leaves_feedbacks_list_behind_show_finished(db, admin):
+    """Brett, Nov 20 ("If it is done, it is off the list"), and his pick F1 A (Nov 27, issue 174): Feedback's Issues have
+    no Closed chip beside Open; the closed ones are the same table's finished rows, hidden until Show finished."""
+    still = rules.new_issue(db, "claude", "Still open")
     gone = rules.new_issue(db, "claude", "Already fixed")
     rules.close(db, "claude", gone, "works", "It works now.")
     db.flush()
     page = admin.get("/manage/feedback?tab=open").text
-    assert 'data-tab="closed"' not in page and 'href="?tab=closed" data-history' in page
-    hist = admin.get("/manage/feedback?tab=closed").text
-    assert "data-history-head" in hist and 'data-history-back' in hist and f'data-row="i{gone.id}"' in hist
+    row = lambda key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)  # noqa: E731
+    assert 'data-tab="closed"' not in page and "data-ls-finished-toggle" in page
+    assert "data-ls-finished" in row(f"i{gone.id}") and "data-ls-finished" not in row(f"i{still.id}")
+    assert f"/manage/item/i{gone.id}?from=feedback%3Aclosed" in page  # (↑ ↓ from a closed one walk the closed ones)
 
 
 def test_every_kind_of_gap_says_what_it_is():
