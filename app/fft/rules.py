@@ -975,6 +975,13 @@ def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
     if section != "shipped":
         item.shipped_at = None
     _event(db, actor, "item_moved", "item", item.id, was=was, section=section)
+    if was in ("shipped", "not_doing"):  # (Reopen: its ideas go back onto the Roadmap with it, so their senders read it so;
+        # the review of #553. Only those shipping or Not doing moved: never one declined in its own right, with its own why)
+        moved = {e.thing_id for e in db.scalars(select(FftEvent).where(FftEvent.thing == "idea", FftEvent.kind.in_(("idea_shipped", "idea_declined")),
+                                                                     FftEvent.data["by_item"].astext == str(item.id)))}
+        for idea in db.scalars(select(FftIdea).where(FftIdea.item_id == item.id, FftIdea.id.in_(moved or {0}))):
+            idea.state, idea.reason = "roadmap", ""
+            _event(db, actor, "idea_roadmap", "idea", idea.id)
 
 
 def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, result: str | None = None) -> None:
@@ -996,7 +1003,7 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
         idea.state = "declined" if not_doing else "shipped"
         if not_doing:
             idea.reason = "it won't be built after all"
-        _event(db, actor, "idea_declined" if not_doing else "idea_shipped", "idea", idea.id)
+        _event(db, actor, "idea_declined" if not_doing else "idea_shipped", "idea", idea.id, by_item=item.id)
 
 
 def add_to_item(db: Session, actor: str, item: FftItem, words: str, where: str = "askdnd", user_id: int | None = None) -> FftAddition:

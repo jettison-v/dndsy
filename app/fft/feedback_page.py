@@ -111,12 +111,14 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
     elif chip == "checks":  # (Found on a check: what a check's try turned up; an issue a check is written for shows it in
         # Where it stands. Brett's round, Nov 18, issue 33: "From checks" said neither)
         q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftTryIssue.issue_id))))
+    if chip in FOUND_BY:  # (Who found it, by where it came from: R10's slice 5; its own source in the query, before the
+        q = q.where(FftIssue.source.in_((chip, "")))  # limit; one made before sources were kept is worked out below)
     for i in db.scalars(q.limit(300)):
-        if chip in FOUND_BY and rules.source_of(i) != chip:  # (Who found it, by where it came from: R10's slice 5; worked
-            continue  # out per issue, since issues made before it hold no source of their own)
+        notes = notes_of_issue(db, i)
+        if chip in FOUND_BY and rules.source_of(i, bool(notes)) != chip:
+            continue
         turn, name = views.issue_turn(db, i)
         word, tone = views.turn_pill(turn, name)
-        notes = notes_of_issue(db, i)
         bits = [views.ISSUE_WORD[i.state] if i.state != "closed" else views.CLOSED_WORD.get(i.close_reason or "", "Closed")]
         if i.reopened and i.state != "closed":
             bits.append("came back")
@@ -126,7 +128,7 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         if who := senders(notes):
             bits.append(", ".join(who))
         else:  # (where it came from, when no one's note did: R10's slice 5)
-            bits.append(rules.SOURCE_FROM[rules.source_of(i)])
+            bits.append(rules.SOURCE_FROM[rules.source_of(i, bool(notes))])
         out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits), "kind": i.kind,
                     "pa": f.area if f else "", "feature": f.key if f else ""})
     if tab == "open" and not chip and not area:  # (a question sent for Claude to answer, waiting: Claude's; issue 27)

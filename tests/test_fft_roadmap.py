@@ -422,6 +422,9 @@ def test_an_ideas_sender_hears_when_it_joins_the_roadmap_and_when_it_ships(db, a
     rules.ship_item(db, "claude", db.get(FftItem, db.get(FftIdea, other.idea_id).item_id), not_doing=True, result="Not now")
     db.flush()
     assert "won't be built" in views.sender_says(db, other, None)["sentence"]
+    rules.move_item(db, "user:1", it, "now")  # (Reopen: its ideas come back onto the Roadmap with it; the review of #553)
+    db.flush()
+    assert views.sender_says(db, note, None)["word"] == "On the Roadmap"
 
 
 def test_an_issue_says_where_it_came_from(db, admin, api):
