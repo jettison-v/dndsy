@@ -154,3 +154,16 @@ def test_the_usage_pill_shows_the_week_and_his_limits_set_from_its_menu(admin, d
     r = admin.post("/manage/for-you/usage", data={"week": "80", "keep": "10", "game_day": "4", "extra": "0", "window": "stop", "here": "/manage/work"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/manage/work"
     assert rules.usage_limits(db)["week"] == 80
+
+
+def test_an_items_page_says_what_it_used_and_what_one_its_size_usually_takes(admin, db):
+    done, idea = rules.new_item(db, "claude", "Done before"), rules.new_item(db, "claude", "Next up")
+    db.flush()
+    done.size = idea.size = "M"
+    db.add_all([FftUsageReading(five_hour=1, week=10, item_id=done.id), FftUsageReading(five_hour=1, week=18, item_id=idea.id),
+                FftUsageReading(five_hour=1, week=21)])
+    db.flush()
+    rules.ship_item(db, "claude", done, result="Built it")
+    db.commit()
+    page = admin.get(f"/manage/roadmap/{idea.id}").text
+    assert "About 3% of a week of Claude's plan" in page and "about 8% of a week, from 1 shipped item of size M" in page

@@ -184,8 +184,11 @@ def item(request: Request, item_id: int, tab: str = "scope", ver: int = 0, db: S
              for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))]
     events = list(db.scalars(select(FftEvent).where(FftEvent.thing == "item", FftEvent.thing_id == it.id).order_by(FftEvent.at.desc()).limit(200)))
     who: dict = {}
+    so_far = None if it.section == "not_doing" else rules.usage_shares(db).get(it.id)
+    estimate = rules.usage_estimate(db, it.size) if it.size and it.section in rules.ROADMAP_SECTIONS else None
     db.commit()
     return templates.TemplateResponse(request, "fft_roadmap_item.html", {
+        "usage": {"so_far": so_far, "estimate": estimate} if so_far is not None or estimate else None,
         "it": it, "r": r, "tab": tab, "tabs": TABS, "scopes": scopes, "shown": shown, "latest": latest,
         "line_comments": lines, "answers": answers, "question_keys": [f"q:{i}" for i in range(len(latest.questions) if latest else 0)], "held": held, "waits": rules.waits_on_brett(latest) and it.section in rules.ROADMAP_SECTIONS,
         "open": it.section in rules.ROADMAP_SECTIONS,
