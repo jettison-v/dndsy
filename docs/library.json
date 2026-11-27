@@ -2198,5 +2198,16 @@
   "line": "Spacing and sections inside form windows",
   "source": "docs/mockups/form-windows/index.html",
   "link": "https://claude.ai/artifact/L54rwdn8cwJNBZrWnDQQfy"
+ },
+ {
+  "title": "Rule Books Panel",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 27",
+  "what": "Issue 117 (Brett, note 67: a sidebar for each rule book, what askdnd takes from it, with an image): the Rule books page with a book's side panel open, clickable per book. Three picks: the cover, where a book opens, campaigns in the panel.",
+  "line": "A side panel for each rule book",
+  "source": "docs/mockups/rule-books/index.html",
+  "link": "https://claude.ai/artifact/2z5TgE321C4b6MwiYkYmEn"
  }
 ]
