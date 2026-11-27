@@ -150,7 +150,7 @@ def test_the_usage_pill_shows_the_week_and_his_limits_set_from_its_menu(admin, d
     rules.report_usage(db, "claude", OWNER, 3, 53)
     db.commit()
     page = admin.get("/manage/for-you").text
-    assert "data-usage-menu" in page and "53% of the week" in page
+    assert "data-usage-menu" in page and "Usage:</span> 53%" in page
     r = admin.post("/manage/for-you/usage", data={"week": "80", "keep": "10", "game_day": "4", "extra": "0", "window": "stop", "here": "/manage/work"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/manage/work"
     assert rules.usage_limits(db)["week"] == 80

@@ -17,8 +17,9 @@
     {% else %}<span class="fft-listening" data-stat="listening"><span class="fft-listen off" aria-hidden="true"></span><span class="fft-listening-said">Claude isn't listening</span><span class="note">say “check askdnd”</span></span>{% endif %}
     {# Usage (Roadmap item 34): Claude's week as last read, beside Deploys, its limits in the menu (the same pieces) #}
     {% set u = bar.usage %}{% set lim = u.limits %}
+    <span class="fft-status-pills">{# (the two pills keep to one line together; a phone puts them under Claude's line) #}
     <details class="act-more fft-deploys fft-usage" data-usage-menu>
-      <summary aria-label="Usage: {{ u.reading.week ~ '% of the week' if u.reading else 'not read yet' }}"><span class="state-word fft-deploys-pill" data-tone="usage-{{ u.tone }}"><span class="k">Usage:</span> {% if u.reading %}{{ u.reading.week }}% of the week{% else %}not read yet{% endif %} ▾</span></summary>
+      <summary aria-label="Usage: {{ u.reading.week ~ '% of the week' if u.reading else 'not read yet' }}"><span class="state-word fft-deploys-pill" data-tone="usage-{{ u.tone }}"><span class="k">Usage:</span> {% if u.reading %}{{ u.reading.week }}%{% else %}not read{% endif %} ▾</span></summary>
       <div class="act-menu end fft-deploys-menu fft-usage-menu" role="group" aria-label="Usage">
         {% if u.reading %}<p class="fft-usage-now" data-usage-why>{{ u.why }}</p>
         <p class="note">The week {{ u.reading.week }}% · the 5-hour window {{ u.reading.five_hour }}% · extra usage ${{ "%.2f" | format(u.reading.extra_spent) }} · read <time datetime="{{ u.reading.created_at.isoformat() }}" data-clock="ago">{{ u.reading.created_at | ago }}</time>{% if u.reading.week_resets_at %} · the week resets <time datetime="{{ u.reading.week_resets_at.isoformat() }}" data-clock="when">{{ u.reading.week_resets_at.isoformat() }}</time>{% endif %}</p>
@@ -50,7 +51,7 @@
           <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>
         </form>
       </div>
-    </details>
+    </details></span>
   </div>
   {% if bar.usage.tone in ("over", "wait") %}<div class="fft-status-line" data-stat="usage"><span>{{ "Claude stopped" if bar.usage.tone == "over" else "Claude paused" }}: {{ bar.usage.why }}</span></div>{% endif %}{# (over a limit: no new work starts; Roadmap item 34) #}
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span>
