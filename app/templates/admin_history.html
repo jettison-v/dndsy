@@ -21,7 +21,7 @@
     </div>
     {# The one table (Brett's pick AU1, Nov 25): a row a change (or a run or a batch of them), its day a heading row #}
     {% set count_all = days | map(attribute=1) | map("length") | sum %}
-    {% if days %}{% call table_box("history", "Changes", count_all, cols=[("What changed", ""), ("When, and who", "dt-w5")], body_attrs=" data-ls-rows") %}
+    {% if days %}{% call table_box("history", "Changes", count_all, cols=[("What changed", ""), ("When, and who", "dt-w5")], body_attrs=" data-ls-rows", search=false) %}
     {% set n = namespace(i=0) %}
     {% for day, entries in days %}{% for e in entries %}{% set n.i = n.i + 1 %}{% set x = e["items"][0] %}{% set r = x.r %}
       <tr class="hist-row" data-ls-row{% if e.later %} data-ls-later{% endif %} data-group-label="{{ day }}" data-sort-default="{{ n.i }}" data-name="{{ (e.title ~ ' ' ~ (e.who or '') ~ ' ' ~ x.field) | lower }}"

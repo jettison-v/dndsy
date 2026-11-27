@@ -41,7 +41,7 @@
   {# The one table (AU1): the newest few of the kind that's on, the rest in place (AU5) #}
   <div{% if rows %} data-list="usage-calls" data-default-sort="default" data-ls-cap="{{ shown }}"{% endif %}>{# (a list only with rows: the list pieces need its rows) #}
   {% set switch %}{% if rows %}{{ view_switch([("all", "All"), ("claude", "Claude"), ("openai", "OpenAI")], "Which calls") }}{% endif %}{% endset %}
-  {% call table_box("calls", "Recent calls", rows | length, cols=[("When", "dt-w4"), ("For", ""), ("What", ""), ("Tokens in / out", "num dt-w4"), ("Cost", "num dt-w2")], empty="No Claude calls yet.", controls=switch, body_attrs=" data-ls-rows") %}
+  {% call table_box("calls", "Recent calls", rows | length, cols=[("When", "dt-w4"), ("For", ""), ("What", ""), ("Tokens in / out", "num dt-w4"), ("Cost", "num dt-w2")], empty="No Claude calls yet.", controls=switch, body_attrs=" data-ls-rows", own_list=false) %}
       {% for row in rows %}{% set r = row.r %}
       <tr data-ls-row data-views="{{ 'openai' if r.source in openai else 'claude' }} all" data-sort-default="{{ loop.index }}">
         <td class="note">{{ r.created_at | clock(date=True) }}</td>

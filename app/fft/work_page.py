@@ -33,8 +33,8 @@ WORK = "/manage/work"
 REPO = "jettison-v/dndsy"  # (where an Upkeep card's pull request opens)
 # ("queue" is Your order: the Queue, kept with one job, Brett's order of importance, lanes and holds; Nov 24)
 TABS = (("board", "Board"), ("queue", "Your order"), ("handoffs", "Handoffs"), ("checks", "Checks"), ("scheduled", "Scheduled"), ("how", "How we work"))  # (Handoffs: Roadmap item 45, Brett's pick CQ1)
-# (Done leaves the list, Brett Nov 20: finished plans and passed checks are each list's History, `?tab=done` and
-# `?tab=checks&history=1`, a quiet link under it, never a tab or a count)
+# (Done leaves the list, Brett Nov 20: finished plans and passed checks are Your order's and Checks' finished rows,
+# behind Show finished, never a tab or a count; issue 174, his pick F1 A)
 PLAN_TABS = (("overview", "Overview"), ("issues", "Issues"), ("round", "Test round"), ("timeline", "Timeline"))
 # (the Work Flow Map's stages, worked out from what's true: words and state_word's tone)
 STAGES = {"blocker": ("Blocker: Claude's now", "failed"), "held": ("Held", "quiet"), "frozen": ("Held for game night", "quiet"), "round": ("In your round", "ask"),
@@ -470,7 +470,7 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
     user, denied = testing_page._admin(request)
     if denied:
         return denied
-    tab = tab if tab in dict(TABS) or tab == "done" else "board"
+    tab = "queue" if tab == "done" else tab if tab in dict(TABS) else "board"  # (an old link to the finished plans: they're Your order's finished rows now, issue 174)
     rules._expire_rounds(db)
     rules.confirm_due(db)
     q = queue(db)
@@ -479,13 +479,10 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
            "pick": testing_page._key(open), "toast": request.session.pop("toast", None)}
-    if tab == "done":
-        ctx["done"] = done(db)
-    elif tab == "checks":  # (open checks; History, the passed ones)
+    if tab == "checks":  # (open checks; History, the passed ones)
         rows, ctx["devices"] = check_rows(db)
-        if ctx["pick"] and any(r["key"] == ctx["pick"] and r["state"] == "passed" for r in rows):
-            ctx["history"] = history = 1  # (an old link to a check that has passed: it's in History now)
-        ctx["checks"] = [r for r in rows if (r["state"] == "passed") == bool(history)]
+        ctx["checks"] = [r for r in rows if r["state"] != "passed"]  # (to pass; those that passed are finished rows in the
+        ctx["passed"] = [r for r in rows if r["state"] == "passed"]  # same table, behind Show finished: issue 174)
     elif tab == "scheduled":
         ctx["jobs"], ctx["reviews"] = jobs(db), review_rows(db)
         ctx["run_title"] = run_title
@@ -495,6 +492,8 @@ def page(request: Request, tab: str = "board", open: str = "", history: int = 0,
         ctx["handoffs"], ctx["handoff_views"] = handoffs.rows(db), handoffs.AREAS
     elif tab == "board":
         ctx["board"], ctx["board_empty"] = board(db), BOARD_EMPTY
+    if tab == "queue":
+        ctx["done"] = done(db)  # (finished plans: Your order's finished rows, behind Show finished)
     if tab == "queue":  # (Your order in the Board's words: each plan's column, kind and whether it's stuck; step 36, Nov 24)
         ob = on_board(board(db))
         for r in q["rows"] + q["held"]:  # (a build with plans has no card of its own: its row says its first plan's column)
@@ -596,8 +595,9 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     issues = _plan_issues(db, a.id)
     checks, devices = check_rows(db, a)
     now_ = [r for r in checks if r["c"].id in row["check_ids"]]  # (this plan's checks now; those that passed before, its History)
-    shown_checks = [r for r in checks if r["c"].id not in row["check_ids"]] if history else now_
-    shown_issues = [i for i in issues if (i.state == "closed") == bool(history)]
+    before = [r for r in checks if r["c"].id not in row["check_ids"]]  # (passed before its open work: finished rows)
+    shown_issues = [i for i in issues if i.state != "closed"]
+    closed_issues = [i for i in issues if i.state == "closed"]  # (behind Show finished in the same table: issue 174)
     events = [e for e in db.scalars(select(FftEvent).where(FftEvent.area_id == a.id).order_by(FftEvent.at.desc(), FftEvent.id.desc()).limit(200))
               if e.thing != "pull" or views.pull_worth_saying(e)]
     questions = list(db.scalars(select(FftQuestion).where(FftQuestion.answered_at.is_(None), FftQuestion.about == "issue",
@@ -607,8 +607,8 @@ def plan(request: Request, area_id: int, tab: str = "overview", history: int = 0
     at = order.index(a.id) + 1 if a.id in order else 0
     db.commit()
     return templates.TemplateResponse(request, "fft_plan.html", {
-        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "col": on_board(board(db)).get(f"a{a.id}"), "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "history": bool(history),
-        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": shown_checks, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
+        "a": a, "item": db.get(FftItem, a.item_id), "row": row, "col": on_board(board(db)).get(f"a{a.id}"), "tab": tab, "tabs": PLAN_TABS, "issues": shown_issues, "closed_issues": closed_issues,
+        "open_n": sum(1 for i in issues if i.state != "closed"), "checks": now_, "before": before, "now_n": len(now_), "devices": devices, "device_name": DEVICE_NAME,
         "events": [(e, views.event_words(e), _who(db, e.actor, who)) for e in events], "questions": questions,
         "issue_word": views.ISSUE_WORD, "closed_word": views.CLOSED_WORD, "lane_said": rules.LANE_SAID, "lanes": rules.LANES,
         "at": at, "of": len(order), "paths": {i.id: taxonomy.path(i.feature) for i in issues},

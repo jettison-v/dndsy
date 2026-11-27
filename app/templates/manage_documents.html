@@ -16,7 +16,7 @@
        data-group-notes-default='{{ notes | tojson }}'>
     <div class="ls-toolbar">{{ view_switch(views, "Which documents") }}{{ search_box("Search titles and what each is") }}</div>
     {# The one table (Brett's pick AU1, Nov 25): a row opens its document in the large window; its title links to the page #}
-    {% call table_box("documents", "Documents", rows | length, cols=[("Title", ""), ("State", "dt-w2"), ("Date", "dt-w2"), ("What it is", "dt-q")], body_attrs=" data-ls-rows") %}
+    {% call table_box("documents", "Documents", rows | length, cols=[("Title", ""), ("State", "dt-w2"), ("Date", "dt-w2"), ("What it is", "dt-q")], body_attrs=" data-ls-rows", search=false) %}
       {% for r in rows %}{% set e = r.e %}
       <tr data-ls-row data-views="{{ r.views }}" data-state="{{ r.state }}" data-group-label="{{ r.group }}" data-sort-default="{{ r.rank }}"
          data-name="{{ (e.title ~ ' ' ~ r.word ~ ' ' ~ (e.status or '') ~ ' ' ~ r.line ~ ' ' ~ (e.what or '')) | lower }}"
@@ -24,7 +24,7 @@
         <td class="dt-title"><a class="link-plain" href="/manage/documents/{{ e.id }}">{{ e.title }}</a></td>
         <td>{{ state_tag(r.state) }}</td>
         <td class="note">{{ e.date }}</td>
-        <td class="note" title="{{ e.what }}">{{ r.line }}</td>
+        <td class="note dt-wrap" title="{{ e.what }}">{{ r.line }}</td>
       </tr>
       {% endfor %}
     {% endcall %}

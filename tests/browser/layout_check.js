@@ -378,6 +378,14 @@ ask => {
     const room = box.getBoundingClientRect().width, need = rs.reduce((w, r) => w + r.width, 0) + 8 * (rs.length - 1);
     if (stacked && need <= room) add('stacked buttons', box, btns.map(b => b.textContent.trim()).join(' / '));
   }
+  // A table cell's words cut with … while the table has room for them (issue 160: Scope agreed cut beside a half-empty
+  // title): every column but the title is as wide as its words, so a cut cell is a column held narrower than its words
+  for (const td of document.querySelectorAll('.dtable td:not(.dt-title):not(.dt-wrap), .dtable th')) {
+    if (!shown(td) || td.scrollWidth <= td.clientWidth + 1) continue;
+    const scroll = td.closest('.table-scroll');
+    if (scroll && scroll.scrollWidth > scroll.clientWidth + 1) continue;  // (a table wider than its frame scrolls inside it on purpose)
+    add('cut cell', td, td.textContent.trim());
+  }
   const ids = new Map();
   document.querySelectorAll('[id]').forEach(el => { if (el.id) ids.set(el.id, (ids.get(el.id) || 0) + 1); });
   ids.forEach((n, id) => { if (n > 1) add('repeats an id', document.getElementById(id), `#${id} on ${n} elements`); });
