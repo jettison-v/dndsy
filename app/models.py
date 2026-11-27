@@ -799,6 +799,9 @@ class Job(Base):
     # Its story (the Sync page, Roadmap item 44): each try as it ended {at, n, ended: done|again|failed|stopped, took,
     # error}, and each Retry or Cancel {at, did, by}, oldest first (app/jobs.py `_told`)
     story: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Asked again while it ran (issue 153): the newer request's payload, run once this one finishes, so a resent
+    # transcript or Start over during an update isn't folded into the run already under way and lost
+    rerun: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 @event.listens_for(Session, "loaded_as_persistent")

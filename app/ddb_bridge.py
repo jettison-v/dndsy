@@ -1129,31 +1129,35 @@ def health(db: Session) -> dict:
     rows = db.execute(select(BridgeIntent.state, BridgeIntent.data).where(BridgeIntent.state.in_(OPEN))).all()
     stuck = sum(1 for s, d in rows if s == "not_yet" and not d.get("quiet"))
     waiting = sum(1 for s, d in rows if (s != "not_yet" or d.get("quiet")) and not d.get("check"))  # (waiting for its sheet counts as waiting)
+    # Its state and its words without the name: the bridge's own page says them under its own name, other places with
+    # it (`text`). Made apart, never cut from the sentence (issue 146).
     if not a["awake"]:
-        state, text = "asleep", "D&D Beyond bridge · asleep"
+        state, said = "asleep", "asleep"
     elif not rc["ok"]:
-        state, text = "off", "D&D Beyond · " + rc["error"]
+        state, said = "off", rc["error"]
     elif rt and rt["state"] == "failed":
-        state, text = "off", "D&D Beyond · check failed"
+        state, said = "off", "check failed"
     elif stuck:
-        state, text = "off", f"D&D Beyond · {stuck} didn't go through"
+        state, said = "off", f"{stuck} didn't go through"
     elif rt and rt["state"] == "running":
-        state, text = "wait", "D&D Beyond · checking…"
+        state, said = "wait", "checking…"
     elif waiting:
-        state, text = "wait", f"D&D Beyond · {waiting} on the way"
+        state, said = "wait", f"{waiting} on the way"
     elif not extension:
-        state, text = "wait", "D&D Beyond · extension not connected"
+        state, said = "wait", "extension not connected"
     elif rt and rt["state"] == "passed":
-        state, text = "live", "D&D Beyond · working"  # (and when it was checked: checked_at, in the reader's own time)
+        state, said = "live", "working"  # (and when it was checked: checked_at, in the reader's own time)
     else:
-        state, text = "live", "D&D Beyond · connected, not checked yet"
+        state, said = "live", "connected, not checked yet"
+    text = ("D&D Beyond bridge · " if state == "asleep" else "D&D Beyond · ") + said
+    working = state == "live" and bool(rt) and rt["state"] == "passed"
     todo = {"asleep": "It wakes as soon as someone opens askdnd or a sheet.",
             "off": ("Open that sheet on D&D Beyond: if it's gone or moved, set BRIDGE_TEST_DDB_ID on Railway to the test character's sheet; if it's there, make it Public. Then run the check."
                     if not rc["ok"] else f"Open {'those sheets' if stuck > 1 else 'that sheet'} in Chrome with the extension, or make the change by hand on D&D Beyond."
                     if stuck and not (rt and rt["state"] == "failed") else "Open the test character's sheet in Chrome with the extension, then run the check again."),
             "wait": "Open any D&D Beyond page in Chrome with the extension on." if not extension and not waiting and not (rt and rt["state"] == "running") else "",
             "live": "" if rt and rt["state"] == "passed" else "Run the check to be sure."}[state]  # (what to do, on Right now: Brett's pick BR1, Nov 25)
-    return {"state": state, "text": text, "todo": todo, "checked_at": rt["done_at"] if text == "D&D Beyond · working" else None, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
+    return {"state": state, "text": text, "said": said, "todo": todo, "checked_at": rt["done_at"] if working else None, "awake": a, "read_check": {k: rc[k] for k in ("ok", "error", "at")}, "round_trip": rt,
             "extension": extension, "sheets": _health["sheets"] if extension else [], "test_ddb_id": TEST_DDB_ID,
             "heard_at": datetime.fromtimestamp(_health["heard_at"], UTC).isoformat() if _health["heard_at"] else None}
 

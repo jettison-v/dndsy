@@ -49,8 +49,10 @@ def serving(queue: str) -> bool:
 class Lane:
     """One queue, served one job at a time on its own thread."""
 
-    def __init__(self, queue: str, session_factory, stop: threading.Event, who: str):
+    def __init__(self, queue: str, session_factory, stop: threading.Event, who: str, beats: bool = True):
         self.queue, self.factory, self.stop, self.who = queue, session_factory, stop, who
+        self.beats = beats  # (off where the lane runs on a request's own session: one Session is never shared with a beat
+        # thread, issue 156; such a job is short, well inside the lease)
         self.wake = threading.Event()
         self.current: dict | None = None
         self.last: tuple[str, str] | None = None  # (the last job's kind and how it ended: the loop's gap or rest)
@@ -64,26 +66,41 @@ class Lane:
         self.current = job
         kind = jobs.KINDS.get(job["kind"])
         beating = threading.Event()
-        beat = threading.Thread(target=self._beat, args=(job, beating), daemon=True)
-        beat.start()
+        if self.beats:
+            threading.Thread(target=self._beat, args=(job, beating), daemon=True).start()
         try:
-            with self.factory() as db:
-                result = kind.run(db, job["payload"] or {})
-                db.commit()
-            with self.factory() as db:
-                jobs.finish(db, job["id"], job["attempts"], result)
+            try:
+                with self.factory() as db:
+                    result = kind.run(db, job["payload"] or {})
+                    db.commit()
+            except Exception as e:  # (any failure is the job's, recorded on it; the lane goes on)
+                log.warning("Job %s (%s) failed: %s", job["id"], job["kind"], e, exc_info=not isinstance(e, jobs.Expected))
+                with self.factory() as db:
+                    state = jobs.fail(db, job["id"], job["attempts"], str(e) if isinstance(e, jobs.Expected) else f"{type(e).__name__}: {e}")
+                self.last = (job["kind"], "failed")
+                _announce(job, state or "failed")
+                return True
+            # (done: saying so is tried again, never taken for the job failing, which would run it, and pay for it, twice;
+            # issue 154)
+            self._finish(job, result)
             self.last = (job["kind"], "done")
             _announce(job, "done")
-        except Exception as e:  # (any failure is the job's, recorded on it; the lane goes on)
-            log.warning("Job %s (%s) failed: %s", job["id"], job["kind"], e, exc_info=not isinstance(e, jobs.Expected))
-            with self.factory() as db:
-                state = jobs.fail(db, job["id"], job["attempts"], str(e) if isinstance(e, jobs.Expected) else f"{type(e).__name__}: {e}")
-            self.last = (job["kind"], "failed")
-            _announce(job, state or "failed")
         finally:
             beating.set()
             self.current = None
         return True
+
+    def _finish(self, job: dict, result: dict | None, tries: int = 7) -> None:
+        """Done saved, tried for about a minute (its beat goes on meanwhile, so it isn't given up on and run again)."""
+        for n in range(tries):
+            try:
+                with self.factory() as db:
+                    jobs.finish(db, job["id"], job["attempts"], result)
+                return
+            except Exception:
+                log.warning("Job %s ran, but saying so didn't save (try %s of %s)", job["id"], n + 1, tries, exc_info=n == tries - 1)
+                if n < tries - 1:
+                    time.sleep(min(2 ** n, 20))  # (1, 2, 4, 8, 16, 20 seconds)
 
     def _beat(self, job: dict, done: threading.Event) -> None:
         while not done.wait(jobs.BEAT_SECONDS):
@@ -276,6 +293,8 @@ class Watch:
         while not stop.wait(30):
             try:
                 self.look()
+                if self.covering is not None:  # (the worker away: its silent jobs are given up on here too, so a read it
+                    housekeep(self.factory)  # held isn't left running for good, blocking that sheet's next; issue 152)
             except Exception:
                 log.warning("Looking for the worker failed this time", exc_info=True)
         if self.covering is not None:
@@ -322,7 +341,10 @@ def main() -> None:  # pragma: no cover  (the service's own start; its parts are
     signal.signal(signal.SIGTERM, stopping)
     signal.signal(signal.SIGINT, stopping)
     while not stop.is_set():
-        heartbeat(SessionLocal)
+        try:
+            heartbeat(SessionLocal)
+        except Exception:  # (a short database outage: the beat is missed, the worker goes on; issue 151: it ended main()
+            log.warning("The worker's heartbeat didn't save", exc_info=True)  # without putting its job back)
         stop.wait(jobs.BEAT_SECONDS)
     deadline = time.monotonic() + max(DRAIN_SECONDS - 10, 0)
     while any(lane.current for lane in lanes) and time.monotonic() < deadline:

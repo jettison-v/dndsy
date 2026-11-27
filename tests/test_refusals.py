@@ -47,7 +47,7 @@ def body_for(op: dict) -> dict:
 # What any page visit keeps about the person visiting: the campaign they're in now (app/campaign_paths.py) and when
 # they were last seen. Never a change to anything of anyone else's.
 BOOKKEEPING = {"users": ("current_campaign_id", "last_seen_at", "updated_at")}
-# Whole tables of bookkeeping: what was done, counted for Admin › Features (app/usage.py), not a change to anything
+# Whole tables of bookkeeping: what was done, counted for Backstage › Feature use (app/usage.py), not a change to anything
 BOOKKEEPING_TABLES = {"usage_events"}
 # The asker's own settings, which every signed-in person may change for themself
 OWN = {("POST", "/dice"), ("POST", "/email/fixes")}  # (Your dice; your own fix-to-try email switch, everyone's since issue 136)

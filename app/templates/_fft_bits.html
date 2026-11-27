@@ -29,6 +29,7 @@
   <small>{{ "askdnd" if x.who == "askdnd" else "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who not in ("claude", "askdnd") %}, to Claude{% endif %} · <time datetime="{{ x.created_at.isoformat() }}" data-clock="when">{{ x.created_at | ago }}</time>{% if new %} <span class="tag new">New</span>{% endif %}</small>
   <p>{{ x.text if from_sender else x.text | linked }}</p>{# (Claude's and admins' addresses as links, a sender's words as they are: note 105) #}
   {% if from_sender and not x.approved %}<form method="post" action="/manage/feedback/lines/{{ x.id }}" class="row tight"><span class="note">Claude reads it once you approve it.</span><button class="btn small" type="submit" data-do="approve-line">Approve</button></form>{% endif %}
+  {% if x.who == "claude" and x.to == "sender" and not x.approved %}<form method="post" action="/manage/feedback/lines/{{ x.id }}" class="row tight" data-ask-back><span class="note">Claude's question for {{ sender or "its sender" }}: it reaches them only when you send it.</span><button class="btn primary small" type="submit" name="do" value="send" data-do="ask-send">Send to {{ sender or "them" }}</button><button class="btn link small" type="submit" name="do" value="drop" data-do="ask-drop">Don't send</button></form>{% endif %}
 </div>
 {%- endmacro %}
 

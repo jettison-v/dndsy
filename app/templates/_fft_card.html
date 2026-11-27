@@ -1,3 +1,4 @@
+{% from "_admin_bits.html" import state_word, lane_tag %}
 {# The round's card (screens 2 and 4 of docs/mockups/found-fixed-tried/; app/fft/testing_page.py `card`): on every
    askdnd page while a round is open, left by default; its top bar drags it to any corner, — folds it (both kept on the
    device: testing_page.card_prefs). The walkthrough, what you should see, ✓ Passed, ✗ Something's wrong…, Can't try…
@@ -6,14 +7,14 @@
 {% from "_lists.html" import grip %}
 {% from "_check_steps.html" import walkthrough, goal %}
 <aside class="check-card fft-card{{ ' folded' if folded }}{{ ' fft-card-failed' if failed }}"{% if not sample %} data-check-card="{{ c.id }}" data-fft-card{% endif %} data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
-  <div class="cc-top"{% if not sample %} data-cc-drag{% endif %}{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Check {{ n }} of {{ of }}{% if area %} · {{ area.title }}{% endif %} · {{ device_said[device].replace("your ", "") }}</span>
+  <div class="cc-top"{% if not sample %} data-cc-drag{% endif %}{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Check {{ n }} of {{ of }}{% if area %} · {{ area.title }}{% endif %} · {{ device_name.get(device, device) }}</span>
     <button type="button" class="btn link small"{% if not sample %} data-cc-fold{% endif %} aria-expanded="true" aria-label="Fold the card">—</button></div>
   <div class="cc-body"{% if folded %} hidden{% endif %}>
     <p class="cc-title">{{ c.title }}{% if c.makes %} <span class="tag draft">in a test campaign</span>{% endif %}</p>
     {% if came_back %}<p class="note" data-cc-came-back>You skipped this one: it's back before End round.</p>{% endif %}
-    {% if elsewhere %}<p class="note" data-cc-elsewhere="{{ device }}">Do the steps {{ device_said[device].replace("your ", "on your ") }}; mark them here, and they count for it.</p>{% endif %}
+    {% if elsewhere %}<p class="note" data-cc-elsewhere="{{ device }}">Do the steps {{ device_on[device] }}; mark them here, and they count for it.</p>{% endif %}
     {% if failed %}
-    <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
+    <p class="state-line" data-cc-failed>{{ state_word("✗ Failed", "failed") }}<span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
     {% else %}
     {{ goal(v, folded=true) }}
     {{ walkthrough({"id": c.id, "steps": steps}) }}

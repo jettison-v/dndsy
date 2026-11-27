@@ -318,8 +318,37 @@ def _approve_lines(db: Session, note: FftNote) -> None:
         line.approved = True
 
 
+def ask_back(db: Session, actor: str, note: FftNote, text: str) -> FftLine:
+    """Ask back (R10's slice 5, Brett's pick on its scope, Nov 27): one question Claude writes for a vague note's sender.
+    It waits for Brett's Send in For you (a player only hears from askdnd through him); their answer comes back onto
+    the note as their own line, approved first as every player's line is (T1)."""
+    if note.state != "filed":
+        raise RuleError("bad", "Only a note that's been filed: approve it first.")
+    if not note.user_id:
+        raise RuleError("bad", "This note has no sender to ask.")
+    if db.scalar(select(FftLine.id).where(FftLine.note_id == note.id, FftLine.who == "claude", FftLine.to == "sender", FftLine.approved.is_(False))):
+        raise RuleError("bad", "A question to its sender already waits for Brett's Send.")
+    line = add_line(db, actor, text, note=note, to="sender", who="claude", approved=False)
+    _event(db, actor, "ask_back", "note", note.id, line=line.id)
+    return line
+
+
+def send_ask(db: Session, actor: str, line: FftLine, send: bool) -> None:
+    """Brett's Send on Claude's question to a note's sender (it reaches them), or Don't send (it stays in the note's
+    conversation as Claude's, never seen by them)."""
+    if line.who != "claude" or line.to != "sender" or line.approved:
+        raise RuleError("bad", "Not a question waiting for your Send.")
+    if send:
+        line.approved = True
+    else:
+        line.to, line.approved = "", True  # (kept: a line is never deleted, R6; to no one, so its sender never reads it)
+    _event(db, actor, "ask_sent" if send else "ask_dropped", "note", line.note_id or 0, line=line.id)
+
+
 def approve_line(db: Session, actor: str, line: FftLine) -> None:
     """A player's added words (or "still broken") approved: now Claude may read them."""
+    if line.who != "sender":  # (Claude's question to a sender is sent with send_ask, never approved here: the review of #554)
+        raise RuleError("bad", "Only a player's own words are approved.")
     line.approved = True
     _event(db, actor, "line_approved", "note", line.note_id or 0, line=line.id)
 

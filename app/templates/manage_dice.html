@@ -9,8 +9,8 @@
 
   <div class="tn-grid" data-dice-tuner>
     <form class="section tn-controls" method="post" action="/manage/dice" data-reload>
-      <nav class="sub-tabs" aria-label="Where the dice are thrown">
-        {% for key, name, _, _ in places %}<a href="#{{ key }}" class="{{ 'on' if loop.first }}" data-place="{{ key }}">{{ name }}</a>{% endfor %}
+      <nav class="tabbar" aria-label="Where the dice are thrown">
+        {% for key, name, _, _ in places %}<a href="#{{ key }}" class="{{ 'on' if loop.first }}" data-place="{{ key }}"{% if loop.first %} aria-current="true"{% endif %}>{{ name }}</a>{% endfor %}
       </nav>
       {% for key, name, why, groups in places %}
       <div class="tn-place" data-place-panel="{{ key }}"{% if not loop.first %} hidden{% endif %}>

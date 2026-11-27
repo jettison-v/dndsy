@@ -30,6 +30,7 @@ TICK = 300  # seconds between saves
 SKIP = ("/static", "/health", "/live/connect", "/favicon")  # (not pages: files, the health check, the live socket)
 JOB = "speed"
 LAST = "speed_review_at"  # (a ToolSetting: when the weekly look last ran)
+LOCK = 72_042_044  # (the weekly look runs in one copy only: two during a deploy filed each slow route twice, issue 157)
 
 _lock = threading.Lock()
 _now: dict[tuple[str, str], list] = {}  # (method, route) -> [count, total_ms, max_ms, bands...]
@@ -60,21 +61,39 @@ def record(method: str, route: str, ms: float, db_ms: float = 0.0, reads: int = 
 
 
 def flush(db: Session) -> int:
-    """What's counted in memory, added to today's rows (the table's day). Returns how many routes it saved."""
-    from app.models import RequestTime
-
+    """What's counted in memory, added to today's rows (the table's day). Returns how many routes it saved. Not saved,
+    the numbers go back in memory for the next save, never lost (issue 157)."""
     with _lock:
         taken = dict(_now)
         _now.clear()
     if not taken:
         return 0
+    try:
+        return _save(db, taken)
+    except Exception:
+        db.rollback()
+        with _lock:
+            for key, row in taken.items():
+                was = _now.get(key)
+                _now[key] = row if was is None else [*(a + b for a, b in zip(row[:2], was[:2], strict=True)), max(row[2], was[2]),
+                                                     *(a + b for a, b in zip(row[3:], was[3:], strict=True))]
+        raise
+
+
+def _save(db: Session, taken: dict) -> int:
+    """Each route's numbers added to today's row: the row made first if it isn't there (two copies saving at once both
+    make it, one quietly), then locked while it's added to, so both copies' numbers land (issue 157)."""
+    from sqlalchemy.dialects.postgresql import insert
+
+    from app.models import RequestTime
+
     day = config.table_today()
-    for (method, route), (count, total, top, db_ms, reads, before_ms, *bands) in taken.items():
-        row = db.scalar(select(RequestTime).where(RequestTime.day == day, RequestTime.method == method, RequestTime.route == route))
-        if row is None:
-            row = RequestTime(day=day, method=method, route=route[:200], count=0, total_ms=0, max_ms=0, db_ms=0, reads=0,
-                              before_ms=0, bands=[0] * (len(BANDS_MS) + 1))
-            db.add(row)
+    for (method, route), (count, total, top, db_ms, reads, before_ms, *bands) in sorted(taken.items()):  # (rows locked in one
+        # order: two copies saving at once never wait on each other's)
+        db.execute(insert(RequestTime).values(day=day, method=method, route=route[:200], count=0, total_ms=0, max_ms=0, db_ms=0, reads=0,
+                                              before_ms=0, bands=[0] * (len(BANDS_MS) + 1)).on_conflict_do_nothing())
+        row = db.scalar(select(RequestTime).where(RequestTime.day == day, RequestTime.method == method, RequestTime.route == route[:200])
+                        .with_for_update())
         row.count += count
         row.total_ms += int(total)
         row.max_ms = max(row.max_ms, int(top))
@@ -175,12 +194,12 @@ def due(db: Session) -> bool:
 
 
 def run_once() -> None:
+    from app import single
     from app.db import SessionLocal
 
     with SessionLocal() as db:
         flush(db)
-        if due(db):
-            review(db)
+    single.alone(LOCK, lambda db: review(db) if due(db) else None, None)  # (one copy, the look's due day checked inside it)
 
 
 async def loop() -> None:

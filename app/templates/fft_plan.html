@@ -14,7 +14,7 @@
   <p class="subtitle note">{{ row.kind }}{% if item %} · {{ item.title }}{% endif %}{% if at %} · plan {{ at }} of {{ of }}{% endif %}</p>
   {{ plan_facts(row, col, lane_said) }}{# (one line, the Board's words: P3, Nov 24) #}
 
-  <nav class="sub-tabs" aria-label="{{ a.title }}">
+  <nav class="tabbar" aria-label="{{ a.title }}">
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "issues" %}{{ count_pill(open_n) }}{% elif key == "round" %}{{ count_pill(now_n) }}{% endif %}</a>{% endfor %}
   </nav>
 

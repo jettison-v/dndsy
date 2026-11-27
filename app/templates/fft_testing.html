@@ -31,7 +31,7 @@
         {% else %}
           {% if (loop.first or loop.previtem.need != g.need) and (g.need != device_need or several_needs) %}{% set gc = need_counts[g.need] %}{# (another device's checks, or more than one kind here: a row of their own with their round) #}
           <tr class="dt-group fft-need" data-need="{{ g.need }}"><td colspan="5"><span class="fft-need-name">{{ need_said[g.need] }}</span> <span class="note">{{ gc.n }} check{{ "s" if gc.n != 1 }} · about {{ gc.minutes }} min</span>
-            {% if not round_open and g.need != device_need %}<span class="note" data-need-elsewhere>· do the steps {{ device_said[need_device[g.need]].replace("your ", "on your ") }}</span>
+            {% if not round_open and g.need != device_need %}<span class="note" data-need-elsewhere>· do the steps {{ device_on[need_device[g.need]] }}</span>
             {% if round_flight %}<button class="btn link small" type="button" data-modal-url="/manage/testing/round/heads-up?need={{ g.need }}" data-do="start-round">▶ Start round</button>
             {% else %}<form method="post" action="/manage/testing/round" class="inline"><input type="hidden" name="need" value="{{ g.need }}"><button class="btn link small" type="submit" data-do="start-round">▶ Start round</button></form>{% endif %}{% endif %}</td></tr>
           {% endif %}

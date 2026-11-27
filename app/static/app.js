@@ -1321,7 +1321,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // (on askdnd's table a side panel stays open through a fight, so the map keeps moving beside it)
     const table = /^(\/c\/[^/]+)?\/table$/.test(location.pathname);
     return !!(document.querySelector((table ? '' : '.peek.open, ') + '.roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open], details.act-more[open], #tmap.dragging') ||
-              (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
+              poppedOpen() || (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
+  }
+  // A pop-up menu you opened (a <details> whose contents float over the page: Dismiss… on a familiar, a table's ⋯, + Add):
+  // a redraw waits until it's closed, never closing it under your press (issue 76: the live test's Dismiss button went
+  // as the familiar coming back redrew Battle). A fold that opens in place isn't one.
+  function poppedOpen() {
+    return [...document.querySelectorAll('details[open]')].some(d => {
+      const pop = d.querySelector(':scope > :not(summary)');  // (one hidden, in a closed panel, holds nothing)
+      return !!pop && d.checkVisibility() && /^(absolute|fixed)$/.test(getComputedStyle(pop).position);
+    });
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
   const typingIn = box => { const a = document.activeElement; return !!(a && box.contains(a) && a.closest('form[hx-trigger*="input"]')); };
@@ -3443,7 +3452,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     form.querySelectorAll('[data-place]').forEach(a => a.addEventListener('click', e => {
       e.preventDefault();
       tnPlace = tnStage.dataset.stage = a.dataset.place;
-      form.querySelectorAll('[data-place]').forEach(x => x.classList.toggle('on', x === a));
+      form.querySelectorAll('[data-place]').forEach(x => { x.classList.toggle('on', x === a); if (x === a) x.setAttribute('aria-current', 'true'); else x.removeAttribute('aria-current'); });
       form.querySelectorAll('[data-place-panel]').forEach(p => { p.hidden = p.dataset.placePanel !== tnPlace; });
       read.innerHTML = '<span>Press Throw to time it.</span>';
     }));
@@ -5836,7 +5845,7 @@ document.addEventListener('click', e => {
   }
   function gather() {
     const pill = document.getElementById('live-pill'), body = document.body;
-    const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar .on, main .sub-tabs .on, main .tabs .on');
+    const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar [aria-current], main .tabbar .on, main .tabs .on');
     const panel = [...document.querySelectorAll('.peek:not([hidden]) #peek-title')].find(t => !t.closest('[data-private]'));  // (a player's own note's title stays theirs)
     const zoom = window.visualViewport ? visualViewport.scale : 1, outer = outerWidth && innerWidth ? outerWidth / innerWidth : 1;
     const now = new Date();
