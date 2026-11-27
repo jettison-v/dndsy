@@ -572,3 +572,25 @@ class FftReviewRun(_Stamped, Base):
     why: Mapped[str] = mapped_column(String(300), default="", server_default="")
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FftUsageReading(_Stamped, Base):
+    """Claude's plan usage as it read it (Roadmap item 34, Usage Limit Awareness): the 5-hour window and the week as
+    percentages, extra usage in dollars, when each resets, and what askdnd said: go, wait (the 5-hour window nearly
+    full) or stop (over a limit Brett set). Read before each piece of work and each pull request; the claim held then
+    (`area_id`, `item_id`) is what the use since the last reading went to, so each item's share of a week is counted.
+    Written only in rules.py."""
+
+    __tablename__ = "fft_usage_readings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    five_hour: Mapped[int] = mapped_column(Integer)
+    week: Mapped[int] = mapped_column(Integer)
+    extra_spent: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    extra_limit: Mapped[float | None] = mapped_column(Float, nullable=True)  # (the plan's own monthly cap, as read)
+    five_resets_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    week_resets_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    owner: Mapped[str] = mapped_column(String(60), default="", server_default="")
+    area_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    item_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    verdict: Mapped[str] = mapped_column(String(8), default="go", server_default="go")  # go, wait, stop
+    why: Mapped[str] = mapped_column(String(300), default="", server_default="")

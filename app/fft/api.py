@@ -4,6 +4,8 @@ What Claude reads keeps the table's rules (brief v2 §6): nothing a player wrote
 names only and never an email (T2); every text says who wrote it and comes quoted, as evidence never instructions
 (T3); the page as drawn only when asked for (T4); a read mark per listener (T8). Every change goes through rules.py."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
@@ -788,11 +790,67 @@ def claim(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: S
         area = db.get(FftArea, _int(body.get("area"), "area")) if body.get("area") is not None else None
         if body.get("area") is not None and area is None:
             raise HTTPException(404)
+        held = db.scalar(select(FftArea).where(FftArea.lock_owner == owner[:60], FftArea.lock_until > rules.now()))
+        if held is None or (area is not None and area.id != held.id):  # (new work: only on a fresh reading under Brett's limits, item 34)
+            lets, said = rules.usage_lets_start(db)
+            if not lets:
+                raise HTTPException(409, f"Usage: {said}")
         got, why, already = rules.claim(db, owner, area)
     except rules.RuleError as e:
         raise _rule(e) from e
     db.commit()
     return _ok({"area": got.id if got else None, "title": got.title if got else "", "why": why, "already": already})
+
+
+def _when(body: dict, k: str):
+    """An ISO time with its offset, or None."""
+    v = body.get(k)
+    if v in (None, ""):
+        return None
+    try:
+        at = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError as e:
+        raise HTTPException(400, f"{k}: a time like 2026-12-01T04:00:00Z") from e
+    if at.tzinfo is None:
+        raise HTTPException(400, f"{k}: with its offset")
+    return at
+
+
+def _number(body: dict, k: str, default=None):
+    v = body.get(k, default)
+    if v is None or isinstance(v, bool) or not isinstance(v, int | float):
+        raise HTTPException(400, f"{k}: a number")
+    return v
+
+
+@router.post("/usage")
+def usage_report(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude's plan usage as read (Roadmap item 34): {"five_hour", "week" (percent), "extra_spent", "extra_limit"
+    (dollars), "five_resets_at", "week_resets_at" (ISO), "owner" (its listener)}. Answers askdnd's verdict: go, wait
+    or stop, and why, against Brett's limits."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    owner = f"{actor.name}:{_str(body, 'owner', 40) or 'main'}"
+    limit = body.get("extra_limit")
+    try:
+        r = rules.report_usage(db, actor.name, owner, int(_number(body, "five_hour")), int(_number(body, "week")),
+                               float(_number(body, "extra_spent", 0.0)), float(limit) if isinstance(limit, int | float) and not isinstance(limit, bool) else None,
+                               _when(body, "five_resets_at"), _when(body, "week_resets_at"))
+    except rules.RuleError as e:
+        raise _rule(e) from e
+    db.commit()
+    return _ok({"verdict": r.verdict, "why": r.why, "area": r.area_id, "item": r.item_id})
+
+
+@router.get("/usage")
+def usage_state(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Brett's limits, the last reading and whether new work may start."""
+    keys.require(db, x_fft_key, "read")
+    r, lets = rules.last_usage(db), rules.usage_lets_start(db)
+    return _ok({"limits": rules.usage_limits(db), "lets_start": lets[0], "said": lets[1],
+                "last": {"at": r.created_at.isoformat(), "five_hour": r.five_hour, "week": r.week, "extra_spent": r.extra_spent,
+                         "verdict": r.verdict, "why": r.why} if r else None,
+                "shares": {str(k): round(v, 1) for k, v in rules.usage_shares(db).items()}})
 
 
 @router.post("/github/pulls")

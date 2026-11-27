@@ -151,3 +151,14 @@ def route_speeds(db: Session, days: int) -> dict:
     from app import speed
 
     return {"routes": speed.week(db, days), "slow_p90_ms": speed.SLOW_P90_MS}
+
+
+def game_weekday(db: Session) -> int | None:
+    """The table's usual game night (0 Monday … 6 Sunday): the weekday most of the last twelve played sessions fell on,
+    in any campaign but a test one; None before any (Usage Limit Awareness keeps some of the week for it)."""
+    from app.models import Campaign, GameSession
+
+    days = [d.weekday() for d in db.scalars(select(GameSession.played_on).join(Campaign, Campaign.id == GameSession.campaign_id)
+                                            .where(GameSession.played_on.is_not(None), Campaign.is_test.is_(False))
+                                            .order_by(GameSession.played_on.desc()).limit(12))]
+    return max(dict.fromkeys(days), key=days.count) if days else None  # (a tie: the more recent night)

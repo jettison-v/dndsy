@@ -15,6 +15,26 @@
   <div class="fft-status-top">
     {% if bar.listening %}<span class="fft-listening" data-stat="listening"><span class="fft-listen" aria-hidden="true"></span><span class="fft-listening-said">Claude is listening</span>{% if bar.listener %}<span class="note">{{ bar.listener.name }}, heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time></span>{% endif %}</span>
     {% else %}<span class="fft-listening" data-stat="listening"><span class="fft-listen off" aria-hidden="true"></span><span class="fft-listening-said">Claude isn't listening</span><span class="note">say “check askdnd”</span></span>{% endif %}
+    {# Usage (Roadmap item 34): Claude's week as last read, beside Deploys, its limits in the menu (the same pieces) #}
+    {% set u = bar.usage %}{% set lim = u.limits %}
+    <details class="act-more fft-deploys fft-usage" data-usage-menu>
+      <summary aria-label="Usage: {{ u.reading.week ~ '% of the week' if u.reading else 'not read yet' }}"><span class="state-word fft-deploys-pill" data-tone="usage-{{ u.tone }}"><span class="k">Usage:</span> {% if u.reading %}{{ u.reading.week }}% of the week{% else %}not read yet{% endif %} ▾</span></summary>
+      <div class="act-menu end fft-deploys-menu fft-usage-menu" role="group" aria-label="Usage">
+        {% if u.reading %}<p class="fft-usage-now" data-usage-why>{{ u.why }}</p>
+        <p class="note">The week {{ u.reading.week }}% · the 5-hour window {{ u.reading.five_hour }}% · extra usage ${{ "%.2f" | format(u.reading.extra_spent) }} · read <time datetime="{{ u.reading.created_at.isoformat() }}" data-clock="ago">{{ u.reading.created_at | ago }}</time>{% if u.reading.week_resets_at %} · the week resets <time datetime="{{ u.reading.week_resets_at.isoformat() }}" data-clock="when">{{ u.reading.week_resets_at.isoformat() }}</time>{% endif %}</p>
+        {% else %}<p class="note">Claude reads its usage before each piece of work and each pull request; none read yet.</p>{% endif %}
+        <form method="post" action="/manage/for-you/usage" class="fft-usage-form"><input type="hidden" name="here" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query }}">
+          <label class="field"><span>Stop at <span class="note">% of the week</span></span><input type="number" name="week" min="1" max="100" value="{{ lim.week }}" inputmode="numeric"></label>
+          <label class="field"><span>Keep for game night <span class="note">% of the week, until</span></span><span class="row tight"><input type="number" name="keep" min="0" max="50" value="{{ lim.keep }}" inputmode="numeric">
+            <select name="game_day" aria-label="Game night">{% for d in u.days %}<option value="{{ loop.index0 }}"{% if lim.game_day == loop.index0 %} selected{% endif %}>{{ d }}</option>{% endfor %}<option value=""{% if lim.game_day is none %} selected{% endif %}>No game night</option></select></span></label>
+          <label class="field"><span>Extra usage <span class="note">up to $, 0 for never</span></span><input type="number" name="extra" min="0" max="1000" step="1" value="{{ '%g' | format(lim.extra) }}" inputmode="decimal"></label>
+          <fieldset class="field"><legend>When the 5-hour window is nearly full</legend>
+            <label class="radio"><input type="radio" name="window" value="pause"{% if lim.window == "pause" %} checked{% endif %}> Pause until it resets, then go on</label>
+            <label class="radio"><input type="radio" name="window" value="stop"{% if lim.window == "stop" %} checked{% endif %}> Stop and wait for you</label></fieldset>
+          <div class="row tight"><button class="btn primary small" type="submit" data-do="usage-limits">Save limits</button></div>
+        </form>
+      </div>
+    </details>
     <details class="act-more fft-deploys" data-mode-menu>
       <summary aria-label="Deploys: {{ said[mode] }}"><span class="state-word fft-deploys-pill" data-tone="{{ mode }}"><span class="k">Deploys:</span> {{ said[mode] }}{% if mode == "available" %} <span class="fft-until">· until <time datetime="{{ bar.available.until }}" data-clock="when">{{ bar.available.until }}</time></span>{% endif %} ▾</span></summary>
       <div class="act-menu end fft-deploys-menu" role="group" aria-label="Deploys">
@@ -32,6 +52,7 @@
       </div>
     </details>
   </div>
+  {% if bar.usage.tone in ("over", "wait") %}<div class="fft-status-line" data-stat="usage"><span>{{ "Claude stopped" if bar.usage.tone == "over" else "Claude paused" }}: {{ bar.usage.why }}</span></div>{% endif %}{# (over a limit: no new work starts; Roadmap item 34) #}
   {% if mode == "frozen" %}<div class="fft-status-line" data-stat="paused"><span>Paused{% if bar.freeze.why %}: {{ bar.freeze.why }}{% endif %}</span><span class="note">since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time></span>
     <span class="note" data-paused-drain>· what was merged before still goes live · askdnd.ai running since <time datetime="{{ bar.updated }}" data-clock="when">{{ bar.updated }}</time></span></div>{# (a pause starts nothing new and finishes what's on its way: issue 110) #}
   {% elif mode == "independent" and bar.available.ended %}<div class="fft-status-line" data-stat="ended"><span class="note">Local tries ended: {{ bar.available.why }}</span></div>{% endif %}
