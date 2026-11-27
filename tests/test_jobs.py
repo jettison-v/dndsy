@@ -1,9 +1,8 @@
 """Background jobs (app/jobs.py; Roadmap item 43, Brett's pick LB1, Nov 25): one at a time per queue, never twice the
 same, given up on when its worker goes silent, and a late worker can't overwrite a later try."""
 
-from datetime import UTC, datetime, timedelta
-
 import threading
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import text
