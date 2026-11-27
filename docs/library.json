@@ -2220,5 +2220,16 @@
   "line": "A side panel for each rule book",
   "source": "docs/mockups/rule-books/index.html",
   "link": "https://claude.ai/artifact/2z5TgE321C4b6MwiYkYmEn"
+ },
+ {
+  "title": "Workshop on a Phone",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 27",
+  "what": "Roadmap item 49 (Brett: a better mobile admin experience for our collaboration; the header, bottom menu and rolls take up space): For you as cards answered in place, a check one step at a time, a push that opens its card, Development at a glance, on an iPhone. Four picks.",
+  "line": "Workshop on your iPhone",
+  "source": "docs/mockups/workshop-phone/index.html",
+  "link": "https://claude.ai/artifact/3vJnCduqDNMs21MN6Kd5eE"
  }
 ]
