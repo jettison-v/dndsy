@@ -26,8 +26,15 @@ NOTE_MAX = 500
 
 
 def user_row(db: Session, user: dict | None) -> User | None:
+    """The signed-in person's row: by their id (access's list, which every page reads anyway), so a page asking several
+    times finds it in its session after the first (issue 77: Battle read it five times, /hp/now four of its seven);
+    by their email when the list doesn't have them yet."""
     email = (user or {}).get("email", "").lower()
-    return db.scalar(select(User).where(User.email == email)) if email else None
+    if not email:
+        return None
+    uid = access.user_id(email)
+    got = db.get(User, uid) if uid else None
+    return got if got is not None and got.email == email else db.scalar(select(User).where(User.email == email))
 
 
 def my_character(db: Session, user: dict | None) -> Character | None:

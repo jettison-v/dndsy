@@ -21,6 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
     false,
     func,
 )
@@ -28,7 +29,7 @@ from sqlalchemy import (
     text as sql,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from app import books as _books
 from app.db import Base
@@ -801,6 +802,15 @@ class Job(Base):
     # Asked again while it ran (issue 153): the newer request's payload, run once this one finishes, so a resent
     # transcript or Start over during an update isn't folded into the run already under way and lost
     rerun: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+@event.listens_for(Session, "loaded_as_persistent")
+def _keep(session: Session, instance) -> None:
+    """A campaign or person read once is kept for the rest of its session (a request's), so the next `db.get` finds it
+    there. A session holds what it read only weakly: nothing held on to a campaign asked for just to see whether a
+    Feature is on, so Party read its campaign nine times and Battle its person five (issue 77)."""
+    if isinstance(instance, Campaign | User):
+        session.info.setdefault("kept", {})[(type(instance), instance.id)] = instance
 
 
 class Revision(Base):
