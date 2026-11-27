@@ -147,7 +147,7 @@ def test_history_groups_runs_and_batches_and_opens_each_in_its_window(db, admin,
     def item(i, table="entities", row=1, field="status", new="published", actor="a@example.com", batch=None, ago=0):
         r = Revision(id=i, table=table, row_id=row, label="X", field=field, old="draft", new=new, actor=actor, batch=batch,
                      created_at=now - timedelta(seconds=ago))
-        return {"r": r, "field": history.FIELD_LABELS.get(field, field), "source": "", "subject": f"Thing {row}", "who": "A",
+        return {"r": r, "field": history.FIELD_LABELS.get(field, field), "source": "", "subject": f"Thing {row}", "short": f"Thing {row}", "who": "A",
                 "old": "draft", "new": new}
 
     runs = group_changes([item(5, row=1, ago=0), item(4, row=1, ago=60), item(3, row=1, ago=120)])
@@ -196,3 +196,24 @@ def test_history_chips_turn_on_and_off_several_at_once(db, cole, admin):
     pressed = re.findall(r'aria-pressed="true" data-filter="([a-z]+)"', page)
     assert sorted(pressed) == ["entries", "sessions"] and 'data-filter="all"' not in page
     assert 'href="/c/main/manage/history?show=sessions" aria-pressed="true" data-filter="entries"' in page, chips
+
+
+def test_a_key_moments_window_shows_its_whole_words_and_its_row_keeps_them_short(db, admin):
+    """Issue 177 (Brett, Nov 27, check 110: "I cannot see the full text so it is difficult to make a decision"): what
+    you'd restore has to be read whole in its window; History's list keeps a moment's words short."""
+    from app.models import EventKind, GameSession, Status, StoryEvent
+
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 12, "title": "Bells"}]})
+    gs = db.scalar(select(GameSession))
+    long = "The bell rang twice over the harbour, and every lantern on the quay went dark at once while the tide turned back"
+    ev = StoryEvent(session_id=gs.id, position=1, kind=next(iter(EventKind)), text=long)
+    db.add(ev)
+    db.flush()
+    ev.status = Status.PUBLISHED
+    db.flush()
+    rev = db.scalar(select(Revision).where(Revision.table == "story_events", Revision.field == "status"))
+    db.commit()
+    page = admin.get("/c/main/manage/history").text
+    assert long[:40] in page and long not in page  # (the row: short)
+    window = admin.get(f"/c/main/manage/history/window?ids={rev.id}").text
+    assert long in window and "Session 12" in window  # (the window: whole)
