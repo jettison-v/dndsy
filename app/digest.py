@@ -256,7 +256,8 @@ def _set(user: User, campaign_id: int, on: bool) -> None:
 
 @router.get("/email")
 def settings(request: Request, db: Session = Depends(get_db)):
-    """Your picture › Email digest: the campaigns you could get the Inbox digest for, each a switch."""
+    """Your picture › Email, for everyone: A fix to try's switch, and the campaigns you could get the Inbox digest for,
+    each a switch (issue 136)."""
     me = _me(db, request)
     if me is None:
         return HTMLResponse("", status_code=401)

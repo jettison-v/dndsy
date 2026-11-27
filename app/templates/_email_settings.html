@@ -17,7 +17,7 @@
 </div>
 {% endset %}
 {% if only_rows %}{{ w_rows }}{% else %}
-{% set w_intro %}<p class="note">The emails askdnd may send you, each with its own switch: counts and a link, never what was written.{% if rows %} The <b>Inbox digest</b> comes once a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox.{% endif %}</p>
+{% set w_intro %}<p class="note">What askdnd may email you: counts and a link, never what was written.{% if rows %} The <b>Inbox digest</b> comes once a day at {{ "%d" % (hour % 12 or 12) }} {{ "PM" if hour >= 12 else "AM" }} (the table's time), only when something new reached a campaign's Inbox.{% endif %}</p>
 {% if not sending %}<p class="note">askdnd isn't sending email here (no Resend key: your own computer, or staging).</p>{% endif %}
 {% endset %}
 {% call window("Your picture", "Email", body_class="") %}
