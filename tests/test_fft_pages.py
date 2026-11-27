@@ -494,7 +494,7 @@ def test_an_idea_goes_on_the_roadmap_is_built_or_declined_with_why(admin, sender
     db.refresh(idea)
     assert idea.state == "declined" and idea.reason == "Out of scope."
     assert admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": "lost"}).status_code == 400
-    assert list(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "idea", FftEvent.thing_id == idea.id)))[-3:] == ["idea_roadmap", "idea_shipped", "idea_declined"]
+    assert list(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "idea", FftEvent.thing_id == idea.id).order_by(FftEvent.id)))[-3:] == ["idea_roadmap", "idea_shipped", "idea_declined"]
 
 
 def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
