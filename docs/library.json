@@ -2209,5 +2209,16 @@
   "line": "Show finished and search on every table; Battle's tabs",
   "source": "docs/mockups/tables-and-tabs/index.html",
   "link": "https://claude.ai/artifact/ERyc4h4Ps3Yg552XwxUY6T"
+ },
+ {
+  "title": "Rule Books Panel",
+  "kind": "design",
+  "status": "Your picks",
+  "state": "done",
+  "date": "Nov 27",
+  "what": "Issue 117 (Brett, note 67: a sidebar for each rule book, what askdnd takes from it, with an image): the Rule books page with a book's side panel open, clickable per book. Three picks: the cover, where a book opens, campaigns in the panel. Brett chose his own cover image (drawn until added), a side panel, and campaigns said there but switched on Settings › Books.",
+  "line": "A side panel for each rule book",
+  "source": "docs/mockups/rule-books/index.html",
+  "link": "https://claude.ai/artifact/2z5TgE321C4b6MwiYkYmEn"
  }
 ]
