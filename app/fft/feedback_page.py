@@ -268,8 +268,14 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
     grouped = by_area(listed, pa, feature) if tab in ("open", "ready", "closed") else None
     if grouped:
         listed = grouped["rows"]
+    finished = []
+    if tab in ("open", "ready"):  # (closed issues and declined notes: the same table's finished rows, behind Show finished;
+        done = rows(db, "closed", chip, area)  # issue 174, Brett's pick F1 A: they were the Closed tab, a link under the table)
+        done_g = by_area(done, pa, feature)
+        finished = done_g["rows"] if done_g else done
     pick = open if open[:1] in ("n", "i", "d") and open[1:].isdigit() else ""  # (an old link to one item: it opens in the item window)
     return templates.TemplateResponse(request, "fft_feedback.html", {
+        "finished": finished, "closed_from": from_key("closed", chip, area, pa, feature),
         "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "chip": chip, "area": area, "area_said": keyed.title if area and keyed is not None else "", "pa": pa, "feature": feature,
         "grouped": grouped, "taxonomy": taxonomy.areas(), "from_": from_key(tab, chip, area, pa, feature),
         "status": testing_page.status(db),  # (the bar every Our work page has: issue 109)
@@ -375,7 +381,7 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
         return RedirectResponse(f"{BACK}?tab=approve", status_code=303)
     if key[:1] == "i":  # (the last one: where it went)
         return RedirectResponse(f"{BACK}?tab=open&open={key}", status_code=303)
-    return RedirectResponse(f"{BACK}?tab=ideas" if do == "idea" else f"{BACK}?tab=closed" if do in ("answer", "decline") else f"{BACK}?tab=approve&open={key}", status_code=303)
+    return RedirectResponse(f"{BACK}?tab=ideas" if do == "idea" else f"{BACK}?tab=open" if do in ("answer", "decline") else f"{BACK}?tab=approve&open={key}", status_code=303)
 
 
 @router.post("/manage/feedback/notes/{note_id:int}/undo")

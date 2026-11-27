@@ -2,7 +2,7 @@
 {% from "_board.html" import board as work_board %}
 {% from "_tables.html" import table_box %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
-{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, history_link, history_head, show_more %}
+{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip, show_more %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
 {% from "_form_bits.html" import pick_chips, stepper, dice_picker, help_tip, field, form_section %}
@@ -453,8 +453,15 @@
     {% endcall %}
     {% call table_box("demo-decide", "Decide", 0, "one read and one press each", [], "Nothing to decide.") %}{% endcall %}
     </div>
-    {{ ds("History", "_lists.html history_link(href) · history_head(what, back) · .dt-history · .dt-history-head", "Done leaves the list (Brett, Nov 20): a list shows what's next; what's finished is one quiet History link under it, never a tab with a count, a chip beside Open or a section. The history is the same list, headed by what it shows and Back to what's open.") }}
-    <div class="ds-row" style="display:grid;gap:8px">{{ history_link("#") }}{{ history_head("closed issues", "#") }}</div>
+    {{ ds("Search and Show finished", "table_box(…, search=true, finished=n) · tr[data-ls-finished] · tr.dt-group[data-finished-head]", "Every table can be searched from its title row, filtering as you type; a table with finished rows (shipped, closed, passed, done) hides them until Show finished is ticked, then shows them last under Finished, faded; the tick is remembered per table, and a search looks at finished rows too (Brett's picks F1 A and F2 A, Nov 27, issue 174; it replaced the History link under a list). search=false where the page has its own search; own_list=false where a page's list already holds the rows.") }}
+    <div class="tbx-stack" id="finished-table">
+    {% call table_box("demo-roadmap", "On the Roadmap", 2, "", [("No.", "dt-w1"), ("Item", ""), ("Stage", "dt-w3")], finished=1) %}
+      <tr><td><span class="dt-id">R3</span></td><td class="dt-title">String Audit: shorter words</td><td>{{ state_word("Scoping", "ask") }}</td></tr>
+      <tr><td><span class="dt-id">R19</span></td><td class="dt-title">The next bridge update</td><td>{{ state_word("Scope agreed", "ready") }}</td></tr>
+      <tr class="dt-group" data-finished-head><td colspan="3">Finished · 1</td></tr>
+      <tr data-ls-finished><td><span class="dt-id">R46</span></td><td class="dt-title">A catalog of the reviews we run</td><td>{{ state_word("Shipped", "passed") }}</td></tr>
+    {% endcall %}
+    </div>
     {{ ds("Copy", 'button.btn.link[data-copy="the words"]', "Puts the words on the clipboard and a corner card says Copied (Discuss with Claude's message, issue 54). Show the words too, so they can be selected where the clipboard is refused.") }}
     <div class="ds-row"><button class="btn link" type="button" data-copy="An example">Copy the message</button></div>
     {{ ds("Records", ".records.cols-2 | cols-3 | cols-3-even | cols-4 > .record", "Any list of things on Backstage: the thing (bold name, then notes), optional fields, then its buttons on the right. A header row (.records-head) names the columns. On phones the fields wrap under the name.") }}

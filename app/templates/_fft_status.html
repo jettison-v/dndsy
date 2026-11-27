@@ -1,3 +1,4 @@
+{% from "_form_bits.html" import field %}
 {# How things stand, one bar, on For you and Development (Brett's pick A on docs/mockups/status-bar/, issue 42, Nov 19).
    Its top row never wraps: whether Claude is listening on the left (its grey note the first thing to shorten with …,
    never Deploys: his comment), and Deploys on the right as one pill with a menu, the lane menu's pieces (`act-more`,
@@ -47,7 +48,7 @@
         {# Pausing asks why, optional (Brett's pick, Nov 19): the bar then says it, whole, on its own line #}
         <form method="post" action="/manage/for-you/mode" class="fft-pause" id="fft-pause-why" hidden><input type="hidden" name="mode" value="frozen"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="here" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query }}">
           {% if bar.flight and mode != "frozen" %}<p class="fft-holds" data-holds-flight>⚠ {{ bar.flight | length }} change{{ "s" if bar.flight | length != 1 }} of Claude's on the way: any already merged still go{{ "es" if bar.flight | length == 1 }} live; the rest wait until you resume: {{ bar.flight | map(attribute="titles") | map("first") | join("; ") }}</p>{% endif %}{# (the heads-up, Brett's pick A) #}
-          <label class="field"><span>Why pause? <span class="note">(optional)</span></span><input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow"></label>
+          {% set fld_name %}Why pause? <span class="note">(optional)</span>{% endset %}{% call field(fld_name) %}<input type="text" name="why" maxlength="120" value="{{ bar.freeze.why if mode == 'frozen' else '' }}" placeholder="e.g. a demo tomorrow">{% endcall %}
           <div class="row tight"><button class="btn primary small" type="submit" data-do="pause">{{ "Change the reason" if mode == "frozen" else "Pause deploys" }}</button><button class="btn link small" type="button" data-cancel="fft-pause-why">Cancel</button></div>
         </form>
       </div>

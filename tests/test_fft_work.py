@@ -116,14 +116,12 @@ def test_a_plans_page_has_its_issues_test_round_and_timeline(db, admin):
     db.flush()
     page = admin.get(f"/manage/work/{battle.id}").text
     assert 'data-facts' in page and 'data-stats' not in page and "Battle" in page and 'class="on" data-tab="overview"' in page
-    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (done leaves the list: closed ones are its History)
-    assert f'data-row="i{now.id}"' in issues and f'data-row="i{old.id}"' not in issues and "data-history" in issues
-    assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues
-    closed = admin.get(f"/manage/work/{battle.id}?tab=issues&history=1").text
-    assert f'data-row="i{old.id}"' in closed and f'data-row="i{now.id}"' not in closed and "data-history-head" in closed
+    row = lambda page, key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)
+    issues = admin.get(f"/manage/work/{battle.id}?tab=issues").text  # (closed ones: finished rows, behind Show finished: issue 174)
+    assert "data-ls-finished" not in row(issues, f"i{now.id}") and "data-ls-finished" in row(issues, f"i{old.id}")
+    assert f'/manage/item/i{now.id}?from=plan%3A{battle.id}' in issues and f'/manage/item/i{old.id}?from=plan%3A{battle.id}%3Aclosed' in issues
     rnd = admin.get(f"/manage/work/{battle.id}?tab=round").text
-    assert f'data-row="c{current.id}"' in rnd and f'data-row="c{passed_before.id}"' not in rnd
-    assert f'data-row="c{passed_before.id}"' in admin.get(f"/manage/work/{battle.id}?tab=round&history=1").text
+    assert "data-ls-finished" not in row(rnd, f"c{current.id}") and "data-ls-finished" in row(rnd, f"c{passed_before.id}")
     assert work_page.listed_keys(db, f"round:{battle.id}") == [f"c{current.id}"]
     assert work_page.listed_keys(db, f"round:{battle.id}:passed") == [f"c{passed_before.id}"]
     assert work_page.listed_keys(db, f"plan:{battle.id}:closed") == [f"i{old.id}"]
@@ -179,10 +177,10 @@ def test_checks_done_scheduled_and_how_we_work(db, admin, monkeypatch):
     rules.record_try(db, "user:1", c, result="passed")
     rules.close(db, "claude", issue, "works", "It works now.")
     db.flush()
-    checks = admin.get("/manage/work?tab=checks").text  # (a passed check is History's)
-    assert f'data-row="c{c.id}"' not in checks and "data-history" in checks
-    checks = admin.get("/manage/work?tab=checks&history=1").text
-    assert f'data-row="c{c.id}"' in checks and 'data-device="laptop"' in checks and "Passed" in checks
+    checks = admin.get("/manage/work?tab=checks").text  # (a passed check is a finished row, behind Show finished: issue 174)
+    row = re.search(rf'<tr[^>]*data-row="c{c.id}"[^>]*>', checks).group(0)
+    assert "data-ls-finished" in row and "data-ls-finished-toggle" in checks and "data-history" not in checks
+    assert 'data-device="laptop"' in checks and "Passed" in checks
     assert f'data-open-item="/manage/item/c{c.id}?from=checks%3Apassed"' in admin.get(f"/manage/work?tab=checks&open=c{c.id}").text  # (passed: opens in History)
     assert 'data-tab="done"' not in admin.get("/manage/work?tab=queue").text  # (no Done tab: History, a link under the queue)
     done = admin.get("/manage/work?tab=done").text
@@ -240,7 +238,7 @@ def test_a_standing_rule_work_is_for_admins_only(db, dm, player):
 def test_testing_is_gone_from_backstages_list_and_work_is_there(admin):
     page = admin.get("/manage/work?tab=queue").text
     assert 'data-item="work"' in page and 'data-item="testing"' not in page
-    assert "data-fft-tabs" not in page and "data-held" in page  # (Our work in the side list is the one way between For you, Work and Feedback)
+    assert "data-fft-tabs" not in page and 'data-table="queue"' in page  # (Our work in the side list is the one way between For you, Work and Feedback)
 
 
 def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admin):
@@ -276,17 +274,18 @@ def test_development_is_one_queue_of_batches_and_builds_in_bretts_order(db, admi
     assert f'data-build="{build.id}"' in held[held.index("data-held"):]
 
 
-def test_done_leaves_feedbacks_list_for_its_history(db, admin):
-    """Brett, Nov 20 ("If it is done, it is off the list"): Feedback's Issues have no Closed chip beside Open; a quiet
-    History link under the list opens the closed ones, with the way back."""
-    rules.new_issue(db, "claude", "Still open")
+def test_done_leaves_feedbacks_list_behind_show_finished(db, admin):
+    """Brett, Nov 20 ("If it is done, it is off the list"), and his pick F1 A (Nov 27, issue 174): Feedback's Issues have
+    no Closed chip beside Open; the closed ones are the same table's finished rows, hidden until Show finished."""
+    still = rules.new_issue(db, "claude", "Still open")
     gone = rules.new_issue(db, "claude", "Already fixed")
     rules.close(db, "claude", gone, "works", "It works now.")
     db.flush()
     page = admin.get("/manage/feedback?tab=open").text
-    assert 'data-tab="closed"' not in page and 'href="?tab=closed" data-history' in page
-    hist = admin.get("/manage/feedback?tab=closed").text
-    assert "data-history-head" in hist and 'data-history-back' in hist and f'data-row="i{gone.id}"' in hist
+    row = lambda key: re.search(rf'<tr[^>]*data-row="{key}"[^>]*>', page).group(0)
+    assert 'data-tab="closed"' not in page and "data-ls-finished-toggle" in page
+    assert "data-ls-finished" in row(f"i{gone.id}") and "data-ls-finished" not in row(f"i{still.id}")
+    assert f"/manage/item/i{gone.id}?from=feedback%3Aclosed" in page  # (↑ ↓ from a closed one walk the closed ones)
 
 
 def test_every_kind_of_gap_says_what_it_is():
