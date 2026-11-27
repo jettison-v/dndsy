@@ -1826,9 +1826,12 @@ button.rm-box { cursor: pointer; }
 .tbx ~ .tbx { margin-top: var(--sp-4); }  /* (two tables on one page, one gap apart, the same as a stack's, each with its own title row: issues 122, 125) */
 .tbx-stack > .tbx ~ .tbx { margin-top: 0; }  /* (a stack keeps its own gap) */
 /* A data table (Backstage mode's lists; the design system's "Table"): a header row, one line a row except the title,
-   which wraps; columns sized by their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px · dt-w5 200px · dt-q a quarter of the table), the title taking the rest; a row with data-open
+   which wraps; columns at least their header's width class (th.dt-w1 56px · dt-w2 80px · dt-w3 120px · dt-w4 160px ·
+   dt-w5 200px · dt-q a quarter of the table) and as wide as their words, so a column's words are never cut while the
+   title has room (issue 160: the layout was fixed, and "Scope agreed" ended in … beside a half-empty title); the title
+   takes the rest; a row with data-open
    opens its item in the one item window, a row with a link goes there. Groups as divider rows (tr.dt-group). */
-.dtable { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; font-size: var(--fs-md); }
+.dtable { width: 100%; table-layout: auto; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; font-size: var(--fs-md); }
 .dtable th { text-align: left; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); padding: var(--sp-2) var(--sp-2); background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dtable td { padding: var(--sp-1) var(--sp-2); height: 32px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 .dtable tr:last-child td { border-bottom: 0; }
