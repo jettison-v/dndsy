@@ -50,7 +50,7 @@ BOOKKEEPING = {"users": ("current_campaign_id", "last_seen_at", "updated_at")}
 # Whole tables of bookkeeping: what was done, counted for Admin › Features (app/usage.py), not a change to anything
 BOOKKEEPING_TABLES = {"usage_events"}
 # The asker's own settings, which every signed-in person may change for themself
-OWN = {("POST", "/dice")}  # (Your dice)
+OWN = {("POST", "/dice"), ("POST", "/email/fixes")}  # (Your dice; your own fix-to-try email switch, everyone's since issue 136)
 
 
 def fingerprint(db) -> dict[str, str]:

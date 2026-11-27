@@ -44,13 +44,14 @@
   {% endfor %}
 {% endmacro %}
 {% macro avatar_of(u) %}<span class="me-av" aria-hidden="true">{% if u.picture %}<img src="{{ u.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (u.name or u.email)[:1] | upper }}{% endif %}</span>{% endmacro %}
-{# Your picture's door: the same on every campaign, a player's short (Your notes, Help); the DM's and a reviewer's add
-   the Email digest and the DM guide. Your dice live in Table rolls' Roll window. #}
+{# Your picture's door: the same on every campaign, a player's short (Your notes, Email, Help); the DM's and a
+   reviewer's Email says whether the Inbox digest is on, and they add the DM guide (Email for everyone: Brett's pick on
+   question 39, Nov 27, issue 136). Your dice live in Table rolls' Roll window. #}
 {% macro account_items() %}
   <div class="menu-group">Your notes</div>
   <a href="/your-notes" data-item="notes" class="{{ 'active' if path == '/your-notes' }}" title="What you sent (about the story and about askdnd) and what came of it">Notes you sent <span class="notes-count" data-notes-count hidden></span></a>
   {% if feedback_menu(request) %}<a href="#" data-fb-open data-item="feedback" title="A note for Claude about this page">Send feedback <kbd>\</kbd></a>{% endif %}
-  {% if can_moderate %}{% set dig = digest_on(here) %}<a href="#" data-modal-url="/email" data-item="email" title="The Inbox's daily email">Email digest{% if dig is not none %} <span class="menu-state">{{ "On" if dig else "Off" }}</span>{% endif %}</a>{% endif %}
+  {% set dig = digest_on(here) if can_moderate else none %}<a href="#" data-modal-url="/email" data-item="email" title="The emails askdnd sends you, each a switch">Email{% if dig is not none %} <span class="menu-state">{{ "Digest on" if dig else "Digest off" }}</span>{% endif %}</a>
   <div class="menu-group">Help</div>
   <a href="#" data-tour-start data-item="tour" title="A few minutes: what askdnd adds">Take the tour</a>
   <a href="/help" data-item="help" class="{{ 'active' if path == '/help' }}" data-no-peek title="What askdnd adds, the FAQ and About">Help and FAQ</a>
