@@ -377,7 +377,7 @@ def event_words(ev) -> str:
     if ev.kind == "claude_woken":  # (a missed handoff's button, Roadmap item 45: issue 178, "claude woken" said nothing)
         if d.get("what") == "look":
             return "Brett pressed Bring in now: look at claude.ai (feedback.py sync list), then listen again"
-        return "Brett pressed Wake Claude on a missed handoff (Development › Handoffs): do its step"
+        return f"Brett pressed Wake Claude on missed handoff {d.get('key') or '?'} (Development › Handoffs): do its step"
     if ev.kind == "doc_comments_sent":  # (Send now, issue 116: before his picks; their words with `feedback.py sync out <doc>`)
         n = d.get("n") or 0
         return f"Brett sent {n} comment{'s' if n != 1 else ''} on question {ev.thing_id}'s mockup, before his picks ({d.get('doc', '')})"

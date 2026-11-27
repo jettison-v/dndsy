@@ -95,11 +95,13 @@ def test_the_look_counts_from_when_listening_began_not_across_a_night_without_it
     assert r["state"] == "missed" and rules.now() - r["at"] < timedelta(minutes=21)  # (late by minutes, not a day)
 
 
-def test_asking_again_while_listening_keeps_when_listening_began(db):
-    _listening(db)
+def test_asking_again_after_a_short_gap_keeps_when_listening_began(db):
+    """The review of #546: a few minutes between turns of work isn't a break, or each would push an overdue look out."""
+    db.add(FftListener(name="main", read_id=0, heard_at=rules.now() - timedelta(minutes=5)))
+    db.flush()
     rules.unread(db, rules.listener(db, "main"), peek=True)
     db.flush()
-    assert db.get(host.ToolSetting, rules.LISTENING_SINCE) is None  # (it never stopped: nothing began)
+    assert db.get(host.ToolSetting, rules.LISTENING_SINCE) is None  # (no break: nothing began)
 
 
 def test_bring_in_now_says_what_to_do_in_claudes_inbox(db):
@@ -108,7 +110,7 @@ def test_bring_in_now_says_what_to_do_in_claudes_inbox(db):
     rules.wake_claude(db, "user:1", "claude", "t1")
     db.flush()
     said = [views.event_words(e) for e in db.query(FftEvent).filter(FftEvent.kind == "claude_woken").order_by(FftEvent.id)]
-    assert "Bring in now" in said[0] and "sync list" in said[0] and "Wake Claude" in said[1]
+    assert "Bring in now" in said[0] and "sync list" in said[0] and "Wake Claude" in said[1] and "t1" in said[1]
 
 
 def test_missed_comes_first_then_yours_then_claudes_then_done(db):
