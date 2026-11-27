@@ -124,11 +124,11 @@ def page(request: Request, history: int = 0, db: Session = Depends(get_db)):
     user, denied = _admin(request)
     if denied:
         return denied
-    rows = items(db, bool(history))
-    groups = [] if history else [(k, SECTION_SAID[k], [r for r in rows if r["it"].section == k]) for k in rules.ROADMAP_SECTIONS]
+    rows, finished = items(db), items(db, True)  # (shipped and not doing: the table's finished rows, behind Show finished;
+    groups = [(k, SECTION_SAID[k], [r for r in rows if r["it"].section == k]) for k in rules.ROADMAP_SECTIONS]  # issue 174)
     db.commit()
     return templates.TemplateResponse(request, "fft_roadmap.html", {
-        "rows": rows, "groups": groups, "history": bool(history), "stage_said": STAGE, "section_said": SECTION_SAID,
+        "rows": rows, "finished": finished, "groups": groups, "stage_said": STAGE, "section_said": SECTION_SAID,
         "yours": sum(1 for r in rows if r["next"][0] == "brett"), "status": testing_page.status(db),
         "toast": request.session.pop("toast", None)})
 

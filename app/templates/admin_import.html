@@ -27,7 +27,7 @@
     {% endif %}
     {# The runs as the one table (AU1), the newest week showing and older nights in place (AU5) #}
     <div data-list="backup-runs" data-default-sort="default">
-    {% call table_box("runs", "Nightly backups", backups | length, cols=[("Night", ""), ("Result", ""), ("Size", "num dt-w2"), ("Rows", "num dt-w2"), ("Files", "num dt-w2")], empty="No runs recorded yet. The next one is tonight.", body_attrs=" data-ls-rows") %}
+    {% call table_box("runs", "Nightly backups", backups | length, cols=[("Night", ""), ("Result", ""), ("Size", "num dt-w2"), ("Rows", "num dt-w2"), ("Files", "num dt-w2")], empty="No runs recorded yet. The next one is tonight.", body_attrs=" data-ls-rows", own_list=false) %}
       {% if backup.missed %}<tr class="backup-missed" data-ls-row data-sort-default="0"><td>Since {{ backup.last.finished_at | clock(date=True) }}</td><td colspan="4">{{ backup.missed }} night{{ "s" if backup.missed != 1 }} missed</td></tr>{% endif %}
       {% for b in backups %}{% set later = loop.index > shown %}{% set n = loop.index %}{% include "_backup_row.html" %}{% endfor %}
     {% endcall %}

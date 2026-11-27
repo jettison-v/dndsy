@@ -211,7 +211,7 @@ def test_the_pages_picture_keeps_what_the_screen_shows_when_scrolled(people, ser
     admin = people("admin")
     page = admin.open("/manage/feedback?tab=open")
     page.set_viewport_size({"width": 1280, "height": 720})
-    nav = page.locator("#fb-list")  # (Feedback's list, a table since The Work Pages: the page scrolls, the list with it)
+    nav = page.locator('[data-table="feedback"] .table-scroll')  # (Feedback's list, on the one table piece: the page scrolls, the list with it)
     nav.wait_for()
     page.evaluate("() => scrollTo(0, 400)")
     box = nav.bounding_box()

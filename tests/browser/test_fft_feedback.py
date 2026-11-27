@@ -212,10 +212,10 @@ def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server
     admin = people("admin")
     page = admin.open("/manage/feedback?tab=open")
     page.set_viewport_size({"width": 1000, "height": 800})
-    head = page.locator('#fb-list tr.dt-group[data-group="battle"]')
+    head = page.locator('[data-table="feedback"] tr.dt-group[data-group="battle"]')
     head.wait_for()
     head.locator("td").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third, and a fourth, and on past the width of the whole table so it must wrap'; s.style.whiteSpace = 'normal'; }")
-    box, row = head.bounding_box(), page.locator('#fb-list tr.dt-group[data-group="battle"] + tr').bounding_box()
+    box, row = head.bounding_box(), page.locator('[data-table="feedback"] tr.dt-group[data-group="battle"] + tr').bounding_box()
     assert box["y"] + box["height"] <= row["y"] + 0.5  # (however tall it grows, the row starts below it)
 
 

@@ -114,16 +114,6 @@
 {% if n %} <span class="count" data-count="{{ n }}">{{ n }}{{ " " ~ words if words }}</span>{% endif %}
 {%- endmacro %}
 
-{# Done leaves the list (Brett, Nov 20: "If it is done, it is off the list ... auditing and reviewing should be possible,
-   but not highlighted"): under a list, one quiet History link; on the history itself, what it shows and the way back. #}
-{% macro history_link(href, label="History") -%}
-<p class="dt-history"><a href="{{ href }}" data-history>{{ label }}</a></p>
-{%- endmacro %}
-
-{% macro history_head(what, back) -%}
-<p class="dt-history-head" data-history-head><b>History: {{ what }}</b> <a href="{{ back }}" data-history-back>Back to what's open</a></p>
-{%- endmacro %}
-
 {% macro empty_state(what) -%}
 <div class="empty-state" data-empty><span>{{ what }}</span>{% if caller is defined %} {{ caller() }}{% endif %}</div>
 {%- endmacro %}
