@@ -347,6 +347,8 @@ def send_ask(db: Session, actor: str, line: FftLine, send: bool) -> None:
 
 def approve_line(db: Session, actor: str, line: FftLine) -> None:
     """A player's added words (or "still broken") approved: now Claude may read them."""
+    if line.who != "sender":  # (Claude's question to a sender is sent with send_ask, never approved here: the review of #554)
+        raise RuleError("bad", "Only a player's own words are approved.")
     line.approved = True
     _event(db, actor, "line_approved", "note", line.note_id or 0, line=line.id)
 

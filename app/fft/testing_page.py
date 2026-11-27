@@ -275,7 +275,7 @@ def summary(groups: list[dict]) -> dict:
     checks = [r for r in rows if r["kind"] == "check"]
     act = lambda *kinds: sum(count(k) for k in kinds)
     bits = [(act("question", "decision"), "to answer", ""), (act("merge", "note", "idea", "scope"), "to approve", ""), (count("roadmap"), "to do", ""),
-            (count("local"), "to try locally", ""), (len(checks), "to try", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else "")]
+            (count("ask"), "to send", ""), (count("local"), "to try locally", ""), (len(checks), "to try", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else "")]
     return {"n": len(rows), "line": " · ".join(f"{n} {words}{extra}" for n, words, extra in bits if n)}
 
 
