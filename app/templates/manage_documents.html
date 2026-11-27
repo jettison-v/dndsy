@@ -24,7 +24,7 @@
         <td class="dt-title"><a class="link-plain" href="/manage/documents/{{ e.id }}">{{ e.title }}</a></td>
         <td>{{ state_tag(r.state) }}</td>
         <td class="note">{{ e.date }}</td>
-        <td class="note" title="{{ e.what }}">{{ r.line }}</td>
+        <td class="note dt-wrap" title="{{ e.what }}">{{ r.line }}</td>
       </tr>
       {% endfor %}
     {% endcall %}

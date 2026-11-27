@@ -23,7 +23,7 @@
       <td>{{ state_word(r.stage_said[0], r.stage_said[1], ' data-stage-word="' ~ r.stage ~ '"') }}</td>
       <td>{{ r.it.size or "—" }}</td>
       <td class="num">{% if r.steps %}{{ r.done }} of {{ r.steps }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
-      <td{% if r.next[1] and not done %} title="{{ r.next[1] }}"{% endif %}>{% if r.next[1] and not done %}{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude", ' data-whose="' ~ r.next[0] ~ '"') }} {{ r.next[1] }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
+      <td class="dt-wrap"{% if r.next[1] and not done %} title="{{ r.next[1] }}"{% endif %}>{% if r.next[1] and not done %}{{ state_word("Yours" if r.next[0] == "brett" else "Claude's", "ask" if r.next[0] == "brett" else "claude", ' data-whose="' ~ r.next[0] ~ '"') }} {{ r.next[1] }}{% else %}<span class="dt-id">—</span>{% endif %}</td>
       <td>{% if r.last %}<time datetime="{{ r.last.isoformat() }}" data-clock="ago">{{ r.last | ago }}</time>{% endif %}</td>
     </tr>
   {% endmacro %}

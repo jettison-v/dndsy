@@ -15,7 +15,7 @@
   <p class="sync-counts note" data-sync-counts><b>{{ counts.waiting }}</b> waiting · <b>{{ counts.running }}</b> running · <b>{{ counts.done }}</b> done · <b>{{ counts.failed }}</b> failed or not yet</p>
   <div class="sync-list" data-list="sync" data-noun="piece of work" data-nouns="pieces of work" data-default-sort="default" data-ls-start="{{ start }}" data-ls-cap="40">{# (the newest 40, the rest a fold away: AU5; reads of unwatched sheets come every few minutes) #}
     <div class="ls-toolbar">{{ view_switch(views, "Which work") }}{{ search_box("Search a character or what changed") }}</div>
-    {% call table_box("sync", "Sync", rows | length, cols=[("When", "dt-w2"), ("Character", "dt-w3"), ("What", ""), ("State", "dt-w2"), ("Tries", "dt-w1"), ("Took", "dt-w2")],
+    {% call table_box("sync", "Sync", rows | length, cols=[("When", "dt-w2"), ("Character", "dt-w4"), ("What", ""), ("State", "dt-w2"), ("Tries", "dt-w1"), ("Took", "dt-w2")],
                       empty="Nothing yet: reads and changes show here as askdnd makes them.", body_attrs=" data-ls-rows", search=false) %}
       {% for r in rows %}
       <tr data-ls-row data-views="{{ r.views }}" data-kind="{{ r.kind }}" data-sort-default="{{ loop.index }}"{% if r.trouble %} data-trouble{% endif %}
