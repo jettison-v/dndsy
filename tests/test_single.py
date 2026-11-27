@@ -3,12 +3,12 @@ advisory lock is held, and no two loops share a lock number (one would silently 
 
 from sqlalchemy import func, select
 
-from app import digest, single, unwatched
+from app import digest, single, speed, unwatched
 from app.fft import nudge, sentry_in
 
 
 def test_every_loop_has_its_own_lock():
-    locks = [digest.LOCK, unwatched.LOCK, nudge.LOCK, sentry_in.LOCK]
+    locks = [digest.LOCK, unwatched.LOCK, nudge.LOCK, sentry_in.LOCK, speed.LOCK]
     assert len(set(locks)) == len(locks)
 
 
