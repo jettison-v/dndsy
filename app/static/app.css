@@ -18,6 +18,7 @@
   --red-line: rgba(214, 69, 69, .55); --blue-line: rgba(126, 166, 224, .45); --green-line: rgba(91, 191, 127, .45);
   --blue-hover: #95b7e8; --story-link: #f3b9a8; --amber-glow: rgba(232, 179, 75, .85);
   --spell-bg: #1b1e2a; --spell-line: #3a4260;  /* the spell bar on Battle */
+  --book-phb: #2f4f7a; --book-phb-lo: #18273d; --book-dmg: #4c3a72; --book-dmg-lo: #241a38; --book-mm: #7a2f2a; --book-mm-lo: #3d1715; --book-ink: #fff;  /* a rule book's drawn cover (issue 117) */
   --map-bg: #101214; --map-grid: rgba(255, 255, 255, .14); --pin: #c7aaff; --readaloud-bg: #2b2620; --readaloud-line: #5a4b3a; --readaloud-ink: #e9dcc4; --fog: #0b0c0e; --terrain: #d39b48; --area: #ff7a59; --ruler: #ffd166;  /* askdnd's table (the map is always dark) */
   /* Shadows and dimming behind panels; the lift is for anything that floats over the page (a menu, a window, a card) */
   --lift: var(--lift);
@@ -4863,3 +4864,30 @@ main.dm-guide [role=tabpanel] > .section { max-width: calc(75ch + 2 * var(--sp-5
 .needs-says { color: var(--text); min-width: 0; }
 .needs-act { display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: flex-end; }
 @media (max-width: 640px) { .needs-line { grid-template-columns: minmax(0, 1fr); } .needs-act { justify-content: flex-start; } }
+
+/* Rule books (issue 117, Brett's picks on docs/mockups/rule-books/): a book's cover is his upload, or drawn here in the
+   book's own colour with its name until he adds one (C1); its side panel opens beside the list (W1). */
+.book-cover { position: relative; width: 112px; max-width: 100%; aspect-ratio: 3 / 4; border-radius: 4px var(--r-md) var(--r-md) 4px; overflow: hidden; display: grid; align-content: end; padding: 10px 10px 12px 16px; color: var(--book-ink); background: linear-gradient(160deg, var(--b-hi), var(--b-lo)); box-shadow: 0 6px 18px var(--shadow), inset 6px 0 0 var(--backdrop-soft); flex: none; }
+.book-cover[data-book="phb-2024"] { --b-hi: var(--book-phb); --b-lo: var(--book-phb-lo); }
+.book-cover[data-book="dmg-2024"] { --b-hi: var(--book-dmg); --b-lo: var(--book-dmg-lo); }
+.book-cover[data-book="mm-2024"] { --b-hi: var(--book-mm); --b-lo: var(--book-mm-lo); }
+.book-cover b { font: 700 15px/1.05 var(--serif, Georgia, serif); color: var(--book-ink); overflow-wrap: anywhere; }
+.book-cover small { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-top: 6px; opacity: .8; }
+.book-cover.photo { padding: 0; background: var(--surface-2); }
+.book-cover.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.book-cover.mini { width: 22px; padding: 0; border-radius: 2px; box-shadow: none; }
+.book-cover.mini > * { display: none; }
+.book-cover.mini.photo > img { display: block; }
+.book-title { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.book-hero { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: var(--sp-4); align-items: end; }
+.book-hero h2 { margin: 0; }
+.book-big { display: flex; align-items: baseline; gap: var(--sp-2); }
+.book-big b { font-size: 28px; line-height: 1; }
+.book-uses { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.book-uses li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: var(--sp-2); }
+.book-uses li::before { content: "◆"; color: var(--blue); font-size: 10px; line-height: 1.9; }
+.book-camps { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--r-md); }
+.book-camps li { display: flex; align-items: center; gap: var(--sp-2); padding: 8px 12px; border-bottom: 1px solid var(--line-soft); }
+.book-camps li:last-child { border-bottom: 0; }
+.book-camps li > :last-child { margin-left: auto; }
+

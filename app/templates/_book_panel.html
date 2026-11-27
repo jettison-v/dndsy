@@ -1,0 +1,29 @@
+{# A rule book's side panel (app/admin.py `book_panel`; issue 117, Brett's picks on docs/mockups/rule-books/, Nov 27): what
+   the book is, what askdnd takes from it, where you meet it, what it leaves out, and which campaigns have it on (K1:
+   said here, switched on each campaign's Settings › Books). Its cover is his upload, drawn until he adds one (C1). #}
+{% from "_window.html" import window %}
+{% from "_admin_bits.html" import rd_section, state_word %}
+{% from "_book_cover.html" import cover_of %}
+{% set w_pic %}{{ cover_of(b, cover) }}{% endset %}
+{% set w_foot %}<button class="btn" type="button" data-modal-url="/pictures?for=book:{{ b.key }}" data-do="book-cover">{{ "Change the cover…" if cover else "Add a cover…" }}</button>
+  <button class="btn" type="button" data-modal-url="/manage/books/upload-window" data-do="book-replace">{{ "Replace…" if total else "Upload…" }}</button>
+  <button class="btn link peek-close" type="button">Close</button>{% endset %}
+{% call window("Rule book · " ~ b.short, b.title, foot=w_foot, pic=w_pic, sub=about, attrs=' data-book-panel="' ~ b.key ~ '"') %}
+<article class="reader-article fb-read">
+  {% call rd_section("What askdnd takes from it", attrs=' data-book-takes') %}
+    {% if kinds %}{% for k, n, names, takes in kinds %}
+    <p class="book-big"><b>{{ "{:,}".format(n) }}</b><span>{{ names[0] if n == 1 else names[1] }}</span></p>
+    {% if takes %}<p class="note">{{ takes }}</p>{% endif %}{% endfor %}
+    {% else %}<p>{{ state_word("Nothing taken yet", "quiet") }}</p><p class="note">Upload… adds what askdnd reads from it; until then askdnd uses the free rules (the SRD).</p>{% endif %}
+  {% endcall %}
+  {% if where %}{% call rd_section("Where you meet it", attrs=' data-book-where') %}
+    <ul class="book-uses">{% for place, words in where %}<li><span><b>{{ place }}</b>: {{ words }}</span></li>{% endfor %}</ul>
+  {% endcall %}{% endif %}
+  {% call rd_section("What it leaves out", attrs=' data-book-out') %}<p class="note">{{ leaves_out }}</p>{% endcall %}
+  {% call rd_section("Campaigns", count=campaigns | length, attrs=' data-book-campaigns') %}
+    <ul class="book-camps">{% for c in campaigns %}<li data-campaign="{{ c.slug }}"><b>{{ c.name }}</b>{% if c.test %}<span class="note">test</span>{% endif %}<a href="/c/{{ c.slug }}/manage/settings?tab=books" class="link-plain" data-on="{{ 1 if c.on else 0 }}">{{ state_word("On", "passed") if c.on else state_word("Off", "quiet") }}</a></li>{% endfor %}</ul>
+    <p class="note">Each campaign's DM switches its books on its Settings › Books.</p>
+  {% endcall %}
+  <p class="note" data-book-kept><b>Kept private.</b> Only in askdnd's database, never in git or anywhere public; its cover too, seen only here.</p>
+</article>
+{% endcall %}

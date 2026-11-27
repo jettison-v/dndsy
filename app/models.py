@@ -221,6 +221,8 @@ class EntityPicture(Timestamped, Base):
     entity_id: Mapped[int | None] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True, nullable=True)
     character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True, nullable=True)
     creature: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # A rule book's cover (issue 117): the book's key, one cover each, seen only on Rule books (admins)
+    book: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
     file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
     thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square crop
