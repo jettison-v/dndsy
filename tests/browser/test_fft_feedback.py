@@ -450,8 +450,8 @@ def test_a_corner_card_stays_in_the_corner_over_the_side_panel_above_its_foot(pe
     page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
     panel = _item(page, f"n{nid}")
     page.evaluate("askdndToast('Saved')")
-    page.locator("#cards > .card", has_text="Saved").wait_for()
-    card = page.locator("#cards > .card").last.bounding_box()
+    page.locator("#cards > .card.k-ok").wait_for()
+    card = page.locator("#cards > .card.k-ok").last.bounding_box()
     wide, high = page.evaluate("[document.documentElement.clientWidth, innerHeight]")
     assert card["x"] + card["width"] > wide - 30  # (in the corner, not pushed beside the panel)
     if panel.locator(".peek-foot").count():
