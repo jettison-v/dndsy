@@ -1,3 +1,4 @@
+{% from "_admin_bits.html" import state_word, lane_tag %}
 {# Correct this try (screen 5; app/fft/testing_page.py `change_window`): a correction, never a deletion (R6). It says
    first what happens to each issue the try named. #}
 {% from "_window.html" import window %}
@@ -6,7 +7,7 @@
 {% set w_foot %}<button class="btn primary" type="submit" data-do="correct">Correct it</button><button class="btn link peek-close" type="button">Cancel</button>{% endset %}
 {% set w_form %}method="post" action="/manage/testing/tries/{{ t.id }}/change"{% endset %}
 {% call window(w_kind, w_title, foot=w_foot, form=w_form) %}
-    <p class="note">It's <span class="state-word sw-{{ 'failed' if t.result == 'failed' else 'passed' if t.result == 'passed' else 'quiet' }}">{{ {"failed": "Failed", "passed": "Passed", "cant": "Can't try", "untried": "To try"}[t.result] }}</span>{% if n %} with {{ n }} issue{{ "s" if n != 1 }}{% endif %} ({{ device_said.get(t.device, t.device).replace("your ", "") }}, <time datetime="{{ t.created_at.isoformat() }}" data-clock="date">{{ t.created_at | ago }}</time>). It should have been:</p>
+    <p class="note">It's {{ state_word({"failed": "Failed", "passed": "Passed", "cant": "Can't try", "untried": "To try"}[t.result], t.result if t.result in ("failed", "passed") else "quiet") }}{% if n %} with {{ n }} issue{{ "s" if n != 1 }}{% endif %} ({{ device_said.get(t.device, t.device).replace("your ", "") }}, <time datetime="{{ t.created_at.isoformat() }}" data-clock="date">{{ t.created_at | ago }}</time>). It should have been:</p>
     <div class="fft-options" role="radiogroup" aria-label="It should have been">
       {% for key, said in (("passed", "Passed"), ("cant", "Can't try (later)"), ("untried", "To try (back to your list)")) if key != t.result %}<label class="fft-opt" data-result="{{ key }}"><input type="radio" name="result" value="{{ key }}" required><span><b>{{ said }}</b></span></label>{% endfor %}
     </div>

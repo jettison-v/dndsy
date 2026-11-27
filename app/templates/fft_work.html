@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_admin_bits.html" import state_word, more_menu %}
+{% from "_admin_bits.html" import state_word, lane_tag, more_menu %}
 {% from "_lists.html" import empty_state, count_pill, grip, history_link, history_head, search_box, show_more, view_switch %}
 {% from "_admin_bits.html" import needs_line %}
 {% from "_fft_bits.html" import hands_list %}
@@ -12,7 +12,7 @@
    waits on); tabs Queue · Done · Checks · Scheduled · How we work. A plan's row opens its page; a check opens in the
    item window. #}
 {% macro lane_menu(r) %}{# (a plan's lane, chosen from the lane itself: Where it stands' menu, kept) #}
-<details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
+<details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}">{{ lane_tag(r.lane, (lane_said[r.lane] if r.lane else "Lane") ~ " ▾") }}</summary>
   <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><input type="hidden" name="back" value="/manage/work?tab=queue"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ lane_said[l] }}</button></form>{% endfor %}</div></details>
 {% endmacro %}
 {% macro plan_more(r) %}
@@ -37,7 +37,7 @@
 {% endmacro %}
 {% macro board_stage(key, fallback) %}{# (Your order in the Board's words: its column, amber when stuck, and when it also has checks for you; step 36, Nov 24) #}
 {% set b = on_board.get(key) if on_board else none %}
-{% if b %}{{ state_word(b.said, b.tone, ' data-col-word="' ~ b.col ~ '"') }}{% if b.stuck %} <span class="state-word sw-ask" data-stuck>Stuck</span>{% endif %}{% if b.get("yours") and b.col != "yours" %} <span class="note" data-also-yours>+ yours to try</span>{% endif %}
+{% if b %}{{ state_word(b.said, b.tone, ' data-col-word="' ~ b.col ~ '"') }}{% if b.stuck %} {{ state_word("Stuck", "ask", " data-stuck") }}{% endif %}{% if b.get("yours") and b.col != "yours" %} <span class="note" data-also-yours>+ yours to try</span>{% endif %}
 {% else %}{{ state_word(fallback[0], fallback[1]) }}{% endif %}
 {% endmacro %}
 {% macro plan_row(r, drag=True) %}
@@ -197,7 +197,7 @@
   <div class="table-scroll"><table class="dtable fft-table" data-how-lanes>
     <thead><tr><th class="dt-w2">Lane</th><th>What it's for</th><th class="dt-w5">Before it's live</th><th class="dt-w4">Who tries it</th></tr></thead>
     <tbody>{% for l in how.lanes %}
-      <tr data-lane-row="{{ l.key }}"><td><span class="state-word lane-tag" data-lane-tag="{{ l.key }}">{{ l.said }}</span></td>
+      <tr data-lane-row="{{ l.key }}"><td>{{ lane_tag(l.key, l.said) }}</td>
         <td class="dt-title">{{ l.what }}<span class="dt-why">{{ l.files | join(" · ") }}</span></td><td class="dt-wrap">{{ l.needs }}</td><td class="dt-wrap">{{ l.who }}</td></tr>
     {% endfor %}</tbody></table></div>
   <h2 class="plabel wk-h2">Every plan, the same steps</h2>

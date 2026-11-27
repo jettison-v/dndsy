@@ -4493,7 +4493,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ws-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
 .ws-tile { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
 .ws-tile .row { margin-top: var(--sp-2); }
-.ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }
 
 /* A spell's Material component (app/components.py; Brett chose A and B, Nov 13): lacking (amber), unsure (muted), used
    up when cast (green); in a spell's row and said in the Cast window */

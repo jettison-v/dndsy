@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_lists.html" import count_pill %}
 {% block title %}Needs you · Backstage · askdnd{% endblock %}
 {% block content %}
 <main class="page manage-page">
@@ -30,7 +31,7 @@
     <h2>The next game · what you make</h2>
     <div class="ws-tiles">
       {% for t in tiles %}<div class="ws-tile" data-tile="{{ t.key }}">
-        <b>{{ t.name }}{% if t.count %} <span class="ws-count">{{ t.count }}</span>{% endif %}</b>
+        <b>{{ t.name }}{{ count_pill(t.count) }}</b>
         <span class="note">{{ t.says }}</span>
         <span class="row">{% if t.new %}<a class="btn small" href="{{ t.new }}">+ New</a>{% endif %}<a class="btn small" href="{{ t.open }}">Open</a></span>
       </div>{% endfor %}

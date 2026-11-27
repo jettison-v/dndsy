@@ -12,7 +12,7 @@
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
-{% from "_admin_bits.html" import state_word, state_line, timeline, more_menu, rd_section, kind_word, needs_line %}
+{% from "_admin_bits.html" import state_word, lane_tag, state_line, timeline, more_menu, rd_section, kind_word, needs_line %}
 {% block title %}Design system · Backstage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -164,7 +164,7 @@
     {{ ds("Waiting count", ".mcount", "How many things wait for you, red, beside Needs you and Inbox in the Manage menu and on Manage pages. Asked for when the menu opens (/manage/counts), so no page waits for it; hidden at zero.") }}
     <div class="ds-row"><span>Needs you <span class="mcount">3</span></span><span>Inbox <span class="mcount">5</span></span></div>
     {{ ds("A plan's lane", ".state-word.lane-tag[data-lane-tag]", "How much of Brett's testing a plan needs (the work flow, Nov 19), the same pill as whose turn it is: Ship green, Look blue, Careful red; outlined \"Lane\" until one is set. On Development it opens the lane's own menu.") }}
-    <div class="ds-row"><span class="state-word lane-tag" data-lane-tag="ship">Ship</span><span class="state-word lane-tag" data-lane-tag="look">Look</span><span class="state-word lane-tag" data-lane-tag="careful">Careful</span><span class="state-word lane-tag" data-lane-tag="none">Lane ▾</span></div>
+    <div class="ds-row">{{ lane_tag("ship", "Ship") }}{{ lane_tag("look", "Look") }}{{ lane_tag("careful", "Careful") }}{{ lane_tag("", "Lane ▾") }}</div>
     {{ ds("A pill with a menu", "details.act-more > summary .state-word + .act-menu(.end) · _fft_status.html", "A setting whose current choice is a pill and whose choices open under it, each with one line saying what it does, so no separate Help is needed (Deploys in the status bar on For you and Development, Brett's pick A, issue 42; the lane menu is the same pieces). At a row's right end the menu opens toward the page (.act-menu.end). The pill never shortens; words beside it do first.") }}
     <div class="ds-row"><details class="act-more fft-deploys" style="margin-left:0"><summary aria-label="Deploys: When tests pass (sample)"><span class="state-word fft-deploys-pill" data-tone="independent"><span class="k">Deploys:</span> When tests pass ▾</span></summary>
       <div class="act-menu fft-deploys-menu" role="group" aria-label="Deploys (sample)"><button type="button" data-mode-pick="sample" aria-pressed="false"><span class="ck" aria-hidden="true"></span><span class="pick">After my local try</span><small>Visible changes wait for your try on your Mac.</small></button><button type="button" data-mode-pick="sample" aria-pressed="true"><span class="ck" aria-hidden="true">✓</span><span class="pick">When tests pass</span><small>The default. Visible changes go live once their tests pass.</small></button></div></details></div>
@@ -448,8 +448,8 @@
     {% set demo_ctl %}<button class="btn primary small" type="button">▶ Start round</button>{% endset %}
     <div class="tbx-stack" id="titled-table">
     {% call table_box("demo-try", "Try", 2, "about 4 min · you use askdnd and mark what you saw", [("", "dt-w2"), ("No.", "dt-w2"), ("What, and its goal", ""), ("Takes", "num dt-w2")], controls=demo_ctl) %}
-      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
-      <tr><td><span class="state-word sw-ask">Try</span></td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
+      <tr><td>{{ state_word("Try", "ask") }}</td><td><span class="dt-id">check 76</span></td><td class="dt-title">A Roadmap item opens the page you need to read<span class="dt-why">Now: its window opens the comparison</span></td><td class="num">2 min</td></tr>
+      <tr><td>{{ state_word("Try", "ask") }}</td><td><span class="dt-id">check 77</span></td><td class="dt-title">End round ends the round on the bar<span class="dt-why">Now: wherever it was started</span></td><td class="num">2 min</td></tr>
     {% endcall %}
     {% call table_box("demo-decide", "Decide", 0, "one read and one press each", [], "Nothing to decide.") %}{% endcall %}
     </div>
