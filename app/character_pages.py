@@ -129,8 +129,9 @@ def _party_rows(db: Session, user: dict | None = None) -> list[dict]:
     campaign = web.campaign(db)
     if not campaign:
         return []
-    return [views.party_row(ch, ddb_bridge.as_shown(db, ch, chars.character_summary(ch)))
-            for ch in _mine_first(db, user, chars.campaign_characters(db, campaign.id))]
+    party = _mine_first(db, user, chars.campaign_characters(db, campaign.id, with_sheets=True))
+    shown = ddb_bridge.as_shown_all(db, party, [chars.character_summary(ch) for ch in party])
+    return [views.party_row(ch, sheet) for ch, sheet in zip(party, shown, strict=True)]
 
 
 def _page(request: Request, name: str, ctx: dict):

@@ -175,3 +175,13 @@ def test_spending_exactly_what_you_have_and_amounts_in_words():
     assert coins.made_change({"coin:gp": -1, "coin:sp": 5}, "sp") == ": paid 1 gp, 5 sp back"
     assert coins.made_change({"coin:gp": -1, "coin:sp": 0}, "sp") == ": paid 1 gp"
     assert coins.money(0) == "0 gp" and coins.parse_money("1,200 gp") == 120000
+
+
+def test_the_party_shows_each_sheet_as_its_own_page_does(player, db):
+    """Issue 77: Party reads every character's changes on the way in one go (`as_shown_all`); each sheet comes out as
+    its own page shows it, the one with a change on its way and the ones without."""
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    post(player, db, to="move", coin="gp", amount="500", **{"from": BAG, "into": "me"})
+    sheets = [characters.character_summary(c) for c in (cole, trah)]
+    assert ddb_bridge.as_shown_all(db, [cole, trah], sheets) == [ddb_bridge.as_shown(db, c, s) for c, s in zip((cole, trah), sheets, strict=True)]
+    assert ddb_bridge.as_shown_all(db, [cole, trah], sheets)[0]["sync"]["coin:gp"] == "on"

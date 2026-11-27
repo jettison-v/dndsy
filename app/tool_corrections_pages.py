@@ -7,7 +7,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import character_views as views
 from app import characters as chars
@@ -100,7 +100,8 @@ def automatic(sheets: list[dict], ref: str, field: str, seen: dict | None = None
 
 def _pairs(db: Session) -> list[tuple[int, dict]]:
     """Every character's sheet, with the character's id (a correction's row opens its side panel there)."""
-    return [(c.id, sh) for c in db.scalars(select(Character).order_by(Character.id)) if (sh := chars.character_summary(c))]
+    return [(c.id, sh) for c in db.scalars(select(Character).options(selectinload(Character.snapshot)).order_by(Character.id))
+            if (sh := chars.character_summary(c))]  # (their sheets read in one go, not one a character: issue 84)
 
 
 def _sheets(db: Session) -> list[dict]:

@@ -21,27 +21,26 @@ OPENAI = ("picture", "narration")  # runs paid to OpenAI (drawn pictures, Listen
 OPENAI_BILLING = "https://platform.openai.com/settings/organization/billing/overview"
 
 
-def _spent(db: Session, since: datetime | None = None, openai: bool = False) -> float:
-    """Claude's spending, or (openai=True) OpenAI's: Anthropic's balance counts only Claude's (feedback 38, Nov 7)."""
-    q = select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0)).where(
-        ExtractionRun.source.in_(OPENAI) if openai else ExtractionRun.source.not_in(OPENAI))
-    if since is not None:
-        q = q.where(ExtractionRun.created_at >= since)
-    return float(db.scalar(q) or 0.0)
-
-
 def usage_summary(db: Session, now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month = today.replace(day=1)
     bought = float(db.scalar(select(func.coalesce(func.sum(CreditTopUp.amount_usd), 0.0))) or 0.0)
-    total = _spent(db)
-    done = db.scalar(select(func.count()).select_from(ExtractionRun).where(ExtractionRun.status == "done", ExtractionRun.source.not_in(OPENAI))) or 0
-    openai_month = _spent(db, month, openai=True)
-    month_spent = _spent(db, month) + openai_month  # (the monthly limit covers both)
+    claude, is_openai, cost = ExtractionRun.source.not_in(OPENAI), ExtractionRun.source.in_(OPENAI), ExtractionRun.cost_usd
+
+    def sum_of(*where):
+        return func.coalesce(func.sum(cost).filter(*where), 0.0)
+
+    # (every sum in one read: Backstage's count asks on each Manage page, issue 84)
+    total, claude_month, openai_month, today_spent, openai_total, done = db.execute(select(
+        sum_of(claude), sum_of(claude, ExtractionRun.created_at >= month), sum_of(is_openai, ExtractionRun.created_at >= month),
+        sum_of(ExtractionRun.created_at >= today), sum_of(is_openai),
+        func.count().filter(ExtractionRun.status == "done", claude))).one()
+    total, openai_month, openai_total = float(total), float(openai_month), float(openai_total)
+    month_spent = float(claude_month) + openai_month  # (the monthly limit covers both)
     cap = spending.limit(db)
     return {
-        "today": _spent(db, today) + _spent(db, today, openai=True),
+        "today": float(today_spent),
         "month": month_spent,
         "limit": cap,
         "limit_left": max(cap - month_spent, 0.0) if cap is not None else None,
@@ -53,7 +52,7 @@ def usage_summary(db: Session, now: datetime | None = None) -> dict:
         "drafts": done,
         "claude_month": month_spent - openai_month,
         "openai_month": openai_month,
-        "openai_total": _spent(db, openai=True),
+        "openai_total": openai_total,
         "openai_billing": OPENAI_BILLING,
     }
 
