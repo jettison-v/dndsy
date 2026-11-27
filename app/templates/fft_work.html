@@ -172,24 +172,27 @@
   {% set missed = handoffs | selectattr("state", "equalto", "missed") | list %}
   {% if missed %}{{ needs_line("Missed", "broken", (missed | length) ~ " step" ~ ("s" if missed | length != 1) ~ " past " ~ ("its" if missed | length == 1 else "their") ~ " usual time: " ~ missed[0].title, "handoffs") }}{% endif %}
   <p class="note">What passes between you, Workshop and Claude, and whether each step happened. askdnd's own sync with D&amp;D Beyond is on Backstage › Sync.</p>
-  <div data-list="handoffs" data-noun="handoff" data-nouns="handoffs" data-default-sort="default">
-    <div class="ls-toolbar">{{ view_switch(handoff_views, "Which part of Workshop") }}{{ search_box("Search what was passed along") }}</div>
-    {% set WHOSE = {"missed": ("Missed", "failed"), "you": ("Yours", "ask"), "claude": ("Claude's", "ready"), "askdnd": ("askdnd's", "quiet"), "done": ("Done", "passed")} %}
-    <div class="table-scroll"><table class="dtable fft-table" data-handoffs>
-      <thead><tr><th class="dt-w2">Started</th><th>What was passed along</th><th class="dt-w2">State</th><th class="dt-w2">Took</th><th class="dt-w3"></th></tr></thead>
-      <tbody data-ls-rows>{% for h in handoffs %}
-        <tr data-ls-row data-views="{{ h.views }}" data-handoff="{{ h.key }}" data-state="{{ h.state }}" data-sort-default="{{ loop.index }}"{% if h.later %} data-ls-later{% endif %} data-name="{{ h.title | lower }}">
+  {% set WHOSE = {"missed": ("Missed", "failed"), "you": ("Yours", "ask"), "claude": ("Claude's", "ready"), "askdnd": ("askdnd's", "quiet"), "done": ("Done", "passed")} %}
+  {% set open_h = handoffs | rejectattr("state", "equalto", "done") | list %}{% set done_h = handoffs | selectattr("state", "equalto", "done") | list %}
+  {% set h_views %}{{ view_switch(handoff_views, "Which part of Workshop") }}{% endset %}
+  {% macro handoff_row(h, i) %}
+        <tr data-ls-row data-views="{{ h.views }}" data-handoff="{{ h.key }}" data-state="{{ h.state }}" data-sort-default="{{ i }}"{% if h.state == "done" %} data-ls-finished{% endif %} data-name="{{ h.title | lower }}">
           <td class="note">{{ h.at | clock }}</td>
           <td class="dt-title">{% if h.link %}<a class="link-plain" href="{{ h.link }}">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}
             <span class="dt-why">{% for label, done in h.steps %}<span class="{{ 'handoff-done' if done else 'handoff-next' }}">{{ label }}</span>{{ " → " if not loop.last }}{% endfor %}</span></td>
           <td>{{ state_word(WHOSE[h.state][0], WHOSE[h.state][1], ' data-whose="' ~ h.state ~ '"') }}</td>
           <td class="note">{{ h.took }}</td>
           <td class="end">{% if h.wake %}<form method="post" action="/manage/work/handoffs/wake" class="inline"><input type="hidden" name="what" value="{{ h.wake }}"><input type="hidden" name="key" value="{{ h.key }}"><button class="btn small" type="submit" data-do="handoff-wake">{{ "Bring in now" if h.wake == "look" else "Wake Claude" }}</button></form>{% endif %}</td>
-        </tr>{% endfor %}</tbody></table></div>
-    {% if handoffs | selectattr("later") | list %}{{ show_more("Show what's done", "Fold what's done") }}{% endif %}
-    {% if not handoffs %}{{ empty_state("Nothing passed along in the last two weeks.") }}{% endif %}
-    <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
-  </div>
+        </tr>
+  {% endmacro %}
+  {# On the one table (issue 148: it was built by hand, and showed its headings over nothing): what's open, then what's
+     done behind Show finished (issue 174: it was Show what's done under the table), the parts of Workshop as its views #}
+  {% call table_box("handoffs", "What was passed along", open_h | length, "", [("Started", "dt-w2"), ("What was passed along", ""), ("State", "dt-w2"), ("Took", "dt-w2"), ("", "dt-w3")],
+                    "Nothing waiting: everything passed along in the last two weeks is done.", controls=h_views, finished=done_h | length) %}
+    {% for h in open_h %}{{ handoff_row(h, loop.index) }}{% endfor %}
+    {% if done_h %}<tr class="dt-group" data-finished-head><td colspan="5">Finished · {{ done_h | length }}</td></tr>{% endif %}
+    {% for h in done_h %}{{ handoff_row(h, open_h | length + loop.index) }}{% endfor %}
+  {% endcall %}
 
   {% elif tab == "how" %}
   <p class="note">Drawn from the settings the tools follow, so it says what's done. Each plan takes a lane from the files its change touches; Claude may move a lane up and says why, only you move one down.</p>

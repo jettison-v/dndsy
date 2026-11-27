@@ -4217,7 +4217,6 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     rows.forEach(r => { r.hidden = q ? !(r.dataset.name || '').includes(q) : !(inView(r) && passes(fOf(r))); });
     // Finished rows wait behind Show finished; a search looks at them too, marked as finished (issue 174)
     if (!q && !st.fin) rows.forEach(r => { if (r.hasAttribute('data-ls-finished')) r.hidden = true; });
-    if (root.hasAttribute('data-ls-table')) { table(root, rows, q); save(root); return; }
     // A list that shows its newest few (data-ls-cap="20") or keeps its older rows back (data-ls-later on a row), with one
     // fold to open them in place and fold them again (_lists.html show_more; Brett's pick AU5, Nov 25). A search looks
     // through every row; the cap counts in the view that's on (Usage: the newest 20 of each kind).
@@ -4233,7 +4232,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     root.querySelectorAll('[data-ls-view]').forEach(b => {
       b.setAttribute('aria-pressed', !q && b.dataset.lsView === st.view ? 'true' : 'false');
       const n = b.querySelector('[data-ls-view-n]');
-      if (n) n.textContent = rows.filter(r => inView(r, b.dataset.lsView) && passes(fOf(r))).length;
+      if (n) n.textContent = rows.filter(r => inView(r, b.dataset.lsView) && passes(fOf(r)) && (st.fin || !r.hasAttribute('data-ls-finished'))).length;  // (finished rows count once they show)
     });
     root.querySelectorAll('[data-ls-group]').forEach(chip => {
       const g = chip.dataset.lsGroup, v = chip.dataset.lsValue, pressed = (sel[g] || []).includes(v);
@@ -4274,6 +4273,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       moreOn.textContent = n ? '(' + n + ' on)' : '';
     }
     const fc = root.querySelector('[data-ls-fold-count]'); if (fc) { fc.textContent = picked.length; fc.hidden = !picked.length; }
+    if (root.hasAttribute('data-ls-table')) { table(root, rows, q); save(root); return; }  // (a table keeps the order it was drawn in)
     // Sort, with group headings when sorted by level
     const box = root.querySelector('[data-ls-rows]'), sort = st.sort || root.dataset.defaultSort || 'level';
     root.dispatchEvent(new CustomEvent('list:before-sort', { bubbles: true, detail: { rows } }));
