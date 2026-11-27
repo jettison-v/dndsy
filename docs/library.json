@@ -232,11 +232,11 @@
  },
  {
   "title": "Built vs. planned",
-  "kind": "plan",
-  "status": "Your picks",
-  "state": "waiting",
+  "kind": "earlier",
+  "status": "Superseded",
+  "state": "earlier",
   "date": "Nov 20",
-  "what": "Roadmap item 38: every planned piece of Found, Fixed, Tried and the work flow (rules R1–R18, T1–T8, its screens, the build plans, every picked mockup) read against what askdnd does today; 28 differences for your pick, the rest for reference.",
+  "what": "Roadmap item 38's Nov 20 comparison of the feedback tools as planned and as built; superseded as they kept changing. The comparison is now item 10's last step, once its slices are done.",
   "line": "Every planned piece of the feedback tools checked against what's built",
   "source": "docs/artifacts/built-vs-planned.html",
   "link": "https://claude.ai/artifact/JkprmFcMtkR1XzvmFa2EJF"
@@ -2198,5 +2198,16 @@
   "line": "Spacing and sections inside form windows",
   "source": "docs/mockups/form-windows/index.html",
   "link": "https://claude.ai/artifact/L54rwdn8cwJNBZrWnDQQfy"
+ },
+ {
+  "title": "Tables and Tabs",
+  "kind": "design",
+  "status": "Waiting on you",
+  "state": "waiting",
+  "date": "Nov 27",
+  "what": "Getting around, issues 174 and 175: finished items and search on every Backstage table, three ways (a Show finished box, chips, or folded at the end), what the search looks at, and Battle, Sheet and Plan's tabs in blue or red. Three picks.",
+  "line": "Show finished and search on every table; Battle's tabs",
+  "source": "docs/mockups/tables-and-tabs/index.html",
+  "link": "https://claude.ai/artifact/ERyc4h4Ps3Yg552XwxUY6T"
  }
 ]

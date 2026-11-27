@@ -13,9 +13,9 @@
 
   {# To sort · Issues · Ideas (The Work Pages, Nov 20): an issue's states are views of Issues, not tabs of their own #}
   {% set issues_on = tab in ("open", "ready", "closed") %}
-  <nav class="sub-tabs" aria-label="Feedback">
-    <a href="?tab=approve" class="{{ 'on' if tab == 'approve' }}" data-tab="approve">To sort{{ count_pill(counts["approve"]) }}</a>
-    <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues">Issues{{ count_pill(counts["open"]) }}</a>
+  <nav class="tabbar" aria-label="Feedback">
+    <a href="?tab=approve" class="{{ 'on' if tab == 'approve' }}" data-tab="approve"{% if tab == 'approve' %} aria-current="page"{% endif %}>To sort{{ count_pill(counts["approve"]) }}</a>
+    <a href="?tab=open" class="{{ 'on' if issues_on }}" data-tab="issues"{% if issues_on %} aria-current="page"{% endif %}>Issues{{ count_pill(counts["open"]) }}</a>
   </nav>
   {% set g = grouped %}
   {% macro here_with(tab_=tab, chip_=chip, area_=area, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab_ }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area_ %}&amp;area={{ area_ }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}

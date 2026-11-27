@@ -1,0 +1,290 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tables and Tabs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81;
+  --red: #f08a8a; --red-btn: #d64545; --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+.quote { border-left: 3px solid var(--red-btn); padding: 4px 0 4px 12px; color: var(--text); font-style: italic; max-width: 92ch; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-3); color: var(--strong); font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary, .btn.go { background: var(--red-btn); border-color: var(--red-btn); }
+.checks { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.checks li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: grid; gap: 2px; font-size: .9rem; }
+.checks li b { font-size: .92rem; }
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.checks li .note { font-size: .86rem; }
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .btn { min-height: 34px; font-size: .9rem; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 1100px) { .trio { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .duo { grid-template-columns: minmax(0, 1fr); } .row4 { grid-template-columns: 1fr 1fr; } .stage { height: 560px; } }
+
+/* a page drawn at its real size (askdnd's own: 14px text) */
+.scene { position: relative; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--bg); padding: 20px 22px; overflow-x: auto; }
+.pg { min-width: 760px; font-size: 14px; display: grid; gap: 10px; }
+.tbx { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.tbx-head { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tbx-head h4 { margin: 0; font: 600 15px/1.2 var(--sans); color: var(--strong); display: flex; gap: 8px; align-items: center; }
+.cnt { background: var(--surface-3); color: var(--muted); border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 600; }
+.ctl { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.srch { width: 220px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--faint); padding: 5px 10px 5px 28px; position: relative; font-size: 13px; }
+.srch::before { content: "⌕"; position: absolute; left: 9px; top: 4px; color: var(--muted); }
+.srch.typed { color: var(--text); }
+.ck { display: inline-flex; gap: 7px; align-items: center; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.ck i { width: 15px; height: 15px; border: 1px solid var(--line-strong); border-radius: 4px; display: inline-grid; place-items: center; font-style: normal; font-size: 11px; color: #fff; }
+.ck i.on { background: var(--blue); border-color: var(--blue); }
+.chips { display: inline-flex; gap: 6px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; color: var(--muted); font-size: 13px; }
+.chip.on { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; color: var(--muted); font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+tr.grp td { color: var(--amber); font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 12px 14px 6px; border-bottom: 0; }
+tr.done td { color: var(--muted); }
+tr.done td b { color: var(--muted); font-weight: 500; }
+tr.fold td { color: var(--muted); padding: 10px 14px; }
+tr.fold td b { color: var(--text); }
+.st { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.st.now { background: var(--amber-soft); color: var(--amber); }
+.st.ok { background: var(--blue-soft); color: var(--blue); }
+.st.dn { background: var(--green-soft); color: var(--green); }
+.hl { background: rgba(232,179,75,.28); color: var(--strong); border-radius: 3px; padding: 0 1px; }
+.foot { color: var(--muted); font-size: 12.5px; padding: 8px 14px; }
+.opt-h { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-top: 6px; }
+.opt-h .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+/* a character's head, at real size */
+.chead { min-width: 760px; display: flex; gap: 14px; align-items: center; font-size: 14px; }
+.av { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg,#6b5a45,#3a3128); flex: none; }
+.cn { display: grid; gap: 2px; }
+.cn h4 { margin: 0; font: 700 22px/1.1 var(--sans); color: var(--strong); display: flex; gap: 10px; align-items: center; }
+.cn .note { font-size: 13px; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 9px; }
+.seg span { padding: 4px 12px; border-radius: 7px; color: var(--muted); font-size: 13px; font-weight: 500; }
+.seg span.blue { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.seg span.red { background: var(--red-btn); color: #fff; font-weight: 600; }
+.seg.big span { padding: 7px 16px; font-size: 14px; }
+.chead .modes { margin-left: auto; }
+.btnrow { display: flex; gap: 8px; align-items: center; margin-left: 16px; }
+.rbtn { border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 5px 13px; font-weight: 600; font-size: 13px; }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="lbl">Getting around · issues 174 and 175</span>
+    <h1>Tables and tabs: finished items, search, and Battle's tabs</h1>
+    <p class="meta">Two picks from Getting around's batch, the area that keeps every page built from the same pieces. <b>First, finished items and search on every table</b>: Backstage's tables (the Roadmap, Development, Feedback, Documents, History, Usage's calls, Items and the rest) are all built from one piece, so whatever you pick here is built once and every table has it. <b>Second, Battle, Sheet and Plan</b>, the three tabs at the top right of a character's page, which are red while every other "you're here" control in askdnd is blue.</p>
+    <p class="quote">"a filter checkbox to show complete and … a search feature on these tables, we should mock those up" and "You need to mock this up, it is not intuitive" (you, on the Roadmap's item 36)</p>
+  </header>
+
+  <section aria-labelledby="h-t" style="display:grid;gap:14px">
+    <h2 id="h-t">1 · Finished items and search, on every table</h2>
+    <p class="meta">Today some tables show everything, finished and open mixed (Development's Board, Feedback), some hide finished items behind a link at the foot (the Roadmap's History), and Documents has its own three chips. Only History and Documents can be searched. Drawn below on the Roadmap, with made-up items; every table would look the same. A table with nothing that finishes (Usage's calls) gets only the search box.</p>
+
+    <div class="opt-h"><h3>A · Search and a Show finished box in the table's title row</h3><span class="mine">my pick</span></div>
+    <p class="note">Finished items are hidden until you tick <b>Show finished</b>; then they come back at the end, under a <b>Finished</b> label, faded. The search box filters as you type. Both sit at the right of the table's own title, so they belong to that table and nothing else on the page. The tick is remembered on that table.</p>
+    <div class="scene"><div class="pg">
+      <div class="tbx">
+        <div class="tbx-head"><h4>On the Roadmap <span class="cnt">5</span></h4><span class="ctl"><span class="srch">Search the Roadmap</span><span class="ck"><i></i>Show finished <span class="cnt">12</span></span></span></div>
+        <table><thead><tr><th style="width:56px">No.</th><th>Item</th><th style="width:130px">Stage</th><th style="width:110px">Updated</th></tr></thead><tbody>
+          <tr class="grp"><td colspan="4">Now · 2</td></tr>
+          <tr><td>R10</td><td><b>The new flow: building it in slices</b></td><td><span class="st now">Building</span></td><td class="note">Nov 26</td></tr>
+          <tr><td>R48</td><td><b>The table: what's left</b></td><td><span class="st ok">Scope agreed</span></td><td class="note">Nov 25</td></tr>
+          <tr class="grp"><td colspan="4">Next · 3</td></tr>
+          <tr><td>R3</td><td><b>String Audit: shorter words</b></td><td><span class="st now">Scoping</span></td><td class="note">Nov 25</td></tr>
+          <tr><td>R19</td><td><b>The next bridge update</b></td><td><span class="st ok">Scope agreed</span></td><td class="note">Nov 25</td></tr>
+          <tr><td>R20</td><td><b>Two-class characters, end to end</b></td><td><span class="st now">Idea</span></td><td class="note">Nov 21</td></tr>
+        </tbody></table>
+      </div>
+      <p class="note" style="margin-top:6px">Ticked, and searching "review":</p>
+      <div class="tbx">
+        <div class="tbx-head"><h4>On the Roadmap <span class="cnt">2 of 17</span></h4><span class="ctl"><span class="srch typed">review</span><span class="ck"><i class="on">✓</i>Show finished <span class="cnt">12</span></span></span></div>
+        <table><thead><tr><th style="width:56px">No.</th><th>Item</th><th style="width:130px">Stage</th><th style="width:110px">Updated</th></tr></thead><tbody>
+          <tr class="grp"><td colspan="4">Next · 1</td></tr>
+          <tr><td>R22</td><td><b>The outside <span class="hl">review</span>'s other findings</b></td><td><span class="st now">Idea</span></td><td class="note">Nov 25</td></tr>
+          <tr class="grp"><td colspan="4">Finished · 1</td></tr>
+          <tr class="done"><td>R46</td><td><b>A catalog of the <span class="hl">review</span>s we run</b></td><td><span class="st dn">Shipped</span></td><td class="note">Nov 27</td></tr>
+        </tbody></table>
+      </div>
+    </div></div>
+
+    <div class="opt-h"><h3>B · Chips: Open · Finished · All, beside the search box</h3></div>
+    <p class="note">Three chips in the title row choose which rows show; Open is on when you arrive. As History's chips and Documents' work today, so one way would be the chips everywhere. You can see only the finished ones, at the cost of three controls where A has one.</p>
+    <div class="scene"><div class="pg">
+      <div class="tbx">
+        <div class="tbx-head"><h4>On the Roadmap <span class="cnt">5</span></h4><span class="ctl"><span class="chips"><span class="chip on">Open</span><span class="chip">Finished · 12</span><span class="chip">All</span></span><span class="srch">Search the Roadmap</span></span></div>
+        <table><thead><tr><th style="width:56px">No.</th><th>Item</th><th style="width:130px">Stage</th><th style="width:110px">Updated</th></tr></thead><tbody>
+          <tr class="grp"><td colspan="4">Now · 2</td></tr>
+          <tr><td>R10</td><td><b>The new flow: building it in slices</b></td><td><span class="st now">Building</span></td><td class="note">Nov 26</td></tr>
+          <tr><td>R48</td><td><b>The table: what's left</b></td><td><span class="st ok">Scope agreed</span></td><td class="note">Nov 25</td></tr>
+          <tr class="grp"><td colspan="4">Next · 3</td></tr>
+          <tr><td>R3</td><td><b>String Audit: shorter words</b></td><td><span class="st now">Scoping</span></td><td class="note">Nov 25</td></tr>
+        </tbody></table>
+      </div>
+    </div></div>
+
+    <div class="opt-h"><h3>C · Finished items folded at the table's end</h3></div>
+    <p class="note">No control for it: the last row of the table says <b>12 finished ▸</b> and opens them in place, as Show older does on History. The fewest controls; but it's at the bottom of a long table, which is why the Roadmap's History link was too hidden before.</p>
+    <div class="scene"><div class="pg">
+      <div class="tbx">
+        <div class="tbx-head"><h4>On the Roadmap <span class="cnt">5</span></h4><span class="ctl"><span class="srch">Search the Roadmap</span></span></div>
+        <table><thead><tr><th style="width:56px">No.</th><th>Item</th><th style="width:130px">Stage</th><th style="width:110px">Updated</th></tr></thead><tbody>
+          <tr class="grp"><td colspan="4">Next · 3</td></tr>
+          <tr><td>R3</td><td><b>String Audit: shorter words</b></td><td><span class="st now">Scoping</span></td><td class="note">Nov 25</td></tr>
+          <tr><td>R20</td><td><b>Two-class characters, end to end</b></td><td><span class="st now">Idea</span></td><td class="note">Nov 21</td></tr>
+          <tr class="fold"><td colspan="4"><b>12 finished ▸</b> shipped or not doing</td></tr>
+        </tbody></table>
+      </div>
+    </div></div>
+
+    <h3>And the search: does it look in finished items you've hidden?</h3>
+    <p class="note">With A or C, finished items are hidden while you search. Either the search looks only at what's shown, or it finds finished ones too and shows them marked Finished (so a search never misses something because it's done).</p>
+  </section>
+
+  <section aria-labelledby="h-tb" style="display:grid;gap:14px">
+    <h2 id="h-tb">2 · Battle, Sheet and Plan</h2>
+    <p class="meta">A character's three pages are a set of tabs at the top right. They're filled red when chosen, while the character switch beside the name (Trah · Wolf), Normal form, Table / DM only, Normal / Advantage and every other "this one is chosen" control in askdnd is a blue outline. Red is also askdnd's main action (Roll, Save, Publish), so the chosen tab reads like a button. The outside review (D4) suggested one look for all of them.</p>
+
+    <div class="opt-h"><h3>A · Blue, like every other chosen control</h3><span class="mine">my pick</span></div>
+    <p class="note">The same blue outline as the character switch beside it. Red stays for the main action (Roll, Save, Publish), so wherever red shows, it's something you press.</p>
+    <div class="scene"><div class="chead">
+      <span class="av"></span><div class="cn"><h4>Trah <span class="seg"><span class="blue">Trah</span><span>Wolf</span></span></h4><span class="note">Gnome · Wizard 7 / Fighter 1 · level 8</span></div>
+      <span class="modes seg big"><span class="blue">Battle</span><span>Sheet</span><span>Plan</span></span><span class="btnrow"><span class="rbtn">☾ Rest</span></span>
+    </div></div>
+
+    <div class="opt-h"><h3>B · Red, as today</h3></div>
+    <p class="note">Red marks the character's own page apart from the choices within it. Drawn as it is today.</p>
+    <div class="scene"><div class="chead">
+      <span class="av"></span><div class="cn"><h4>Trah <span class="seg"><span class="blue">Trah</span><span>Wolf</span></span></h4><span class="note">Gnome · Wizard 7 / Fighter 1 · level 8</span></div>
+      <span class="modes seg big"><span class="red">Battle</span><span>Sheet</span><span>Plan</span></span><span class="btnrow"><span class="rbtn">☾ Rest</span></span>
+    </div></div>
+  </section>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>F1 · Finished items on a table</legend><label class="opt"><input type="radio" name="f1" value="box"><span>A · A Show finished box beside the search <span class="mine">my pick</span></span><small>Hidden until ticked, then at the end under Finished; remembered per table.</small></label><label class="opt"><input type="radio" name="f1" value="chips"><span>B · Chips: Open · Finished · All</span><small>As History and Documents today; three controls.</small></label><label class="opt"><input type="radio" name="f1" value="fold"><span>C · Folded at the table's end</span><small>"12 finished ▸" as the last row; no control, but at the bottom.</small></label></fieldset>
+    <fieldset><legend>F2 · What the search looks at</legend><label class="opt"><input type="radio" name="f2" value="all"><span>A · Everything, finished too, marked Finished <span class="mine">my pick</span></span><small>A search never misses something because it's done.</small></label><label class="opt"><input type="radio" name="f2" value="shown"><span>B · Only the rows shown</span><small>Tick Show finished first to search those too.</small></label></fieldset>
+    <fieldset><legend>T1 · Battle, Sheet and Plan when chosen</legend><label class="opt"><input type="radio" name="t1" value="blue"><span>A · Blue, like every other chosen control <span class="mine">my pick</span></span><small>Red stays for the main action.</small></label><label class="opt"><input type="radio" name="t1" value="red"><span>B · Red, as today</span><small>The character's page apart from choices within it.</small></label></fieldset>
+    <label for="notes"><b>Anything else</b> <span class="note">(a table you'd want differently)</span><textarea id="notes" name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+<script>
+(() => {
+  // Your pick saves where you are: inside askdnd (Documents, or For you's item window), askdnd keeps it as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way it's shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["f1", "f2", "t1"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my pick answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Backstage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved on claude.ai " + when(at) + " · it reaches askdnd at Claude's next check-in, within about 10 minutes", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+(async () => {
+  // Comments made in askdnd, shown on claude.ai too (item 39, 6 of 6): Claude hands them to this page's own store
+  // (collection "askdnd", doc "comments") when it checks in; each is pinned by the words it was made at.
+  let db = null;
+  try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) return;
+  let d = null;
+  try { d = await db.collection("askdnd").doc("comments").get(); } catch (e) { return; }
+  const list = d && d.exists ? (d.data().comments || []).filter(c => c && c.words) : [];
+  if (!list.length) return;
+  const box = document.createElement("section");
+  box.setAttribute("aria-label", "Comments made in askdnd");
+  box.style.cssText = "display:grid;gap:8px;border:1px solid var(--line,#34383e);border-radius:12px;padding:12px 16px;background:var(--surface,#1f2226)";
+  const h = document.createElement("h2");
+  h.textContent = "Comments made in askdnd";
+  box.append(h);
+  const pin = n => { const b = document.createElement("span"); b.textContent = String(n);
+    b.style.cssText = "display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#f08a8a;color:#15171a;font:700 .7rem/1 system-ui;margin-right:6px;vertical-align:1px"; return b; };
+  for (const c of list) {
+    const row = document.createElement("p");
+    row.style.cssText = "margin:0;font-size:.9rem";
+    row.append(pin(c.n), document.createTextNode(c.words));
+    if (c.near) { const w = document.createElement("span"); w.textContent = ` · near “${c.near}”`; w.style.color = "var(--muted,#a29d93)"; row.append(w); }
+    box.append(row);
+    const want = String(c.near || "").trim().slice(0, 60);
+    if (!want) continue;
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const el = t.parentElement;
+      if (!el || box.contains(t) || el.closest("script, style, template, title, noscript")) continue;
+      if (t.nodeValue && t.nodeValue.includes(want) && el.getClientRects().length) { el.prepend(pin(c.n)); break; }
+    }
+  }
+  const form = document.querySelector("form.decide");
+  (form || document.body.lastElementChild).after(box);
+})();
+</script>

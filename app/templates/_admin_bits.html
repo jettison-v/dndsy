@@ -8,6 +8,12 @@
 <span class="state-word sw-{{ tone }}"{{ attrs | safe }}>{{ word }}</span>
 {%- endmacro %}
 
+{# A plan's lane (Ship, Look, Careful; Brett's picks Nov 19), the same tag on Development, the Board and the design page:
+   `key` the lane ("" or "none" for no lane yet), `said` its word (issue 149: it was built by hand in four places) #}
+{% macro lane_tag(key, said) -%}
+<span class="state-word lane-tag" data-lane-tag="{{ key or 'none' }}">{{ said }}</span>
+{%- endmacro %}
+
 {# An issue's kind (Nov 20): a fix (red, it's broken) or an improvement (violet, make it better), the same everywhere #}
 {% macro kind_word(kind) -%}
 {{ state_word("Improvement" if kind == "improvement" else "Fix", "claude" if kind == "improvement" else "failed", ' data-kind-word="' ~ (kind or "fix") ~ '"') }}
