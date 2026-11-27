@@ -3443,7 +3443,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     form.querySelectorAll('[data-place]').forEach(a => a.addEventListener('click', e => {
       e.preventDefault();
       tnPlace = tnStage.dataset.stage = a.dataset.place;
-      form.querySelectorAll('[data-place]').forEach(x => x.classList.toggle('on', x === a));
+      form.querySelectorAll('[data-place]').forEach(x => { x.classList.toggle('on', x === a); if (x === a) x.setAttribute('aria-current', 'true'); else x.removeAttribute('aria-current'); });
       form.querySelectorAll('[data-place-panel]').forEach(p => { p.hidden = p.dataset.placePanel !== tnPlace; });
       read.innerHTML = '<span>Press Throw to time it.</span>';
     }));
@@ -5836,7 +5836,7 @@ document.addEventListener('click', e => {
   }
   function gather() {
     const pill = document.getElementById('live-pill'), body = document.body;
-    const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar .on, main .sub-tabs .on, main .tabs .on');
+    const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar [aria-current], main .tabbar .on, main .tabs .on');
     const panel = [...document.querySelectorAll('.peek:not([hidden]) #peek-title')].find(t => !t.closest('[data-private]'));  // (a player's own note's title stays theirs)
     const zoom = window.visualViewport ? visualViewport.scale : 1, outer = outerWidth && innerWidth ? outerWidth / innerWidth : 1;
     const now = new Date();

@@ -77,7 +77,7 @@
     <p class="note">Only what's waited more than 15 minutes while a Claude session listens. With none listening, it waits for the next one and nothing turns amber.</p>
   </section>{% endif %}
 
-  <nav class="sub-tabs" aria-label="Development">
+  <nav class="tabbar" aria-label="Development">
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "queue" %}{{ count_pill(q.above) }}{% endif %}</a>{% endfor %}
   </nav>
 
