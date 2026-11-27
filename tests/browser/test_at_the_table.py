@@ -75,6 +75,10 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     player = people("player")
     page = battle(player, server)
     player.live()
+    # (the bridge answers the page's ping, as the extension does: unanswered, the page decides after 1.5 s that it isn't
+    # in this browser and says so, which on a slow machine landed mid-test; issue 176)
+    page.evaluate("window.postMessage({ askdndBridge: 'hello', version: 'test' }, location.origin)")
+    page.wait_for_function("document.body.dataset.bridgeVersion === 'test'")
     note = page.locator(f"{WINDOW} [data-log-note]")
 
     def roll_with(**log):
