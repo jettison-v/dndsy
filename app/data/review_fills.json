@@ -68,6 +68,13 @@
       "Ask in For you (feedback.py ask review <run>, then review <run> wait <question>) only a real choice: which reading the table follows.",
       "Each finding an issue under the feature; a small Ship-lane fix may go in the run; the rest in its area's batch."
     ],
+    "the_day": [
+      "Skip it (review <run> skip) when no pull request merged since the last run (feedback.py pulls --all).",
+      "List the pull requests merged since the last run, and group them into two or three sets by the code they touch.",
+      "Give each set to a fresh reviewer (the Agent tool, general-purpose), with only the pull request numbers and where the code is: read each diff (gh pr diff <N>) and the code around it, and report real bugs only (file:line, what goes wrong and when, the fix, important or nit); never your own reasoning about the change.",
+      "Check each finding against the code; each real one an issue under its Feature (feedback.py issue new … --source review), fixed through the usual work flow; a wrong one said in the run's result.",
+      "The result's numbers: found (real findings), fixed (fixed tonight), open (filed for later)."
+    ],
     "the_week": [
       "Skip it (review <run> skip) when no pull request merged since the last run (feedback.py pulls --all).",
       "Read the week's merged pull requests as one: fresh reviewers on the design system and the code (the code review on the week's combined diff).",

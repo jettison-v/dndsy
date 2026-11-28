@@ -3026,13 +3026,13 @@ def set_review(db: Session, actor: str, key: str, cadence: str | None = None, sc
         db.add(row)
     if cadence is not None:
         if cadence not in reviews.CADENCES:
-            raise RuleError("bad", "Weekly, monthly, each phase, on demand, or not now.")
+            raise RuleError("bad", "Nightly, weekly, monthly, each phase, on demand, or not now.")
         row.cadence = cadence
-        if cadence not in ("weekly", "monthly"):
+        if cadence not in reviews.SLOTTED:
             row.scheduled = False  # (no slots, no schedule: switching back doesn't turn it on by itself)
     if scheduled is not None:
-        if scheduled and reviews.cadence(db, key) not in ("weekly", "monthly"):
-            raise RuleError("bad", "Only a weekly or monthly review has a schedule to turn on.")
+        if scheduled and reviews.cadence(db, key) not in reviews.SLOTTED:
+            raise RuleError("bad", "Only a nightly, weekly or monthly review has a schedule to turn on.")
         row.scheduled = scheduled
     db.flush()
     _event(db, actor, "review_set", "reviewset", row.id, review=key, cadence=row.cadence, scheduled=row.scheduled)

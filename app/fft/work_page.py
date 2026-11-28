@@ -672,7 +672,7 @@ def review_rows(db: Session) -> list[dict]:
             nxt = reviews.slot_after(how, rules.now()) if setting is not None and setting.scheduled else None
             if nxt:
                 next_words = _when_words(nxt)
-            elif how in ("weekly", "monthly"):
+            elif how in reviews.SLOTTED:
                 next_words = "After its first run"
             else:
                 next_words = {"phase": "When a phase ends", "on_demand": "When you run it", "off": "Not now"}[how]
