@@ -69,7 +69,9 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 REPO = "jettison-v/dndsy"  # (the pull requests this repository's fixes are in)
@@ -169,6 +171,23 @@ def _checked_at() -> float:
         return 0.0
 
 
+QUIET_FROM, QUIET_TO, QUIET_WAKE = 23, 7, 60  # (Brett, Nov 28: 11 PM to 7 AM the table's time, claude.ai once an hour)
+TABLE_TIME = ZoneInfo("America/Los_Angeles")  # (the table's clock, as app/config.py TABLE_TIME)
+
+
+def _next_look(last: float, wake: int) -> float:
+    """When claude.ai is next due a look: `wake` minutes after the last, but in the quiet hours (11 PM to 7 AM, the
+    table's time) once an hour, and never past 7 AM, so the morning's first look comes on time."""
+    due = last + wake * 60
+    t = datetime.fromtimestamp(due, TABLE_TIME)
+    if t.hour >= QUIET_FROM or t.hour < QUIET_TO:
+        end = t.replace(hour=QUIET_TO, minute=0, second=0, microsecond=0)
+        if t.hour >= QUIET_FROM:
+            end += timedelta(days=1)
+        due = max(due, min(last + max(wake, QUIET_WAKE) * 60, end.timestamp()))
+    return due
+
+
 def wait(a) -> None:
     """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
@@ -176,8 +195,8 @@ def wait(a) -> None:
     # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks, every --wake minutes counted from its last look, not from
     # this wait: issue 132, Nov 25, Brett's notes came every few minutes, each ending a wait, and his claude.ai comment
     # waited an afternoon)
-    check = time.monotonic() + max(0.0, _checked_at() + a.wake * 60 - time.time()) if a.wake else None
-    due = f"claude.ai is due a look ({a.wake} minutes since the last): feedback.py sync list, then listen again."
+    check = time.monotonic() + max(0.0, _next_look(_checked_at(), a.wake) - time.time()) if a.wake else None
+    due = "claude.ai is due a look: feedback.py sync list, then listen again (a quiet look, a few words to Brett)."
     while time.monotonic() < until:
         if check is not None and time.monotonic() >= check:
             print(due)
@@ -191,7 +210,7 @@ def wait(a) -> None:
             print(f"{len(got['items'])} new in askdnd (feedback.py inbox reads and marks them):")
             for e in got["items"][:20]:
                 print(_event(e))
-            if check is not None and time.time() >= _checked_at() + a.wake * 60:
+            if check is not None and time.time() >= _next_look(_checked_at(), a.wake):
                 print(due)
             return
         else:
@@ -906,7 +925,7 @@ def main() -> None:
     s = sub.add_parser("wait")
     s.add_argument("--every", type=int, default=30)
     s.add_argument("--hours", type=float, default=8)
-    s.add_argument("--wake", type=int, default=10, help="end after this many minutes so Claude checks claude.ai (0: never)")
+    s.add_argument("--wake", type=int, default=10, help="end after this many minutes so Claude checks claude.ai (0: never); 11 PM to 7 AM, the table's time, once an hour")
     s.add_argument("--listener", default="main")
     sub.add_parser("next")
     s = sub.add_parser("claim", help="ask askdnd for the top Ready piece (one at a time)")
