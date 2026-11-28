@@ -4547,8 +4547,10 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .act-more { position: relative; }
 .act-more > summary { list-style: none; cursor: pointer; display: inline-grid; place-items: center; min-width: var(--control-h-sm); min-height: var(--control-h-sm); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); }
 .act-more > summary::-webkit-details-marker { display: none; }
-.act-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; min-width: 180px; display: grid; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); padding: var(--sp-1); }
+.act-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; min-width: 180px; width: max-content; max-width: min(320px, calc(100vw - 2 * var(--sp-4))); display: grid; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); padding: var(--sp-1); }
 .act-menu.end, .title-row .act-menu { left: auto; right: 0; }  /* (a page's own ⋯ sits at its right end: it opens toward the page; issue 59) */
+/* (a menu is as wide as its longest item, so a one-line item stays on one line: Refresh all from D&D Beyond wrapped on
+   every iPhone and the iPad, issue 164; capped to fit a phone, where a long item wraps rather than leave the screen) */
 .act-menu.floats { position: fixed; z-index: 60; right: auto; }
 .table-scroll details.act-more[open] > .act-menu:not(.floats) { visibility: hidden; }  /* (until it's placed: never a frame in the wrong place) */  /* (a menu in a table's row: over the page, placed by app.js "A ⋯ or a lane's menu in a table's row"; issue 47) */  /* (from a button at a row's right end: it opens toward the page, not off it; Deploys, Nov 19) */
 .act-menu button, .act-menu > a { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; text-decoration: none; }
