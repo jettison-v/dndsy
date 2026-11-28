@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.fft import host, rules
+from app.fft import host, quiet, rules
 from app.fft.models import (
     FftChat,
     FftCheck,
@@ -34,8 +34,9 @@ from app.fft.models import (
 SHOWN = timedelta(days=14)  # (the list's reach: older handoffs are still kept, in the rows they're read from)
 DONE_TODAY = timedelta(hours=24)  # (done in the last day: under the fold; older done ones only through search)
 LOOKED = rules.CLAUDE_AI_LOOKED  # (a ToolSetting: when Claude last looked at claude.ai, from its sync in and out)
-# How long a step usually takes, past which it's missed (the mockup's "Missed")
-LATE = {"claude": timedelta(minutes=30), "claude.ai": timedelta(minutes=15), "askdnd": timedelta(minutes=10), "live": timedelta(minutes=30)}
+# How long a step usually takes, past which it's missed (the mockup's "Missed"); claude.ai's is the grace after its look was
+# due (app/fft/quiet.py)
+LATE = {"claude": timedelta(minutes=30), "claude.ai": timedelta(minutes=5), "askdnd": timedelta(minutes=10), "live": timedelta(minutes=30)}
 AREAS = [("all", "All"), ("feedback", "Feedback"), ("testing", "Testing"), ("roadmap", "Roadmap"), ("code", "Code")]
 ORDER = {"missed": 0, "you": 1, "claude": 2, "askdnd": 3, "done": 4}
 
@@ -85,9 +86,12 @@ def rows(db: Session, now: datetime | None = None) -> list[dict]:
     # (claude.ai can't wake Claude: Claude looks. Its clock counts from the last look or from when listening began
     # again, whichever is later: issue 178, a night without listening made it Missed the moment listening began)
     clock = max((t for t in (_setting_at(db, LOOKED), _setting_at(db, rules.LISTENING_SINCE)) if t), default=None)
-    if listening and (clock is None or now - clock > LATE["claude.ai"]):
+    # (its usual time is the listener's: every 10 minutes, once an hour from 11 PM to 7 AM, app/fft/quiet.py; Brett,
+    # Nov 28), and it's missed 5 minutes after that
+    late = quiet.next_look(clock) + LATE["claude.ai"] if clock else now - timedelta(seconds=1)
+    if listening and now > late:
         out.append(_row("look", "roadmap", clock or now, "Claude's look at claude.ai for your comments and picks",
-                        [("every 10 minutes while listening", False)], "claude", now, clock + LATE["claude.ai"] if clock else now - timedelta(seconds=1),
+                        [("every 10 minutes while listening, once an hour from 11 PM to 7 AM", False)], "claude", now, late,
                         wake="look"))
     for r in out:
         if r["whose"] and r["late"] and now > r["late"] and (r["whose"] != "claude" or listening):

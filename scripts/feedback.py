@@ -69,9 +69,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 REPO = "jettison-v/dndsy"  # (the pull requests this repository's fixes are in)
@@ -171,21 +170,13 @@ def _checked_at() -> float:
         return 0.0
 
 
-QUIET_FROM, QUIET_TO, QUIET_WAKE = 23, 7, 60  # (Brett, Nov 28: 11 PM to 7 AM the table's time, claude.ai once an hour)
-TABLE_TIME = ZoneInfo("America/Los_Angeles")  # (the table's clock, as app/config.py TABLE_TIME)
-
-
 def _next_look(last: float, wake: int) -> float:
-    """When claude.ai is next due a look: `wake` minutes after the last, but in the quiet hours (11 PM to 7 AM, the
-    table's time) once an hour, and never past 7 AM, so the morning's first look comes on time."""
-    due = last + wake * 60
-    t = datetime.fromtimestamp(due, TABLE_TIME)
-    if t.hour >= QUIET_FROM or t.hour < QUIET_TO:
-        end = t.replace(hour=QUIET_TO, minute=0, second=0, microsecond=0)
-        if t.hour >= QUIET_FROM:
-            end += timedelta(days=1)
-        due = max(due, min(last + max(wake, QUIET_WAKE) * 60, end.timestamp()))
-    return due
+    """When claude.ai is next due a look: `wake` minutes after the last, once an hour in the quiet hours (11 PM to 7 AM,
+    the table's time; app/fft/quiet.py, the one rule Handoffs uses too)."""
+    sys.path.insert(0, str(ROOT))
+    from app.fft import quiet
+
+    return quiet.next_look(datetime.fromtimestamp(last, UTC), timedelta(minutes=wake)).timestamp()
 
 
 def wait(a) -> None:

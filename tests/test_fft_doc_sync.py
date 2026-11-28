@@ -117,8 +117,10 @@ def _script(monkeypatch, tmp_path, looked_ago: float | None):
     fb = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fb)
     monkeypatch.setattr(fb, "CHECKED", tmp_path / ".claude-ai-checked")
-    monkeypatch.setattr(fb, "QUIET_FROM", 24)  # (no quiet hours, whatever the clock says: they have their own test)
-    monkeypatch.setattr(fb, "QUIET_TO", 0)
+    from app.fft import quiet
+
+    monkeypatch.setattr(quiet, "FROM", 24)  # (no quiet hours, whatever the clock says: they have their own test)
+    monkeypatch.setattr(quiet, "TO", 0)
     if looked_ago is not None:
         fb.CHECKED.touch()
         os.utime(fb.CHECKED, (time.time() - looked_ago,) * 2)
@@ -169,25 +171,28 @@ def test_busy_askdnd_never_puts_off_the_look_at_claude_ai(monkeypatch, capsys, t
 
 def test_the_quiet_hours_look_at_claude_ai_once_an_hour():
     """Brett, Nov 28: overnight, a look every 10 minutes found nothing and cost his plan. From 11 PM to 7 AM (the table's
-    time) claude.ai is looked at once an hour, the first look of the morning comes at 7, and the day keeps --wake."""
+    time) claude.ai is looked at once an hour, the first look of the morning comes at 7, and the day keeps --wake. The
+    listener asks the same rule Handoffs does (app/fft/quiet.py)."""
     import importlib.util
     from datetime import datetime
     from pathlib import Path
+
+    from app.config import TABLE_TIME
 
     spec = importlib.util.spec_from_file_location("fb_quiet", Path(__file__).resolve().parent.parent / "scripts" / "feedback.py")
     fb = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fb)
 
     def at(h, m, day=28):
-        return datetime(2026, 11, day, h, m, tzinfo=fb.TABLE_TIME).timestamp()
+        return datetime(2026, 11, day, h, m, tzinfo=TABLE_TIME).timestamp()
 
     assert fb._next_look(at(14, 0), 10) == at(14, 10)  # (the day: every 10 minutes)
     assert fb._next_look(at(22, 40), 10) == at(22, 50)  # (still the day when it is due)
     assert fb._next_look(at(22, 50), 10) == at(23, 50)  # (due at 11 PM: the quiet hours)
-    assert fb._next_look(at(22, 55), 10) == at(23, 55)  # (due in the quiet hours: an hour after the last)
+    assert fb._next_look(at(23, 30), 10) == at(0, 30, day=29)  # (across midnight)
     assert fb._next_look(at(2, 0), 10) == at(3, 0)
     assert fb._next_look(at(6, 30), 10) == at(7, 0)  # (never past 7 AM)
-    assert fb._next_look(at(6, 55), 10) == at(7, 5)  # (and never sooner than --wake)
+    assert fb._next_look(at(6, 55), 10) == at(7, 5)  # (due after 7: the day again)
     assert fb._next_look(at(2, 0), 90) == at(3, 30)  # (a longer --wake is kept)
 
 
