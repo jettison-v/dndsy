@@ -2,8 +2,8 @@
 (app/fft/reviews.json, written once as templates; app/data/review_fills.json is what askdnd fills in), when each is next
 due, and its runs over time. Read-only: a run's state changes only in app/fft/rules.py.
 
-When a review runs (the pick "Where reviews run": A): a scheduled one at its slot (weekly, Monday 6:00; monthly, the 1st
-at 4:00, the table's time), started by the hourly task in the Claude app on Brett's MacBook (`feedback.py review due`),
+When a review runs (the pick "Where reviews run": A): a scheduled one at its slot (nightly, 23:00; weekly, Monday 6:00;
+monthly, the 1st at 4:00, the table's time), started by the hourly task in the Claude app on Brett's MacBook (`feedback.py review due`),
 which also catches up once on the latest missed slot within 7 days; each phase, when Claude ends one; on demand, from
 Run now or Run… on Development › Scheduled, within minutes while a session listens, else at that hourly task."""
 

@@ -26,7 +26,7 @@
         <tr data-run="{{ u.id }}" data-run-state="{{ u.state }}"{% if u.state == "done" %} data-found="{{ n.found }}"{% endif %}><td class="dt-title">{% if u.state == "done" %}<a class="link-plain" href="/manage/work/reviews/runs/{{ u.id }}" data-modal-url="/manage/work/reviews/runs/{{ u.id }}" data-modal-size="large">{{ run_title(u) }}</a>{% else %}{{ run_title(u) }}{% endif %}
           <span class="dt-why">{{ state_word(TONE[u.state][0], TONE[u.state][1]) }} {{ (u.ended_at or u.created_at) | ago }}{% if u.why %} · {{ u.why }}{% endif %}{% if u.how == "scheduled" %} · on its schedule{% endif %}</span></td>
           <td class="dt-wrap">{% if u.state == "done" %}{{ n.found }} found · {{ n.fixed }} fixed · {{ n.picks }} pick{{ "s" if n.picks != 1 }} · {{ n.open }} open{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-    {% else %}<p class="note">Not run yet. {{ "Its schedule starts after its first run." if x.cadence in ("Weekly", "Monthly") else "" }}</p>{% endif %}
+    {% else %}<p class="note">Not run yet. {{ "Its schedule starts after its first run." if x.slotted else "" }}</p>{% endif %}
     {% if quiet >= 3 %}<p class="note" data-review-quiet>Nothing found {{ quiet }} runs in a row: it comes up in Look back at how we work, to run less often.</p>{% endif %}
   {% endcall %}
 </article>

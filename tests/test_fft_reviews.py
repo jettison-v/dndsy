@@ -74,7 +74,7 @@ def test_a_scheduled_review_is_asked_once_for_its_latest_slot_within_seven_days(
     assert "every_number" not in reviews.due(db, late)  # (a slot older than a week is skipped)
 
 
-def test_only_a_weekly_or_monthly_review_has_a_schedule(db):
+def test_only_a_review_with_slots_has_a_schedule(db):
     with pytest.raises(rules.RuleError):
         rules.set_review(db, "claude", "dig_feature", scheduled=True)
     with pytest.raises(rules.RuleError):
@@ -426,7 +426,7 @@ def test_every_review_has_askdnds_playbook_and_next_prints_it(api, db):
     assert run["how_to"] == fills["how"]["every_number"]
 
 
-def test_go_over_the_day_is_nightly_at_eleven_and_skips_a_quiet_day():
+def test_go_over_the_day_is_nightly_at_eleven():
     """Brett, Nov 27 ("Both": a fresh review before each merge, and a nightly sweep of the day's merges)."""
     from datetime import datetime
 
