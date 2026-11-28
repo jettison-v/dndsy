@@ -672,7 +672,7 @@ def review_rows(db: Session) -> list[dict]:
             nxt = reviews.slot_after(how, rules.now()) if setting is not None and setting.scheduled else None
             if nxt:
                 next_words = _when_words(nxt)
-            elif how in ("weekly", "monthly"):
+            elif how in reviews.SLOTTED:
                 next_words = "After its first run"
             else:
                 next_words = {"phase": "When a phase ends", "on_demand": "When you run it", "off": "Not now"}[how]
@@ -683,7 +683,7 @@ def review_rows(db: Session) -> list[dict]:
             behind = asked.get(r["key"]) if now_run is live and live is not None else None
             if behind is not None:  # (another of its own runs waits after this one: said, and Stop on its panel; the review of #535)
                 says += f" · run {behind.id} waits after it"
-            rows.append({"r": r, "cadence": reviews.CADENCE_WORDS[how], "next": next_words, "last": last, "run": now_run,
+            rows.append({"r": r, "cadence": reviews.CADENCE_WORDS[how], "slotted": how in reviews.SLOTTED, "next": next_words, "last": last, "run": now_run,
                          "run_says": says, "behind": behind})
         out.append({"b": b, "rows": rows})
     return out

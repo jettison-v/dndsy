@@ -2,8 +2,8 @@
 (app/fft/reviews.json, written once as templates; app/data/review_fills.json is what askdnd fills in), when each is next
 due, and its runs over time. Read-only: a run's state changes only in app/fft/rules.py.
 
-When a review runs (the pick "Where reviews run": A): a scheduled one at its slot (weekly, Monday 6:00; monthly, the 1st
-at 4:00, the table's time), started by the hourly task in the Claude app on Brett's MacBook (`feedback.py review due`),
+When a review runs (the pick "Where reviews run": A): a scheduled one at its slot (nightly, 23:00; weekly, Monday 6:00;
+monthly, the 1st at 4:00, the table's time), started by the hourly task in the Claude app on Brett's MacBook (`feedback.py review due`),
 which also catches up once on the latest missed slot within 7 days; each phase, when Claude ends one; on demand, from
 Run now or Run… on Development › Scheduled, within minutes while a session listens, else at that hourly task."""
 
@@ -19,15 +19,16 @@ from app.fft.models import FftReview, FftReviewRun
 
 CATALOG = Path(__file__).resolve().parent / "reviews.json"
 FILLS = Path(__file__).resolve().parent.parent / "data" / "review_fills.json"
-CADENCES = ("weekly", "monthly", "phase", "on_demand", "off")
-CADENCE_WORDS = {"weekly": "Weekly", "monthly": "Monthly", "phase": "Each phase", "on_demand": "On demand", "off": "Not now"}
+CADENCES = ("nightly", "weekly", "monthly", "phase", "on_demand", "off")
+SLOTTED = ("nightly", "weekly", "monthly")  # (the cadences with a slot, so a schedule)
+CADENCE_WORDS = {"nightly": "Nightly", "weekly": "Weekly", "monthly": "Monthly", "phase": "Each phase", "on_demand": "On demand", "off": "Not now"}
 STATES = ("asked", "starting", "running", "waiting", "done", "stopped", "skipped")
 LIVE = ("starting", "running", "waiting")  # (one at a time: a run in one of these holds the others)
 ENDED = ("done", "stopped", "skipped")
 STATE_WORDS = {"asked": "Waiting its turn", "starting": "Starting", "running": "Running", "waiting": "Waiting on you",
                "done": "Done", "stopped": "Stopped", "skipped": "Skipped"}
 CATCH_UP = timedelta(days=7)  # a missed slot older than this is skipped (the pick: one catch-up, within 7 days)
-WEEKLY_AT, MONTHLY_AT = 6, 4  # the hour, the table's time
+WEEKLY_AT, MONTHLY_AT, NIGHTLY_AT = 6, 4, 23  # the hour, the table's time (nightly: after a day's work, Brett's pick Nov 27)
 
 
 @cache
@@ -74,6 +75,9 @@ def _local(t: datetime) -> datetime:
 def slot_before(how_often: str, t: datetime) -> datetime | None:
     """The latest slot at or before `t` (aware), or None for a review with no slots (each phase, on demand, not now)."""
     lt = _local(t)
+    if how_often == "nightly":
+        s = lt.replace(hour=NIGHTLY_AT, minute=0, second=0, microsecond=0)
+        return s if s <= lt else s - timedelta(days=1)
     if how_often == "weekly":
         s = (lt - timedelta(days=lt.weekday())).replace(hour=WEEKLY_AT, minute=0, second=0, microsecond=0)
         return s if s <= lt else s - timedelta(days=7)
@@ -88,6 +92,9 @@ def slot_before(how_often: str, t: datetime) -> datetime | None:
 def slot_after(how_often: str, t: datetime) -> datetime | None:
     """The first slot after `t`."""
     lt = _local(t)
+    if how_often == "nightly":
+        s = lt.replace(hour=NIGHTLY_AT, minute=0, second=0, microsecond=0)
+        return s if s > lt else s + timedelta(days=1)
     if how_often == "weekly":
         s = (lt - timedelta(days=lt.weekday())).replace(hour=WEEKLY_AT, minute=0, second=0, microsecond=0)
         return s if s > lt else s + timedelta(days=7)

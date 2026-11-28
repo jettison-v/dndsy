@@ -34,11 +34,11 @@ def api(db, monkeypatch):
 H = {"X-Fft-Key": CLAUDE}
 
 
-def test_the_catalog_is_ten_reviews_in_six_buckets_as_picked():
+def test_the_catalog_is_eleven_reviews_in_six_buckets_as_picked():  # (ten picked Nov 25, Go over the day added Nov 27)
     cat = reviews.catalog()
     assert [b["key"] for b in cat["buckets"]] == ["experience", "correctness", "code", "trust", "running", "how"]
-    assert len(cat["reviews"]) == 10
-    assert len(set(reviews.keys())) == 10
+    assert len(cat["reviews"]) == 11
+    assert len(set(reviews.keys())) == 11
     for r in cat["reviews"]:
         assert r["bucket"] in {b["key"] for b in cat["buckets"]}
         assert r["cadence"] in reviews.CADENCES
@@ -74,7 +74,7 @@ def test_a_scheduled_review_is_asked_once_for_its_latest_slot_within_seven_days(
     assert "every_number" not in reviews.due(db, late)  # (a slot older than a week is skipped)
 
 
-def test_only_a_weekly_or_monthly_review_has_a_schedule(db):
+def test_only_a_review_with_slots_has_a_schedule(db):
     with pytest.raises(rules.RuleError):
         rules.set_review(db, "claude", "dig_feature", scheduled=True)
     with pytest.raises(rules.RuleError):
@@ -223,7 +223,7 @@ def test_a_cadence_with_no_slots_turns_its_schedule_off(db):
 
 def test_scheduled_lists_each_review_by_bucket_with_how_often_and_next(admin, db):
     sched = admin.get("/manage/work?tab=scheduled").text
-    assert sched.count("data-review=") == 10 and sched.count('data-bucket="') == 6
+    assert sched.count("data-review=") == 11 and sched.count('data-bucket="') == 6
     assert "data-jobs" in sched  # (the jobs stay, under the reviews)
     assert 'data-review="dig_feature"' in sched
     rules.set_review(db, "claude", "the_week", scheduled=True)
@@ -424,3 +424,16 @@ def test_every_review_has_askdnds_playbook_and_next_prints_it(api, db):
     db.flush()
     run = api.post("/api/fft/reviews/next", headers=H).json()["run"]
     assert run["how_to"] == fills["how"]["every_number"]
+
+
+def test_go_over_the_day_is_nightly_at_eleven():
+    """Brett, Nov 27 ("Both": a fresh review before each merge, and a nightly sweep of the day's merges)."""
+    from datetime import datetime
+
+    from app.config import TABLE_TIME
+
+    r = next(x for x in reviews.catalog()["reviews"] if x["key"] == "the_day")
+    assert r["cadence"] == "nightly" and r["skip_unchanged"]
+    at = datetime(2026, 11, 27, 22, 0, tzinfo=TABLE_TIME)
+    assert reviews.slot_after("nightly", at) == datetime(2026, 11, 27, 23, 0, tzinfo=TABLE_TIME)
+    assert reviews.slot_before("nightly", at) == datetime(2026, 11, 26, 23, 0, tzinfo=TABLE_TIME)

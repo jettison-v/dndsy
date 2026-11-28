@@ -980,7 +980,7 @@ def main() -> None:
     s.add_argument("words", nargs="*")
     s.add_argument("--input", action="append", default=[], help="ask: what Run… asks, k=v (lists comma-separated)")
     s.add_argument("--file", help="done: the result's JSON file")
-    s.add_argument("--cadence", choices=["weekly", "monthly", "phase", "on_demand", "off"])
+    s.add_argument("--cadence", choices=["nightly", "weekly", "monthly", "phase", "on_demand", "off"])
     s.add_argument("--schedule", choices=["on", "off"])
     s = sub.add_parser("question", help="withdraw a question of yours that a later pick replaced")
     s.add_argument("id", type=int)

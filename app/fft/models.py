@@ -547,7 +547,7 @@ class FftReview(_Stamped, Base):
     __table_args__ = (UniqueConstraint("workspace_id", "key"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     key: Mapped[str] = mapped_column(String(40))
-    cadence: Mapped[str] = mapped_column(String(12), default="", server_default="")  # "" = the catalog's; weekly, monthly, phase, on_demand, off
+    cadence: Mapped[str] = mapped_column(String(12), default="", server_default="")  # "" = the catalog's; nightly, weekly, monthly, phase, on_demand, off
     scheduled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
 
