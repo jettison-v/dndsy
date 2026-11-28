@@ -56,3 +56,33 @@ def test_a_backstage_table_is_a_card_per_row_on_a_phone(people, server):
     page = admin.open("/manage/work?tab=scheduled")
     assert page.locator('.tbx .dtable tbody tr').first.evaluate("tr => getComputedStyle(tr).display") == "table-row"
     assert not admin.errors, admin.errors
+
+
+def test_a_question_is_answered_in_its_card_on_a_phone(people, server, browser_db):
+    """Step 3 (For you as cards, Brett's pick N2): on a phone a question's choices are buttons in its card, Claude's pick
+    marked; one press answers it. On a laptop the card is as before and opens the question's window."""
+    import json
+
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        qid = conn.execute(text("INSERT INTO fft_questions (about, about_id, text, choices, mine, workspace_id) VALUES "
+                                "('area', NULL, 'Which lane for the menus?', CAST(:c AS jsonb), 0, 1) RETURNING id"),
+                           {"c": json.dumps([{"label": "Look", "detail": "Merges when green"}, {"label": "Careful", "detail": "Waits for your try"}])}).scalar()
+    try:
+        admin = people("admin")
+        admin.page.set_viewport_size({"width": 1280, "height": 800})
+        page = admin.open("/manage/for-you")
+        assert not page.locator(f'tr[data-row="q{qid}"] [data-answer-in-place]').is_visible()
+        admin.page.set_viewport_size({"width": 375, "height": 800})
+        page = admin.open("/manage/for-you")
+        card = page.locator(f'tr[data-row="q{qid}"]')
+        assert card.locator('[data-choice="0"]').is_visible() and card.locator('[data-choice="0"].mine').count() == 1
+        card.locator('[data-choice="1"]').click()
+        page.wait_for_function(f"!document.querySelector('tr[data-row=\"q{qid}\"]')")
+        with engine.connect() as conn:
+            assert conn.execute(text("SELECT answer_choice FROM fft_questions WHERE id = :q"), {"q": qid}).scalar() == 1
+        assert not admin.errors, admin.errors
+    finally:
+        engine.dispose()

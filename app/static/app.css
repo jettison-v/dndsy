@@ -1867,6 +1867,7 @@ button.rm-box { cursor: pointer; }
    (data-ls-quiet-first, app.js) */
 .dtable :is(tr.dt-group, tr.ls-grouphead) td { height: auto; padding: var(--sp-4) var(--sp-3) var(--sp-1); background: transparent; color: var(--amber); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; border-top: 0; }  /* (the list engine's and the server's look the same: AU1) */
 .dtable tr.ls-grouphead[data-ls-quiet] { display: none; }
+.fy-choices { display: none; }  /* (on a laptop a question opens in its window; a phone answers in the card) */
 /* Backstage on a phone (Roadmap item 49, step 2): a table on the one piece is a card per row, its title the card's first
    line and each other cell after it, named by its column (`data-label`, from the table's head: app.js "a table's cells
    name their column"); nothing runs off the screen or hides in a sideways scroll */
@@ -1888,6 +1889,12 @@ button.rm-box { cursor: pointer; }
   body[data-backstage] .tbx .dtable td.end .row { justify-content: flex-start; flex-wrap: wrap; }
   body[data-backstage] .tbx .dtable :is(tr.dt-group, tr.ls-grouphead) { padding: var(--sp-3) var(--sp-3) var(--sp-1); border-bottom: 0; }
   body[data-backstage] .tbx .dtable :is(tr.dt-group, tr.ls-grouphead) td { padding: 0; }
+  /* For you's questions answered in place (Roadmap item 49, step 3, Brett's pick N2): the choices in the card */
+  body[data-backstage] .fy-choices { display: grid; gap: var(--sp-2); margin-top: var(--sp-2); }
+  .fy-choice { display: grid; gap: 2px; text-align: left; width: 100%; min-height: 44px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+  .fy-choice.mine { border-color: var(--amber); }
+  .fy-choice small { color: var(--muted); font-size: var(--fs-xs); }
+  .fy-mine { color: var(--amber); font-size: var(--fs-xs); font-weight: 700; }
 }
 .dtable tr.ls-grouphead { display: table-row; padding: 0; letter-spacing: 0; text-transform: none; }
 .dtable tr.dt-cut td { height: 24px; background: transparent; color: var(--muted); font-size: var(--fs-xs); text-align: center; border-top: 2px dashed var(--line-strong); border-bottom: 2px dashed var(--line-strong); }

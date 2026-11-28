@@ -58,7 +58,9 @@
         <tr data-panel-url="/manage/item/{{ r.key }}?from={{ from_ | urlencode }}" tabindex="0" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
           <td>{{ state_word(act[r.kind][0], act[r.kind][1], ' data-act="' ~ r.kind ~ '"') }}</td>
           <td><span class="dt-id">{{ mark(r.key) }}</span></td>
-          <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span></td>
+          <td class="dt-title"><span class="ts-title">{{ r.title }}</span><span class="dt-why nt-sum">{{ r.sub }}</span>
+            {%- if r.choices %}<form method="post" action="/manage/testing/questions/{{ r.qid }}" class="fy-choices" data-answer-in-place>{# (on a phone: the choices in the card, Roadmap item 49, N2) #}
+              {%- for i, c in r.choices %}<button type="submit" name="choice" value="{{ i }}" class="fy-choice{{ ' mine' if r.mine == i }}" data-choice="{{ i }}"><b>{{ c.label }}</b>{% if r.mine == i %} <span class="fy-mine">Claude's pick</span>{% endif %}{% if c.detail %}<small>{{ c.detail }}</small>{% endif %}</button>{% endfor %}</form>{% endif %}</td>
           <td class="dt-wrap note">{{ r.from }}</td>
         </tr>
       {% endfor %}{% endfor %}
