@@ -2,10 +2,20 @@
 docs/mockups/collaboration-queue/, Nov 25): what passes between Brett, Workshop and Claude, whose turn each is, and a
 step past its usual time shown as missed, with a button that does it."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from app.fft import handoffs, host, rules, views
+import pytest
+
+from app.config import TABLE_TIME
+from app.fft import handoffs, host, quiet, rules, views
 from app.fft.models import FftChat, FftEvent, FftLine, FftListener, FftNote, FftPull, FftQuestion
+
+
+@pytest.fixture(autouse=True)
+def _no_quiet_hours(monkeypatch):
+    """The look's timing by day, whatever the clock says when the tests run: the quiet hours have their own test."""
+    monkeypatch.setattr(quiet, "FROM", 24)
+    monkeypatch.setattr(quiet, "TO", 0)
 
 
 def _listening(db, read_id=0):
@@ -189,3 +199,26 @@ def test_the_list_costs_the_same_few_queries_however_many_handoffs(db):
         db.add(FftQuestion(about="document", text=f"more q {i}", choices=[]))
     db.flush()
     assert count() == few
+
+
+def test_a_look_in_the_quiet_hours_is_missed_only_after_an_hour(db, monkeypatch):
+    """Brett, Nov 28 (the independent review of #568): from 11 PM to 7 AM Claude looks at claude.ai once an hour, so a
+    look 40 minutes ago at 1 AM isn't missed; 70 minutes ago it is. By day, 20 minutes is."""
+    monkeypatch.setattr(quiet, "FROM", 23)
+    monkeypatch.setattr(quiet, "TO", 7)
+    _listening(db)
+    handoffs.looked(db)
+    db.flush()
+    row = db.get(host.ToolSetting, rules.CLAUDE_AI_LOOKED)
+    night = datetime(2026, 11, 28, 1, 0, tzinfo=TABLE_TIME)
+    row.value = (night - timedelta(minutes=40)).isoformat()
+    db.flush()
+    assert not any(r["key"] == "look" for r in handoffs.rows(db, now=night))
+    row.value = (night - timedelta(minutes=70)).isoformat()
+    db.flush()
+    r = next(r for r in handoffs.rows(db, now=night) if r["key"] == "look")
+    assert r["state"] == "missed"
+    day = datetime(2026, 11, 28, 14, 0, tzinfo=TABLE_TIME)
+    row.value = (day - timedelta(minutes=20)).isoformat()
+    db.flush()
+    assert next(r for r in handoffs.rows(db, now=day) if r["key"] == "look")["state"] == "missed"

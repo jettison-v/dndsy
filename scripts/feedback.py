@@ -69,6 +69,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -169,6 +170,15 @@ def _checked_at() -> float:
         return 0.0
 
 
+def _next_look(last: float, wake: int) -> float:
+    """When claude.ai is next due a look: `wake` minutes after the last, once an hour in the quiet hours (11 PM to 7 AM,
+    the table's time; app/fft/quiet.py, the one rule Handoffs uses too)."""
+    sys.path.insert(0, str(ROOT))
+    from app.fft import quiet
+
+    return quiet.next_look(datetime.fromtimestamp(last, UTC), timedelta(minutes=wake)).timestamp()
+
+
 def wait(a) -> None:
     """Asks askdnd, which holds the ask open until something's new (older askdnd: every `--every` seconds), until something's new, then says what (without marking it read) and ends: run in the
     background, its ending starts Claude's next turn. Rides out errors; ends after `--hours`."""
@@ -176,8 +186,8 @@ def wait(a) -> None:
     # (item 39, 6 of 6: claude.ai can't wake Claude, so it looks, every --wake minutes counted from its last look, not from
     # this wait: issue 132, Nov 25, Brett's notes came every few minutes, each ending a wait, and his claude.ai comment
     # waited an afternoon)
-    check = time.monotonic() + max(0.0, _checked_at() + a.wake * 60 - time.time()) if a.wake else None
-    due = f"claude.ai is due a look ({a.wake} minutes since the last): feedback.py sync list, then listen again."
+    check = time.monotonic() + max(0.0, _next_look(_checked_at(), a.wake) - time.time()) if a.wake else None
+    due = "claude.ai is due a look: feedback.py sync list, then listen again (a quiet look, a few words to Brett)."
     while time.monotonic() < until:
         if check is not None and time.monotonic() >= check:
             print(due)
@@ -191,7 +201,7 @@ def wait(a) -> None:
             print(f"{len(got['items'])} new in askdnd (feedback.py inbox reads and marks them):")
             for e in got["items"][:20]:
                 print(_event(e))
-            if check is not None and time.time() >= _checked_at() + a.wake * 60:
+            if check is not None and time.time() >= _next_look(_checked_at(), a.wake):
                 print(due)
             return
         else:
@@ -906,7 +916,7 @@ def main() -> None:
     s = sub.add_parser("wait")
     s.add_argument("--every", type=int, default=30)
     s.add_argument("--hours", type=float, default=8)
-    s.add_argument("--wake", type=int, default=10, help="end after this many minutes so Claude checks claude.ai (0: never)")
+    s.add_argument("--wake", type=int, default=10, help="end after this many minutes so Claude checks claude.ai (0: never); 11 PM to 7 AM, the table's time, once an hour")
     s.add_argument("--listener", default="main")
     sub.add_parser("next")
     s = sub.add_parser("claim", help="ask askdnd for the top Ready piece (one at a time)")
