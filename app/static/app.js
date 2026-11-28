@@ -1100,6 +1100,24 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     .forEach(x => x.setAttribute('aria-expanded', document.body.classList.contains('fold-' + k) ? 'true' : 'false')));
   marks();
   document.addEventListener('askdnd:swapped', marks);  // (a new copy of the page: its buttons say how they stand)
+  // A table's cells name their column (Backstage on a phone, Roadmap item 49): a row is a card there, and a cell's
+  // number or word says what it is from its column's heading (data-label), set once from the table's own head
+  function labelCells() {
+    document.querySelectorAll('.tbx .dtable').forEach(t => {
+      const heads = [...t.querySelectorAll(':scope > thead th')].map(th => th.textContent.trim());
+      if (!heads.length) return;
+      t.querySelectorAll(':scope > tbody > tr:not(.dt-group, .ls-grouphead)').forEach(tr => {
+        let col = 0;
+        [...tr.children].forEach(td => {
+          if (heads[col] && !td.hasAttribute('data-label')) td.setAttribute('data-label', heads[col]);
+          col += td.colSpan || 1;
+        });
+      });
+    });
+  }
+  labelCells();
+  document.addEventListener('askdnd:swapped', labelCells);
+  document.body.addEventListener('htmx:afterSwap', labelCells);
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-fold]'); if (!b) return;
     const k = b.dataset.fold, open = document.body.classList.toggle('fold-' + k);

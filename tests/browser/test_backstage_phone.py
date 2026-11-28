@@ -38,3 +38,21 @@ def test_the_dms_backstage_on_a_phone_drops_table_rolls_and_keeps_the_tables_bar
     page = dm.open("/c/main/manage/table")
     assert not _shown(page, ".backstage-nav") and _shown(page, ".bottom-nav") and not _shown(page, "#table-rolls")
     assert not dm.errors, dm.errors
+
+
+def test_a_backstage_table_is_a_card_per_row_on_a_phone(people, server):
+    """Step 2 (tables as cards, from the one table piece): on a phone each row is a card, its title the first line and
+    each other cell named by its column; nothing scrolls sideways. On a laptop it's a table as before."""
+    admin = people("admin")
+    admin.page.set_viewport_size({"width": 375, "height": 800})
+    page = admin.open("/manage/work?tab=scheduled")
+    row = page.locator('.tbx .dtable tbody tr:not(.dt-group):not(.ls-grouphead)').first
+    row.wait_for()
+    assert row.evaluate("tr => getComputedStyle(tr).display") == "flex"
+    labels = row.evaluate("tr => [...tr.querySelectorAll('td[data-label]:not(.dt-title)')].map(td => td.dataset.label)")
+    assert labels, "a card's cells say their column"
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    admin.page.set_viewport_size({"width": 1280, "height": 800})
+    page = admin.open("/manage/work?tab=scheduled")
+    assert page.locator('.tbx .dtable tbody tr').first.evaluate("tr => getComputedStyle(tr).display") == "table-row"
+    assert not admin.errors, admin.errors

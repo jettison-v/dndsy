@@ -1867,6 +1867,28 @@ button.rm-box { cursor: pointer; }
    (data-ls-quiet-first, app.js) */
 .dtable :is(tr.dt-group, tr.ls-grouphead) td { height: auto; padding: var(--sp-4) var(--sp-3) var(--sp-1); background: transparent; color: var(--amber); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; border-top: 0; }  /* (the list engine's and the server's look the same: AU1) */
 .dtable tr.ls-grouphead[data-ls-quiet] { display: none; }
+/* Backstage on a phone (Roadmap item 49, step 2): a table on the one piece is a card per row, its title the card's first
+   line and each other cell after it, named by its column (`data-label`, from the table's head: app.js "a table's cells
+   name their column"); nothing runs off the screen or hides in a sideways scroll */
+@media (max-width: 640px) {
+  body[data-backstage] .tbx .table-scroll { overflow: visible; }
+  body[data-backstage] .tbx-head { flex-wrap: wrap; }
+  body[data-backstage] .tbx-head > .tbx-what { flex: 1 0 100%; order: 1; }  /* (what the table is, under its title: not a narrow column beside it) */
+  body[data-backstage] .tbx-head > .tbx-ctl { flex: 1 0 100%; order: 2; }
+  body[data-backstage] .tbx .table-scroll > .dtable { display: block; min-width: 0; table-layout: auto; }
+  body[data-backstage] .tbx .dtable :is(thead, tbody) { display: block; }
+  body[data-backstage] .tbx .dtable thead { display: none; }
+  body[data-backstage] .tbx .dtable tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--sp-3); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); }
+  body[data-backstage] .tbx .dtable tr:last-child { border-bottom: 0; }
+  body[data-backstage] .tbx .dtable tr[hidden] { display: none; }
+  body[data-backstage] .tbx .dtable td { display: block; width: auto; height: auto; max-width: 100%; padding: 0; border: 0; white-space: normal; overflow: visible; text-align: left; }
+  body[data-backstage] .tbx .dtable td:empty { display: none; }
+  body[data-backstage] .tbx .dtable td.dt-title { flex: 1 0 100%; order: -1; font-size: var(--fs-md); }
+  body[data-backstage] .tbx .dtable td[data-label]:not(.dt-title)::before { content: attr(data-label) " "; color: var(--muted); font-size: var(--fs-xs); }
+  body[data-backstage] .tbx .dtable td.end .row { justify-content: flex-start; flex-wrap: wrap; }
+  body[data-backstage] .tbx .dtable :is(tr.dt-group, tr.ls-grouphead) { padding: var(--sp-3) var(--sp-3) var(--sp-1); border-bottom: 0; }
+  body[data-backstage] .tbx .dtable :is(tr.dt-group, tr.ls-grouphead) td { padding: 0; }
+}
 .dtable tr.ls-grouphead { display: table-row; padding: 0; letter-spacing: 0; text-transform: none; }
 .dtable tr.dt-cut td { height: 24px; background: transparent; color: var(--muted); font-size: var(--fs-xs); text-align: center; border-top: 2px dashed var(--line-strong); border-bottom: 2px dashed var(--line-strong); }
 @media (max-width: 900px) { .table-scroll > .dtable { min-width: 760px; } }  /* (in its .table-scroll, as every table: a phone scrolls a wide one inside its frame, never the page) */
