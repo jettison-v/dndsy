@@ -155,3 +155,22 @@ def test_a_pop_up_menu_you_opened_holds_off_a_redraw(people, server, browser_db)
     page.evaluate(live)
     page.wait_for_function("!document.getElementById('test-fold')", timeout=8000)
     assert player.errors == []
+
+
+def test_a_pop_up_left_open_closes_on_a_click_elsewhere_and_the_change_comes_in(people, server, browser_db):
+    """The review of Nov 27: Dismiss… on a familiar (and −/+, + Add) stayed open after a tap elsewhere, holding every live
+    change for good. A floating pop-up closes on a click elsewhere or Escape, and what it held comes in."""
+    from tests.browser.test_table import battle
+
+    player = people("player")
+    page = battle(player, server)
+    live = f"document.dispatchEvent(new CustomEvent('askdnd:live', {{ detail: {{ type: 'character', id: {server['cole']} }} }}))"
+    page.evaluate("""() => { const d = document.createElement('details'); d.id = 'test-pop'; d.style.position = 'relative';
+      d.innerHTML = '<summary>Dismiss…</summary><div style="position:absolute"><button type="button">Dismiss</button></div>';
+      document.querySelector('main').prepend(d); d.open = true; }""")
+    page.evaluate(live)
+    page.wait_for_timeout(1000)
+    assert page.locator("#test-pop[open]").count() == 1  # (held while open)
+    page.locator("main h1, main h2").first.click()  # (a tap elsewhere)
+    page.wait_for_function("!document.getElementById('test-pop')", timeout=8000)  # (closed, and the change came in)
+    assert player.errors == []

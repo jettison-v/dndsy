@@ -188,7 +188,7 @@ def split_issue(db: Session, actor: str, issue: FftIssue, parts: list[tuple[str,
     notes = list(db.scalars(select(FftNote.id).where(on_issue(issue.id))))
     made = []
     for t, f in parts:
-        new = new_issue(db, actor, t, feature=f or issue.feature, kind=issue.kind)
+        new = new_issue(db, actor, t, feature=f or issue.feature, kind=issue.kind, source=source_of(issue, bool(notes)))  # (its parts came from where it did)
         new.from_player = issue.from_player
         for nid in notes:
             db.add(FftNoteIssue(note_id=nid, issue_id=new.id))
@@ -220,7 +220,7 @@ def unjoin(db: Session, actor: str, note: FftNote) -> FftIssue:
     if note.filed_as != "issue" or note.issue_id is None:
         raise RuleError("bad", "It isn't joined to an issue.")
     was = db.get(FftIssue, note.issue_id)
-    issue = new_issue(db, actor, _first_words(note.text)[:120], feature=was.feature if was else "")  # (its own issue_new, and
+    issue = new_issue(db, actor, _first_words(note.text)[:120], feature=was.feature if was else "", source="note")  # (its own issue_new, and
     issue.from_player = note.role != "admin"                                                      # the Feature it came from)
     note.issue_id = issue.id
     _event(db, actor, "note_unjoined", "note", note.id, was=was.id if was else None, issue=issue.id)
@@ -315,7 +315,9 @@ def add_line(db: Session, actor: str, text: str, *, note: FftNote | None = None,
 
 
 def _approve_lines(db: Session, note: FftNote) -> None:
-    for line in db.scalars(select(FftLine).where(FftLine.note_id == note.id, FftLine.approved.is_(False))):
+    """The sender's own lines, approved with their note; Claude's question back waits for Brett's Send (send_ask), never
+    approved with it (the review of Nov 27: an approve after an Undo had sent it)."""
+    for line in db.scalars(select(FftLine).where(FftLine.note_id == note.id, FftLine.approved.is_(False), FftLine.who == "sender")):
         line.approved = True
 
 
@@ -1007,8 +1009,12 @@ def move_item(db: Session, actor: str, item: FftItem, section: str) -> None:
     _event(db, actor, "item_moved", "item", item.id, was=was, section=section)
     if was in ("shipped", "not_doing"):  # (Reopen: its ideas go back onto the Roadmap with it, so their senders read it so;
         # the review of #553. Only those shipping or Not doing moved: never one declined in its own right, with its own why)
-        moved = {e.thing_id for e in db.scalars(select(FftEvent).where(FftEvent.thing == "idea", FftEvent.kind.in_(("idea_shipped", "idea_declined")),
-                                                                     FftEvent.data["by_item"].astext == str(item.id)))}
+        # (only the ideas whose latest change was this item's: one declined on its own since stays so; the review of Nov 27)
+        latest: dict[int, FftEvent] = {}
+        for e in db.scalars(select(FftEvent).where(FftEvent.thing == "idea", FftEvent.kind.like("idea_%"),
+                                                   FftEvent.thing_id.in_(select(FftIdea.id).where(FftIdea.item_id == item.id))).order_by(FftEvent.id)):
+            latest[e.thing_id] = e
+        moved = {i for i, e in latest.items() if e.kind in ("idea_shipped", "idea_declined") and (e.data or {}).get("by_item") == item.id}
         for idea in db.scalars(select(FftIdea).where(FftIdea.item_id == item.id, FftIdea.id.in_(moved or {0}))):
             idea.state, idea.reason = "roadmap", ""
             _event(db, actor, "idea_roadmap", "idea", idea.id)
@@ -1019,6 +1025,8 @@ def ship_item(db: Session, actor: str, item: FftItem, not_doing: bool = False, r
     numbers; for Not doing, why not: Brett, Nov 20). A shipped item without one is a gap of Claude's (`views.gaps`)."""
     if item.standing:
         raise RuleError("bad", "Fixes and polish never ships.")
+    if item.section == "not_doing" and not not_doing:  # (Not doing to shipped: back on the Roadmap first, so its ideas follow; the review of Nov 27)
+        raise RuleError("bad", "It's Not doing: move it back onto the Roadmap first.")
     left = [] if not_doing else list(db.scalars(select(FftStep).where(FftStep.item_id == item.id, FftStep.done_at.is_(None))))
     if left:  # (Brett, Nov 24: R42 sat in History at 5 of 7 with Claude's next step showing; tick each, or remove it)
         raise RuleError("bad", f"{len(left)} step{'s' if len(left) != 1 else ''} still open: tick each, or remove one that won't be done.")
@@ -1249,7 +1257,7 @@ def idea_to_roadmap(db: Session, actor: str, idea: FftIdea) -> FftItem:
 
 def idea_to_issue(db: Session, actor: str, idea: FftIdea, kind: str = "improvement") -> FftIssue:
     """An idea that's really a change to a Product Area: an issue (an improvement, as a rule) its notes now belong to."""
-    issue = new_issue(db, actor, idea.title, kind=kind)
+    issue = new_issue(db, actor, idea.title, kind=kind, source="note")  # (an idea came from a note)
     for n in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id)):
         n.filed_as, n.issue_id, n.idea_id = "issue", issue.id, None
         issue.from_player = issue.from_player or n.role != "admin"
@@ -3056,7 +3064,7 @@ def usage_limits(db: Session) -> dict:
     except ValueError:
         got = {}
     out = USAGE_DEFAULTS | {k: v for k, v in got.items() if k in USAGE_DEFAULTS or k in ("by", "at")}
-    out["game_day_said"] = out["game_day"] is not None
+    out["game_day_said"] = out["game_day"] is not None  # (-1: no game night, Brett's pick; None: the table's usual night)
     if out["game_day"] is None:
         out["game_day"] = game_weekday(db)
     return out
@@ -3068,8 +3076,8 @@ def set_usage_limits(db: Session, actor: str, week: int, keep: int, game_day: in
 
     if not 1 <= week <= 100 or not 0 <= keep <= 50:
         raise RuleError("bad", "Stop at 1 to 100% of the week, and keep 0 to 50% for game night.")
-    if game_day is not None and not 0 <= game_day <= 6:
-        raise RuleError("bad", "Game night is a day of the week.")
+    if game_day is not None and not -1 <= game_day <= 6:
+        raise RuleError("bad", "Game night is a day of the week, or none.")
     if not 0 <= extra <= 1000:
         raise RuleError("bad", "Extra usage is 0 (never) to $1,000.")
     if window not in ("pause", "stop"):
@@ -3088,7 +3096,7 @@ def _game_ahead(limits: dict, week_resets_at: datetime | None, at: datetime) -> 
     from app import config
 
     day = limits.get("game_day")
-    if day is None or not limits.get("keep"):
+    if day is None or day < 0 or not limits.get("keep"):  # (-1: no game night)
         return ""
     today = at.astimezone(config.TABLE_TIME).date()
     game = today + timedelta(days=(day - today.weekday()) % 7)
@@ -3145,7 +3153,8 @@ def last_usage(db: Session) -> FftUsageReading | None:
 
 
 def usage_lets_start(db: Session) -> tuple[bool, str]:
-    """Whether new work may start: a reading in the last 30 minutes, and its verdict go (a wait that has reset is go)."""
+    """Whether new work may start: a reading in the last 30 minutes, and its verdict go (after a wait, once the 5-hour
+    window has reset, a new reading)."""
     r = last_usage(db)
     if r is None or now() - r.created_at > USAGE_FRESH:
         return False, "Read your usage first (the usage card), then feedback.py usage report: no work starts on an old reading."
@@ -3158,13 +3167,15 @@ def usage_lets_start(db: Session) -> tuple[bool, str]:
 
 def usage_shares(db: Session) -> dict[int, float]:
     """Each Roadmap item's share of a week so far, in %: between two readings the week rose by so much (or reset and
-    reached the newer reading's), and that went to the item claimed at the first of them."""
+    reached the newer reading's), and that went to the item claimed at the later of them (the reading before a claim is
+    taken with nothing held, the one before its pull request with its claim: the work between is that item's; the review
+    of Nov 27)."""
     out: dict[int, float] = {}
     prev = None
     for r in db.scalars(select(FftUsageReading).order_by(FftUsageReading.id)):
-        if prev is not None and prev.item_id is not None:
+        if prev is not None and r.item_id is not None:
             reset = prev.week_resets_at is not None and r.created_at >= prev.week_resets_at
-            out[prev.item_id] = out.get(prev.item_id, 0.0) + (r.week if reset or r.week < prev.week else r.week - prev.week)
+            out[r.item_id] = out.get(r.item_id, 0.0) + (r.week if reset or r.week < prev.week else r.week - prev.week)
         prev = r
     return out
 

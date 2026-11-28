@@ -366,7 +366,7 @@ def event_words(ev) -> str:
         return f"{title} (run {ev.thing_id}): {reviews.STATE_WORDS.get(d.get('to', ''), d.get('to', ''))}"
     if ev.kind == "usage_limits":  # (Roadmap item 34: Brett set Claude's usage limits)
         days = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
-        night = days[d["game_day"]] if isinstance(d.get("game_day"), int) and 0 <= d["game_day"] <= 6 else "the usual night"
+        night = days[d["game_day"]] if isinstance(d.get("game_day"), int) and 0 <= d["game_day"] <= 6 else "none" if d.get("game_day") == -1 else "the usual night"
         return (f"Brett set your usage limits: stop at {d.get('week')}% of the week, {d.get('keep')}% kept for game night ({night}),"
                 f" extra usage up to ${float(d.get('extra') or 0):.2f}, the 5-hour window nearly full: {d.get('window')}")
     if ev.kind in ("usage_go", "usage_wait", "usage_stop"):

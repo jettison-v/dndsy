@@ -95,10 +95,16 @@ class Lane:
         for n in range(tries):
             try:
                 with self.factory() as db:
-                    jobs.finish(db, job["id"], job["attempts"], result)
+                    try:
+                        jobs.finish(db, job["id"], job["attempts"], result)
+                    except Exception:
+                        db.rollback()  # (the session is fit for the next try: the review of Nov 27)
+                        raise
                 return
             except Exception:
                 log.warning("Job %s ran, but saying so didn't save (try %s of %s)", job["id"], n + 1, tries, exc_info=n == tries - 1)
+                if not self.beats and n >= 1:  # (a request's own session: one more try, never a minute's wait inside a request)
+                    return
                 if n < tries - 1:
                     time.sleep(min(2 ** n, 20))  # (1, 2, 4, 8, 16, 20 seconds)
 

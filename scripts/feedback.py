@@ -831,7 +831,8 @@ def usage(a) -> None:
         sys.exit({"go": 0, "stop": 1, "wait": 2}[got["verdict"]])
     st = call(a.base, "/usage")
     lim, last = st["limits"], st["last"]
-    day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][lim["game_day"]] if lim.get("game_day") is not None else "none"
+    g = lim.get("game_day")
+    day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][g] if isinstance(g, int) and g >= 0 else "none"
     print(f"Brett's limits: stop at {lim['week']}% of the week; keep {lim['keep']}% for game night ({day}); extra usage up to ${lim['extra']:.2f};"
           f" the 5-hour window nearly full: {lim['window']}")
     print(f"Last reading {last['at'][:16].replace('T', ' ')} UTC: the week {last['week']}%, the 5-hour window {last['five_hour']}%,"

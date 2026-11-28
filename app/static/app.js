@@ -929,6 +929,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('[data-roll], [data-use-url]')) return;
     const t = e.target.closest && e.target.closest('[data-panel-url][tabindex], [data-modal-url][tabindex]');
+    if (t && e.target !== t && e.target.closest('button, a, input, select, textarea, summary')) return;  // (a row's own control keeps its key: an answer in For you's card; the review of Nov 27)
     if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
   });
   // A table's row that stands for a group (a plan on Work) goes to its page, as its name's link does: anywhere on the
@@ -1344,12 +1345,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // A pop-up menu you opened (a <details> whose contents float over the page: Dismiss… on a familiar, a table's ⋯, + Add):
   // a redraw waits until it's closed, never closing it under your press (issue 76: the live test's Dismiss button went
   // as the familiar coming back redrew Battle). A fold that opens in place isn't one.
-  function poppedOpen() {
-    return [...document.querySelectorAll('details[open]')].some(d => {
+  function floatingOpen() {
+    return [...document.querySelectorAll('details[open]')].filter(d => {
       const pop = d.querySelector(':scope > :not(summary)');  // (one hidden, in a closed panel, holds nothing)
       return !!pop && d.checkVisibility() && /^(absolute|fixed)$/.test(getComputedStyle(pop).position);
     });
   }
+  function poppedOpen() { return floatingOpen().length > 0; }
+  // Any pop-up that floats over the page (Dismiss… on a familiar, −/+ on a creature, + Add on the table's scratch pad):
+  // a click elsewhere or Escape closes it, so the redraw it holds off comes once you've moved on (the review of Nov 27:
+  // one left open held every live change for good)
+  document.addEventListener('click', e => { floatingOpen().forEach(d => { if (!d.contains(e.target)) d.open = false; }); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') floatingOpen().forEach(d => { d.open = false; }); });
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
   const typingIn = box => { const a = document.activeElement; return !!(a && box.contains(a) && a.closest('form[hx-trigger*="input"]')); };
   function keepState(box, view = true) {  // what the person had in a box (the page's main, a side panel); returns what puts it back

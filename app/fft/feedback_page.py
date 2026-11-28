@@ -113,10 +113,14 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftTryIssue.issue_id))))
     if chip in FOUND_BY:  # (Who found it, by where it came from: R10's slice 5; its own source in the query, before the
         q = q.where(FftIssue.source.in_((chip, "")))  # limit; one made before sources were kept is worked out below)
-    for i in db.scalars(q.limit(300)):
-        notes = notes_of_issue(db, i)
+    kept = 0
+    for i in db.scalars(q if chip in FOUND_BY else q.limit(300)):  # (Who found it: the 300 are counted after the guess for
+        notes = notes_of_issue(db, i)                               # issues made before sources were kept; the review of Nov 27)
         if chip in FOUND_BY and rules.source_of(i, bool(notes)) != chip:
             continue
+        kept += 1
+        if kept > 300:
+            break
         turn, name = views.issue_turn(db, i)
         word, tone = views.turn_pill(turn, name)
         bits = [views.ISSUE_WORD[i.state] if i.state != "closed" else views.CLOSED_WORD.get(i.close_reason or "", "Closed")]

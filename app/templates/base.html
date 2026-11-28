@@ -154,6 +154,7 @@
   <a href="/manage/work" data-item="work" class="{{ 'active' if path.startswith('/manage/work') }}">Development</a>
   <a href="/manage/roadmap" data-item="roadmap" class="{{ 'active' if path.startswith('/manage/roadmap') }}">Roadmap</a>
   <a href="/manage/feedback" data-item="feedback" class="{{ 'active' if path.startswith('/manage/feedback') }}">Feedback</a>
+  <button type="button" data-menu="more-menu" aria-haspopup="true" data-item="more">More</button>{# (Help, Sign out, the campaign and the way back to play: the review of Nov 27) #}
 </nav>{% endif %}
 {{ party_menu("party-menu-m", tn, "sheet-menu") }}
 <div class="menu more-menu sheet-menu" id="more-menu" data-door="more" hidden>{# a phone's More: the doors stacked, the same groups and names #}

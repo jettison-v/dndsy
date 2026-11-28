@@ -606,3 +606,33 @@ def test_ask_back_waits_for_bretts_send_before_its_sender_sees_it(admin, sender,
     admin.post(f"/manage/feedback/lines/{other.id}", data={"do": "drop"})
     db.refresh(other)
     assert other not in views.sender_lines(db, n) and other.to == "" and other.approved
+
+
+def test_approving_a_note_never_sends_claudes_question_with_it(admin, sender, db):
+    """A standing rule (R10's slice 5: every question to a player waits for Brett's Send; the review of Nov 27): a note
+    approved again after an Undo approves its sender's own lines, never Claude's question waiting for Send."""
+    from app.fft import views
+
+    send(sender, text="Something is off with the rest thing.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "fix"})
+    db.refresh(n)
+    line = rules.ask_back(db, "claude", n, "Which rest?")
+    rules._approve_lines(db, n)  # (what approving the note again does)
+    db.commit()
+    db.refresh(line)
+    assert not line.approved and line not in views.sender_lines(db, n)
+
+
+def test_a_split_or_unjoined_issue_keeps_where_it_came_from_and_not_doing_ships_only_from_the_roadmap(db):
+    """The review of Nov 27: a player's issue split in two, a note unjoined, an idea made an issue and Brett's finding on
+    a check were filed under Claude; and an item shipped straight from Not doing left its ideas declined."""
+    issue = rules.new_issue(db, "claude", "Two things in one", feature="feedback", source="note")
+    db.flush()
+    parts = rules.split_issue(db, "claude", issue, [("The first thing", ""), ("The second thing", "")])
+    assert {rules.source_of(p) for p in parts} == {"note"}
+    item = rules.new_item(db, "claude", "Not now")
+    db.flush()
+    rules.ship_item(db, "claude", item, not_doing=True)
+    with pytest.raises(rules.RuleError):
+        rules.ship_item(db, "claude", item, result="Built after all")

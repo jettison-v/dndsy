@@ -111,23 +111,24 @@ def test_a_reading_goes_to_the_claim_held_then(db):
 
 def test_each_items_share_is_the_weeks_rise_from_its_readings(db):
     """Between two readings the week rose by so much (or reset and reached the newer one's); that went to the item
-    claimed at the first of them."""
+    claimed at the later of them: the reading before a claim holds nothing, the one before its pull request the claim
+    (the review of Nov 27: crediting the first gave a piece's work to no one)."""
     one, two = rules.new_item(db, "claude", "One"), rules.new_item(db, "claude", "Two")
     db.flush()
     reset = rules.now() + timedelta(days=1)
-    db.add_all([FftUsageReading(five_hour=1, week=40, item_id=one.id, week_resets_at=reset),
-                FftUsageReading(five_hour=1, week=46, item_id=one.id, week_resets_at=reset),  # (+6 to one)
-                FftUsageReading(five_hour=1, week=47, item_id=None, week_resets_at=reset),  # (+1 to one: it held the claim before)
-                FftUsageReading(five_hour=1, week=50, item_id=two.id, week_resets_at=rules.now() - timedelta(minutes=1)),  # (+3, no one's)
-                FftUsageReading(five_hour=1, week=4, item_id=two.id)])  # (the week reset: its 4% went to two)
+    db.add_all([FftUsageReading(five_hour=1, week=40, item_id=None, week_resets_at=reset),  # (before claiming one)
+                FftUsageReading(five_hour=1, week=46, item_id=one.id, week_resets_at=reset),  # (+6 to one, at its pull request)
+                FftUsageReading(five_hour=1, week=47, item_id=None, week_resets_at=reset),  # (+1, no one's: the claim released)
+                FftUsageReading(five_hour=1, week=50, item_id=two.id, week_resets_at=rules.now() - timedelta(minutes=1)),  # (+3 to two)
+                FftUsageReading(five_hour=1, week=4, item_id=two.id)])  # (the week reset: its 4% to two)
     db.flush()
-    assert rules.usage_shares(db) == {one.id: 7, two.id: 4}
+    assert rules.usage_shares(db) == {one.id: 6, two.id: 7}
 
 
 def test_a_shipped_items_result_says_its_share_of_a_week(db):
     item = rules.new_item(db, "claude", "A small idea")
     db.flush()
-    db.add_all([FftUsageReading(five_hour=1, week=10, item_id=item.id), FftUsageReading(five_hour=1, week=22)])
+    db.add_all([FftUsageReading(five_hour=1, week=10), FftUsageReading(five_hour=1, week=22, item_id=item.id)])
     db.flush()
     rules.ship_item(db, "claude", item, result="It did the thing")
     assert item.result.endswith("It used about 12% of a week of Claude's plan.")
@@ -160,8 +161,8 @@ def test_an_items_page_says_what_it_used_and_what_one_its_size_usually_takes(adm
     done, idea = rules.new_item(db, "claude", "Done before"), rules.new_item(db, "claude", "Next up")
     db.flush()
     done.size = idea.size = "M"
-    db.add_all([FftUsageReading(five_hour=1, week=10, item_id=done.id), FftUsageReading(five_hour=1, week=18, item_id=idea.id),
-                FftUsageReading(five_hour=1, week=21)])
+    db.add_all([FftUsageReading(five_hour=1, week=10), FftUsageReading(five_hour=1, week=18, item_id=done.id),
+                FftUsageReading(five_hour=1, week=21, item_id=idea.id)])
     db.flush()
     rules.ship_item(db, "claude", done, result="Built it")
     db.commit()
@@ -176,3 +177,13 @@ def test_a_pause_for_the_5_hour_window_ends_on_the_bar_once_it_has_reset(db):
     assert testing_page.usage_bar(db)["tone"] == "wait"
     db.execute(update(FftUsageReading).values(five_resets_at=rules.now() - timedelta(minutes=1)))
     assert testing_page.usage_bar(db)["tone"] != "wait"
+
+
+def test_no_game_night_keeps_nothing_back_and_the_usual_night_follows_the_table(db):
+    """The review of Nov 27: No game night was read as the usual night. -1 is none; unset follows the table's sessions."""
+    rules.set_usage_limits(db, "user:1", 95, 15, -1, 0, "pause")
+    lim = rules.usage_limits(db)
+    assert lim["game_day"] == -1 and rules.usage_verdict(lim, 10, 86, 0.0, None, RESET, at=MON)[0] == "go"
+    rules.set_usage_limits(db, "user:1", 95, 15, None, 0, "pause")
+    assert not rules.usage_limits(db)["game_day_said"]
+

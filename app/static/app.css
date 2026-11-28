@@ -985,6 +985,9 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
      (it's for play) and no Live pill in the header (the connection is the table's); the page gets the room */
   body[data-backstage]:has(.backstage-nav) .bottom-nav:not(.backstage-nav) { display: none; }
   body[data-backstage] #table-rolls, body[data-backstage] .bar-end > .live { display: none; }
+  /* (and none of Table rolls' room kept: its padding and the corner cards' floor are the bottom bar's; the review of Nov 27) */
+  body[data-backstage].at-table:is(.rolls-open, .rolls-closed) { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+  body[data-backstage].at-table:is(.rolls-open, .rolls-closed) .cards { --cards-floor: calc(var(--bottom-nav-h) + 10px + env(safe-area-inset-bottom, 0px)); }
   .backstage-nav > a { position: relative; }
   .backstage-nav .for-you-badge { position: absolute; top: 4px; right: calc(50% - 34px); }
   .bn-char .cond-dots { position: absolute; top: 4px; left: calc(50% + 8px); }
@@ -1882,6 +1885,7 @@ button.rm-box { cursor: pointer; }
   body[data-backstage] .tbx .dtable tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--sp-3); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); }
   body[data-backstage] .tbx .dtable tr:last-child { border-bottom: 0; }
   body[data-backstage] .tbx .dtable tr[hidden] { display: none; }
+  body[data-backstage] .tbx .dtable tr.ls-grouphead[data-ls-quiet] { display: none; }  /* (a quiet first heading stays unlabelled: T1 A) */
   body[data-backstage] .tbx .dtable td { display: block; width: auto; height: auto; max-width: 100%; padding: 0; border: 0; white-space: normal; overflow: visible; text-align: left; }
   body[data-backstage] .tbx .dtable td:empty { display: none; }
   body[data-backstage] .tbx .dtable td.dt-title { flex: 1 0 100%; order: -1; font-size: var(--fs-md); }

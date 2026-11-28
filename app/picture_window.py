@@ -104,6 +104,8 @@ def use(request: Request, for_: str = Form("", alias="for"), pick: str = Form(""
         db: Session = Depends(get_db)):
     """One of the drawn four, by its two keys ("<full>|<thumb>"), only files of this campaign's that askdnd stored."""
     o, user = _owner(db, request, for_)
+    if not o.draws:  # (a book's cover is uploaded only: no drawn four to pick from; the review of Nov 27)
+        raise HTTPException(404)
     full, _, thumb = pick.partition("|")
     rows = db.scalars(select(StoredFile).where(StoredFile.key.in_([full, thumb]))).all()
     if len(rows) != 2 or any(r.campaign_id != o.campaign_id for r in rows):

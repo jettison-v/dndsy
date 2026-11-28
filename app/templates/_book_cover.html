@@ -1,5 +1,5 @@
 {# A rule book's cover (issue 117): Brett's upload, or drawn in the book's colour with its name until he adds one (C1).
    Rule books' rows (mini) and the book's side panel. #}
 {% macro cover_of(b, cover, mini=False) -%}
-<span class="book-cover{{ ' mini' if mini }}{{ ' photo' if cover }}" data-book="{{ b.key }}" aria-hidden="true">{% if cover %}<img src="{{ cover.thumb if mini else cover.full }}" alt="">{% else %}<b>{{ b.title.rsplit(" (", 1)[0] }}</b><small>{{ b.short }}</small>{% endif %}</span>
+<span class="book-cover{{ ' mini' if mini }}{{ ' photo' if cover }}" data-book="{{ b.key }}" aria-hidden="true">{% if cover %}<img src="{{ cover.full }}" alt="">{% else %}<b>{{ b.title.rsplit(" (", 1)[0] }}</b><small>{{ b.short }}</small>{% endif %}</span>
 {%- endmacro %}
