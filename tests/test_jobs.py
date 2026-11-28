@@ -159,7 +159,8 @@ def test_a_jobs_story_keeps_each_try_and_who_pressed_retry_or_cancel(db, kinds):
     assert all(s["took"] >= 0 for s in story)
     assert jobs.retry(db, job_id, "Brett")
     row = _row(db, job_id)
-    assert row.state == "queued" and row.attempts == 0 and row.priority >= 10 and row.story[-1]["did"] == "retry" and row.story[-1]["by"] == "Brett"
+    assert row.state == "queued" and row.priority >= 10 and row.story[-1]["did"] == "retry" and row.story[-1]["by"] == "Brett"
+    assert (row.attempts, row.max_attempts) == (2, 4)  # (its tries afresh, its number still rising: the fence; the review of Nov 27)
     got = jobs.claim(db, "lane", "w1")
     assert not jobs.retry(db, job_id, "Brett") and not jobs.cancel(db, job_id, "Brett")  # (running: neither)
     jobs.finish(db, job_id, got["attempts"], {"ok": True})

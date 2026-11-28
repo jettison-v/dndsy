@@ -93,7 +93,7 @@ def enqueue(db: Session, kind: str, payload: dict | None = None, dedup_key: str 
         "INSERT INTO jobs (kind, queue, payload, dedup_key, campaign_id, label, requested_by, priority, run_at, max_attempts) "
         "VALUES (:kind, :queue, CAST(:payload AS jsonb), :dedup, :campaign, :label, :by, :priority, COALESCE(:run_at, now()), :max) "
         "ON CONFLICT (dedup_key) WHERE state IN ('queued', 'running') DO UPDATE SET priority = GREATEST(jobs.priority, EXCLUDED.priority), "
-        "run_at = LEAST(jobs.run_at, EXCLUDED.run_at), "
+        "run_at = CASE WHEN :again AND jobs.state = 'queued' AND jobs.run_at > now() THEN jobs.run_at ELSE LEAST(jobs.run_at, EXCLUDED.run_at) END, "  # (a draft held after a timeout keeps its hold: the review of Nov 27)
         "payload = CASE WHEN jobs.state = 'queued' THEN EXCLUDED.payload ELSE jobs.payload END, "  # (waiting: the newer request's,
         "label = CASE WHEN jobs.state = 'queued' AND EXCLUDED.label <> '' THEN EXCLUDED.label ELSE jobs.label END, "  # and who asked for it with it)
         "requested_by = CASE WHEN jobs.state = 'queued' AND EXCLUDED.requested_by <> '' THEN EXCLUDED.requested_by ELSE jobs.requested_by END, "
@@ -171,7 +171,10 @@ def fail(db: Session, job_id: int, attempts: int, error: str, retry: bool = True
         return ""
     k = KINDS.get(row.kind)
     again = retry and attempts < row.max_attempts
-    wait = (k.backoff[min(attempts - 1, len(k.backoff) - 1)] if k and k.backoff else 0) if again else 0
+    # (its backoff by the tries it has had of its kind's own: a deploy's put-back or a Retry gives tries back by raising
+    # max_attempts, so `attempts` alone counts those too; the review of Nov 27)
+    tried = attempts - (row.max_attempts - k.max_attempts) if k else attempts
+    wait = (k.backoff[max(0, min(tried - 1, len(k.backoff) - 1))] if k and k.backoff else 0) if again else 0
     db.execute(text(f"UPDATE jobs SET {_TRIED}, state = :state, error = :error, finished_at = CASE WHEN :again THEN NULL ELSE now() END, "  # noqa: S608 (_TRIED is a constant)
                     "run_at = now() + make_interval(secs => :wait) WHERE id = :id AND state = 'running' AND attempts = :n"),
                {"state": "queued" if again else "failed", "error": error[:2000], "again": again, "wait": wait, "id": job_id, "n": attempts,
@@ -261,8 +264,10 @@ def retry(db: Session, job_id: int, by: str) -> bool:
         db.execute(text(f"UPDATE jobs SET priority = GREATEST(priority, 10), run_at = LEAST(run_at, now()), {pressed} WHERE id = :id"),  # noqa: S608 (a constant)
                    {"id": other, "by": by[:200]})
     else:
-        db.execute(text(f"UPDATE jobs SET state = 'queued', attempts = 0, run_at = now(), priority = GREATEST(priority, 10), "  # noqa: S608 (a constant)
-                        f"finished_at = NULL, error = '', {pressed} WHERE id = :id"), {"id": job_id, "by": by[:200]})
+        # (its tries afresh, its number still rising: each try's number is its fence, and a worker that timed out may still
+        # be running try 1; the review of Nov 27, as `_FRESH`)
+        db.execute(text(f"UPDATE jobs SET state = 'queued', {_FRESH}, run_at = now(), priority = GREATEST(priority, 10), "  # noqa: S608 (constants)
+                        f"finished_at = NULL, error = '', {pressed} WHERE id = :id"), {"id": job_id, "by": by[:200], "maxes": _maxes()})
     db.execute(text("SELECT pg_notify('askdnd_jobs', (SELECT queue FROM jobs WHERE id = :id))"), {"id": target})
     return True
 

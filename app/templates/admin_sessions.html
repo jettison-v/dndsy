@@ -31,7 +31,7 @@
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
   {# Every list a table (Brett's pick AU1, Nov 25) #}
-  {% call table_box("sessions", "Sessions", rows | length, cols=[("Session", ""), ("State", "dt-w3"), ("Cost", "num dt-w3"), ("", "end dt-w4")], empty="No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.") %}
+  {% call table_box("sessions", "Sessions", rows | length, search=not running, cols=[("Session", ""), ("State", "dt-w3"), ("Cost", "num dt-w3"), ("", "end dt-w4")], empty="No sessions yet. + Add session starts one; syncing the campaign doc brings in its sessions.") %}
       {% set shown = namespace(backlog=False) %}
       {% for r in rows %}
       {% if r.s.id in backlog %}{% if not shown.backlog %}{% set shown.backlog = True %}

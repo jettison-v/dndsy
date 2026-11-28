@@ -554,7 +554,8 @@ def usage_limits(request: Request, week: int = Form(...), keep: int = Form(...),
         return denied
     me = views.person(db, user)
     try:
-        rules.set_usage_limits(db, f"user:{me['id']}", week, keep, int(game_day) if game_day.isdigit() else None, extra, window)
+        day = int(game_day) if game_day.lstrip("-").isdigit() else None  # ("": the table's usual night; -1: none)
+        rules.set_usage_limits(db, f"user:{me['id']}", week, keep, day, extra, window)
     except rules.RuleError as e:
         request.session["toast"] = web.notice(e.words, "warn")
     else:
@@ -934,7 +935,7 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
             issue = db.get(FftIssue, issue_id)
             rules.still_happening(db, actor, issue, c)
         else:
-            issue = rules.new_issue(db, actor, found.title, area_id=c.area_id)
+            issue = rules.new_issue(db, actor, found.title, area_id=c.area_id, source="check")  # (found trying a check: the review of Nov 27)
         context = body.get("context") if isinstance(body.get("context"), dict) else {}
         note = None if not text else rules.note_on_issue(db, actor, issue, user_id=me["id"], first_name=me["first_name"], text=text, url=str(body.get("url") or ""),
                                    page=str(context.get("page") or ""), context=context | {"check": c.id, "blocking": blocking},
