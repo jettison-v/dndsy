@@ -238,7 +238,9 @@ def for_you(db: Session, device: str) -> list[dict]:
             aid = q.about_id
         decision = q.about == "document" or bool(q.doc_path)  # (a mockup to look at first, whatever it's about)
         rows.append((area_key(aid), aid, {"key": f"q{q.id}", "title": views.title_of(q.text), "kind": "decision" if decision else "question",
-                                          "sub": "A decision: look, then one verdict" if decision else "Claude asks"}))
+                                          "sub": "A decision: look, then one verdict" if decision else "Claude asks",
+                                          # (its choices, answered in place on a phone: Roadmap item 49, Brett's pick N2)
+                                          "choices": [] if decision else list(enumerate(q.choices or [])), "mine": q.mine, "qid": q.id}))
     for i in db.scalars(select(FftIssue).where(FftIssue.state == "merge_ok").order_by(FftIssue.id)):
         rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "merge", "sub": "Fix ready: your OK to merge (players asked)"}))
     # (a fix live with no check isn't his to look at: it's Claude's gap until its check is written, issue 111)
