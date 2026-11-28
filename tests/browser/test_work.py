@@ -165,3 +165,23 @@ def test_a_jobs_runs_link_goes_to_github_and_its_window_is_compact(people, serve
         first = s.locator(".rd-sec-in > *").first
         assert first.evaluate("el => getComputedStyle(el).marginTop") == "0px"
     assert not admin.errors, admin.errors
+
+
+def test_a_more_menus_items_stay_on_one_line(people, server):
+    """Issue 164 (the nightly iPhone Safari check, Sentry ASKDND-V2-Q): the DM's ⋯ on Table, More for the table, was 180px
+    wide beside its small button, so Refresh all from D&D Beyond wrapped on every iPhone and the iPad. A menu is as wide
+    as its longest item, within the window."""
+    from tests.browser.test_layout import CHECK
+
+    dm = people("dm")
+    for width in (375, 768, 1280):
+        dm.page.set_viewport_size({"width": width, "height": 800})
+        page = dm.open("/c/main/manage/table")
+        page.locator(".title-row .act-more > summary").click()
+        menu = page.locator(".title-row .act-menu")
+        menu.wait_for()
+        box = menu.bounding_box()
+        assert box["x"] >= 0 and box["x"] + box["width"] <= width, f"⋯ runs off the window at {width}"
+        found = [f for f in page.evaluate(CHECK, {}) if "act-menu" in f.get("where", "")]
+        assert not found, f"the ⋯ menu at {width}px: {found}"
+    assert not dm.errors, dm.errors
