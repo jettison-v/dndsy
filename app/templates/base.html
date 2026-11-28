@@ -22,7 +22,7 @@
   {% block head %}{% endblock %}
 </head>
 {% if not toast and request.session.get("toast") and request.headers.get("HX-Request") != "true" %}{% set toast = request.session.pop("toast") %}{% endif %}{# (a card waiting from the last change shows on whichever page comes next: a round goes page to page) #}
-{% set fr = fight_now() %}<body{% if staging %} data-staging{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
+{% set fr = fight_now() %}{% set backstage = user and (path.startswith("/manage") or path.startswith("/admin")) %}<body{% if staging %} data-staging{% endif %}{% if backstage %} data-backstage{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
 <script src="{{ static('early.js') }}"></script>{# the sidebar's place and broken pictures, before anything is drawn #}
 {% block body %}
 {% if viewing_as %}{# View as (app/view_as.py): who you're seeing askdnd as, read-only #}
@@ -147,6 +147,14 @@
   <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-notes' }}"><span class="notes-dot-badge" data-notes-count hidden></span>{% if is_admin %}<span class="notes-dot-badge for-you-badge" data-manage-count="for-you" hidden></span>{% endif %}More</button>
 </nav>
+{# Backstage on a phone (Roadmap item 49, Brett's pick N1): an admin's Backstage pages have Workshop's own four in place
+   of the table's bar, and no Table rolls (it's for play) #}
+{% if backstage and is_admin %}<nav class="bottom-nav backstage-nav" aria-label="Workshop">
+  <a href="/manage/for-you" data-item="for-you" class="{{ 'active' if path.startswith('/manage/for-you') }}"><span class="notes-dot-badge for-you-badge" data-manage-count="for-you" hidden></span>For you</a>
+  <a href="/manage/work" data-item="work" class="{{ 'active' if path.startswith('/manage/work') }}">Development</a>
+  <a href="/manage/roadmap" data-item="roadmap" class="{{ 'active' if path.startswith('/manage/roadmap') }}">Roadmap</a>
+  <a href="/manage/feedback" data-item="feedback" class="{{ 'active' if path.startswith('/manage/feedback') }}">Feedback</a>
+</nav>{% endif %}
 {{ party_menu("party-menu-m", tn, "sheet-menu") }}
 <div class="menu more-menu sheet-menu" id="more-menu" data-door="more" hidden>{# a phone's More: the doors stacked, the same groups and names #}
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}<small>Switch campaign</small></a>{% endfor %}{% endif %}

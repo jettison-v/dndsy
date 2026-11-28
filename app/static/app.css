@@ -981,6 +981,12 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .bottom-nav > a, .bottom-nav > button { display: grid; place-items: center; min-height: 52px; color: var(--muted); text-decoration: none; font-size: var(--fs-xs); font-weight: 500; background: none; border: none; border-radius: var(--r-md); }
   .bottom-nav > a.active, .bottom-nav > button.active { color: var(--text-strong); font-weight: 700; box-shadow: inset 0 2px 0 var(--red); }
   .bottom-nav > a.bn-char { align-content: center; gap: 2px; padding: 0 2px; position: relative; }
+  /* Backstage on a phone (Roadmap item 49, Brett's picks): Workshop's own bar in place of the table's, no Table rolls
+     (it's for play) and no Live pill in the header (the connection is the table's); the page gets the room */
+  body[data-backstage]:has(.backstage-nav) .bottom-nav:not(.backstage-nav) { display: none; }
+  body[data-backstage] #table-rolls, body[data-backstage] .bar-end > .live { display: none; }
+  .backstage-nav > a { position: relative; }
+  .backstage-nav .for-you-badge { position: absolute; top: 4px; right: calc(50% - 34px); }
   .bn-char .cond-dots { position: absolute; top: 4px; left: calc(50% + 8px); }
   .bn-char > span:not(.char-av, .cond-dots) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
   .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
